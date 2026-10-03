@@ -1,0 +1,1 @@
+# TODO: esta clase depende de los DTO de los otros integrantes
