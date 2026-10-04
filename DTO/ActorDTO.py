@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
-class Player:
+class Actor:
     str_Id: str # instancia de entidad final
     str_Type: str # jugador o enemigo denominado en logica
     str_Name: str
