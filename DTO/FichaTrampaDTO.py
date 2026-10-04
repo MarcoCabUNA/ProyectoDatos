@@ -2,8 +2,8 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
-class TrapFichaTrampaDTO:
-    Id: str
+class FichaTrampaDTO:
+    id: str
     Name: str
     Damage: int
     Rearm: int
@@ -19,7 +19,7 @@ class TrapFichaTrampaDTO:
 
     def a_diccionario(self):
         return {
-            "id": self.Id,
+            "id": self.id,
             "clase": "trampa",
             "nombre": self.Name,
             "daño": self.Damage,

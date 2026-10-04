@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class  FichaEnemigoDTO:
-    Id: str
+    id: str
     Name: str
     max_H: int
     Attack: int
@@ -26,7 +26,7 @@ class  FichaEnemigoDTO:
 
     def a_diccionario(self):
         return {
-            "id": self.Id,
+            "id": self.id,
             "clase": "enemigo",
             "nombre": self.Name,
             "vida_max": self.max_H,

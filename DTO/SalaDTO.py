@@ -36,7 +36,7 @@ class SalidaDTO:
         )
 
     def a_diccionario(self) -> dict:
-        d = {"sala": self.sala_destino}
+        d: dict = {"sala": self.sala_destino}
         if self.cerrada:
             d["cerrada"] = True
         if self.llave is not None:
@@ -118,7 +118,7 @@ class SalaDTO:
         contenido: la entrada de esa sala en /contenido, o None si aún no se tiene.
         """
         salidas_json = esqueleto.get("salidas") or {}   # 'salidas' puede faltar en el API
-        salidas = [None, None, None, None]
+        salidas: list[SalidaDTO | None] = [None, None, None, None]
         for i in range(len(DIRECCIONES)):
             s = salidas_json.get(DIRECCIONES[i])
             if s is not None:
@@ -141,8 +141,9 @@ class SalaDTO:
         """Formato para persistir: las mismas piezas del API más la versión."""
         salidas_json = {}
         for i in range(len(DIRECCIONES)):
-            if self.salidas[i] is not None:
-                salidas_json[DIRECCIONES[i]] = self.salidas[i].a_diccionario()
+            salida = self.salidas[i]
+            if salida is not None:
+                salidas_json[DIRECCIONES[i]] = salida.a_diccionario()
         contenido = None
         if self.contenido_cargado:
             contenido = ContenidoSalaDTO(self.id, list(self.enemigos), list(self.objetos),

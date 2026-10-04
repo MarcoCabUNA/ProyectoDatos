@@ -12,6 +12,8 @@ from urllib.parse import quote
 from Data.ClienteHttp import ClienteHttp, ErrorRed
 from Data.FuenteDatos import FuenteDatos
 from DTO.CriptaDTO import CriptaDTO, ResumenCriptaDTO
+from DTO.FichaEnemigoDTO import FichaEnemigoDTO   # Integrante 1
+from DTO.FichaTrampaDTO import FichaTrampaDTO     # Integrante 1
 from DTO.ObjetoDTO import ObjetoDTO, es_clase_objeto
 from DTO.SalaDTO import ContenidoSalaDTO, SalaDTO
 from Security.ValidadorAcceso import generar_client_id
@@ -82,12 +84,8 @@ class FuenteRed(FuenteDatos):
         """Elige el DTO según el campo 'clase' de la ficha."""
         clase = d["clase"]
         if clase == "enemigo":
-            # DTO del Integrante 1. Se importa aquí para que el resto de FuenteRed
-            # funcione aunque ese archivo todavía no exista.
-            from DTO.FichaEnemigoDTO import FichaEnemigoDTO
             return FichaEnemigoDTO.desde_diccionario(d)
         if clase == "trampa":
-            from DTO.FichaTrampaDTO import FichaTrampaDTO  # DTO del Integrante 1
             return FichaTrampaDTO.desde_diccionario(d)
         if es_clase_objeto(clase):
             return ObjetoDTO.desde_diccionario(d)
@@ -110,8 +108,6 @@ class FuenteRed(FuenteDatos):
         """
         try:
             return convertir()
-        except ModuleNotFoundError as e:
-            raise ErrorRed(op, f"falta el archivo del DTO {e.name!r} (lo implementa el Integrante 1)") from e
         except (KeyError, TypeError, ValueError, AttributeError) as e:
             raise ErrorRed(op, f"la respuesta no tiene el formato esperado ({type(e).__name__}: {e})") from e
 
