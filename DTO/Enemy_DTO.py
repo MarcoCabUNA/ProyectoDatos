@@ -1,19 +1,18 @@
 from dataclasses import dataclass
 
 @dataclass(frozen=True)
-class Enemy: 
-    def __init__(self, id, name, healt, attack, _def, velo, behave, drops ):
-        str_Id = id 
-        str_Name = name
-        int_max_H = healt
-        int_Attack = attack
-        int_Def = _def
-        int_Velo = velo
-        str_Behave = behave
-        list_Drops = drops 
+class Enemy:
+    str_Id: str
+    str_Name: str
+    int_max_H: int
+    int_Attack: int
+    int_Def: int
+    int_Velo: int
+    str_Behave: str
+    list_Drops: list
 
     @classmethod
-    def From_diccionary(cls,Dicionary):
+    def From_diccionary(cls, Dicionary):
         return cls(
             Dicionary["id"],
             Dicionary["nombre"],
@@ -35,5 +34,5 @@ class Enemy:
             "defensa": self.int_Def,
             "velocidad": self.int_Velo,
             "comportamiento": self.str_Behave,
-            "suelta": list(self.arr_suelta),
+            "suelta": list(self.list_Drops),
         }
