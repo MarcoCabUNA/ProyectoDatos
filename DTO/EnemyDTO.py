@@ -12,7 +12,7 @@ class Enemy:
     list_Drops: list
 
     @classmethod
-    def From_diccionary(cls, Dicionary):
+    def FromDiccionary(cls, Dicionary):
         return cls(
             Dicionary["id"],
             Dicionary["nombre"],
@@ -24,7 +24,7 @@ class Enemy:
             list(Dicionary.get("suelta") or []),
         )
 
-    def To_diccionary(self):
+    def ToDiccionary(self):
         return {
             "id": self.str_Id,
             "clase": "enemigo",

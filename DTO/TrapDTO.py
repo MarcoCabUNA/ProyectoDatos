@@ -9,7 +9,7 @@ class Trap:
     int_Rearm: int = 300
 
     @classmethod
-    def From_diccionary(cls, Dicionary):
+    def FromDiccionary(cls, Dicionary):
         return cls(
             Dicionary["id"],
             Dicionary["nombre"],
@@ -17,7 +17,7 @@ class Trap:
             Dicionary.get("rearme") or 300,
         )
 
-    def To_diccionary(self):
+    def ToDiccionary(self):
         return {
             "id": self.str_Id,
             "clase": "trampa",

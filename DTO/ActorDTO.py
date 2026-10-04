@@ -14,7 +14,7 @@ class Actor:
     int_Room: int
 
     @classmethod
-    def From_diccionary(cls, Dicionary):
+    def FromDiccionary(cls, Dicionary):
         return cls(
             Dicionary["id"],
             Dicionary["tipo"],
@@ -27,7 +27,7 @@ class Actor:
             Dicionary["sala_actual"],
         )
 
-    def To_diccionary(self):
+    def ToDiccionary(self):
         return {
             "id": self.str_Id,
             "tipo": self.str_Type,
