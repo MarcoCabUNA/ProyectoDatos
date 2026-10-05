@@ -3,13 +3,13 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class  FichaEnemigoDTO:
     id: str
-    Name: str
-    max_H: int
-    Attack: int
-    Def: int
-    Velo: int
-    Behave: str
-    Drops: list
+    nombre: str
+    vida_max: int
+    ataque: int
+    defensa: int
+    velocidad: int
+    comportamiento: str
+    suelta: list
 
     @classmethod
     def desde_diccionario(cls, Dicionary):
@@ -28,11 +28,11 @@ class  FichaEnemigoDTO:
         return {
             "id": self.id,
             "clase": "enemigo",
-            "nombre": self.Name,
-            "vida_max": self.max_H,
-            "ataque": self.Attack,
-            "defensa": self.Def,
-            "velocidad": self.Velo,
-            "comportamiento": self.Behave,
-            "suelta": list(self.Drops),
+            "nombre": self.nombre,
+            "vida_max": self.vida_max,
+            "ataque": self.ataque,
+            "defensa": self.defensa,
+            "velocidad": self.velocidad,
+            "comportamiento": self.comportamiento,
+            "suelta": list(self.suelta),
         }

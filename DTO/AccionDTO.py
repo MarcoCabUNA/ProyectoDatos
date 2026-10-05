@@ -13,7 +13,7 @@ Cruces con los DTO del integrante 2:
     objeto    -> id de catálogo (ObjetoDTO.id). SalaDTO.objetos también identifica los
                  objetos por su id de catálogo.
 Cruce con el integrante 1:
-    objetivo  -> id de instancia del enemigo (ActorDTO.Id; en SalaDTO es
+    objetivo  -> id de instancia del enemigo (ActorDTO.id; en SalaDTO es
                  EnemigoEnSalaDTO.instancia).
 
 Regla de los DTOs: solo transportan datos. La validación de reglas del juego

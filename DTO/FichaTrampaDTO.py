@@ -4,9 +4,9 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class FichaTrampaDTO:
     id: str
-    Name: str
-    Damage: int
-    Rearm: int
+    nombre: str
+    danio: int
+    rearme: int
 
     @classmethod
     def desde_diccionario(cls, Dicionary):
@@ -21,7 +21,7 @@ class FichaTrampaDTO:
         return {
             "id": self.id,
             "clase": "trampa",
-            "nombre": self.Name,
-            "daño": self.Damage,
-            "rearme": self.Rearm
+            "nombre": self.nombre,
+            "daño": self.danio,
+            "rearme": self.rearme
         }

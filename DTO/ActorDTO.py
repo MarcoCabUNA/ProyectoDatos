@@ -3,15 +3,15 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class ActorDTO:
-    Id: str # instancia de entidad final
-    Type: str # jugador o enemigo denominado en logica
-    Name: str
-    Health: int
-    max_H: int
-    Attack: int
-    Def: int
-    Velo: int
-    Room: int
+    id: str # instancia de entidad final
+    tipo: str # jugador o enemigo denominado en logica
+    nombre: str
+    vida: int
+    vida_max: int
+    ataque: int
+    defensa: int
+    velocidad: int
+    sala_actual: int
 
     @classmethod
     def desde_diccionario(cls, Dicionary):
@@ -29,13 +29,13 @@ class ActorDTO:
 
     def a_diccionario(self):
         return {
-            "id": self.Id,
-            "tipo": self.Type,
-            "nombre": self.Name,
-            "vida": self.Health,
-            "vida_max": self.max_H,
-            "ataque": self.Attack,
-            "defensa": self.Def,
-            "velocidad": self.Velo,
-            "sala_actual": self.Room,
+            "id": self.id,
+            "tipo": self.tipo,
+            "nombre": self.nombre,
+            "vida": self.vida,
+            "vida_max": self.vida_max,
+            "ataque": self.ataque,
+            "defensa": self.defensa,
+            "velocidad": self.velocidad,
+            "sala_actual": self.sala_actual,
         }
