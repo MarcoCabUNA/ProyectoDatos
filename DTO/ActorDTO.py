@@ -14,17 +14,17 @@ class ActorDTO:
     sala_actual: int
 
     @classmethod
-    def desde_diccionario(cls, Dicionary):
+    def desde_diccionario(cls, d):
         return cls(
-            Dicionary["id"],
-            Dicionary["tipo"],
-            Dicionary["nombre"],
-            Dicionary["vida"],
-            Dicionary["vida_max"],
-            Dicionary["ataque"],
-            Dicionary["defensa"],
-            Dicionary["velocidad"],
-            Dicionary["sala_actual"],
+            d["id"],
+            d["tipo"],
+            d["nombre"],
+            d["vida"],
+            d["vida_max"],
+            d["ataque"],
+            d["defensa"],
+            d["velocidad"],
+            d["sala_actual"],
         )
 
     def a_diccionario(self):

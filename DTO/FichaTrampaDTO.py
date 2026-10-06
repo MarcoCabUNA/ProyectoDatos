@@ -5,16 +5,16 @@ from dataclasses import dataclass
 class FichaTrampaDTO:
     id: str
     nombre: str
-    danio: int
-    rearme: int
+    danio: int     # en el JSON del API la clave es "daño"
+    rearme: int    # si viene null en el catálogo, se usa 300
 
     @classmethod
-    def desde_diccionario(cls, Dicionary):
+    def desde_diccionario(cls, d):
         return cls(
-            Dicionary["id"],
-            Dicionary["nombre"],
-            Dicionary["daño"],
-            300 if Dicionary.get("rearme") is None else Dicionary["rearme"]
+            d["id"],
+            d["nombre"],
+            d["daño"],
+            300 if d.get("rearme") is None else d["rearme"],
         )
 
     def a_diccionario(self):
@@ -23,5 +23,5 @@ class FichaTrampaDTO:
             "clase": "trampa",
             "nombre": self.nombre,
             "daño": self.danio,
-            "rearme": self.rearme
+            "rearme": self.rearme,
         }

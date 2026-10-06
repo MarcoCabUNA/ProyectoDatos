@@ -12,16 +12,16 @@ class  FichaEnemigoDTO:
     suelta: list
 
     @classmethod
-    def desde_diccionario(cls, Dicionary):
+    def desde_diccionario(cls, d):
         return cls(
-            Dicionary["id"],
-            Dicionary["nombre"],
-            Dicionary["vida_max"],
-            Dicionary["ataque"],
-            Dicionary["defensa"],
-            Dicionary["velocidad"],
-            Dicionary["comportamiento"],
-            list(Dicionary.get("suelta") or []),
+            d["id"],
+            d["nombre"],
+            d["vida_max"],
+            d["ataque"],
+            d["defensa"],
+            d["velocidad"],
+            d["comportamiento"],
+            list(d.get("suelta") or []),
         )
 
     def a_diccionario(self):
