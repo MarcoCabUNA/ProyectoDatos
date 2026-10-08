@@ -3,6 +3,7 @@ from Logic.Comportamientos import crear_comportamiento
 
 
 class Enemigo(ActorBase):
+    # COORDINAR (Integrante 2): self.ficha queda en uso; la caché no puede desalojarla mientras el enemigo viva (§4.4)
     def __init__(self, ficha, instancia, vida, numero, sala):
         vida_inicial = ficha.vida_max if vida is None else vida
         super().__init__(
@@ -28,6 +29,7 @@ class Enemigo(ActorBase):
     def comportamiento(self):
         return self.ficha.comportamiento
 
+    # COORDINAR (Integrante 2): los ids de suelta deben incluirse en los lotes de /catalogo
     def objetos_que_suelta(self):
         return self.ficha.suelta
 

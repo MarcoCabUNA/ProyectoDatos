@@ -1,6 +1,7 @@
 from Logic.Enemigo import Enemigo
 
 
+# COORDINAR (Integrante 2): SalidaDTO con sala_destino, cerrada (bool, nunca None), llave y cierre_automatico
 class SalidaViva:
     def __init__(self, salida_dto):
         self.destino = salida_dto.sala_destino
@@ -15,6 +16,7 @@ class TrampaViva:
         self.ficha = ficha
         self.armada = True
 
+    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (rearme de la trampa)
     def activar(self, motor, evento):
         self.armada = True
 
@@ -23,11 +25,13 @@ class CierrePuerta:
     def __init__(self, caras):
         self.caras = caras
 
+    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (cierre automático)
     def activar(self, motor, evento):
         for salida in self.caras:
             salida.cerrada = True
 
 
+# COORDINAR (Integrante 2): SalaDTO con id, nombre y salidas como array de 4 en orden N, S, E, O
 class SalaViva:
     def __init__(self, sala_dto):
         self.id = sala_dto.id
@@ -43,6 +47,7 @@ class SalaViva:
 
 
 class Mazmorra:
+    # COORDINAR (Integrante 2): sala_salida y llave_salida vienen de CriptaDTO
     def __init__(self, sala_salida, llave_salida):
         self.salas = []
         self.sala_salida = sala_salida
@@ -58,6 +63,8 @@ class Mazmorra:
                 self.salas.append(None)
             self.salas[sala_dto.id] = SalaViva(sala_dto)
 
+    # COORDINAR (Integrante 2): enemigos con .instancia, .tipo y .vida; trampas con .instancia y .tipo; objetos como ids
+    # COORDINAR (Integrante 2): fn_ficha(tipo) la provee la caché del catálogo y nunca devuelve None
     def cargar_contenido(self, sala_dto, fn_ficha):
         sala = self.salas[sala_dto.id]
         if sala.contenido_cargado:
@@ -114,6 +121,7 @@ class Mazmorra:
             return None
         return salida.llave
 
+    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (cerrada de ambas caras y salida_abierta)
     def abrir_puerta(self, id_sala, direccion, motor):
         salida = self.salida(id_sala, direccion)
         caras = [salida]
@@ -127,14 +135,17 @@ class Mazmorra:
         if salida.cierre_automatico is not None:
             motor.programar_efecto(salida.cierre_automatico, "cierre_puerta", CierrePuerta(caras))
 
+    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (Sala_Actual y listas de enemigos)
     def mover_enemigo(self, enemigo, destino):
         self.salas[enemigo.Sala_Actual].enemigos.remove(enemigo)
         self.salas[destino].enemigos.append(enemigo)
         enemigo.Sala_Actual = destino
 
+    # COORDINAR (Integrante 3): lo llama el Inventario al soltar; registrar el cambio en HistorialRetroceso
     def soltar_objeto(self, id_sala, id_objeto):
         self.salas[id_sala].objetos.append(id_objeto)
 
+    # COORDINAR (Integrante 3): lo llama el Inventario al recoger, después de validar que no esté lleno; registrar el cambio en HistorialRetroceso
     def recoger_objeto(self, id_sala, id_objeto):
         objetos = self.salas[id_sala].objetos
         for i in range(len(objetos)):

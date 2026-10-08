@@ -5,6 +5,7 @@ class ColaEventos:
 
     # ---------- Metodos publicos
 
+    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (evento programado y siguiente_secuencia)
     def programar(self, evento):
         evento.secuencia = self.siguiente_secuencia
         self.siguiente_secuencia += 1
@@ -12,6 +13,7 @@ class ColaEventos:
         self._subir(len(self.eventos) - 1)
         return evento
 
+    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (evento extraído, para reinsertarlo al retroceder)
     def obtener_siguiente(self):
         self._descartar_invalidos()
         if not self.eventos:

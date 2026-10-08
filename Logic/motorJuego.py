@@ -8,11 +8,16 @@ from Logic.RastroSalas import RastroSalas
 
 
 class Motor:
+    # COORDINAR (Integrante 3): faltan COSTO_RECOGER = 25, COSTO_SOLTAR = 25, COSTO_USAR = 50 y COSTO_EQUIPAR = 50; tras cada acción llamar terminar_accion_jugador(costo)
     COSTO_MOVER = 100
     COSTO_ATACAR = 100
     COSTO_ESPERAR = 100
     COSTO_ABRIR = 50
 
+    # COORDINAR (Integrante 3): fn_mensaje recibe la bitácora circular de 20 mensajes
+    # COORDINAR (Integrante 3): la semilla va en el encabezado del log de replay
+    # COORDINAR (Integrante 3): el estado de self.azar (getstate/setstate) debe restaurarse al retroceder
+    # COORDINAR (Integrante 2 y 3): definir qué estado de Lógica se guarda en el guardado binario
     def __init__(self, semilla, jugador, mazmorra, fn_mensaje=None):
         self.reloj = 0
         self.cola = ColaEventos()
@@ -33,6 +38,7 @@ class Motor:
         self.rastro.marcar(self.jugador.Sala_Actual, 0)
         self.activar_enemigos(self.mazmorra.enemigos_dormidos(self.jugador.Sala_Actual))
 
+    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (activo)
     def activar_enemigos(self, enemigos):
         for enemigo in _ordenar_por_id(enemigos):
             enemigo.activo = True
@@ -45,6 +51,7 @@ class Motor:
     def programar_efecto(self, retraso, tipo, efecto):
         return self.cola.programar(EventoProgramado(self.reloj + retraso, tipo, efecto))
 
+    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (velocidad y Evento_pendiente)
     def cambiar_velocidad(self, actor, velocidad_nueva):
         evento_viejo = actor.Evento_pendiente
         if evento_viejo is None or not evento_viejo.esta_valido():
@@ -57,6 +64,7 @@ class Motor:
         tiempo = self.reloj + restante_nuevo
         actor.Evento_pendiente = self.cola.programar(EventoProgramado(tiempo, "accion_actor", actor))
 
+    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (reloj); al devolver True termina el intervalo a revertir
     def avanzar_hasta_jugador(self):
         while not self.terminado and not self.cola.esta_vacia():
             evento = self.cola.obtener_siguiente()
@@ -67,11 +75,14 @@ class Motor:
             evento.dueno.activar(self, evento)
         return False
 
+    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (acciones); PuntajeDTO usa jugador.acciones, enemigos_derrotados, reloj y victoria
     def terminar_accion_jugador(self, costo):
         self.jugador.acciones += 1
         self.rastro.marcar(self.jugador.Sala_Actual, self.reloj)
         self.programar_accion(self.jugador, costo)
 
+    # COORDINAR (Integrante 2): si devuelve "pendiente", Servicios pide el contenido, lo carga con cargar_contenido y reintenta
+    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (Sala_Actual del jugador)
     def mover_jugador(self, direccion):
         salida = self.mazmorra.salida(self.jugador.Sala_Actual, direccion)
         if salida is None:
@@ -92,6 +103,7 @@ class Motor:
         self.terminar_accion_jugador(self.COSTO_MOVER)
         return "ok"
 
+    # COORDINAR (Integrante 3): fn_tiene_objeto(id) la provee el Inventario
     def abrir_puerta(self, direccion, fn_tiene_objeto):
         llave = self.mazmorra.llave_requerida(self.jugador.Sala_Actual, direccion)
         if llave is None:
@@ -136,6 +148,8 @@ class Motor:
         if not defensor.Vivo():
             self.morir(defensor)
 
+    # COORDINAR (Integrante 2): la ficha del enemigo muerto deja de estar en uso en la caché
+    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (enemigos_derrotados y terminado)
     def morir(self, actor):
         if actor.Evento_pendiente is not None:
             actor.Evento_pendiente.cancelar()
@@ -154,6 +168,7 @@ class Motor:
 
     # ---------- Metodos privados
 
+    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (armada)
     def _activar_trampas(self, id_sala):
         for trampa in self.mazmorra.trampas_armadas(id_sala):
             self.jugador.Recibir_Dannio(trampa.ficha.danio)
@@ -165,6 +180,7 @@ class Motor:
                 return
 
 
+# COORDINAR (Integrante 3): reemplazar por el Ordenador (§4.9)
 def _ordenar_por_id(lista):
     resultado = list(lista)
     for i in range(1, len(resultado)):

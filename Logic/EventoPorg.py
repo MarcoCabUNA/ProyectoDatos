@@ -11,6 +11,7 @@ class EventoProgramado:
             return self.tiempo < otro.tiempo
         return self.secuencia < otro.secuencia
 
+    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (cancelación)
     def cancelar(self):
         self.valido = False
 

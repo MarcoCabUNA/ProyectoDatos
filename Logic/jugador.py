@@ -2,6 +2,7 @@ from Logic.ActorBase import ActorBase
 
 
 class Jugador(ActorBase):
+    # COORDINAR (Integrante 2): CriptaDTO con jugador_vida_max, jugador_ataque, jugador_defensa, jugador_velocidad y sala_inicial
     def __init__(self, cripta):
         super().__init__(
             "jugador",
@@ -15,6 +16,7 @@ class Jugador(ActorBase):
         self.arma = None
         self.armadura = None
         self.acciones = 0
+        # COORDINAR (Integrante 3): definir si el inventario vive aquí o en Servicios
 
     def tipo(self):
         return "jugador"
@@ -22,6 +24,7 @@ class Jugador(ActorBase):
     def nombre_visible(self):
         return "Jugador"
 
+    # COORDINAR (Integrante 3): mover el objeto al frente del inventario le corresponde al Inventario
     def equipar(self, objeto):
         if objeto.clase == "arma":
             self.arma = objeto

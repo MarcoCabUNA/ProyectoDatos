@@ -15,6 +15,7 @@ class ActorBase:
     def Calcu_de_Intervalo(self, Costo):
         return max(1, Costo * 100 // self.velocidad)
 
+    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (vida)
     def Recibir_Dannio(self, Cant):
         if Cant <= 0:
             return
@@ -26,6 +27,7 @@ class ActorBase:
     def Vivo(self):
         return self.vida > 0
 
+    # COORDINAR (Integrante 3): las pociones de cura llaman aquí; registrar el cambio en HistorialRetroceso (vida)
     def Curacion(self, Cant):
         if self.Vivo():
             if self.vida + Cant > self.vida_Max:

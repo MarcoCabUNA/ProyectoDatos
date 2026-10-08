@@ -4,6 +4,7 @@ class RastroSalas:
     def __init__(self):
         self.tiempos = []
 
+    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (rastro anterior de la sala)
     def marcar(self, sala, tiempo):
         while len(self.tiempos) <= sala:
             self.tiempos.append(None)
