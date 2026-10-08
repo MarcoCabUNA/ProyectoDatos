@@ -1,4 +1,7 @@
-import ActorBase
+from Logic.ActorBase import ActorBase
+from Logic.Comportamientos import crear_comportamiento
+
+
 class Enemigo(ActorBase):
     def __init__(self, ficha, instancia, vida, numero, sala):
         vida_inicial = ficha.vida_max if vida is None else vida
@@ -14,6 +17,10 @@ class Enemigo(ActorBase):
         self.ficha = ficha
         self.numero = numero
         self.activo = False
+        self.estrategia = crear_comportamiento(ficha.comportamiento)
+
+    def tipo(self):
+        return self.ficha.id
 
     def nombre_visible(self):
         return f"{self.ficha.nombre} #{self.numero}"
@@ -23,3 +30,6 @@ class Enemigo(ActorBase):
 
     def objetos_que_suelta(self):
         return self.ficha.suelta
+
+    def activar(self, motor, evento):
+        motor.turno_enemigo(self)

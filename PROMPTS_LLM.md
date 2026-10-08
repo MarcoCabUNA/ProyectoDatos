@@ -21,3 +21,11 @@ Utiliza ejemplos sencillos y un lenguaje didáctico, como si me estuvieras ense�
 
 **Uso de la respuesta:** se utilizó para aprender sobre esta librería, que facilita la implementación de la capa de DTO del proyecto.
 
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 7 de octubre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+Haz tests básicos para probar lo que es la parte de lógica de este proyecto, luego de ello dame una tabla con lo que encontraste
+
+**Uso de la respuesta:** se generó `tests/test_logica.py` (60 pruebas con `unittest`) para la capa `Logic/`. Las pruebas detectaron 6 errores (campo `dano` en vez de `danio` en trampas, desempaquetado de DTOs como tuplas, turno extra con poción de velocidad, salas sin esqueleto cargado y daño negativo que curaba) e imports inconsistentes. Se corrigieron con cambios mínimos.
