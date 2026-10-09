@@ -1,0 +1,1 @@
+"""Pruebas automáticas del proyecto Cripta (Integrante 2: Datos, MSI y Estructuras)."""
