@@ -4,6 +4,7 @@ from DTO.Direcciones import DIRECCIONES
 from Logic.ColaEventos import ColaEventos
 from Logic.EventoPorg import EventoProgramado
 from Logic.GestorEfectos import GestorEfectos
+from Logic.Ordenador import Ordenador
 from Logic.RastroSalas import RastroSalas
 
 
@@ -40,7 +41,7 @@ class Motor:
 
     # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (activo)
     def activar_enemigos(self, enemigos):
-        for enemigo in _ordenar_por_id(enemigos):
+        for enemigo in Ordenador.ordenar(enemigos, _comparar_por_id):
             enemigo.activo = True
             self.programar_accion(enemigo, 100)
 
@@ -180,14 +181,5 @@ class Motor:
                 return
 
 
-# COORDINAR (Integrante 3): reemplazar por el Ordenador (§4.9)
-def _ordenar_por_id(lista):
-    resultado = list(lista)
-    for i in range(1, len(resultado)):
-        actual = resultado[i]
-        j = i - 1
-        while j >= 0 and resultado[j].id > actual.id:
-            resultado[j + 1] = resultado[j]
-            j -= 1
-        resultado[j + 1] = actual
-    return resultado
+def _comparar_por_id(a, b):
+    return Ordenador.comparar(a.id, b.id)
