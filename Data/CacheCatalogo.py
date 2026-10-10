@@ -35,6 +35,11 @@ Quién marca el uso (lo llama Servicios, porque Lógica no conoce la capa de Dat
   objeto en el suelo y cada trampa; liberar_uso(id) cuando muere el enemigo, se suelta/consume el
   objeto o el jugador sale de la sala. Una ficha usada por dos instancias (dos ratas) cuenta 2 usos.
 
+Después de un retroceso (pergamino, §4.6) la caché NO se revierte: no es estado del juego. Lo que
+sí cambia es qué fichas están en uso (un enemigo que revive, un objeto que vuelve al inventario).
+Para eso está reiniciar_usos(): deja todos los usos en 0 sin liberar nada de memoria, y quien
+llama vuelve a marcar las que el estado restaurado usa (ResolvedorCatalogo.sincronizar_usos).
+
 Esta clase es solo la parte EN MEMORIA. La persistencia en disco (paso 10) y la resolución de ids
 contra la red (paso 9) se agregan encima: una ficha liberada de memoria debe seguir en disco.
 """
@@ -165,6 +170,22 @@ class CacheCatalogo:
         if entrada.usos > 0:
             return []
         entrada.nodo = self._recientes.agregar_al_frente(entrada)
+        return self._ajustar_al_tope(protegida=None)
+
+    def reiniciar_usos(self) -> None:
+        """
+        Deja todas las fichas sin usos y otra vez como candidatas, SIN liberar nada de memoria
+        (aunque la caché quede por encima del tope): se usa tras un retroceso, justo antes de volver
+        a marcar las fichas que el estado restaurado usa; así ninguna se desaloja en medio.
+        Las que estaban en uso vuelven al frente (se acaban de usar). O(n).
+        """
+        for entrada in self._entradas:
+            if entrada.usos > 0:
+                entrada.usos = 0
+                entrada.nodo = self._recientes.agregar_al_frente(entrada)
+
+    def ajustar_al_tope(self) -> list[str]:
+        """Libera lo que sobre por encima del tope (LRU, nunca fichas en uso). Devuelve los ids liberados."""
         return self._ajustar_al_tope(protegida=None)
 
     # ------------------------------------------------------------ desalojo (LRU)
