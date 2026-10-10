@@ -176,6 +176,35 @@ class PruebasResolvedorCatalogo(unittest.TestCase):
         self.assertEqual(r.lecturas_disco(), lecturas)                # sigue en memoria: estaba en uso
         r.liberar_uso("itm_antorcha")
 
+    # ------------------------------------------------------------ después de un retroceso
+    def test_sincronizar_usos_tras_un_retroceso(self):
+        r = self.crear(ApiFalsa(), tope=2)
+        r.resolver_contenido(contenidos_reales())                      # 11 fichas en disco, 2 en memoria
+        r.marcar_en_uso("itm_antorcha")                                # antes del retroceso: antorcha en el inventario
+        # Al deshacer: revive la rata (dos instancias) y la antorcha ya no está en el inventario.
+        liberadas = r.sincronizar_usos(["ent_rata_gigante", "ent_rata_gigante"])
+        self.assertNotIn("ent_rata_gigante", liberadas)
+        lecturas = r.lecturas_disco()
+        r.liberar_uso("ent_rata_gigante")                              # muere una rata: la otra sigue
+        self.assertEqual(r.ficha("ent_rata_gigante").id, "ent_rata_gigante")
+        self.assertEqual(r.lecturas_disco(), lecturas)                 # sigue en memoria (en uso)
+        r.liberar_uso("ent_rata_gigante")
+        with self.assertRaises(ValueError):
+            r.liberar_uso("itm_antorcha")                              # la antorcha ya no estaba en uso
+
+    def test_sincronizar_usos_no_desaloja_en_medio_lo_que_va_a_marcar(self):
+        api = ApiFalsa()
+        r = self.crear(api, tope=1)
+        r.resolver_contenido(contenidos_reales())
+        ids = ["itm_antorcha", "trp_dardos", "itm_daga_oxidada"]       # 3 en uso con tope 1
+        antes = api.solicitudes_realizadas
+        self.assertEqual(r.sincronizar_usos(ids), [])                  # nada en uso se libera
+        lecturas = r.lecturas_disco()
+        for id_ficha in ids:
+            self.assertEqual(r.ficha(id_ficha).id, id_ficha)
+        self.assertEqual(r.lecturas_disco(), lecturas)                 # las 3 quedaron en memoria
+        self.assertEqual(api.solicitudes_realizadas, antes)            # y nada salió de la red
+
     # ------------------------------------------------------------ errores de red
     def test_fallo_a_mitad_conserva_lo_descargado(self):
         # Solicitudes: 0 versión, 1 primer lote de catálogo, 2 segundo lote -> falla

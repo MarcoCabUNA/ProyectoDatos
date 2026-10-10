@@ -30,6 +30,8 @@ Cómo lo usa el resto del programa (lo llama Servicios; Lógica no conoce la cap
                           si no hay forma de obtenerla, lanza ErrorRed.
   marcar_en_uso(id) / liberar_uso(id)  -> fichas en uso de §4.4 (enemigo vivo, objeto en el inventario
                           o en el suelo de la sala actual, trampa de la sala actual).
+  sincronizar_usos(ids) -> tras un retroceso (§4.6): la caché no se revierte (no es estado del juego),
+                          así que las marcas de uso se rehacen a partir del estado restaurado.
 """
 from Data.AlmacenCatalogo import CARPETA_POR_DEFECTO, AlmacenCatalogo
 from Data.CacheCatalogo import TOPE_POR_DEFECTO, CacheCatalogo, Ficha
@@ -129,6 +131,28 @@ class ResolvedorCatalogo:
     def liberar_uso(self, id_ficha: str) -> None:
         """Una instancia dejó de usar la ficha (una ficha en uso nunca sale de memoria)."""
         self._cache.liberar_uso(id_ficha)
+
+    def sincronizar_usos(self, ids_en_uso: list[str]) -> list[str]:
+        """
+        Tras un retroceso: deja como "en uso" EXACTAMENTE las fichas de 'ids_en_uso' (un id repetido
+        cuenta una vez por instancia: dos ratas vivas = dos usos). Servicios arma la lista con el estado
+        ya restaurado: enemigos vivos, inventario, objetos en el suelo y trampas de la sala actual.
+          1. todos los usos a 0, sin liberar nada todavía;
+          2. se marcan primero las que siguen en memoria (sin costo de disco);
+          3. luego las que habían salido de memoria (una lectura de disco cada una);
+          4. recién al final se libera lo que sobre del tope.
+        Así ninguna ficha que se va a marcar se desaloja en medio. Devuelve los ids liberados.
+        """
+        self._cache.reiniciar_usos()
+        faltantes: list[str] = []
+        for id_ficha in ids_en_uso:
+            if self._cache.contiene(id_ficha):
+                self._cache.marcar_en_uso(id_ficha)
+            else:
+                faltantes.append(id_ficha)
+        for id_ficha in faltantes:
+            self.marcar_en_uso(id_ficha)
+        return self._cache.ajustar_al_tope()
 
     # ------------------------------------------------------------ contadores (reporte y --bench)
     def aciertos(self) -> int:

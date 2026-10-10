@@ -152,6 +152,27 @@ class PruebasCacheCatalogo(unittest.TestCase):
         c.liberar_uso("a")
         self.assertFalse(c.esta_en_uso("a"))
 
+    # ------------------------------------------------------------ después de un retroceso
+    def test_reiniciar_usos_no_libera_nada_hasta_ajustar(self):
+        c = llena(2, "a", "b")
+        c.marcar_en_uso("a")
+        c.marcar_en_uso("a")
+        c.marcar_en_uso("b")
+        c.insertar(ficha("c"))                       # todas en uso: queda en 3, por encima del tope
+        c.reiniciar_usos()
+        self.assertFalse(c.esta_en_uso("a") or c.esta_en_uso("b"))
+        self.assertEqual(c.tamano(), 3)              # reiniciar no desaloja
+        c.marcar_en_uso("b")                         # el estado restaurado solo usa b
+        self.assertEqual(c.ajustar_al_tope(), ["c"])  # c era la usada hace más tiempo; b está en uso
+        self.assertEqual(c.ids_en_memoria(), ["a", "b"])
+        with self.assertRaises(ValueError):
+            c.liberar_uso("a")                       # a quedó sin usos
+
+    def test_reiniciar_usos_sin_nada_en_uso_no_cambia_nada(self):
+        c = llena(3, "a", "b", "c")
+        c.reiniciar_usos()
+        self.assertEqual(c.insertar(ficha("d")), ["a"])   # el orden LRU se conservó
+
     # ------------------------------------------------------------ contra un modelo simple
     def test_operaciones_al_azar_contra_un_modelo(self):
         """
