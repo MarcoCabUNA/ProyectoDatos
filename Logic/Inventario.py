@@ -20,6 +20,9 @@ Reglas decididas aquí (a confirmar con el equipo):
       la anterior, que permanece en el inventario. Soltar lo equipado lo desequipa.
     - ubicar(id) mueve el cursor a una instancia de ese id, prefiriendo una NO equipada
       (la de repuesto). Es el puente con AccionDTO, que identifica los objetos por id.
+    - Si tiene historial (lo asigna el Motor), recoger, soltar y equipar registran cómo
+      deshacerse. Los pergaminos de retroceso no se registran (§2.11). Mover el cursor no es
+      una acción del jugador, así que tampoco se registra.
 
 Costos (n <= capacidad_maxima, un número pequeño):
     recoger, soltar_actual, equipar_actual, siguiente, anterior    O(1)
@@ -57,6 +60,7 @@ class Inventario:
         self._cursor = None  # nodo que el jugador está viendo (None si está vacío)
         self._nodo_arma = None  # nodo del arma equipada (None si no hay)
         self._nodo_armadura = None  # nodo de la armadura equipada (None si no hay)
+        self.historial = None  # HistorialRetroceso del Motor (None = no se registra nada)
 
     # ---- Estado ----
 
@@ -78,7 +82,9 @@ class Inventario:
         """Agrega 'objeto' (un ObjetoDTO) al final. Devuelve su nodo, o None si está lleno."""
         if self.esta_lleno():
             return None
+        punteros = self._punteros()
         nodo = self._lista.agregar_al_final(objeto)
+        self._registrar(objeto, lambda: self._deshacer_recoger(nodo, punteros))
         if self._cursor is None:  # primer objeto: el cursor lo ve
             self._cursor = nodo
         return nodo
@@ -89,6 +95,9 @@ class Inventario:
         nodo = self._cursor
         if nodo is None:
             return None
+        punteros = self._punteros()
+        anterior = nodo.anterior
+        self._registrar(nodo.dato, lambda: self._deshacer_quitar(nodo, anterior, punteros))
         # Primero se decide el nuevo cursor: eliminar() borra los enlaces del nodo.
         self._cursor = nodo.siguiente if nodo.siguiente is not None else nodo.anterior
         if nodo is self._nodo_arma:
@@ -104,6 +113,10 @@ class Inventario:
         if nodo is None:
             return False
         clase = nodo.dato.clase
+        if clase == "arma" or clase == "armadura":
+            punteros = self._punteros()
+            anterior = nodo.anterior
+            self._registrar(nodo.dato, lambda: self._deshacer_equipar(nodo, anterior, punteros))
         if clase == "arma":
             self._nodo_arma = nodo
         elif clase == "armadura":
@@ -183,6 +196,31 @@ class Inventario:
         return Ordenador.ordenar(self.objetos(), comparador)
 
     # ---- Interno ----
+
+    def _registrar(self, objeto, deshacer) -> None:
+        if self.historial is not None and objeto.clase != "pergamino_retroceso":
+            self.historial.registrar_cambio(deshacer)
+
+    def _punteros(self):
+        return self._cursor, self._nodo_arma, self._nodo_armadura
+
+    def _restaurar_punteros(self, punteros) -> None:
+        cursor, self._nodo_arma, self._nodo_armadura = punteros
+        # el cursor pudo apuntar a un pergamino que ya no está (esos cambios no se deshacen)
+        self._cursor = cursor if self._lista.contiene(cursor) else self._lista.cabeza
+
+    def _deshacer_recoger(self, nodo, punteros) -> None:
+        self._lista.eliminar(nodo)
+        self._restaurar_punteros(punteros)
+
+    def _deshacer_quitar(self, nodo, anterior, punteros) -> None:
+        # si el vecino era un pergamino que ya no está, el objeto vuelve al frente
+        self._lista.insertar_despues(nodo, anterior if self._lista.contiene(anterior) else None)
+        self._restaurar_punteros(punteros)
+
+    def _deshacer_equipar(self, nodo, anterior, punteros) -> None:
+        self._lista.eliminar(nodo)
+        self._deshacer_quitar(nodo, anterior, punteros)
 
     def _esta_equipado(self, nodo) -> bool:
         return nodo is self._nodo_arma or nodo is self._nodo_armadura

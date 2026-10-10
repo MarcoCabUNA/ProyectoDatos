@@ -35,6 +35,7 @@ class Veneno(Efecto):
             motor.efectos.quitar(self)
             motor.morir(self.actor)
         elif motor.reloj + self.PULSO <= self.fin:
+            motor.historial.registrar_atributo(self, "evento", self.evento)
             self.evento = motor.programar_efecto(self.PULSO, self.tipo, self)
         else:
             motor.efectos.quitar(self)

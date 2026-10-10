@@ -11,14 +11,15 @@ class ActorBase:
         self.velocidad = Velo
         self.Sala_Actual = SAct
         self.Evento_pendiente = ObjEvent
+        self.historial = None
 
     def Calcu_de_Intervalo(self, Costo):
         return max(1, Costo * 100 // self.velocidad)
 
-    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (vida)
     def Recibir_Dannio(self, Cant):
         if Cant <= 0:
             return
+        self._registrar_vida()
         if Cant > self.vida:
             self.vida = 0
         else:
@@ -27,9 +28,9 @@ class ActorBase:
     def Vivo(self):
         return self.vida > 0
 
-    # COORDINAR (Integrante 3): las pociones de cura llaman aquí; registrar el cambio en HistorialRetroceso (vida)
     def Curacion(self, Cant):
         if self.Vivo():
+            self._registrar_vida()
             if self.vida + Cant > self.vida_Max:
                 self.vida = self.vida_Max
             else:
@@ -52,6 +53,10 @@ class ActorBase:
 
     def nombre_visible(self):
         raise NotImplementedError
+
+    def _registrar_vida(self):
+        if self.historial is not None:
+            self.historial.registrar_atributo(self, "vida", self.vida)
 
     def a_dto(self):
         return ActorDTO(

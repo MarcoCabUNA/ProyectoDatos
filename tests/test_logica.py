@@ -17,16 +17,16 @@ from DTO.FichaTrampaDTO import FichaTrampaDTO
 from DTO.ObjetoDTO import ObjetoDTO
 from DTO.SalaDTO import SalaDTO, SalidaDTO, EnemigoEnSalaDTO, TrampaEnSalaDTO, ContenidoSalaDTO
 
-from Logica.ActorBase import ActorBase
-from Logica.ColaEventos import ColaEventos
-from Logica.Comportamientos import Guardian, Errante, Rastreador, crear_comportamiento
-from Logica.Efectos import Veneno, Velocidad, Antorcha
-from Logica.Enemigo import Enemigo
-from Logica.EventoPorg import EventoProgramado
-from Logica.jugador import Jugador
-from Logica.Mazmorra import Mazmorra, TrampaViva
-from Logica.motorJuego import Motor
-from Logica.RastroSalas import RastroSalas
+from Logic.ActorBase import ActorBase
+from Logic.ColaEventos import ColaEventos
+from Logic.Comportamientos import Guardian, Errante, Rastreador, crear_comportamiento
+from Logic.Efectos import Veneno, Velocidad, Antorcha
+from Logic.Enemigo import Enemigo
+from Logic.EventoPorg import EventoProgramado
+from Logic.jugador import Jugador
+from Logic.Mazmorra import Mazmorra, TrampaViva
+from Logic.motorJuego import Motor
+from Logic.RastroSalas import RastroSalas
 
 from DTO.Direcciones import N, E, O
 

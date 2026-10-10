@@ -1,5 +1,5 @@
-from Logica.ActorBase import ActorBase
-from Logica.Comportamientos import crear_comportamiento
+from Logic.ActorBase import ActorBase
+from Logic.Comportamientos import crear_comportamiento
 
 
 class Enemigo(ActorBase):

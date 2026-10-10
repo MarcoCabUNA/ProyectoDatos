@@ -1,19 +1,21 @@
 class ColaEventos:
-    def __init__(self):
+    def __init__(self, historial=None):
         self.eventos = []
         self.siguiente_secuencia = 0
+        self.historial = historial
 
     # ---------- Metodos publicos
 
-    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (evento programado y siguiente_secuencia)
     def programar(self, evento):
+        if self.historial is not None:
+            secuencia_anterior = self.siguiente_secuencia
+            self.historial.registrar_cambio(lambda: self._retirar(evento, secuencia_anterior))
+        evento.historial = self.historial
         evento.secuencia = self.siguiente_secuencia
         self.siguiente_secuencia += 1
-        self.eventos.append(evento)
-        self._subir(len(self.eventos) - 1)
+        self._insertar(evento)
         return evento
 
-    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (evento extraído, para reinsertarlo al retroceder)
     def obtener_siguiente(self):
         self._descartar_invalidos()
         if not self.eventos:
@@ -30,6 +32,15 @@ class ColaEventos:
 
     # ---------- Metodos privados
 
+    def _insertar(self, evento):
+        self.eventos.append(evento)
+        self._subir(len(self.eventos) - 1)
+
+    # Deshace programar: el evento se invalida y se descarta solo al llegar a la raíz, como una cancelación
+    def _retirar(self, evento, secuencia_anterior):
+        evento.valido = False
+        self.siguiente_secuencia = secuencia_anterior
+
     def _descartar_invalidos(self):
         while self.eventos and not self.eventos[0].esta_valido():
             self._extraer_raiz()
@@ -37,6 +48,9 @@ class ColaEventos:
     def _extraer_raiz(self):
         arr = self.eventos
         raiz = arr[0]
+        if self.historial is not None:
+            # se registra también al descartar cancelados: si se deshace la cancelación, el evento debe volver
+            self.historial.registrar_cambio(lambda: self._insertar(raiz))
         ultimo = arr.pop()
         if arr:
             arr[0] = ultimo
