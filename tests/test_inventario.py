@@ -4,11 +4,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from DTO.ObjetoDTO import ObjetoDTO
-from Logica.Inventario import Inventario
+from Logic.Inventario import Inventario
 
 
-def _objeto(id_objeto, clase="pocion"):
-    return ObjetoDTO(id=id_objeto, nombre=id_objeto.upper(), clase=clase, peso=1, valor=1)
+def _objeto(id_objeto, clase="pocion", peso=1, valor=1, nombre=None):
+    return ObjetoDTO(id=id_objeto, nombre=nombre or id_objeto.upper(), clase=clase, peso=peso, valor=valor)
 
 
 def _ids(inventario):
@@ -241,6 +241,54 @@ def probar_contra_un_modelo_simple():
         assert inv.arma_equipada() is arma and inv.armadura_equipada() is armadura
 
 
+def probar_vista_ordenada_por_peso_conserva_el_orden_en_los_empates():
+    inv = _inventario_con(_objeto("a", peso=5), _objeto("b", peso=2), _objeto("c", peso=5), _objeto("d", peso=2))
+    assert [o.id for o in inv.vista_ordenada("peso")] == ["b", "d", "a", "c"]
+
+
+def probar_vista_ordenada_por_valor():
+    inv = _inventario_con(_objeto("a", valor=30), _objeto("b", valor=10), _objeto("c", valor=20))
+    assert [o.id for o in inv.vista_ordenada("valor")] == ["b", "c", "a"]
+
+
+def probar_vista_ordenada_por_nombre_sin_distinguir_mayusculas():
+    inv = _inventario_con(_objeto("1", nombre="daga"), _objeto("2", nombre="Antorcha"),
+                          _objeto("3", nombre="Bota"), _objeto("4", nombre="armadura"))
+    assert [o.nombre for o in inv.vista_ordenada("nombre")] == ["Antorcha", "armadura", "Bota", "daga"]
+
+
+def probar_vista_sin_criterio_es_el_orden_real():
+    inv = _inventario_con(_objeto("b", peso=9), _objeto("a", peso=1))
+    assert [o.id for o in inv.vista_ordenada(None)] == ["b", "a"]
+
+
+def probar_vista_con_criterio_invalido():
+    inv = _inventario_con(_objeto("a"))
+    try:
+        inv.vista_ordenada("color")
+    except ValueError:
+        return
+    raise AssertionError("Debió lanzar ValueError")
+
+
+def probar_vista_no_altera_el_inventario():
+    inv = _inventario_con(_objeto("a", peso=9), _objeto("b", peso=1), _objeto("c", peso=5))
+    inv.siguiente()
+    inv.vista_ordenada("peso")
+    assert _ids(inv) == ["a", "b", "c"] and inv.objeto_actual().id == "b"
+
+
+def probar_vista_ordenada_con_muchos_objetos():
+    pesos = [(i * 37 + 11) % 17 for i in range(40)]
+    inv = _inventario_con(*[_objeto(f"o{i:02d}", peso=p) for i, p in enumerate(pesos)], capacidad=40)
+    vista = inv.vista_ordenada("peso")
+    assert len(vista) == 40
+    for i in range(39):
+        assert vista[i].peso <= vista[i + 1].peso
+        if vista[i].peso == vista[i + 1].peso:
+            assert vista[i].id < vista[i + 1].id            # estable: empates en su orden real
+
+
 if __name__ == "__main__":
     probar_inventario_vacio()
     probar_capacidad_invalida()
@@ -263,4 +311,11 @@ if __name__ == "__main__":
     probar_tiene_objeto_no_consume()
     probar_objetos_devuelve_una_copia()
     probar_contra_un_modelo_simple()
+    probar_vista_ordenada_por_peso_conserva_el_orden_en_los_empates()
+    probar_vista_ordenada_por_valor()
+    probar_vista_ordenada_por_nombre_sin_distinguir_mayusculas()
+    probar_vista_sin_criterio_es_el_orden_real()
+    probar_vista_con_criterio_invalido()
+    probar_vista_no_altera_el_inventario()
+    probar_vista_ordenada_con_muchos_objetos()
     print("OK: todas las pruebas de Inventario pasaron")
