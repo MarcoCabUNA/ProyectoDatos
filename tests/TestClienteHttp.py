@@ -8,7 +8,7 @@ import unittest
 import requests
 
 from Data.ClienteHttp import ClienteHttp, ErrorRed, PresupuestoAgotadoError
-from Security.ValidadorAcceso import generar_client_id
+from Security.ValidadorAcceso import es_nombre_seguro, generar_client_id, validar_version
 
 BASE = "https://ejemplo.test/v1"
 
@@ -164,6 +164,17 @@ class PruebasValidadorAcceso(unittest.TestCase):
         primero = generar_client_id()
         self.assertEqual(primero, generar_client_id())
         self.assertEqual(str(uuid.UUID(primero)), primero)   # lanza si no es un UUID válido
+
+    def test_validar_version(self):
+        self.assertTrue(validar_version("be68d322d2f5", "be68d322d2f5"))
+        for local, remota in (("a", "b"), ("", ""), (None, "a"), ("a", None), (None, None)):
+            self.assertFalse(validar_version(local, remota))   # ante la duda, no coincide
+
+    def test_es_nombre_seguro(self):
+        for bueno in ("itm_llave_negra", "cripta-01", "be68d322d2f5", "A9", "x" * 100, "console"):
+            self.assertTrue(es_nombre_seguro(bueno), bueno)
+        for malo in ("", "../hack", "a/b", "a\\b", "a b", "x.json", "ñandú", "x" * 101, "con", "NUL", "Com1"):
+            self.assertFalse(es_nombre_seguro(malo), malo)
 
 
 if __name__ == "__main__":
