@@ -90,12 +90,12 @@ class FuenteJson(FuenteDatos):
         self._validar_lote(ids, self.MAX_IDS_POR_CATALOGO, "ids de catálogo")
         op = f"catálogo de {self._unir(ids)}"
         datos = self._proveedor.get_json("catalogo", op, (("ids", self._unir(ids)),))
-        recibidos = self._traducir(op, lambda: [self._ficha_desde_diccionario(f) for f in datos["entidades"]])
+        recibidos = self._traducir(op, lambda: [self.ficha_desde_diccionario(f) for f in datos["entidades"]])
         return self._en_orden_pedido(op, ids, recibidos, lambda f: f.id)
 
     @staticmethod
-    def _ficha_desde_diccionario(d: dict):
-        """Elige el DTO según el campo 'clase' de la ficha."""
+    def ficha_desde_diccionario(d: dict):
+        """Elige el DTO según el campo 'clase' de la ficha. Pública: también la usa AlmacenCatalogo."""
         clase = d["clase"]
         if clase == "enemigo":
             return FichaEnemigoDTO.desde_diccionario(d)

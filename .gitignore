@@ -1,0 +1,8 @@
+# Generado por Python
+__pycache__/
+
+# Caché del catálogo en disco: es de cada computadora (Data/AlmacenCatalogo.py)
+cache/
+
+# Configuración personal de PyCharm
+.idea/
