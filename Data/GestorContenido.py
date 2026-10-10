@@ -23,10 +23,15 @@ pedido; así, la misma partida siempre pide los mismos lotes en el mismo orden.
 
 Esta versión es SÍNCRONA: cada solicitud termina antes de seguir. No usa el reloj
 virtual (vive en Lógica), así que el tiempo real de red nunca lo altera.
+
+Catálogo (§4.3): si se le pasa un ResolvedorCatalogo, cada lote de contenido que llega se le
+entrega enseguida, para que las fichas de sus enemigos, trampas y objetos queden disponibles
+antes de que el jugador entre (en lotes de hasta 10 ids, sin repetir lo que ya está).
 """
 from Data.ClienteHttp import ErrorRed
 from Data.FuenteDatos import FuenteDatos
 from Data.GestorEsqueleto import GestorEsqueleto
+from Data.ResolvedorCatalogo import ResolvedorCatalogo
 from DTO.SalaDTO import SalaDTO
 from Estructuras.Cola import Cola
 
@@ -37,12 +42,14 @@ CARGADA = 2
 
 class GestorContenido:
 
-    def __init__(self, fuente: FuenteDatos, esqueleto: GestorEsqueleto, radio: int = 2):
+    def __init__(self, fuente: FuenteDatos, esqueleto: GestorEsqueleto, radio: int = 2,
+                 resolvedor: ResolvedorCatalogo | None = None):
         """
         esqueleto: ya cargado (GestorEsqueleto.cargar). El contenido recibido se guarda
                    en él con actualizar_sala(), para que haya una sola copia de cada sala.
         radio:     distancia máxima (en salas) que debe estar cargada alrededor del
                    jugador. Si algo dentro de ese radio falta, se hace una solicitud.
+        resolvedor: opcional. Si se da, resuelve las fichas de catálogo de cada lote recibido.
         """
         if not esqueleto.esta_cargado():
             raise ValueError("El esqueleto debe estar cargado antes de crear GestorContenido")
@@ -57,6 +64,7 @@ class GestorContenido:
         self._tamano = self._mayor_id() + 1
         self._estado: list[int] = [NO_PEDIDA] * self._tamano
         self._pendientes = Cola()
+        self._resolvedor = resolvedor
         # Contadores para el reporte y --bench.
         self._lotes = 0
         self._salas_pedidas = 0
@@ -95,7 +103,9 @@ class GestorContenido:
         """
         Pide todas las salas marcadas, en lotes de hasta 10, en el orden en que se marcaron.
         Si una solicitud falla, las salas que no llegaron vuelven a NO_PEDIDA (se podrán
-        pedir más adelante) y el error se propaga.
+        pedir más adelante) y el error se propaga. Si falla el catálogo de un lote, ese lote
+        ya quedó cargado (sus fichas faltantes se pedirán cuando se usen) y lo demás vuelve
+        a NO_PEDIDA.
         """
         while not self._pendientes.esta_vacia():
             lote: list[int] = []
@@ -114,6 +124,13 @@ class GestorContenido:
                 assert sala is not None
                 self._esqueleto.actualizar_sala(sala.con_contenido(contenido))
                 self._estado[contenido.sala] = CARGADA
+            # §4.3: resolver ya las fichas que mencionan estas salas, antes de mostrarlas o simularlas.
+            if self._resolvedor is not None:
+                try:
+                    self._resolvedor.resolver_contenido(recibidos)
+                except ErrorRed:
+                    self._descartar_pendientes([])
+                    raise
 
     def precargar_alrededor(self, id_sala: int) -> int:
         """

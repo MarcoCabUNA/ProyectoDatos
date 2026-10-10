@@ -4,7 +4,6 @@ from DTO.Direcciones import DIRECCIONES
 from Logic.ColaEventos import ColaEventos
 from Logic.EventoPorg import EventoProgramado
 from Logic.GestorEfectos import GestorEfectos
-from Logic.Ordenador import Ordenador
 from Logic.RastroSalas import RastroSalas
 
 

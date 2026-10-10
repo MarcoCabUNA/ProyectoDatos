@@ -1,4 +1,4 @@
-from Logic.Enemigo import Enemigo
+from Logica.Enemigo import Enemigo
 
 
 # COORDINAR (Integrante 2): SalidaDTO con sala_destino, cerrada (bool, nunca None), llave y cierre_automatico
