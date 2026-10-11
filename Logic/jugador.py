@@ -41,5 +41,3 @@ class Jugador(ActorBase):
         if self.armadura is None:
             return self.Defensa_bas()
         return self.Defensa_bas() + self.armadura.defensa_bonus
-
-#arroz
