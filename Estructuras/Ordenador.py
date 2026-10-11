@@ -1,5 +1,9 @@
 """
-Ordenador (Lógica, Integrante 3): ordenamiento propio con elección automática (§4.9).
+Ordenador (Estructuras, Integrante 3): ordenamiento propio con elección automática (§4.9).
+
+Vive en Estructuras porque lo usan varias capas: Lógica (vistas del inventario y orden de
+activación de enemigos), Servicios (tabla de puntajes) y Datos (índices del guardado y listas
+del catálogo). Por eso no importa nada de ninguna capa.
 
 Dos algoritmos con características distintas, ambos ESTABLES (los elementos iguales conservan
 su orden original):

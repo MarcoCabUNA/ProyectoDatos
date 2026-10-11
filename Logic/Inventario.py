@@ -34,7 +34,7 @@ Regla del equipo: no cambiar los nombres de los métodos sin avisar a los demás
 """
 
 from Estructuras.ListaDoble import ListaDoble
-from Logic.Ordenador import Ordenador
+from Estructuras.Ordenador import Ordenador
 
 
 

@@ -6,7 +6,7 @@ from Logic.Efectos import Antorcha, Velocidad
 from Logic.EventoPorg import EventoProgramado
 from Logic.GestorEfectos import GestorEfectos
 from Logic.HistorialRetroceso import HistorialRetroceso
-from Logic.Ordenador import Ordenador
+from Estructuras.Ordenador import Ordenador
 from Logic.RastroSalas import RastroSalas
 
 
