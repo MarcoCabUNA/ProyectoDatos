@@ -244,6 +244,74 @@ class PruebasBitacoraReplayIO(unittest.TestCase):
         self.assertEqual(comprobar_compatibilidad(leido, fuente.obtener_version_cripta(ID_CRIPTA),
                                                   fuente.obtener_version_catalogo()), [])
 
+    # ------------------------------------------------------------ continuar después de cargar una partida
+    def test_cargar_partida_y_seguir_el_replay(self):
+        """Guarda con 3 acciones, sigue jugando hasta 5, carga lo guardado y juega otras 2 distintas."""
+        b = self.nueva()
+        for accion in ACCIONES[:3]:
+            b.anexar(accion)
+        ruta_guardada, n_guardado = b.ruta(), b.acciones_escritas()      # lo que lleva el guardado
+        b.anexar(ACCIONES[3])
+        b.anexar(ACCIONES[4])
+        antes = self.contenido()
+
+        ruta_nueva = os.path.join(self.temp, "partida_2.log")
+        nueva = BitacoraReplayIO.continuar_desde(ruta_guardada, n_guardado, ruta_nueva, ENCABEZADO)
+        self.assertEqual((nueva.ruta(), nueva.acciones_escritas()), (ruta_nueva, 3))
+        nueva.anexar(ACCIONES[7])
+        nueva.anexar(ACCIONES[8])
+        self.assertEqual(nueva.acciones_escritas(), 5)
+
+        partida = BitacoraReplayIO.leer(ruta_nueva)
+        self.assertEqual(partida.encabezado, ENCABEZADO)                # misma semilla: se reproduce desde 0
+        self.assertEqual(partida.acciones, ACCIONES[:3] + [ACCIONES[7], ACCIONES[8]])
+        self.assertEqual(self.contenido(), antes)                         # el log anterior no se tocó
+
+    def test_continuar_con_cero_acciones_y_con_todas(self):
+        b = self.nueva()
+        for accion in ACCIONES:
+            b.anexar(accion)
+        cero = BitacoraReplayIO.continuar_desde(self.ruta, 0, os.path.join(self.temp, "a.log"))
+        self.assertEqual(BitacoraReplayIO.leer(cero.ruta()).acciones, [])
+        todas = BitacoraReplayIO.continuar_desde(self.ruta, len(ACCIONES), os.path.join(self.temp, "b.log"))
+        self.assertEqual(BitacoraReplayIO.leer(todas.ruta()).acciones, ACCIONES)
+
+    def test_continuar_crea_un_archivo_identico_al_original(self):
+        b = self.nueva()
+        b.anexar(ACCIONES[0])
+        b.anexar(ACCIONES[1])
+        nueva = BitacoraReplayIO.continuar_desde(self.ruta, 2, os.path.join(self.temp, "copia.log"))
+        with open(nueva.ruta(), encoding="utf-8", newline="") as f:
+            self.assertEqual(f.read(), TEXTO_ESPERADO)
+
+    def test_continuar_ignora_una_ultima_linea_a_medio_escribir(self):
+        self.escribir_a_mano(TEXTO_ESPERADO + "atacar||e-20")
+        nueva = BitacoraReplayIO.continuar_desde(self.ruta, 2, os.path.join(self.temp, "n.log"))
+        self.assertEqual(BitacoraReplayIO.leer(nueva.ruta()).acciones, ACCIONES[:2])
+
+    def test_continuar_rechaza_sin_crear_nada(self):
+        b = self.nueva()
+        b.anexar(ACCIONES[0])
+        ruta_nueva = os.path.join(self.temp, "nueva.log")
+        otro = EncabezadoReplayDTO("cripta-01", "fd58f7743b9e", "be68d322d2f5", 999)   # otra semilla
+        casos = [(self.ruta, 2, None),                                   # pide más acciones de las que hay
+                 (self.ruta, -1, None),
+                 (self.ruta, True, None),
+                 (self.ruta, 1, otro),                                   # el log es de otra partida
+                 (os.path.join(self.temp, "no_existe.log"), 0, None)]
+        for ruta, cantidad, esperado in casos:
+            with self.assertRaises(ErrorBitacora, msg=repr((ruta, cantidad))):
+                BitacoraReplayIO.continuar_desde(ruta, cantidad, ruta_nueva, esperado)
+            self.assertFalse(os.path.exists(ruta_nueva))
+
+    def test_continuar_no_sobrescribe(self):
+        b = self.nueva()
+        b.anexar(ACCIONES[0])
+        antes = self.contenido()
+        with self.assertRaises(ErrorBitacora):
+            BitacoraReplayIO.continuar_desde(self.ruta, 1, self.ruta)  # la misma ruta: ya existe
+        self.assertEqual(self.contenido(), antes)
+
     # ------------------------------------------------------------ DTOs
     def test_dtos_inmutables(self):
         with self.assertRaises(dataclasses.FrozenInstanceError):

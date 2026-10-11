@@ -21,6 +21,10 @@ Uso desde Servicios:
     bitacora.iniciar(EncabezadoReplayDTO(cripta.id, cripta.version, resolvedor.version_catalogo(), semilla))
     bitacora.anexar(accion)                 # después de cada acción del jugador
 
+    # al guardar la partida (paso 12b): el guardado lleva bitacora.ruta() y bitacora.acciones_escritas()
+    # al cargar esa partida: log nuevo con las primeras N acciones del anterior, y se sigue anexando ahí
+    bitacora = BitacoraReplayIO.continuar_desde(ruta_guardada, n_guardado, "logs/partida_002.log", encabezado)
+
     # --replay partida.log
     partida = BitacoraReplayIO.leer(config.replay)          # lanza ErrorBitacora si no se puede
     problemas = comprobar_compatibilidad(partida.encabezado, cripta.version, resolvedor.version_catalogo())
@@ -43,9 +47,15 @@ Decisiones:
     '\\r\\n' por si alguien abrió y guardó el log con un editor.
   - El encabezado se lee con 4 variables, sin dict (restricción del enunciado §7).
 
+  - Partida cargada (paso 12b): en lugar de recortar el log anterior (eso no sería solo anexado) o
+    meter todas las acciones dentro del archivo de guardado (lo haría crecer en cada guardado),
+    el guardado solo recuerda la ruta del log y cuántas acciones tenía; continuar_desde() copia esas
+    acciones a un log nuevo. Así una partida cargada se sigue pudiendo reproducir desde la semilla.
+
 Costos (n = acciones del log):
-    anexar   O(1) por acción (abrir en modo "a" no lee lo que ya hay)
-    leer     O(n) tiempo y memoria (el array de acciones)
+    anexar            O(1) por acción (abrir en modo "a" no lee lo que ya hay)
+    leer              O(n) tiempo y memoria (el array de acciones)
+    continuar_desde   O(n) una sola vez al cargar (lee el log anterior y escribe el nuevo de una vez)
 """
 import os
 
@@ -79,15 +89,50 @@ class BitacoraReplayIO:
     # ------------------------------------------------------------ escritura
     def iniciar(self, encabezado: EncabezadoReplayDTO) -> None:
         """Crea el archivo con el encabezado. Crea la carpeta si falta. Nunca sobrescribe un log."""
+        self._crear(encabezado, [])
+
+    @staticmethod
+    def continuar_desde(ruta_anterior: str, cantidad: int, ruta_nueva: str,
+                        encabezado_esperado: EncabezadoReplayDTO | None = None) -> "BitacoraReplayIO":
+        """
+        Para cargar una partida guardada sin perder el replay. El guardado recuerda el log de la partida
+        (ruta()) y cuántas acciones tenía al guardar (acciones_escritas()). Al cargar, esto crea un log
+        NUEVO con el mismo encabezado y esas primeras 'cantidad' acciones, y devuelve la bitácora lista
+        para seguir anexando. El log anterior no se toca (sigue siendo de solo anexado), aunque después
+        de guardar se hayan jugado más acciones.
+
+        encabezado_esperado: el de la partida guardada; si el log anterior tiene otro, es de otra
+        partida y se rechaza. Lanza ErrorBitacora sin crear nada si algo no cuadra.
+        Costo: O(acciones del log anterior) para leerlo, una sola vez al cargar.
+        """
+        if not isinstance(cantidad, int) or isinstance(cantidad, bool) or cantidad < 0:
+            raise ErrorBitacora(f"la cantidad de acciones debe ser un entero >= 0 (llegó {cantidad!r})")
+        anterior = BitacoraReplayIO.leer(ruta_anterior)
+        if encabezado_esperado is not None and anterior.encabezado != encabezado_esperado:
+            raise ErrorBitacora(f"el log {ruta_anterior!r} es de otra partida: su encabezado es "
+                                f"{anterior.encabezado} y la partida guardada tiene {encabezado_esperado}")
+        if cantidad > len(anterior.acciones):
+            raise ErrorBitacora(f"el log {ruta_anterior!r} tiene {len(anterior.acciones)} acciones completas "
+                                f"y la partida guardada necesita {cantidad}")
+        primeras = [anterior.acciones[i] for i in range(cantidad)]
+        nueva = BitacoraReplayIO(ruta_nueva)
+        nueva._crear(anterior.encabezado, primeras)
+        return nueva
+
+    def _crear(self, encabezado: EncabezadoReplayDTO, acciones: list[AccionDTO]) -> None:
+        """Escribe encabezado y acciones iniciales con una sola escritura, en un archivo que no existía."""
         if self._iniciada:
             raise ErrorBitacora(f"la bitácora {self._ruta!r} ya fue iniciada")
         _validar_encabezado(encabezado)
-        texto = (f"{_LINEA_FORMATO}\n"
-                 f"{_CLAVE_ID}={encabezado.id_cripta}\n"
-                 f"{_CLAVE_VERSION_CRIPTA}={encabezado.version_cripta}\n"
-                 f"{_CLAVE_VERSION_CATALOGO}={encabezado.version_catalogo}\n"
-                 f"{_CLAVE_SEMILLA}={encabezado.semilla}\n"
-                 f"{_LINEA_ACCIONES}\n")
+        partes = [f"{_LINEA_FORMATO}\n"
+                  f"{_CLAVE_ID}={encabezado.id_cripta}\n"
+                  f"{_CLAVE_VERSION_CRIPTA}={encabezado.version_cripta}\n"
+                  f"{_CLAVE_VERSION_CATALOGO}={encabezado.version_catalogo}\n"
+                  f"{_CLAVE_SEMILLA}={encabezado.semilla}\n"
+                  f"{_LINEA_ACCIONES}\n"]
+        for accion in acciones:            # vienen de leer(): ya se comprobó que se escriben igual
+            partes.append(accion.a_linea() + "\n")
+        texto = "".join(partes)
         carpeta = os.path.dirname(self._ruta)
         try:
             if carpeta:
@@ -99,6 +144,7 @@ class BitacoraReplayIO:
         except OSError as error:
             raise ErrorBitacora(f"no se pudo crear el log {self._ruta!r}: {error}") from None
         self._iniciada = True
+        self._acciones_escritas = len(acciones)
 
     def anexar(self, accion: AccionDTO) -> None:
         """Agrega una línea al final del log. Si la acción no se puede escribir, no escribe nada."""
@@ -124,6 +170,7 @@ class BitacoraReplayIO:
         self._acciones_escritas += 1
 
     def acciones_escritas(self) -> int:
+        """Acciones que tiene el log (incluye las copiadas por continuar_desde). Es lo que se guarda."""
         return self._acciones_escritas
 
     def ruta(self) -> str:
