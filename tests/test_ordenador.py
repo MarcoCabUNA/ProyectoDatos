@@ -4,7 +4,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from DTO.ObjetoDTO import ObjetoDTO
-from Logic.Ordenador import Ordenador
+from Estructuras.Ordenador import Ordenador
 
 ALGORITMOS = [Ordenador.ordenar_por_insercion, Ordenador.ordenar_por_mezcla, Ordenador.ordenar]
 TAMANOS = [0, 1, 2, 3, 5, 12, 13, 50, 128, 129, 300]
@@ -165,7 +165,7 @@ def probar_con_objetos_y_comparador_propio():
 
 def probar_no_usa_las_funciones_de_ordenamiento_integradas():
     """El enunciado prohíbe las funciones de ordenamiento de Python en §4.9."""
-    texto = (Path(__file__).resolve().parent.parent / "Logic" / "Ordenador.py").read_text(encoding="utf-8")
+    texto = (Path(__file__).resolve().parent.parent / "Estructuras" / "Ordenador.py").read_text(encoding="utf-8")
     assert "sorted(" not in texto and ".sort(" not in texto
 
 

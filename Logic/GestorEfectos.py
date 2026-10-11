@@ -8,20 +8,18 @@ class GestorEfectos:
 
     # ---------- Metodos publicos
 
-    # COORDINAR (Integrante 3): usar objetos -> aplicar(Velocidad(...)) para pociones de velocidad, aplicar(Antorcha(...)) para antorchas
-    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (alta del efecto)
     def aplicar(self, efecto):
         if efecto.UNICO:
             self.cancelar(efecto.actor, efecto.tipo)
         efecto.fin = self.motor.reloj + efecto.duracion
         efecto.al_aplicar(self.motor)
         efecto.evento = self.motor.programar_efecto(efecto.primer_retraso, efecto.tipo, efecto)
+        self.motor.historial.registrar_cambio(lambda: self.activos.remove(efecto))
         self.activos.append(efecto)
 
     def tiene(self, actor, tipo):
         return self._buscar(actor, tipo) is not None
 
-    # COORDINAR (Integrante 3): el antídoto llama cancelar(jugador, "veneno")
     def cancelar(self, actor, tipo):
         efecto = self._buscar(actor, tipo)
         if efecto is None:
@@ -30,9 +28,10 @@ class GestorEfectos:
         self.quitar(efecto)
         return True
 
-    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (baja del efecto)
     def quitar(self, efecto):
-        self.activos.remove(efecto)
+        indice = self.activos.index(efecto)
+        self.motor.historial.registrar_cambio(lambda: self.activos.insert(indice, efecto))
+        self.activos.pop(indice)
 
     # COORDINAR (Integrante 3): Servicios usa esta lista para EstadoJuegoDTO
     def visibles(self, actor):

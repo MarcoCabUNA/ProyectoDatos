@@ -16,8 +16,8 @@ class TrampaViva:
         self.ficha = ficha
         self.armada = True
 
-    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (rearme de la trampa)
     def activar(self, motor, evento):
+        motor.historial.registrar_atributo(self, "armada", self.armada)
         self.armada = True
 
 
@@ -25,9 +25,9 @@ class CierrePuerta:
     def __init__(self, caras):
         self.caras = caras
 
-    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (cierre automático)
     def activar(self, motor, evento):
         for salida in self.caras:
+            motor.historial.registrar_atributo(salida, "cerrada", salida.cerrada)
             salida.cerrada = True
 
 
@@ -54,6 +54,7 @@ class Mazmorra:
         self.llave_salida = llave_salida
         self.salida_abierta = False
         self.contadores_tipo = []
+        self.historial = None
 
     # ---------- Metodos publicos
 
@@ -121,7 +122,6 @@ class Mazmorra:
             return None
         return salida.llave
 
-    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (cerrada de ambas caras y salida_abierta)
     def abrir_puerta(self, id_sala, direccion, motor):
         salida = self.salida(id_sala, direccion)
         caras = [salida]
@@ -129,28 +129,42 @@ class Mazmorra:
         if inversa is not None:
             caras.append(inversa)
         for cara in caras:
+            self._registrar_atributo(cara, "cerrada", cara.cerrada)
             cara.cerrada = False
         if salida.llave == self.llave_salida:
+            self._registrar_atributo(self, "salida_abierta", self.salida_abierta)
             self.salida_abierta = True
         if salida.cierre_automatico is not None:
             motor.programar_efecto(salida.cierre_automatico, "cierre_puerta", CierrePuerta(caras))
 
-    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (Sala_Actual y listas de enemigos)
     def mover_enemigo(self, enemigo, destino):
-        self.salas[enemigo.Sala_Actual].enemigos.remove(enemigo)
+        origen = enemigo.Sala_Actual
+        indice = self.salas[origen].enemigos.index(enemigo)
+        self._registrar_cambio(lambda: self._deshacer_movimiento(enemigo, origen, indice))
+        self.salas[origen].enemigos.pop(indice)
         self.salas[destino].enemigos.append(enemigo)
         enemigo.Sala_Actual = destino
 
-    # COORDINAR (Integrante 3): lo llama el Inventario al soltar; registrar el cambio en HistorialRetroceso
-    def soltar_objeto(self, id_sala, id_objeto):
+    # reversible=False para los pergaminos de retroceso: el retroceso no los devuelve ni los quita del suelo (§2.11)
+    def soltar_objeto(self, id_sala, id_objeto, reversible=True):
+        if reversible:
+            self._registrar_cambio(lambda: self._quitar_ultimo(id_sala, id_objeto))
         self.salas[id_sala].objetos.append(id_objeto)
 
-    # COORDINAR (Integrante 3): lo llama el Inventario al recoger, después de validar que no esté lleno; registrar el cambio en HistorialRetroceso
-    def recoger_objeto(self, id_sala, id_objeto):
+    # Lo llama el Motor al recoger, después de validar que el inventario no esté lleno
+    def recoger_objeto(self, id_sala, id_objeto, reversible=True):
         objetos = self.salas[id_sala].objetos
         for i in range(len(objetos)):
             if objetos[i] == id_objeto:
+                if reversible:
+                    self._registrar_cambio(lambda: objetos.insert(min(i, len(objetos)), id_objeto))
                 objetos.pop(i)
+                return True
+        return False
+
+    def hay_objeto(self, id_sala, id_objeto):
+        for objeto in self.salas[id_sala].objetos:
+            if objeto == id_objeto:
                 return True
         return False
 
@@ -162,6 +176,27 @@ class Mazmorra:
         return armadas
 
     # ---------- Metodos privados
+
+    def _registrar_atributo(self, objeto, nombre, valor_anterior):
+        if self.historial is not None:
+            self.historial.registrar_atributo(objeto, nombre, valor_anterior)
+
+    def _registrar_cambio(self, deshacer):
+        if self.historial is not None:
+            self.historial.registrar_cambio(deshacer)
+
+    def _deshacer_movimiento(self, enemigo, origen, indice):
+        self.salas[enemigo.Sala_Actual].enemigos.remove(enemigo)
+        self.salas[origen].enemigos.insert(indice, enemigo)
+        enemigo.Sala_Actual = origen
+
+    # Se quita la última aparición: un pergamino soltado después (sin registrar) pudo quedar detrás
+    def _quitar_ultimo(self, id_sala, id_objeto):
+        objetos = self.salas[id_sala].objetos
+        for i in range(len(objetos) - 1, -1, -1):
+            if objetos[i] == id_objeto:
+                objetos.pop(i)
+                return
 
     def _existe(self, id_sala):
         return id_sala < len(self.salas) and self.salas[id_sala] is not None

@@ -15,6 +15,8 @@ Costos:
     agregar_al_final    O(1)  se enlaza después de 'cola'
     quitar(nodo)        O(1)  solo se reenlazan los dos vecinos del nodo
     mover_al_frente     O(1)  quitar + agregar al frente, sin recorrer
+    insertar_despues    O(1)  vuelve a enlazar un nodo suelto después de otro (deshacer)
+    contiene(nodo)      O(1)  se consulta el dueño del nodo
     a_array             O(n)  recorre de cabeza a cola
     tamano/esta_vacia   O(1)  se lleva un contador
 Memoria: O(n), un nodo por elemento.
@@ -24,8 +26,6 @@ Uso: Inventario (Integrante 3). Disponible para la política de desalojo de Cach
 quitar(cola) al desalojar la menos usada.
 Regla del equipo: no cambiar los nombres de los métodos sin avisar a los demás.
 """
-
-# TODO: HistorialRetroceso es deshacer un soltar o equipar, que necesitará un insertar_despues
 
 class NodoDoble:
     __slots__ = ("dato", "anterior", "siguiente", "_dueno")
@@ -91,7 +91,29 @@ class ListaDoble:
         self._desenlazar(nodo)
         self._enlazar_al_frente(nodo)
 
+    def insertar_despues(self, nodo: NodoDoble, anterior: "NodoDoble | None") -> None:
+        """Vuelve a enlazar un nodo suelto después de 'anterior' (None = al frente).
+        Lo usa HistorialRetroceso para deshacer un soltar o un equipar."""
+        if nodo._dueno is not None:
+            raise ValueError("El nodo ya pertenece a una lista")
+        if anterior is None:
+            self._enlazar_al_frente(nodo)
+            return
+        self._verificar_dueno(anterior)
+        nodo.anterior = anterior
+        nodo.siguiente = anterior.siguiente
+        if anterior.siguiente is None:
+            self._cola = nodo
+        else:
+            anterior.siguiente.anterior = nodo
+        anterior.siguiente = nodo
+        nodo._dueno = self
+        self._tamano += 1
+
     # consultar lista o un elemento en la lista
+
+    def contiene(self, nodo) -> bool:
+        return nodo is not None and nodo._dueno is self
 
     def a_array(self) -> list:
         datos = []

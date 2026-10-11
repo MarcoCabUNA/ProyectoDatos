@@ -2,29 +2,43 @@ import random
 
 from DTO.Direcciones import DIRECCIONES
 from Logic.ColaEventos import ColaEventos
+from Logic.Efectos import Antorcha, Velocidad
 from Logic.EventoPorg import EventoProgramado
 from Logic.GestorEfectos import GestorEfectos
+from Logic.HistorialRetroceso import HistorialRetroceso
+from Estructuras.Ordenador import Ordenador
 from Logic.RastroSalas import RastroSalas
 
 
 class Motor:
-    # COORDINAR (Integrante 3): faltan COSTO_RECOGER = 25, COSTO_SOLTAR = 25, COSTO_USAR = 50 y COSTO_EQUIPAR = 50; tras cada acción llamar terminar_accion_jugador(costo)
     COSTO_MOVER = 100
     COSTO_ATACAR = 100
     COSTO_ESPERAR = 100
     COSTO_ABRIR = 50
+    COSTO_RECOGER = 25
+    COSTO_SOLTAR = 25
+    COSTO_USAR = 50
+    COSTO_EQUIPAR = 50
+
+    PERGAMINO = "pergamino_retroceso"
 
     # COORDINAR (Integrante 3): fn_mensaje recibe la bitácora circular de 20 mensajes
     # COORDINAR (Integrante 3): la semilla va en el encabezado del log de replay
-    # COORDINAR (Integrante 3): el estado de self.azar (getstate/setstate) debe restaurarse al retroceder
     # COORDINAR (Integrante 2 y 3): definir qué estado de Lógica se guarda en el guardado binario
-    def __init__(self, semilla, jugador, mazmorra, fn_mensaje=None):
+    # COORDINAR (Integrante 3): Servicios crea el Inventario con CriptaDTO.inventario_max y lo entrega aquí
+    def __init__(self, semilla, jugador, mazmorra, fn_mensaje=None, inventario=None):
         self.reloj = 0
-        self.cola = ColaEventos()
+        self.historial = HistorialRetroceso()
+        self.cola = ColaEventos(self.historial)
         self.azar = random.Random(semilla)
         self.jugador = jugador
+        self.jugador.historial = self.historial
         self.mazmorra = mazmorra
-        self.rastro = RastroSalas()
+        self.mazmorra.historial = self.historial
+        self.inventario = inventario
+        if inventario is not None:
+            inventario.historial = self.historial
+        self.rastro = RastroSalas(self.historial)
         self.efectos = GestorEfectos(self)
         self.fn_mensaje = fn_mensaje
         self.enemigos_derrotados = 0
@@ -38,22 +52,24 @@ class Motor:
         self.rastro.marcar(self.jugador.Sala_Actual, 0)
         self.activar_enemigos(self.mazmorra.enemigos_dormidos(self.jugador.Sala_Actual))
 
-    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (activo)
     def activar_enemigos(self, enemigos):
-        for enemigo in _ordenar_por_id(enemigos):
+        for enemigo in Ordenador.ordenar(enemigos, _comparar_por_id):
+            enemigo.historial = self.historial
+            self.historial.registrar_atributo(enemigo, "activo", enemigo.activo)
             enemigo.activo = True
             self.programar_accion(enemigo, 100)
 
     def programar_accion(self, actor, costo):
         tiempo = self.reloj + actor.Calcu_de_Intervalo(costo)
+        self.historial.registrar_atributo(actor, "Evento_pendiente", actor.Evento_pendiente)
         actor.Evento_pendiente = self.cola.programar(EventoProgramado(tiempo, "accion_actor", actor))
 
     def programar_efecto(self, retraso, tipo, efecto):
         return self.cola.programar(EventoProgramado(self.reloj + retraso, tipo, efecto))
 
-    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (velocidad y Evento_pendiente)
     def cambiar_velocidad(self, actor, velocidad_nueva):
         evento_viejo = actor.Evento_pendiente
+        self.historial.registrar_atributo(actor, "velocidad", actor.velocidad)
         if evento_viejo is None or not evento_viejo.esta_valido():
             actor.velocidad = velocidad_nueva
             return
@@ -62,27 +78,31 @@ class Motor:
         actor.velocidad = velocidad_nueva
         evento_viejo.cancelar()
         tiempo = self.reloj + restante_nuevo
+        self.historial.registrar_atributo(actor, "Evento_pendiente", evento_viejo)
         actor.Evento_pendiente = self.cola.programar(EventoProgramado(tiempo, "accion_actor", actor))
 
-    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (reloj); al devolver True termina el intervalo a revertir
+    # Al devolver True termina el intervalo que deshace un pergamino de retroceso
     def avanzar_hasta_jugador(self):
         while not self.terminado and not self.cola.esta_vacia():
             evento = self.cola.obtener_siguiente()
+            self.historial.registrar_atributo(self, "reloj", self.reloj)
             self.reloj = evento.tiempo
             if evento.dueno is self.jugador:
+                self.historial.registrar_atributo(self.jugador, "Evento_pendiente", self.jugador.Evento_pendiente)
                 self.jugador.Evento_pendiente = None
+                self._cerrar_intervalo()
                 return True
             evento.dueno.activar(self, evento)
         return False
 
-    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (acciones); PuntajeDTO usa jugador.acciones, enemigos_derrotados, reloj y victoria
+    # COORDINAR (Integrante 3): PuntajeDTO usa jugador.acciones, enemigos_derrotados, reloj y victoria
     def terminar_accion_jugador(self, costo):
+        self.historial.registrar_atributo(self.jugador, "acciones", self.jugador.acciones)
         self.jugador.acciones += 1
         self.rastro.marcar(self.jugador.Sala_Actual, self.reloj)
         self.programar_accion(self.jugador, costo)
 
     # COORDINAR (Integrante 2): si devuelve "pendiente", Servicios pide el contenido, lo carga con cargar_contenido y reintenta
-    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (Sala_Actual del jugador)
     def mover_jugador(self, direccion):
         salida = self.mazmorra.salida(self.jugador.Sala_Actual, direccion)
         if salida is None:
@@ -92,11 +112,13 @@ class Motor:
         destino = salida.destino
         if not self.mazmorra.contenido_cargado(destino):
             return "pendiente"
+        self.historial.registrar_atributo(self.jugador, "Sala_Actual", self.jugador.Sala_Actual)
         self.jugador.Sala_Actual = destino
         self.mensaje(f"Entras a {self.mazmorra.sala(destino).nombre}")
         self.activar_enemigos(self.mazmorra.enemigos_dormidos(destino))
         self._activar_trampas(destino)
         if not self.terminado and destino == self.mazmorra.sala_salida and self.mazmorra.salida_abierta:
+            self._registrar_fin()
             self.terminado = True
             self.victoria = True
             self.mensaje("Has escapado de la cripta")
@@ -127,6 +149,58 @@ class Motor:
         self.terminar_accion_jugador(self.COSTO_ESPERAR)
         return "ok"
 
+    # COORDINAR (Integrante 2): fn_ficha(id) la provee la caché del catálogo y nunca devuelve None
+    def recoger(self, id_objeto, fn_ficha):
+        if self.inventario.esta_lleno():
+            return "inventario_lleno"
+        if not self.mazmorra.hay_objeto(self.jugador.Sala_Actual, id_objeto):
+            return "sin_objeto"
+        objeto = fn_ficha(id_objeto)
+        self.mazmorra.recoger_objeto(self.jugador.Sala_Actual, id_objeto, objeto.clase != self.PERGAMINO)
+        self.inventario.recoger(objeto)
+        self.mensaje(f"Recoges {objeto.nombre}")
+        self.terminar_accion_jugador(self.COSTO_RECOGER)
+        return "ok"
+
+    def soltar(self, id_objeto):
+        if not self.inventario.ubicar(id_objeto):
+            return "sin_objeto"
+        objeto = self.inventario.soltar_actual()
+        self.mazmorra.soltar_objeto(self.jugador.Sala_Actual, objeto.id, objeto.clase != self.PERGAMINO)
+        self._sincronizar_equipo()
+        self.mensaje(f"Sueltas {objeto.nombre}")
+        self.terminar_accion_jugador(self.COSTO_SOLTAR)
+        return "ok"
+
+    def equipar(self, id_objeto):
+        if not self.inventario.ubicar(id_objeto):
+            return "sin_objeto"
+        if not self.inventario.equipar_actual():
+            return "no_equipable"
+        self._sincronizar_equipo()
+        self.mensaje(f"Equipas {self.inventario.objeto_actual().nombre}")
+        self.terminar_accion_jugador(self.COSTO_EQUIPAR)
+        return "ok"
+
+    def usar(self, id_objeto):
+        if not self.inventario.ubicar(id_objeto):
+            return "sin_objeto"
+        objeto = self.inventario.objeto_actual()
+        if objeto.clase == self.PERGAMINO:
+            return self._usar_pergamino(id_objeto)
+        if objeto.clase != "pocion" and objeto.clase != "antidoto" and objeto.clase != "antorcha":
+            return "no_usable"
+        self.inventario.soltar_actual()
+        self.mensaje(f"Usas {objeto.nombre}")
+        if objeto.clase == "pocion":
+            self._beber_pocion(objeto)
+        elif objeto.clase == "antidoto":
+            self.efectos.cancelar(self.jugador, "veneno")
+        else:
+            self.efectos.aplicar(Antorcha(self.jugador, objeto.duracion))
+        self.terminar_accion_jugador(self.COSTO_USAR)
+        return "ok"
+
     def turno_enemigo(self, enemigo):
         if not enemigo.Vivo():
             return
@@ -149,14 +223,15 @@ class Motor:
             self.morir(defensor)
 
     # COORDINAR (Integrante 2): la ficha del enemigo muerto deja de estar en uso en la caché
-    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (enemigos_derrotados y terminado)
     def morir(self, actor):
         if actor.Evento_pendiente is not None:
             actor.Evento_pendiente.cancelar()
         if actor is self.jugador:
+            self._registrar_fin()
             self.terminado = True
             self.mensaje("Has muerto")
             return
+        self.historial.registrar_atributo(self, "enemigos_derrotados", self.enemigos_derrotados)
         self.enemigos_derrotados += 1
         self.mensaje(f"{actor.nombre_visible()} muere")
         for id_objeto in actor.objetos_que_suelta():
@@ -168,10 +243,10 @@ class Motor:
 
     # ---------- Metodos privados
 
-    # COORDINAR (Integrante 3): registrar el cambio en HistorialRetroceso (armada)
     def _activar_trampas(self, id_sala):
         for trampa in self.mazmorra.trampas_armadas(id_sala):
             self.jugador.Recibir_Dannio(trampa.ficha.danio)
+            self.historial.registrar_atributo(trampa, "armada", trampa.armada)
             trampa.armada = False
             self.mensaje(f"{trampa.ficha.nombre}: {trampa.ficha.danio} de daño")
             self.programar_efecto(trampa.ficha.rearme, "rearme_trampa", trampa)
@@ -179,15 +254,53 @@ class Motor:
                 self.morir(self.jugador)
                 return
 
+    # Los cambios de preparar la partida (antes de la primera acción) no se pueden deshacer
+    def _cerrar_intervalo(self):
+        if self.jugador.acciones == 0:
+            self.historial.descartar_intervalo_abierto()
+        else:
+            self.historial.cerrar_intervalo()
+        self._registrar_azar()
 
-# COORDINAR (Integrante 3): reemplazar por el Ordenador (§4.9)
-def _ordenar_por_id(lista):
-    resultado = list(lista)
-    for i in range(1, len(resultado)):
-        actual = resultado[i]
-        j = i - 1
-        while j >= 0 and resultado[j].id > actual.id:
-            resultado[j + 1] = resultado[j]
-            j -= 1
-        resultado[j + 1] = actual
-    return resultado
+    # Una vez al empezar cada intervalo, para que tras deshacer el azar repita la misma secuencia
+    def _registrar_azar(self):
+        estado = self.azar.getstate()
+        self.historial.registrar_cambio(lambda: self.azar.setstate(estado))
+
+    def _registrar_fin(self):
+        self.historial.registrar_atributo(self, "terminado", self.terminado)
+        self.historial.registrar_atributo(self, "victoria", self.victoria)
+
+    # Usarlo no consume tiempo ni es una acción del jugador; se descuenta después de deshacer y
+    # ese descuento queda fuera del historial (§2.11)
+    def _usar_pergamino(self, id_objeto):
+        self.historial.descartar_intervalo_abierto()    # solo tenía el estado del azar del intervalo
+        hecho = self.historial.deshacer()
+        self._registrar_azar()
+        if not hecho:
+            return "sin_historial"
+        self.inventario.ubicar(id_objeto)               # el retroceso pudo mover el cursor
+        self.inventario.soltar_actual()
+        self.mensaje("Lees el pergamino: el tiempo retrocede")
+        return "ok"
+
+    def _beber_pocion(self, pocion):
+        if pocion.cura is not None:
+            self.jugador.Curacion(pocion.cura)
+        if pocion.modificador_velocidad is not None:
+            self.efectos.aplicar(Velocidad(self.jugador, pocion.modificador_velocidad, pocion.duracion))
+
+    # Jugador.arma y Jugador.armadura siguen a lo que el Inventario tiene equipado
+    def _sincronizar_equipo(self):
+        arma = self.inventario.arma_equipada()
+        armadura = self.inventario.armadura_equipada()
+        if arma is not self.jugador.arma:
+            self.historial.registrar_atributo(self.jugador, "arma", self.jugador.arma)
+            self.jugador.arma = arma
+        if armadura is not self.jugador.armadura:
+            self.historial.registrar_atributo(self.jugador, "armadura", self.jugador.armadura)
+            self.jugador.armadura = armadura
+
+
+def _comparar_por_id(a, b):
+    return Ordenador.comparar(a.id, b.id)
