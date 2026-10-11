@@ -1,4 +1,4 @@
-from Logic.ActorBase import ActorBase
+from Logica.ActorBase import ActorBase
 
 
 class Jugador(ActorBase):

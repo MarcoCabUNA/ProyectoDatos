@@ -25,7 +25,7 @@ quitar(cola) al desalojar la menos usada.
 Regla del equipo: no cambiar los nombres de los métodos sin avisar a los demás.
 """
 
-# TODO: para la funcionalidad de soltar un objeto del inventario, se necesita implementar una vez hecho HistorialRetroceso
+# TODO: HistorialRetroceso es deshacer un soltar o equipar, que necesitará un insertar_despues
 
 class NodoDoble:
     __slots__ = ("dato", "anterior", "siguiente", "_dueno")

@@ -31,6 +31,20 @@ Regla del equipo: no cambiar los nombres de los métodos sin avisar a los demás
 """
 
 from Estructuras.ListaDoble import ListaDoble
+from Logic.Ordenador import Ordenador
+
+
+
+def _por_peso(a, b) -> int:
+    return Ordenador.comparar(a.peso, b.peso)
+
+
+def _por_valor(a, b) -> int:
+    return Ordenador.comparar(a.valor, b.valor)
+
+
+def _por_nombre(a, b) -> int:
+    return Ordenador.comparar(a.nombre.casefold(), b.nombre.casefold())   # sin distinguir mayúsculas
 
 
 class Inventario:
@@ -152,6 +166,21 @@ class Inventario:
     def objetos(self) -> list:
         """Copia en un array del orden real. Ordenar la copia no altera el inventario."""
         return self._lista.a_array()
+
+    def vista_ordenada(self, criterio) -> list:
+        """Copia ordenada de forma ascendente por 'peso', 'valor' o 'nombre' (None = orden real).
+        Los empates conservan el orden real (el ordenamiento es estable). No altera el inventario."""
+        if criterio is None:
+            return self.objetos()
+        if criterio == "peso":
+            comparador = _por_peso
+        elif criterio == "valor":
+            comparador = _por_valor
+        elif criterio == "nombre":
+            comparador = _por_nombre
+        else:
+            raise ValueError(f"criterio de orden desconocido: {criterio!r} (se esperaba peso, valor o nombre)")
+        return Ordenador.ordenar(self.objetos(), comparador)
 
     # ---- Interno ----
 
