@@ -6,3 +6,7 @@ cache/
 
 # Configuración personal de PyCharm
 .idea/
+
+# Partidas guardadas y logs de --replay: son de cada jugador (Data/GuardadoBinario.py, Data/BitacoraReplayIO.py)
+saves/
+logs/
