@@ -1,10 +1,10 @@
 import random
 
 from DTO.Direcciones import DIRECCIONES
-from Logica.ColaEventos import ColaEventos
-from Logica.EventoPorg import EventoProgramado
-from Logica.GestorEfectos import GestorEfectos
-from Logica.RastroSalas import RastroSalas
+from Logic.ColaEventos import ColaEventos
+from Logic.EventoPorg import EventoProgramado
+from Logic.GestorEfectos import GestorEfectos
+from Logic.RastroSalas import RastroSalas
 
 
 class Motor:
