@@ -211,6 +211,15 @@ def probar_equipar_sube_el_ataque_y_lo_muestra(carpeta):
     assert estado.inventario.objetos[0].id == daga.id                    # equipar la mueve al frente
 
 
+def probar_la_sala_del_estado_no_trae_datos_viejos_de_enemigos_ni_trampas(carpeta):
+    partida, acciones, ctx = _crear(carpeta, reforzar=True)
+    estado = acciones.ejecutar(ctx, AccionDTO("mover", direccion=NORTE))
+    assert len(estado.enemigos) == 2                                     # lo vivo, aparte
+    assert estado.sala.enemigos == [] and estado.sala.trampas == []      # el contenido inicial ya no es cierto
+    estado = acciones.ejecutar(ctx, AccionDTO("atacar", objetivo=estado.enemigos[0].id))
+    assert estado.sala.enemigos == []                                    # ni siquiera con una rata herida
+
+
 def probar_derrotar_enemigos_suelta_objetos(carpeta):
     partida, acciones, ctx = _crear(carpeta, reforzar=True)
     estado = acciones.ejecutar(ctx, AccionDTO("mover", direccion=NORTE))
@@ -453,6 +462,7 @@ if __name__ == "__main__":
                    probar_mover_carga_la_sala_y_se_anota_en_el_log, probar_las_acciones_rechazadas_no_cambian_nada,
                    probar_abrir_una_puerta_se_ve_en_el_estado, probar_recoger_usar_y_soltar,
                    probar_equipar_sube_el_ataque_y_lo_muestra,
+                   probar_la_sala_del_estado_no_trae_datos_viejos_de_enemigos_ni_trampas,
                    probar_derrotar_enemigos_suelta_objetos, probar_retroceder_deshace_la_ultima_accion,
                    probar_retroceder_sin_historial_no_gasta_el_pergamino,
                    probar_usar_un_pergamino_es_lo_mismo_que_retroceder,

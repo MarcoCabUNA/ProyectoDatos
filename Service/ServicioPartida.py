@@ -73,16 +73,28 @@ class ServicioPartida:
         """Las criptas disponibles (lista de ResumenCriptaDTO)."""
         return self.fuente().listar_criptas()
 
-    def iniciar_partida(self, id_cripta: str, nombre_jugador: str, semilla: int | None = None,
-                        registrar_bitacora: bool = True) -> ContextoPartida:
+    def abrir_datos(self, id_cripta: str):
+        """Lo que hace falta de Datos para jugar una cripta: (cripta, resolvedor, esqueleto, contenido).
+
+        Lo comparten iniciar_partida y ServicioGuardado.cargar: ambos necesitan lo mismo de Datos y solo
+        cambia cómo se arma el juego (uno nuevo, o uno restaurado de un archivo)."""
         fuente = self.fuente()
         cripta = fuente.obtener_datos_generales(id_cripta)           # también fija el presupuesto de solicitudes
-        if semilla is None:
-            semilla = self._semilla_nueva()
         resolvedor = self._crear_resolvedor(fuente)
         esqueleto = GestorEsqueleto(fuente)
         esqueleto.cargar(cripta)
         contenido = GestorContenido(fuente, esqueleto, resolvedor=resolvedor)
+        return cripta, resolvedor, esqueleto, contenido
+
+    def nueva_ruta_de_log(self) -> str:
+        """Una ruta libre en la carpeta de logs (BitacoraReplayIO no sobrescribe)."""
+        return BitacoraReplayIO.ruta_libre(self._carpeta_logs)
+
+    def iniciar_partida(self, id_cripta: str, nombre_jugador: str, semilla: int | None = None,
+                        registrar_bitacora: bool = True) -> ContextoPartida:
+        cripta, resolvedor, esqueleto, contenido = self.abrir_datos(id_cripta)
+        if semilla is None:
+            semilla = self._semilla_nueva()
         mazmorra = Mazmorra(cripta.sala_salida, cripta.llave_salida)
         mazmorra.cargar_esqueleto([esqueleto.obtener_sala(i) for i in esqueleto.ids_salas()])
         jugador = Jugador(cripta)
@@ -96,12 +108,12 @@ class ServicioPartida:
         motor.mensaje(f"Comienzas en {mazmorra.sala(cripta.sala_inicial).nombre}")
 
         contexto = ContextoPartida(cripta=cripta, nombre_jugador=nombre_jugador, semilla=semilla,
-                                   fuente=fuente, resolvedor=resolvedor, esqueleto=esqueleto,
+                                   fuente=self.fuente(), resolvedor=resolvedor, esqueleto=esqueleto,
                                    contenido=contenido, mazmorra=mazmorra, jugador=jugador,
                                    inventario=inventario, motor=motor, mensajes=mensajes)
         self._sincronizador.sincronizar(contexto)
         if registrar_bitacora:
-            bitacora = BitacoraReplayIO(BitacoraReplayIO.ruta_libre(self._carpeta_logs))
+            bitacora = BitacoraReplayIO(self.nueva_ruta_de_log())
             bitacora.iniciar(EncabezadoReplayDTO(cripta.id, cripta.version, resolvedor.version_catalogo(), semilla))
             contexto.bitacora = bitacora
         return contexto

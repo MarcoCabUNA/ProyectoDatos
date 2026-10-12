@@ -431,6 +431,65 @@ def probar_contra_fotos_con_historial():
             assert _estado(inv) == antes.pop(), f"paso {i}"
 
 
+# ---------- Guardado: posiciones_equipadas() y restaurar() (los agregó el integrante 1 para PartidaGuardada) ----------
+
+def probar_posiciones_equipadas():
+    inv = _inventario_con(_objeto("p"), _objeto("w", "arma"), _objeto("r", "armadura"))
+    assert inv.posiciones_equipadas() == (None, None)
+    inv.ubicar("w")
+    inv.equipar_actual()                                   # [w, p, r]
+    inv.ubicar("r")
+    inv.equipar_actual()                                   # [r, w, p]
+    assert _ids(inv) == ["r", "w", "p"] and inv.posiciones_equipadas() == (1, 0)
+
+
+def probar_restaurar_reproduce_el_estado_exacto_aunque_haya_dos_objetos_iguales():
+    daga1, daga2 = _objeto("daga", "arma"), _objeto("daga", "arma")         # misma ficha, dos instancias
+    origen = _inventario_con(_objeto("p"), daga1, daga2, _objeto("r", "armadura"))
+    origen.ubicar("daga")
+    origen.siguiente()
+    origen.equipar_actual()                                # daga2 equipada, al frente
+    origen.ubicar("r")
+    origen.equipar_actual()                                # [r, daga2, p, daga1]: la equipada es la SEGUNDA daga
+    assert origen.posiciones_equipadas() == (1, 0)
+    copia = Inventario(10)
+    copia.restaurar(origen.objetos(), origen.posicion_cursor(), *origen.posiciones_equipadas())
+    assert _estado(copia) == _estado(origen)
+    assert copia.arma_equipada() is daga2 and copia.armadura_equipada().id == "r"
+    copia.ubicar("daga")                                   # prefiere la de repuesto...
+    assert copia.soltar_actual() is daga1 and copia.arma_equipada() is daga2     # ...y la equipada sigue equipada
+
+
+def probar_restaurar_conserva_cual_de_dos_objetos_iguales_esta_equipado():
+    """Desde un archivo la equipada puede estar DESPUÉS de la de repuesto: solo la posición lo dice, no el id."""
+    repuesto, equipada = _objeto("daga", "arma"), _objeto("daga", "arma")
+    inv = Inventario(5)
+    inv.restaurar([repuesto, equipada], 0, 1, None)
+    assert inv.posiciones_equipadas() == (1, None) and inv.arma_equipada() is equipada
+    inv.ubicar("daga")                                     # prefiere la de repuesto
+    assert inv.posicion_cursor() == 0 and inv.soltar_actual() is repuesto
+    assert inv.arma_equipada() is equipada and inv.posiciones_equipadas() == (0, None)
+
+
+def probar_restaurar_sin_cursor_ni_equipo():
+    inv = Inventario(5)
+    inv.restaurar([], None, None, None)
+    assert inv.esta_vacio() and inv.objeto_actual() is None and inv.posiciones_equipadas() == (None, None)
+    otro = Inventario(5)
+    otro.restaurar([_objeto("a"), _objeto("b")], None, None, None)
+    assert otro.cantidad() == 2 and otro.objeto_actual() is None
+
+
+def probar_restaurar_no_registra_nada_en_el_historial():
+    inv = Inventario(5)
+    historial = HistorialRetroceso()
+    inv.historial = historial
+    inv.restaurar([_objeto("a"), _objeto("b")], 1, None, None)
+    historial.cerrar_intervalo()
+    assert historial.deshacer()
+    assert _ids(inv) == ["a", "b"] and inv.posicion_cursor() == 1          # no había nada que deshacer
+
+
 if __name__ == "__main__":
     probar_inventario_vacio()
     probar_capacidad_invalida()
@@ -471,4 +530,9 @@ if __name__ == "__main__":
     probar_los_pergaminos_no_se_registran()
     probar_deshacer_cuando_el_vecino_era_un_pergamino_que_ya_no_esta()
     probar_contra_fotos_con_historial()
+    probar_posiciones_equipadas()
+    probar_restaurar_reproduce_el_estado_exacto_aunque_haya_dos_objetos_iguales()
+    probar_restaurar_conserva_cual_de_dos_objetos_iguales_esta_equipado()
+    probar_restaurar_sin_cursor_ni_equipo()
+    probar_restaurar_no_registra_nada_en_el_historial()
     print("OK: todas las pruebas de Inventario pasaron")
