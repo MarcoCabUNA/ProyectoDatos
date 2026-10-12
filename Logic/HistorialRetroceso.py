@@ -5,7 +5,7 @@ Idea central: NO se guardan copias del estado (el enunciado lo prohíbe). Cada v
 cambia, quien lo cambia le entrega al historial una pequeña función que sabe INVERTIR ese cambio.
 Deshacer es ejecutar esas funciones, de la última a la primera.
 
-Intervalo = todo lo que ocurre entre dos decisiones del jugador: su propia acción y lo que pasa
+Intervalo = to-do lo que ocurre entre dos decisiones del jugador: su propia acción y lo que pasa
 después hasta que vuelve a decidir (acciones enemigas, efectos, reloj, eventos, rastro...).
 Un intervalo es lo mínimo que se puede deshacer.
 

@@ -163,6 +163,75 @@ def probar_contra_un_modelo_simple():
         _verificar_integridad(lista)
 
 
+def probar_insertar_despues_devuelve_cada_nodo_a_su_lugar():
+    lista, na, nb, nc = _lista_abc()
+    lista.eliminar(nb)                                  # del medio
+    lista.insertar_despues(nb, na)
+    assert lista.a_array() == ["a", "b", "c"]
+    _verificar_integridad(lista)
+    lista.eliminar(nc)                                  # de la cola
+    lista.insertar_despues(nc, nb)
+    assert lista.a_array() == ["a", "b", "c"] and lista.cola is nc
+    _verificar_integridad(lista)
+    lista.eliminar(na)                                  # de la cabeza: anterior None = al frente
+    lista.insertar_despues(na, None)
+    assert lista.a_array() == ["a", "b", "c"] and lista.cabeza is na
+    _verificar_integridad(lista)
+
+
+def probar_insertar_despues_en_lista_vacia():
+    lista = ListaDoble()
+    nodo = lista.agregar_al_final("x")
+    lista.eliminar(nodo)
+    assert lista.esta_vacia()
+    lista.insertar_despues(nodo, None)
+    assert lista.a_array() == ["x"] and lista.cabeza is nodo and lista.cola is nodo
+    _verificar_integridad(lista)
+
+
+def probar_insertar_despues_acepta_un_nodo_nuevo():
+    lista, na, nb, nc = _lista_abc()
+    lista.insertar_despues(NodoDoble("z"), nb)
+    assert lista.a_array() == ["a", "b", "z", "c"]
+    _verificar_integridad(lista)
+
+
+def probar_insertar_despues_rechaza_casos_invalidos():
+    lista, na, nb, nc = _lista_abc()
+    ajeno = ListaDoble().agregar_al_final("w")
+    for accion in (lambda: lista.insertar_despues(nb, na),                 # el nodo ya está en la lista
+                   lambda: lista.insertar_despues(NodoDoble("z"), NodoDoble("y")),   # 'anterior' suelto
+                   lambda: lista.insertar_despues(NodoDoble("z"), ajeno)):           # 'anterior' de otra lista
+        try:
+            accion()
+        except ValueError:
+            continue
+        raise AssertionError("Debió lanzar ValueError")
+    assert lista.a_array() == ["a", "b", "c"]            # la lista no se dañó
+    _verificar_integridad(lista)
+
+
+def probar_contiene():
+    lista, na, nb, nc = _lista_abc()
+    assert lista.contiene(na) and lista.contiene(nc)
+    lista.eliminar(nb)
+    assert not lista.contiene(nb) and not lista.contiene(None)
+    assert not lista.contiene(ListaDoble().agregar_al_final("w"))   # nodo de otra lista
+
+
+def probar_eliminar_y_reinsertar_conserva_el_orden_en_toda_posicion():
+    for posicion in range(6):
+        lista = ListaDoble()
+        nodos = [lista.agregar_al_final(i) for i in range(6)]
+        original = lista.a_array()
+        nodo = nodos[posicion]
+        anterior = nodo.anterior                          # se anota ANTES de eliminar
+        lista.eliminar(nodo)
+        lista.insertar_despues(nodo, anterior)
+        assert lista.a_array() == original, posicion
+        _verificar_integridad(lista)
+
+
 if __name__ == "__main__":
     probar_lista_vacia()
     probar_agregar_al_final_conserva_el_orden()
@@ -174,4 +243,10 @@ if __name__ == "__main__":
     probar_enlaces_de_afuera_son_de_solo_lectura()
     probar_a_array_es_una_copia()
     probar_contra_un_modelo_simple()
+    probar_insertar_despues_devuelve_cada_nodo_a_su_lugar()
+    probar_insertar_despues_en_lista_vacia()
+    probar_insertar_despues_acepta_un_nodo_nuevo()
+    probar_insertar_despues_rechaza_casos_invalidos()
+    probar_contiene()
+    probar_eliminar_y_reinsertar_conserva_el_orden_en_toda_posicion()
     print("OK: todas las pruebas de ListaDoble pasaron")

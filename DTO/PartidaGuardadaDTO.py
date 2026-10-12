@@ -6,7 +6,7 @@ Los llena Lógica (Marco: motor, jugador, mazmorra, efectos, eventos y azar) y S
 sin conocer Lógica. a_diccionario / desde_diccionario sirven para guardar EL MISMO estado en JSON
 y comparar tamaño y tiempo de carga contra el formato binario (lo pide §4.10).
 
-PartidaGuardadaDTO  -> el bloque global (todo lo que no es de una sala).
+PartidaGuardadaDTO  -> el bloque global (to-do lo que no es de una sala).
 SalaGuardadaDTO     -> un bloque por CADA sala del esqueleto (se puede leer una sola sin leer el
                        archivo completo). Se guardan todas, no solo las que tienen contenido: una
                        sala sin contenido también puede tener una puerta abierta, un enemigo que

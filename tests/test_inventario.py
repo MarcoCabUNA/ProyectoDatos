@@ -4,6 +4,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from DTO.ObjetoDTO import ObjetoDTO
+from Logic.HistorialRetroceso import HistorialRetroceso
 from Logic.Inventario import Inventario
 
 
@@ -289,6 +290,147 @@ def probar_vista_ordenada_con_muchos_objetos():
             assert vista[i].id < vista[i + 1].id            # estable: empates en su orden real
 
 
+# ---------- Retroceso: el inventario registra cómo deshacerse en el historial ----------
+
+def _con_historial(*objetos, capacidad=10, preparar=None):
+    inv = _inventario_con(*objetos, capacidad=capacidad)      # el estado base se arma SIN registrar
+    if preparar is not None:
+        preparar(inv)                                         # (por ejemplo, equipar algo de antemano)
+    historial = HistorialRetroceso()
+    inv.historial = historial
+    return inv, historial
+
+
+def _estado(inv):
+    """Todo lo que debe volver igual: orden real, cursor y lo equipado (por posición del nodo)."""
+    arma, armadura = inv.arma_equipada(), inv.armadura_equipada()
+    return (_ids(inv), inv.posicion_cursor(), getattr(arma, "id", None), getattr(armadura, "id", None))
+
+
+def _accion_y_deshacer(inv, historial, accion):
+    antes = _estado(inv)
+    accion()
+    historial.cerrar_intervalo()
+    assert historial.deshacer()
+    assert _estado(inv) == antes, (antes, _estado(inv))
+
+
+def probar_deshacer_recoger():
+    inv, h = _con_historial(_objeto("a"), _objeto("b"))
+    _accion_y_deshacer(inv, h, lambda: inv.recoger(_objeto("c")))
+    assert not inv.tiene_objeto("c") and inv.cantidad() == 2
+
+
+def probar_deshacer_recoger_en_inventario_vacio():
+    inv, h = _con_historial()
+    _accion_y_deshacer(inv, h, lambda: inv.recoger(_objeto("a")))
+    assert inv.esta_vacio() and inv.objeto_actual() is None
+
+
+def probar_deshacer_soltar_desde_cada_posicion():
+    for posicion in range(4):
+        inv, h = _con_historial(_objeto("a"), _objeto("b"), _objeto("c"), _objeto("d"))
+        for _ in range(posicion):
+            inv.siguiente()
+        _accion_y_deshacer(inv, h, inv.soltar_actual)
+
+
+def probar_deshacer_soltar_el_unico():
+    inv, h = _con_historial(_objeto("a"))
+    _accion_y_deshacer(inv, h, inv.soltar_actual)
+    assert inv.objeto_actual().id == "a"
+
+
+def probar_deshacer_soltar_lo_equipado_restaura_el_equipo():
+    inv, h = _con_historial(_objeto("p"), _objeto("w", "arma"), _objeto("r", "armadura"),
+                            preparar=lambda i: (i.siguiente(), i.equipar_actual()))   # w equipada al frente
+    _accion_y_deshacer(inv, h, inv.soltar_actual)
+    assert inv.arma_equipada().id == "w"
+
+
+def probar_deshacer_equipar():
+    inv, h = _con_historial(_objeto("p"), _objeto("w1", "arma"), _objeto("w2", "arma"))
+    inv.siguiente()
+    _accion_y_deshacer(inv, h, inv.equipar_actual)         # equipa w1: sube al frente
+    assert inv.arma_equipada() is None
+    inv.equipar_actual()                                   # equipa w1 de verdad...
+    h.cerrar_intervalo()                                   # ...como una acción ya terminada
+    inv.siguiente()
+    inv.siguiente()                                        # cursor en w2
+    _accion_y_deshacer(inv, h, inv.equipar_actual)         # w2 sustituye a w1, y se deshace
+    assert inv.arma_equipada().id == "w1"
+
+
+def probar_equipar_lo_no_equipable_se_deshace_sin_cambios():
+    inv, h = _con_historial(_objeto("a"))
+    _accion_y_deshacer(inv, h, inv.equipar_actual)
+
+
+def probar_varias_acciones_seguidas_se_deshacen_en_orden():
+    inv, h = _con_historial(_objeto("w", "arma"), _objeto("a"))
+    fotos = []
+    for accion in (lambda: inv.recoger(_objeto("b")), inv.equipar_actual, inv.soltar_actual):
+        fotos.append(_estado(inv))
+        accion()
+        h.cerrar_intervalo()
+    for foto in reversed(fotos):
+        assert h.deshacer() and _estado(inv) == foto
+
+
+def probar_los_pergaminos_no_se_registran():
+    pergamino = _objeto("itm_pergamino", "pergamino_retroceso")
+    inv, h = _con_historial(_objeto("a"), pergamino)
+    inv.recoger(_objeto("itm_pergamino2", "pergamino_retroceso"))     # recoger un pergamino
+    h.cerrar_intervalo()
+    h.deshacer()
+    assert inv.tiene_objeto("itm_pergamino2")                         # el retroceso no lo devuelve al suelo
+    inv.ubicar("itm_pergamino")
+    inv.soltar_actual()                                               # soltar un pergamino
+    h.cerrar_intervalo()
+    h.deshacer()
+    assert not inv.tiene_objeto("itm_pergamino")                      # y tampoco lo trae de vuelta
+
+
+def probar_deshacer_cuando_el_vecino_era_un_pergamino_que_ya_no_esta():
+    pergamino = _objeto("itm_pergamino", "pergamino_retroceso")
+    inv, h = _con_historial(pergamino, _objeto("x"))
+    inv.siguiente()                                        # cursor en x, cuyo vecino anterior es el pergamino
+    inv.soltar_actual()
+    h.cerrar_intervalo()
+    inv.ubicar("itm_pergamino")
+    inv.soltar_actual()                                    # el pergamino se consume: no se registra
+    assert h.deshacer()                                    # no debe fallar aunque el vecino ya no esté
+    assert _ids(inv) == ["x"] and inv.objeto_actual().id == "x"
+
+
+def probar_contra_fotos_con_historial():
+    """300 operaciones; cada deshacer debe devolver exactamente el estado de antes de esa operación."""
+    clases = ["arma", "armadura", "pocion"]
+    inv, h = _con_historial(capacidad=6)
+    antes, contador = [], 0
+    for i in range(300):
+        paso = i % 9
+        if paso in (0, 1, 4, 5):                           # operaciones que cuentan como acción
+            antes.append(_estado(inv))
+            if paso in (0, 1):
+                inv.recoger(_objeto(f"o{contador}", clases[contador % 3]))
+                contador += 1
+            elif paso == 4:
+                inv.soltar_actual()
+            else:
+                inv.equipar_actual()
+            h.cerrar_intervalo()
+            if len(antes) > HistorialRetroceso.MAX_ACCIONES:
+                antes.pop(0)
+        elif paso == 2:
+            inv.siguiente()                                # mover el cursor no es una acción: no se registra
+        elif paso == 3:
+            inv.anterior()
+        elif paso in (6, 7) and antes:                     # deshacer 1 o 2 acciones
+            assert h.deshacer()
+            assert _estado(inv) == antes.pop(), f"paso {i}"
+
+
 if __name__ == "__main__":
     probar_inventario_vacio()
     probar_capacidad_invalida()
@@ -318,4 +460,15 @@ if __name__ == "__main__":
     probar_vista_con_criterio_invalido()
     probar_vista_no_altera_el_inventario()
     probar_vista_ordenada_con_muchos_objetos()
+    probar_deshacer_recoger()
+    probar_deshacer_recoger_en_inventario_vacio()
+    probar_deshacer_soltar_desde_cada_posicion()
+    probar_deshacer_soltar_el_unico()
+    probar_deshacer_soltar_lo_equipado_restaura_el_equipo()
+    probar_deshacer_equipar()
+    probar_equipar_lo_no_equipable_se_deshace_sin_cambios()
+    probar_varias_acciones_seguidas_se_deshacen_en_orden()
+    probar_los_pergaminos_no_se_registran()
+    probar_deshacer_cuando_el_vecino_era_un_pergamino_que_ya_no_esta()
+    probar_contra_fotos_con_historial()
     print("OK: todas las pruebas de Inventario pasaron")

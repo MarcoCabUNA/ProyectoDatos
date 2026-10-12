@@ -1,5 +1,5 @@
 """
-EstadoJuegoDTO (Integrante 3): todo lo que la Vista necesita para mostrar un turno.
+EstadoJuegoDTO (Integrante 3): to-do lo que la Vista necesita para mostrar un turno.
 
 Lo arman ServicioAccionJugador y ServicioPartida después de cada acción, y lo imprime
 VistaConsola.mostrar_estado(). No tiene métodos: solo se muestra.
