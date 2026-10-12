@@ -42,6 +42,23 @@ class PruebasCacheCatalogo(unittest.TestCase):
         self.assertIsNone(c.obtener("itm_antorcha"))
         self.assertEqual((c.aciertos(), c.fallos()), (0, 1))
 
+    def test_consulta_sin_contar_acierto(self):
+        """Lo que solo se muestra (objetos del suelo en cada turno) no infla los aciertos; un fallo sí cuenta."""
+        c = llena(2, "a", "b")
+        a = c.obtener("a", contar_acierto=False)
+        assert a is not None
+        self.assertEqual(a.id, "a")
+        self.assertEqual((c.aciertos(), c.fallos()), (0, 0))
+        self.assertIsNone(c.obtener("z", contar_acierto=False))
+        self.assertEqual((c.aciertos(), c.fallos()), (0, 1))
+        c.obtener("a")
+        self.assertEqual(c.aciertos(), 1)
+
+    def test_consulta_sin_contar_igual_cuenta_como_uso_reciente(self):
+        c = llena(2, "a", "b")              # el más antiguo es "a"
+        c.obtener("a", contar_acierto=False)
+        self.assertEqual(c.insertar(ficha("x")), ["b"])        # se libera "b", no "a"
+
     def test_tope_invalido(self):
         for malo in (0, -3):
             with self.assertRaises(ValueError):

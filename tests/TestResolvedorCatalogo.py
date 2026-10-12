@@ -163,6 +163,19 @@ class PruebasResolvedorCatalogo(unittest.TestCase):
         self.assertEqual(api.solicitudes_realizadas, antes)           # todo salió del disco, nada de la red
         self.assertGreater(r.lecturas_disco(), 0)
 
+    def test_consulta_de_vista_no_infla_los_aciertos(self):
+        api = ApiFalsa()
+        r = self.crear(api, tope=2)
+        r.resolver(["itm_antorcha", "itm_antidoto", "trp_dardos"])   # con tope 2 la antorcha ya salió
+        aciertos, fallos = r.aciertos(), r.fallos()
+        for _ in range(5):                                             # 5 turnos mostrando el suelo
+            self.assertEqual(r.ficha("trp_dardos", contar_acierto=False).id, "trp_dardos")
+        self.assertEqual((r.aciertos(), r.fallos()), (aciertos, fallos))
+        antes = api.solicitudes_realizadas
+        self.assertEqual(r.ficha("itm_antorcha", contar_acierto=False).id, "itm_antorcha")
+        self.assertEqual((r.aciertos(), r.fallos()), (aciertos, fallos + 1))   # tuvo que ir al disco: fallo
+        self.assertEqual(api.solicitudes_realizadas, antes)
+
     # ------------------------------------------------------------ fichas en uso
     def test_marcar_en_uso_recupera_la_ficha_si_ya_no_estaba_en_memoria(self):
         r = self.crear(ApiFalsa(), tope=1)

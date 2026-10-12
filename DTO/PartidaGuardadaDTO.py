@@ -1,5 +1,5 @@
 """
-DTOs del guardado de la partida (Integrante 2, enunciado §4.10). PROPUESTA para revisar con el equipo.
+DTOs del guardado de la partida (Integrante 2, enunciado §4.10). Acordados por el equipo el 11/10.
 
 Los llena Lógica (Marco: motor, jugador, mazmorra, efectos, eventos y azar) y Servicios
 (Kristel: inventario, semilla y log de --replay). GuardadoBinario (Datos) los escribe y los lee

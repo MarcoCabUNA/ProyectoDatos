@@ -120,6 +120,33 @@ class PruebasBitacoraReplayIO(unittest.TestCase):
         self.nueva()
         self.assertTrue(os.path.isfile(self.ruta))
 
+    # ------------------------------------------------------------ elegir el nombre del log
+    def test_ruta_libre(self):
+        carpeta = os.path.join(self.temp, "logs")
+        primera = BitacoraReplayIO.ruta_libre(carpeta)                 # la carpeta todavía no existe
+        self.assertEqual(primera, os.path.join(carpeta, "partida_001.log"))
+        self.assertFalse(os.path.exists(carpeta))                       # no crea nada
+        BitacoraReplayIO(primera).iniciar(ENCABEZADO)
+        segunda = BitacoraReplayIO.ruta_libre(carpeta)
+        self.assertEqual(segunda, os.path.join(carpeta, "partida_002.log"))
+        BitacoraReplayIO(segunda).iniciar(ENCABEZADO)
+        os.remove(primera)                                              # un hueco se vuelve a usar
+        self.assertEqual(BitacoraReplayIO.ruta_libre(carpeta), primera)
+        self.assertEqual(BitacoraReplayIO.ruta_libre(carpeta, "replay"), os.path.join(carpeta, "replay_001.log"))
+
+    def test_ruta_libre_sirve_para_continuar_desde(self):
+        carpeta = os.path.join(self.temp, "logs")
+        b = BitacoraReplayIO(BitacoraReplayIO.ruta_libre(carpeta))
+        b.iniciar(ENCABEZADO)
+        b.anexar(ACCIONES[0])
+        nueva = BitacoraReplayIO.continuar_desde(b.ruta(), 1, BitacoraReplayIO.ruta_libre(carpeta))
+        self.assertEqual(nueva.ruta(), os.path.join(carpeta, "partida_002.log"))
+
+    def test_ruta_libre_rechaza_prefijos_peligrosos(self):
+        for malo in ("../x", "a/b", "", "con", "partida 1"):
+            with self.assertRaises(ErrorBitacora, msg=malo):
+                BitacoraReplayIO.ruta_libre(self.temp, malo)
+
     # ------------------------------------------------------------ errores al escribir
     def test_no_sobrescribe_un_log_existente(self):
         b = self.nueva()
