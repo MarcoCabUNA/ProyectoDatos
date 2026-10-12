@@ -16,14 +16,15 @@ Formato del archivo (texto UTF-8, versión 1 del formato):
     recoger|||itm_daga_oxidada
 
 Uso desde Servicios:
-    # partida normal
-    bitacora = BitacoraReplayIO("logs/partida_001.log")
+    # partida normal (ruta_libre elige el primer nombre que no existe: logs/partida_001.log, _002, ...)
+    bitacora = BitacoraReplayIO(BitacoraReplayIO.ruta_libre("logs"))
     bitacora.iniciar(EncabezadoReplayDTO(cripta.id, cripta.version, resolvedor.version_catalogo(), semilla))
     bitacora.anexar(accion)                 # después de cada acción del jugador
 
     # al guardar la partida (paso 12b): el guardado lleva bitacora.ruta() y bitacora.acciones_escritas()
     # al cargar esa partida: log nuevo con las primeras N acciones del anterior, y se sigue anexando ahí
-    bitacora = BitacoraReplayIO.continuar_desde(ruta_guardada, n_guardado, "logs/partida_002.log", encabezado)
+    bitacora = BitacoraReplayIO.continuar_desde(ruta_guardada, n_guardado, BitacoraReplayIO.ruta_libre("logs"),
+                                                encabezado)
 
     # --replay partida.log
     partida = BitacoraReplayIO.leer(config.replay)          # lanza ErrorBitacora si no se puede
@@ -56,12 +57,13 @@ Costos (n = acciones del log):
     anexar            O(1) por acción (abrir en modo "a" no lee lo que ya hay)
     leer              O(n) tiempo y memoria (el array de acciones)
     continuar_desde   O(n) una sola vez al cargar (lee el log anterior y escribe el nuevo de una vez)
+    ruta_libre        O(k), k = logs que ya existen con ese prefijo
 """
 import os
 
 from DTO.AccionDTO import AccionDTO
 from DTO.ReplayDTO import EncabezadoReplayDTO, PartidaReplayDTO
-from Security.ValidadorAcceso import validar_version
+from Security.ValidadorAcceso import es_nombre_seguro, validar_version
 
 VERSION_FORMATO = 1
 _PREFIJO_FORMATO = "#CRIPTA-REPLAY "
@@ -175,6 +177,24 @@ class BitacoraReplayIO:
 
     def ruta(self) -> str:
         return self._ruta
+
+    @staticmethod
+    def ruta_libre(carpeta: str, prefijo: str = "partida") -> str:
+        """
+        Primera ruta "<carpeta>/<prefijo>_NNN.log" (001, 002, ...) que todavía no existe. Así Servicios
+        no tiene que revisar archivos. No crea nada: lo crea iniciar() o continuar_desde().
+        Si otro programa creara ese archivo justo entre esta llamada y iniciar(), iniciar() lanza
+        ErrorBitacora ("ya existe") en lugar de sobrescribirlo; basta con pedir otra ruta.
+        Costo: O(k), k = logs que ya existen con ese prefijo (uno por partida jugada).
+        """
+        if not es_nombre_seguro(prefijo):
+            raise ErrorBitacora(f"prefijo de log no válido: {prefijo!r} (solo letras, números, '-' y '_')")
+        numero = 1
+        while True:
+            ruta = os.path.join(carpeta, f"{prefijo}_{numero:03d}.log")
+            if not os.path.exists(ruta):
+                return ruta
+            numero += 1
 
     # ------------------------------------------------------------ lectura
     @staticmethod

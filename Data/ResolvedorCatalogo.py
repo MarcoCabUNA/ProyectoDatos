@@ -98,15 +98,18 @@ class ResolvedorCatalogo:
         return len(self._descargar(pendientes, vistos))
 
     # ------------------------------------------------------------ usar una ficha
-    def ficha(self, id_ficha: str) -> Ficha:
+    def ficha(self, id_ficha: str, contar_acierto: bool = True) -> Ficha:
         """
         La ficha de ese id. NUNCA devuelve None (lo pide Mazmorra.cargar_contenido):
           1. memoria: acierto de caché, O(log n);
           2. disco: fallo de caché + una lectura de disco; queda en memoria;
           3. red: fallo de caché + una solicitud (con lo que suelte, si es enemigo).
         Si la red tampoco puede darla, lanza ErrorRed.
+        contar_acierto=False: para Servicios cuando arma el estado de la Vista (objetos del suelo en
+        cada turno). Así esas consultas repetidas no inflan los aciertos del reporte; si la ficha no
+        está en memoria, el fallo sí cuenta porque implica trabajo real (disco o red).
         """
-        en_memoria = self._cache.obtener(id_ficha)
+        en_memoria = self._cache.obtener(id_ficha, contar_acierto)
         if en_memoria is not None:
             return en_memoria
         en_disco = self._almacen.leer(id_ficha)

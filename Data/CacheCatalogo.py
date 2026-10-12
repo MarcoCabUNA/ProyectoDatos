@@ -82,17 +82,21 @@ class CacheCatalogo:
         """¿La ficha está en memoria? O(log n). No cuenta como acierto ni como fallo."""
         return self._buscar(id_ficha)[1]
 
-    def obtener(self, id_ficha: str) -> Ficha | None:
+    def obtener(self, id_ficha: str, contar_acierto: bool = True) -> Ficha | None:
         """
         La ficha si está en memoria (acierto), o None (fallo). O(log n).
         Un acierto la marca como la más reciente, salvo que esté en uso (no se puede liberar
         de todos modos, así que no está en la lista de candidatas).
+        contar_acierto=False: para consultas que solo MUESTRAN (armar el estado de la Vista en cada
+        turno); si contaran, los aciertos del reporte (§5.1) crecerían con cada turno sin que la caché
+        haya ahorrado nada. Un fallo siempre cuenta: obliga a ir al disco o a la red.
         """
         posicion, encontrada = self._buscar(id_ficha)
         if not encontrada:
             self._fallos += 1
             return None
-        self._aciertos += 1
+        if contar_acierto:
+            self._aciertos += 1
         entrada = self._entradas[posicion]
         if entrada.nodo is not None:
             self._recientes.mover_al_frente(entrada.nodo)
