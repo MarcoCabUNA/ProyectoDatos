@@ -146,4 +146,3 @@ class Ordenador:
             j += 1
             k += 1
 
-# merge
