@@ -195,7 +195,33 @@ class Inventario:
             raise ValueError(f"criterio de orden desconocido: {criterio!r} (se esperaba peso, valor o nombre)")
         return Ordenador.ordenar(self.objetos(), comparador)
 
+    # ---- Guardado (PartidaGuardada) ----
+
+    def posiciones_equipadas(self):
+        """(posición del arma, posición de la armadura) en el orden real; None si no hay."""
+        return self._posicion(self._nodo_arma), self._posicion(self._nodo_armadura)
+
+    def restaurar(self, objetos, cursor, arma, armadura) -> None:
+        """Llena un inventario VACÍO con 'objetos' (ObjetoDTO en el orden real) y pone el cursor y
+        el equipo por posición (None = nada). No registra nada en el historial."""
+        nodos = []
+        for objeto in objetos:
+            nodos.append(self._lista.agregar_al_final(objeto))
+        self._cursor = None if cursor is None else nodos[cursor]
+        self._nodo_arma = None if arma is None else nodos[arma]
+        self._nodo_armadura = None if armadura is None else nodos[armadura]
+
     # ---- Interno ----
+
+    def _posicion(self, nodo):
+        if nodo is None:
+            return None
+        posicion = 0
+        actual = self._lista.cabeza
+        while actual is not nodo:
+            posicion += 1
+            actual = actual.siguiente
+        return posicion
 
     def _registrar(self, objeto, deshacer) -> None:
         if self.historial is not None and objeto.clase != "pergamino_retroceso":

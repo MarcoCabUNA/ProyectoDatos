@@ -2,7 +2,7 @@
 Tests basicos de la capa de Logica.
 
 Ejecutar desde la raiz del proyecto:
-    python3 -m unittest discover -s tests -v
+    python3 -m unittest discover -s tests -p "*.py" -v     # "*.py": tambien los Test*.py
 """
 import os
 import sys
