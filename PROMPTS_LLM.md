@@ -88,3 +88,25 @@ Pruebas del proyecto completo:
 * Actualizador de las pruebas: `discover` solo encontraba los archivos que empiezan con `test` en minúscula y se saltaba los 17 `Test*.py` (235 pruebas). El comando en los encabezados de `tests/test_logica.py` y `tests/test_partida_guardada.py` pasó a ser `python3 -m unittest discover -s tests -p "*.py" -v` (usar `.venv/bin/python`): ahora corre 303 pruebas, todas OK, sin renombrar archivos.
 * Los 4 archivos de estilo script (`test_servicios`, `test_servicio_replay`, `test_servicio_puntajes`, `test_retroceso_completo`) no usan unittest y se corren aparte con `.venv/bin/python -m tests.<nombre>`; los 4 pasan.
 
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 13 de octubre 2026
+
+**Herramienta:** Gemini
+
+Necesito que reescales las imágenes que te voy a proporcionar para utilizarlas como fondos de las habitaciones de un videojuego que estoy desarrollando.
+
+Requisitos:
+
+Todas las imágenes deben tener exactamente las mismas dimensiones, con una resolución grande y buena calidad.
+Utiliza un tamaño uniforme de 1920 × 1080 píxeles (Full HD) para todas las imágenes.
+Mantén la apariencia, los colores, los detalles y el estilo artístico original de cada imagen.
+Si alguna imagen tiene una resolución menor, aumenta su tamaño procurando conservar la nitidez y evitar pixelación.
+Ajusta las imágenes para que encajen en las dimensiones indicadas sin deformar los elementos ni alterar su composición original.
+No agregues, elimines ni modifiques elementos de las imágenes.
+Devuelve cada imagen por separado, conservando su identidad y asegurándote de que todas tengan exactamente el mismo tamaño.
+
+Estas imágenes se utilizarán como fondos de diferentes habitaciones del mismo videojuego, por lo que es fundamental que 
+sus dimensiones sean consistentes para evitar cambios de tamaño o problemas de visualización al cambiar de habitación.
+
+**Uso de la respuesta:** Se reescalaron las imágenes proporcionadas a un tamaño uniforme de 1920 × 1080 píxeles (Full HD) manteniendo la apariencia, colores, detalles y estilo artístico original de cada imagen. 
+Se ajustaron las imágenes para que encajaran en las dimensiones indicadas sin deformar los elementos ni alterar su composición original. Todas las imágenes fueron devueltas por separado, conservando su identidad y asegurando que todas tengan exactamente el mismo tamaño, listas para ser utilizadas como fondos de las habitaciones del videojuego
