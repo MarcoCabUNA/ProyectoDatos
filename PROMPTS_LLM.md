@@ -112,3 +112,22 @@ sus dimensiones sean consistentes para evitar cambios de tamaño o problemas de 
 Se ajustaron las imágenes para que encajaran en las dimensiones indicadas sin deformar los elementos ni alterar su composición original. Todas las imágenes fueron devueltas por separado, conservando su identidad y asegurando que todas tengan exactamente el mismo tamaño, listas para ser utilizadas como fondos de las habitaciones del videojuego
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 13 de octubre 2026
+
+**Herramienta:** Gemini
+
+Quiero que, tomando como referencia la imagen adjunta, generes el resto de los sprites necesarios para mi videojuego.
+Instrucciones:
+- Analiza la imagen de referencia para identificar su estilo artístico, paleta de colores, iluminación, proporciones, perspectiva y nivel de detalle.
+- Crea los sprites faltantes manteniendo una estética visual coherente con la imagen original.
+- Conserva las dimensiones, proporciones y características visuales de los elementos para que puedan integrarse correctamente en el juego.
+- Si se trata de escenarios o habitaciones, mantén la misma perspectiva, escala y estilo arquitectónico entre todas las áreas.
+- Genera cada sprite con buena resolución, bordes definidos y sin deformaciones.
+- Utiliza fondos transparentes cuando corresponda, especialmente para personajes, objetos y elementos individuales.
+- Organiza los sprites de forma clara, preferiblemente en imágenes separadas por elemento o en una sprite sheet ordenada, según convenga.
+- No modifiques ni reemplaces el diseño original de la referencia; úsalo como guía para crear contenido nuevo que combine con él.
+Importante: Todos los sprites deben parecer parte del mismo videojuego. Prioriza la consistencia visual y la utilidad de los recursos dentro del juego por encima de añadir detalles que no aparecen en la referencia.
+Antes de generar los sprites, identifica las características visuales que debes conservar y determina qué elementos adicionales hacen falta para completar el conjunto.
+
+**Uso de la respuesta:** Se utilizó la respuesta para generar los sprites restantes basados en una imagen para las animaciones
+de los personajes del juego
