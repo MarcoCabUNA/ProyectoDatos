@@ -10,7 +10,8 @@ import tempfile
 import unittest
 
 from DTO.ResultadoBenchDTO import ResultadoBenchDTO
-from Service import BenchDatos, BenchInventario, BenchLogica
+from Logic import BenchLogica
+from Service import BenchDatos, BenchInventario
 from Service.Cronometro import medir, mejor_y_mediana
 from Service.ServicioBench import ServicioBench
 
@@ -129,7 +130,6 @@ class PruebasServicioBench(unittest.TestCase):
     def test_por_defecto_usa_los_tres_archivos(self):
         servicio = ServicioBench()
         self.assertEqual(servicio._mediciones, [BenchDatos.medir, BenchLogica.medir, BenchInventario.medir])
-        self.assertEqual((BenchLogica.medir(), BenchInventario.medir()), ([], []))   # pendientes de Marco y Kristel
 
     def test_tabla_texto(self):
         resultados = [ResultadoBenchDTO("caché", "búsqueda binaria", 25, 0.3, 0.32, "500 consultas"),

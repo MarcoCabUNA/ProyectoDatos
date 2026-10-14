@@ -6,9 +6,11 @@ ResultadoBenchDTO. No instancia la Vista ni lee el teclado (§6: --bench debe co
 
 Cada integrante tiene SU archivo de mediciones, así nadie edita el de otro:
     Service/BenchDatos.py        Integrante 2: caché, fichas liberadas, precarga, guardado y bitácora
-    Service/BenchLogica.py       Integrante 1: agenda de eventos y ciclo de eventos < 20 ms (§5.2)
+    Logic/BenchLogica.py         Integrante 1: agenda de eventos y ciclo de eventos < 20 ms (§5.2)
+                                 (vive en Lógica porque mide Lógica; trae su propio cronómetro con el
+                                 mismo método, porque Lógica no importa Servicios)
     Service/BenchInventario.py   Integrante 3: inventario, historial de retroceso y ordenamientos
-Todos usan el mismo cronómetro (Service/Cronometro.py: mejor y mediana de N repeticiones).
+Todos miden igual: mejor y mediana de N repeticiones (Service/Cronometro.py).
 
 Uso (desde el Controlador / main.py, cuando config.bench es True):
     resultados = ServicioBench().ejecutar()
@@ -17,7 +19,8 @@ O directamente, desde la raíz del proyecto:
     python -m Service.ServicioBench
 """
 from DTO.ResultadoBenchDTO import ResultadoBenchDTO
-from Service import BenchDatos, BenchInventario, BenchLogica
+from Logic import BenchLogica
+from Service import BenchDatos, BenchInventario
 
 _COLUMNAS = ["subsistema", "caso", "tamaño", "mejor ms", "mediana ms", "nota"]
 

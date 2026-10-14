@@ -2,7 +2,7 @@
 ResultadoBenchDTO (Integrante 2, acordado con el equipo): una fila del reporte de --bench (§5.3).
 
 Cada integrante devuelve una lista de estos desde su archivo de mediciones (Service/BenchDatos.py,
-Service/BenchLogica.py, Service/BenchInventario.py) y ServicioBench los junta.
+Logic/BenchLogica.py, Service/BenchInventario.py) y ServicioBench los junta.
 
     subsistema  qué se mide: "caché", "guardado", "agenda de eventos", "inventario", ...
     caso        la variante: "búsqueda binaria", "búsqueda lineal (descartada)", "binario", "JSON", ...
