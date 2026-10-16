@@ -5,6 +5,7 @@ ServicioPartida, ServicioAccionJugador y ServicioInventario se prueban como los 
 con DTOs (EstadoJuegoDTO, InventarioDTO, AccionDTO). Cada prueba usa carpetas temporales para la caché y
 los logs. Se ejecuta desde cualquier carpeta.
 """
+import json
 import os
 import shutil
 import sys
@@ -22,6 +23,7 @@ from DTO.AccionDTO import AccionDTO
 from DTO.ConfiguracionDTO import ConfiguracionDTO
 from DTO.ObjetoDTO import ObjetoDTO
 from Service.ServicioAccionJugador import ServicioAccionJugador
+from Service.ServicioGuardado import ServicioGuardado
 from Service.ServicioInventario import ServicioInventario
 from Service.ServicioPartida import ServicioPartida
 from Service.SincronizadorUsos import SincronizadorUsos
@@ -114,6 +116,23 @@ def probar_estado_inicial(carpeta):
     assert len(estado.objetos_suelo) == len(ctx.mazmorra.sala(ctx.cripta.sala_inicial).objetos)
     assert ctx.fuente.solicitudes_realizadas() == 0          # --offline no gasta solicitudes
     _verificar_marcas(ctx)
+
+
+def probar_el_estado_trae_la_sala_inicial_y_la_de_salida(carpeta):
+    with open(RAIZ / "paquete" / ID_CRIPTA / "general.json", encoding="utf-8") as archivo:
+        general = json.load(archivo)                     # lo esperado sale del paquete, no se escribe fijo
+    partida, acciones, ctx = _crear(carpeta)
+    estado = partida.estado(ctx)
+    assert estado.sala_inicial == estado.sala.id == general["sala_inicial"]
+    assert estado.sala_salida == general["sala_salida"] != estado.sala_inicial
+    estado = acciones.ejecutar(ctx, AccionDTO("mover", direccion=NORTE))
+    assert estado.sala.id != general["sala_inicial"]                 # se movió de verdad...
+    assert (estado.sala_inicial, estado.sala_salida) == (general["sala_inicial"], general["sala_salida"])
+    ruta = os.path.join(carpeta, "saves", "partida.sav")
+    ServicioGuardado(partida).guardar(ctx, ruta)
+    nueva, _, _ = _crear(os.path.join(carpeta, "b"))
+    estado2 = nueva.estado(ServicioGuardado(nueva).cargar(ruta, "Ana"))
+    assert (estado2.sala_inicial, estado2.sala_salida) == (general["sala_inicial"], general["sala_salida"])
 
 
 def probar_la_bitacora_nace_con_su_encabezado(carpeta):
@@ -457,7 +476,8 @@ def probar_el_replay_reproduce_exactamente_la_misma_partida(carpeta):
 if __name__ == "__main__":
     for prueba in (probar_la_fuente_por_omision_sale_de_la_configuracion,
                    probar_la_cache_por_omision_vive_en_la_carpeta_de_trabajo, probar_listar_criptas,
-                   probar_estado_inicial, probar_la_bitacora_nace_con_su_encabezado,
+                   probar_estado_inicial, probar_el_estado_trae_la_sala_inicial_y_la_de_salida,
+                   probar_la_bitacora_nace_con_su_encabezado,
                    probar_dos_partidas_con_la_misma_semilla_no_pisan_su_log, probar_semilla_automatica,
                    probar_mover_carga_la_sala_y_se_anota_en_el_log, probar_las_acciones_rechazadas_no_cambian_nada,
                    probar_abrir_una_puerta_se_ve_en_el_estado, probar_recoger_usar_y_soltar,

@@ -38,6 +38,8 @@ class ArmadorEstado:
             reloj=motor.reloj,
             terminado=motor.terminado,
             resultado=self._resultado(motor, resultado),
+            sala_inicial=contexto.cripta.sala_inicial,
+            sala_salida=contexto.cripta.sala_salida,
         )
 
     def armar_inventario(self, contexto, criterio: str | None) -> InventarioDTO:

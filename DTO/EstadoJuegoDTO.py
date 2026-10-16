@@ -20,6 +20,8 @@ Cruces con los DTO de los otros integrantes:
 mensajes: los últimos 20, en orden cronológico. Se copian del buffer circular a un array;
 la Vista no conoce el buffer.
 resultado: "victoria", "derrota" o el mensaje de una acción rechazada; None si no aplica.
+sala_inicial, sala_salida: ids de la sala de entrada y de la sala de salida de la cripta (CriptaDTO). La Vista los
+compara con sala.id para elegir el fondo de la sala y la puerta final; None si no se conocen.
 """
 from dataclasses import dataclass
 
@@ -42,3 +44,5 @@ class EstadoJuegoDTO:
     reloj: int
     terminado: bool = False
     resultado: str | None = None
+    sala_inicial: int | None = None
+    sala_salida: int | None = None
