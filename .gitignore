@@ -10,3 +10,6 @@ cache/
 # Partidas guardadas y logs de --replay: son de cada jugador (Data/GuardadoBinario.py, Data/BitacoraReplayIO.py)
 saves/
 logs/
+# Entorno virtual y capturas de la Vista (tests/capturar_pantallas.py)
+.venv/
+capturas/
