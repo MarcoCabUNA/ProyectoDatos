@@ -201,17 +201,17 @@ def probar_de_punta_a_punta_con_clics_hasta_la_partida_y_la_pausa():
     try:
         with Recorrido(vista) as r:
             assert r.pantalla().pantalla == "menu"
-            r.clic_en_boton(0)                                           # Comenzar juego
+            r.clic_en_texto("Comenzar juego")
             assert r.pantalla().pantalla == "criptas" and r.pantalla().opciones[-1] == "Volver"
             r.clic_en_boton(0)                                           # la primera cripta
             assert r.pantalla().pantalla == "nombre"
             r.escribir("Ana")
             assert r.pantalla().texto == "Ana"
-            r.clic_en_boton(0)                                           # Aceptar
+            r.clic_en_texto("Aceptar")
             assert r.pantalla().pantalla == "juego" and r.pantalla().estado.jugador.nombre
             r.pulsar(ESC)
             assert r.pantalla().pantalla == "pausa"
-            r.clic_en_boton(3)                                           # Salir al menú
+            r.clic_en_texto("Salir al menú")
             assert r.pantalla().pantalla == "menu"
     finally:
         vista.cerrar()
@@ -223,8 +223,8 @@ def probar_de_punta_a_punta_el_raton_sobre_un_boton_cambia_la_seleccion_y_se_ve_
     try:
         with Recorrido(vista) as r:
             assert r.pantalla().seleccion == 0
-            r.pasar_el_raton_por(3)                                      # Puntajes
-            assert r.pantalla().seleccion == 3
+            r.pasar_el_raton_por_texto("Puntajes")
+            assert r.pantalla().seleccion == r.pantalla().opciones.index("Puntajes")
             r.dibujar()
             rectangulo = vista._zonas._rectangulos[3]
             assert pygame.display.get_surface().get_at((rectangulo.left + 10, rectangulo.centery))[0] > 120
@@ -232,9 +232,9 @@ def probar_de_punta_a_punta_el_raton_sobre_un_boton_cambia_la_seleccion_y_se_ve_
             assert pygame.display.get_surface().get_at((primero.left + 10, primero.centery))[0] < 60
             r.pulsar(ABAJO)                                              # el teclado sigue desde el botón señalado
             assert r.pantalla().seleccion == 4
-            r.clic_en_boton(3)                                           # Puntajes
+            r.clic_en_texto("Puntajes")
             assert r.pantalla().pantalla == "puntajes"
-            r.clic_en_boton(1)                                           # Volver
+            r.clic_en_texto("Volver")
             assert r.pantalla().pantalla == "menu"
             r.pulsar(ENTER)
             assert r.pantalla().pantalla == "criptas"

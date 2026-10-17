@@ -12,6 +12,7 @@ from ayudas_vista import Recorrido, las_ocho_pantallas  # noqa: E402
 
 from ayudas_controladores import RAIZ  # noqa: E402
 from DTO.PantallaDTO import PantallaDTO  # noqa: E402
+from DTO.PuntajeDTO import PuntajeDTO  # noqa: E402
 from View.VistaPygame import VistaPygame  # noqa: E402
 
 CARPETA = RAIZ / "capturas"
@@ -42,6 +43,18 @@ def principal():
                            "nuevo; si el problema continúa, sal al menú y vuelve a cargar la última partida guardada.")
             vista.dibujar(replace(pausa, aviso=aviso_largo))
             guardar("pausa_aviso_largo", None)
+            # Victoria y derrota en los casos extremos (a mano): sin puntaje y con aviso; nombre de 16 caracteres,
+            # cifras grandes, presupuesto desconocido y partida online.
+            victoria = next(p for nombre, p in vistas if nombre == "victoria")
+            vista.dibujar(replace(victoria, puntaje=None, aviso="No se pudo guardar el puntaje: la carpeta de "
+                                  "puntajes no se puede escribir. La partida terminó bien, pero no quedó registrada."))
+            guardar("victoria_sin_puntaje", None)
+            extremo = PuntajeDTO("W" * 16, "cripta-con-un-nombre-muy-largo-de-prueba", "abcdef0123456789",
+                                 12345678901, 98765432, 10 ** 12)
+            vista.dibujar(replace(victoria, puntaje=extremo, reporte=replace(victoria.reporte, solicitudes_realizadas=
+                                  2 * 10 ** 9, presupuesto=None, aciertos_cache=987654321, fallos_cache=10 ** 11,
+                                  offline=False)))
+            guardar("victoria_extrema", None)
     finally:
         vista.cerrar()
 

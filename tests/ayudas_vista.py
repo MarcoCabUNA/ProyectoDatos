@@ -55,19 +55,35 @@ class Recorrido:
         self.vista.dibujar(pantalla)
         return pantalla
 
-    def centro_del_boton(self, indice):
-        """Dibuja el cuadro actual y devuelve el centro de la zona que la Vista registró para el botón 'indice'."""
+    def centro_del_boton(self, posicion):
+        """Dibuja el cuadro actual y devuelve el centro del botón que se VE en esa 'posicion': de arriba a abajo y, a la
+        misma altura, de izquierda a derecha. Se ignora el índice que la Vista registró en la zona: si la Vista dijera
+        que un botón es el de otro, el clic caería igual donde el jugador lo ve y la prueba lo notaría."""
         self.dibujar()
-        for rectangulo, elemento in zip(self.vista._zonas._rectangulos, self.vista._zonas._elementos):
-            if elemento.tipo == "boton" and elemento.indice == indice:
-                return rectangulo.center
-        raise AssertionError(f"la Vista no registró el botón {indice}")
+        botones = [rectangulo for rectangulo, elemento in zip(self.vista._zonas._rectangulos,
+                                                              self.vista._zonas._elementos) if elemento.tipo == "boton"]
+        botones.sort(key=lambda rectangulo: (rectangulo.top, rectangulo.left))
+        assert posicion < len(botones), f"la Vista dibujó {len(botones)} botones y se pidió el {posicion}"
+        return botones[posicion].center
 
-    def clic_en_boton(self, indice):
-        self.controlador.procesar_evento(clic(self.centro_del_boton(indice)))
+    def clic_en_boton(self, posicion):
+        self.controlador.procesar_evento(clic(self.centro_del_boton(posicion)))
 
-    def pasar_el_raton_por(self, indice):
-        self.controlador.procesar_evento(movimiento(self.centro_del_boton(indice)))
+    def pasar_el_raton_por(self, posicion):
+        self.controlador.procesar_evento(movimiento(self.centro_del_boton(posicion)))
+
+    def posicion_del_texto(self, texto):
+        """La posición visual del botón cuyo texto es 'texto' en pantalla.opciones (el texto es lo que el jugador lee)."""
+        opciones = self.pantalla().opciones
+        assert texto in opciones, (texto, opciones)
+        return opciones.index(texto)
+
+    def clic_en_texto(self, texto):
+        """Clic real sobre el botón que dice 'texto'; la prueba comprueba después que se hizo LO QUE DICE el texto."""
+        self.clic_en_boton(self.posicion_del_texto(texto))
+
+    def pasar_el_raton_por_texto(self, texto):
+        self.pasar_el_raton_por(self.posicion_del_texto(texto))
 
     def perder(self):
         """Entra a la sala de las ratas y espera: en el paquete de pruebas la partida se pierde."""

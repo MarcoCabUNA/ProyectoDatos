@@ -42,6 +42,7 @@ RADIO = 8
 TITULO_Y = 52
 AVISO_MAX_LINEAS = 2                         # un aviso más largo se corta con "..." (no debe tapar los botones)
 AVISO_INTERLINEA = 28
+AVISO_ARRIBA_Y = 44                          # con el aviso arriba (victoria y derrota): su borde superior
 AVISO_SEPARACION = 8                         # espacio entre el aviso y la primera línea de ayuda
 PIE_BASE_Y = 760                             # las líneas de ayuda se apilan hacia arriba desde aquí
 PIE_INTERLINEA = 20

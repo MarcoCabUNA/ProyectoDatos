@@ -67,7 +67,7 @@ class PantallaMenus:
             self._botones(superficie, pantalla, c.distribuir_botones(len(pantalla.opciones), _AREA_PAUSA))
         elif nombre == "puntajes":
             self._puntajes(superficie, pantalla)
-        self._aviso_y_ayuda(superficie, pantalla)
+        self.aviso_y_ayuda(superficie, pantalla)
 
     # ================================================================== cada pantalla
     def _criptas(self, superficie, pantalla):
@@ -121,9 +121,10 @@ class PantallaMenus:
             c.dibujar_boton(superficie, self._fuentes, rectangulo, pantalla.opciones[i], i == pantalla.seleccion)
             self._zonas.agregar(rectangulo, ElementoDTO(ELEMENTO_BOTON, i))
 
-    def caja_del_aviso(self, pantalla) -> tuple[pygame.Rect | None, list[str]]:
+    def caja_del_aviso(self, pantalla, arriba: bool = False) -> tuple[pygame.Rect | None, list[str]]:
         """El rectángulo del aviso y sus líneas (como mucho AVISO_MAX_LINEAS). Va justo encima de la ayuda y crece hacia
-        arriba. Sin aviso devuelve (None, [])."""
+        arriba; con 'arriba' va pegado al borde superior (victoria y derrota, donde abajo están los botones).
+        Sin aviso devuelve (None, [])."""
         if not pantalla.aviso:
             return None, []
         ancho_texto = c.ANCHO - 240
@@ -132,7 +133,10 @@ class PantallaMenus:
             lineas = lineas[:c.AVISO_MAX_LINEAS]
             lineas[-1] = c.recortar_a_ancho(self._fuentes.texto, lineas[-1] + "...", ancho_texto)
         caja = pygame.Rect(0, 0, c.ANCHO - 200, 14 + c.AVISO_INTERLINEA * len(lineas))
-        caja.midbottom = (c.ANCHO // 2, self.tope_de_la_ayuda(pantalla) - c.AVISO_SEPARACION)
+        if arriba:
+            caja.midtop = (c.ANCHO // 2, c.AVISO_ARRIBA_Y)
+        else:
+            caja.midbottom = (c.ANCHO // 2, self.tope_de_la_ayuda(pantalla) - c.AVISO_SEPARACION)
         return caja, lineas
 
     def tope_de_la_ayuda(self, pantalla) -> int:
@@ -141,8 +145,8 @@ class PantallaMenus:
             return c.PIE_BASE_Y
         return c.PIE_BASE_Y - c.PIE_INTERLINEA * (len(pantalla.ayuda) - 1) - self._fuentes.pie.get_height()
 
-    def _aviso_y_ayuda(self, superficie, pantalla):
-        caja, lineas = self.caja_del_aviso(pantalla)
+    def aviso_y_ayuda(self, superficie, pantalla, aviso_arriba: bool = False):
+        caja, lineas = self.caja_del_aviso(pantalla, aviso_arriba)
         if caja is not None:
             c.panel(superficie, caja, c.AVISO_FONDO, c.ROJO_VIVO, 2)
             for i, linea in enumerate(lineas):

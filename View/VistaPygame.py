@@ -6,9 +6,9 @@ VistaPygame (Vista): la ventana del juego. Cumple el contrato de cuatro métodos
     cerrar()             libera pygame; es seguro aunque abrir() no se haya llamado
     elemento_en(punto)   qué hay en ese punto de lo último que se dibujó (ElementoDTO) o None
 
-Pantallas reales hasta ahora (Etapa 4): menu, criptas, nombre, pausa y puntajes (View/PantallaMenus.py). Las demás
-(juego, victoria, derrota) muestran todavía el contenido del PantallaDTO como texto de depuración; llegan en las
-Etapas 5 a 7.
+Pantallas reales hasta ahora (Etapa 5): menu, criptas, nombre, pausa y puntajes (View/PantallaMenus.py), y victoria y
+derrota (View/PantallaFin.py). La de juego muestra todavía el contenido del PantallaDTO como texto de depuración;
+llega en las Etapas 6 y 7.
 
 Zonas de clic: dibujar() limpia las zonas al empezar y cada pantalla registra las suyas (View/ZonasClic.py);
 elemento_en() consulta lo último que se dibujó.
@@ -24,6 +24,7 @@ from DTO.ElementoDTO import ElementoDTO
 from DTO.PantallaDTO import PantallaDTO
 from View import Componentes as c
 from View.AlmacenSprites import AlmacenSprites
+from View.PantallaFin import PANTALLAS_FIN, PantallaFin
 from View.PantallaMenus import PantallaMenus
 from View.ZonasClic import ZonasClic
 
@@ -47,6 +48,7 @@ class VistaPygame:
         self._fuentes: c.Fuentes | None = None
         self._zonas = ZonasClic()
         self._menus: PantallaMenus | None = None
+        self._fin: PantallaFin | None = None
 
     # ================================================================== contrato
     def abrir(self) -> None:
@@ -55,12 +57,16 @@ class VistaPygame:
         self._superficie = pygame.display.set_mode((c.ANCHO, c.ALTO), pygame.SCALED | pygame.RESIZABLE)
         pygame.display.set_caption(TITULO_VENTANA)
         self._fuentes = c.Fuentes()
-        self._menus = PantallaMenus(AlmacenSprites(self._ruta_assets), self._fuentes, self._zonas)
+        almacen = AlmacenSprites(self._ruta_assets)
+        self._menus = PantallaMenus(almacen, self._fuentes, self._zonas)
+        self._fin = PantallaFin(almacen, self._fuentes, self._zonas, self._menus)
 
     def dibujar(self, pantalla: PantallaDTO) -> None:
         self._zonas.limpiar()                 # las zonas son las de ESTE cuadro, nunca las del anterior
         if pantalla.pantalla in PANTALLAS_CON_BOTONES:
             self._menus.dibujar(self._superficie, pantalla, pygame.time.get_ticks())
+        elif pantalla.pantalla in PANTALLAS_FIN:
+            self._fin.dibujar(self._superficie, pantalla)
         else:
             self._dibujar_depuracion(pantalla)
         pygame.display.flip()
@@ -69,6 +75,7 @@ class VistaPygame:
         self._superficie = None
         self._fuentes = None
         self._menus = None
+        self._fin = None
         pygame.quit()                         # seguro aunque nada se haya iniciado
 
     def elemento_en(self, posicion: tuple[int, int]) -> ElementoDTO | None:
@@ -76,7 +83,7 @@ class VistaPygame:
 
     # ================================================================== interno
     def _dibujar_depuracion(self, pantalla: PantallaDTO) -> None:
-        """Provisional (Etapas 5 a 7): el contenido del PantallaDTO como texto."""
+        """Provisional (Etapas 6 y 7): el contenido del PantallaDTO como texto."""
         self._superficie.fill(c.NEGRO_TINTA)
         y = MARGEN
         for texto, color in self._lineas_de_depuracion(pantalla):
@@ -112,10 +119,6 @@ class VistaPygame:
             lineas.append((f"inventario {inv.capacidad}/{inv.capacidad_maxima} cursor {inv.cursor} "
                            f"criterio {inv.criterio}: {[o.nombre for o in inv.objetos]}", c.TEXTO))
             lineas.extend((f"  {m}", c.TEXTO) for m in estado.mensajes)
-        if pantalla.puntaje is not None:
-            lineas.append((f"puntaje: {pantalla.puntaje}", c.TEXTO))
-        if pantalla.reporte is not None:
-            lineas.append((f"reporte: {pantalla.reporte}", c.TEXTO))
         if pantalla.pantalla == "puntajes":
             lineas.append((f"orden: {pantalla.criterio}  filas: {len(pantalla.puntajes)}", c.TEXTO))
             lineas.extend((f"  {p.nombre} {p.mazmorra} acc={p.acciones} ene={p.enemigos_derrotados} "
