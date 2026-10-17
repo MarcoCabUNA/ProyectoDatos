@@ -11,7 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from ayudas_controladores import CONFIG_OFFLINE  # noqa: E402
-from ayudas_pygame import crear_fabrica, letra, pygame, tecla  # noqa: E402
+from ayudas_pygame import clic, crear_fabrica, letra, movimiento, pygame, tecla  # noqa: E402
 
 import UIController.ControladorPygame as modulo  # noqa: E402
 from UIController.ControladorPygame import DERROTA, JUEGO, ControladorPygame  # noqa: E402
@@ -54,6 +54,20 @@ class Recorrido:
         pantalla = self.pantalla()
         self.vista.dibujar(pantalla)
         return pantalla
+
+    def centro_del_boton(self, indice):
+        """Dibuja el cuadro actual y devuelve el centro de la zona que la Vista registró para el botón 'indice'."""
+        self.dibujar()
+        for rectangulo, elemento in zip(self.vista._zonas._rectangulos, self.vista._zonas._elementos):
+            if elemento.tipo == "boton" and elemento.indice == indice:
+                return rectangulo.center
+        raise AssertionError(f"la Vista no registró el botón {indice}")
+
+    def clic_en_boton(self, indice):
+        self.controlador.procesar_evento(clic(self.centro_del_boton(indice)))
+
+    def pasar_el_raton_por(self, indice):
+        self.controlador.procesar_evento(movimiento(self.centro_del_boton(indice)))
 
     def perder(self):
         """Entra a la sala de las ratas y espera: en el paquete de pruebas la partida se pierde."""

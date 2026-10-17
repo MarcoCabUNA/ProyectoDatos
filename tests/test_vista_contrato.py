@@ -12,7 +12,8 @@ from ayudas_vista import ESC, Recorrido, las_ocho_pantallas  # noqa: E402
 from DTO.PantallaDTO import PantallaDTO  # noqa: E402
 from UIController.ControladorPygame import ControladorPygame  # noqa: E402
 from ayudas_controladores import CONFIG_OFFLINE  # noqa: E402
-from View.VistaPygame import ALTO, ANCHO, VistaPygame  # noqa: E402
+from View.Componentes import ALTO, ANCHO  # noqa: E402
+from View.VistaPygame import VistaPygame  # noqa: E402
 
 PANTALLAS = ["menu", "criptas", "nombre", "juego", "pausa", "derrota", "victoria", "puntajes"]
 
