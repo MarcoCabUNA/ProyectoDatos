@@ -131,3 +131,26 @@ Antes de generar los sprites, identifica las características visuales que debes
 
 **Uso de la respuesta:** Se utilizó la respuesta para generar los sprites restantes basados en una imagen para las animaciones
 de los personajes del juego
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 14 de octubre 2026
+
+**Herramienta:** Gemini
+
+Lee detenidamente el enunciado adjunto de mi proyecto de videojuego y, basándote en sus mecánicas, crea una lista de controles de teclado y ratón que sean cómodos, intuitivos y fáciles de recordar para el jugador.
+Requisitos:
+- Identifica las mecánicas, acciones e interacciones que aparecen en el enunciado.
+- Asigna una tecla o combinación de teclas adecuada a cada acción, priorizando la comodidad y evitando controles innecesariamente complicados.
+- Utiliza el ratón para las interacciones que resulten más naturales con él. En particular, recoger objetos del suelo debe realizarse haciendo clic sobre ellos.
+- Evita asignar la misma tecla a acciones diferentes cuando esto pueda causar conflictos.
+- Ten en cuenta la frecuencia con la que se realiza cada acción y la facilidad para acceder a sus controles durante el juego.
+- No inventes mecánicas que no estén contempladas en el enunciado.
+Formato de respuesta:
+Presenta una tabla con las siguientes columnas:
+1. Acción o mecánica.
+2. Tecla o control asignado.
+3. Justificación breve de por qué es adecuado.
+Al final, incluye una lista de las teclas utilizadas y verifica que no existan conflictos entre las asignaciones.
+Prioriza una distribución ergonómica y coherente, siguiendo convenciones habituales de los videojuegos de PC cuando sean aplicables. Si alguna mecánica admite varias opciones, recomienda la más intuitiva y explica brevemente tu elección.
+
+**Uso de la respuesta:** Diseño y asignación de controles para el juego

@@ -94,7 +94,8 @@ _AYUDA_PUNTAJES = ("Izquierda / Derecha: cambiar el orden", "Enter o clic: acept
 
 class ControladorPygame:
 
-    def __init__(self, vista, config: ConfiguracionDTO, fabrica_backend=ControladorBackend, fabrica_controles=ControlesJuego):
+    def __init__(self, vista, config: ConfiguracionDTO, fabrica_backend=ControladorBackend, fabrica_controles=ControlesJuego,
+                 demora_fin_ms: int = 0, reloj_ms=None):
         """
         vista: cualquier objeto con abrir(), dibujar(pantalla), cerrar() y elemento_en(posicion).
         config: lo que dejó LectorArgumentos (offline, cache_size...).
@@ -102,6 +103,9 @@ class ControladorPygame:
         fabrica_controles: función que crea los ControlesJuego a partir de (backend, estado).
         Las dos fábricas las cambian las pruebas (caché y puntajes temporales, reloj propio); en el programa real
         se dejan las clases.
+        demora_fin_ms: al terminar la partida, cuánto tiempo más se sigue mostrando la pantalla de juego (con el estado final)
+        antes de pasar a la victoria o la derrota; 0 pasa de inmediato. El puntaje se guarda al terminar, no después.
+        reloj_ms: función que devuelve los milisegundos actuales (por omisión pygame.time.get_ticks); mide esa demora.
         """
         self._vista = vista
         self._config = config
@@ -123,6 +127,10 @@ class ControladorPygame:
         self._tabla: list = []
         self._criterio = 0                            # posición en CRITERIOS_PUNTAJES
         self._bajo_el_raton = None                    # el ElementoDTO bajo el ratón en su último movimiento (o None)
+        self._demora_fin_ms = demora_fin_ms
+        self._reloj_ms = reloj_ms if reloj_ms is not None else pygame.time.get_ticks
+        self._fin_en: int | None = None               # cuándo termina la demora del fin (None: no hay demora en curso)
+        self._aviso_del_fin: str | None = None        # el aviso del fin que se muestra al terminar la demora
 
     def activo(self) -> bool:
         return self._activo
@@ -211,6 +219,7 @@ class ControladorPygame:
 
     # ================================================================== lo que la Vista dibuja
     def pantalla(self) -> PantallaDTO:
+        self._pasar_al_fin_si_termino_la_demora()
         if self._pantalla == MENU:
             return PantallaDTO(MENU, "CRIPTA", self._opciones_del_menu(), self._seleccion,
                                aviso=self._aviso, ayuda=list(_AYUDA_MENU))
@@ -314,6 +323,8 @@ class ControladorPygame:
 
     # ================================================================== partida, pausa y fin
     def _en_juego(self, evento) -> None:
+        if self._fin_en is not None:                    # en la demora del fin la partida ya terminó: los controles no hacen nada
+            return
         es_clic = evento.type == pygame.MOUSEBUTTONDOWN and evento.button in (_CLIC_IZQUIERDO, _CLIC_DERECHO)
         elemento = self._vista.elemento_en(evento.pos) if es_clic else None   # la rueda no necesita saber qué hay debajo
         orden = self._juego.procesar_evento(evento, elemento)
@@ -344,8 +355,17 @@ class ControladorPygame:
             self._puntaje = None
             aviso = f"No se pudo guardar el puntaje: {error}"
         self._reporte = self._backend.reporte()
+        if self._demora_fin_ms > 0:                     # se sigue en JUEGO con el estado final; el puntaje ya está guardado
+            self._fin_en = self._reloj_ms() + self._demora_fin_ms
+            self._aviso_del_fin = aviso
+            return
         self._ir_a(_FIN)
         self._aviso = aviso
+
+    def _pasar_al_fin_si_termino_la_demora(self) -> None:
+        if self._fin_en is not None and self._reloj_ms() >= self._fin_en:
+            self._ir_a(_FIN)
+            self._aviso = self._aviso_del_fin
 
     def _en_pausa(self, evento) -> None:
         if evento.key == pygame.K_ESCAPE:
@@ -407,6 +427,7 @@ class ControladorPygame:
     # ================================================================== interno
     def _ir_a(self, pantalla: str) -> None:
         self._pantalla = pantalla
+        self._fin_en = None
         self._seleccion = -1 if pantalla == JUEGO else 0
         self._aviso = None
         self._bajo_el_raton = None
