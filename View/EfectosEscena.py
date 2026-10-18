@@ -86,6 +86,8 @@ class EfectosEscena:
         self._anims: list = []                       # las animaciones de combate en curso (a lo sumo MAX_ANIMACIONES)
         self._fuente = pygame.font.Font(None, c.NUMERO_TAMANO)
         self._borde = self._marco_rojo()
+        self._velo_golpe = self._capa(c.BORDE_COLOR)
+        self._vineta = self._marco_vineta()
 
     @staticmethod
     def _capa(color) -> pygame.Surface:
@@ -100,6 +102,16 @@ class EfectosEscena:
         for i in range(c.BORDE_GROSOR):
             alfa = round(255 * (1.0 - i / c.BORDE_GROSOR) ** 2)
             pygame.draw.rect(marco, (*c.BORDE_COLOR, alfa), (i, i, c.ANCHO - 2 * i, c.ALTO - 2 * i), 1)
+        return marco
+
+    @staticmethod
+    def _marco_vineta() -> pygame.Surface:
+        """La viñeta: negra en el filo, rojo oscuro hacia adentro y transparente al llegar al centro. Se prepara una sola vez."""
+        marco = pygame.Surface((c.ANCHO, c.ALTO), pygame.SRCALPHA)
+        for i in range(c.VINETA_GROSOR):
+            t = i / c.VINETA_GROSOR
+            color = tuple(round(canal * t) for canal in c.VINETA_ROJO)
+            pygame.draw.rect(marco, (*color, round(255 * (1.0 - t) ** 2)), (i, i, c.ANCHO - 2 * i, c.ALTO - 2 * i), 1)
         return marco
 
     # ------------------------------------------------------------------ el instante
@@ -197,6 +209,7 @@ class EfectosEscena:
         if cambio < 0:
             self._anims.append(Animacion("destello", ahora, c.DESTELLO_MS, "", True))
             self._anims.append(Animacion("borde", ahora, c.BORDE_MS, "", True))
+            self._anims.append(Animacion("velo_golpe", ahora, c.VELO_GOLPE_MS, "", True))
 
     def _los_enemigos(self, previa, nueva, ahora, cuadros_de_muerte) -> None:
         for e in nueva.enemigos:
@@ -334,12 +347,29 @@ class EfectosEscena:
             destino = a.imagen.get_rect(midbottom=(a.rect.centerx, a.rect.top - c.FICHA - anim.sube_numero(p)))
             superficie.blit(a.imagen, destino.clamp(pantalla))
 
+    def vineta_de_vida(self, superficie: pygame.Surface, vida: int, vida_max: int, ahora: int,
+                       intensidad: float | None = None) -> None:
+        """La viñeta de vida baja (debajo del borde del golpe, encima de todo lo demás, el HUD incluido). 'intensidad' es la
+        envolvente del sonido de vida baja en este instante (0 a 1); sin ella, el pulso es fijo."""
+        if vida_max <= 0:
+            return
+        alfa = anim.alfa_vineta(vida / vida_max, ahora, intensidad)
+        if alfa > 0:
+            self._vineta.set_alpha(alfa)
+            superficie.blit(self._vineta, (0, 0))
+
     def borde_rojo(self, superficie: pygame.Surface, ahora: int) -> None:
         """El borde de la pantalla, mientras dura la pérdida de vida del protagonista (encima de todo, el HUD incluido)."""
         mejor = 0
+        velo = 0
         for a in self._anims:
             if a.tipo == "borde" and self._p(a, ahora) < 1.0:
                 mejor = max(mejor, anim.alfa_borde(self._p(a, ahora)))
+            elif a.tipo == "velo_golpe" and self._p(a, ahora) < 1.0:
+                velo = max(velo, anim.alfa_velo_golpe(self._p(a, ahora)))
+        if velo > 0:
+            self._velo_golpe.set_alpha(velo)
+            superficie.blit(self._velo_golpe, (0, 0))
         if mejor > 0:
             self._borde.set_alpha(mejor)
             superficie.blit(self._borde, (0, 0))

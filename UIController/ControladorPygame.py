@@ -131,6 +131,7 @@ class ControladorPygame:
         self._reloj_ms = reloj_ms if reloj_ms is not None else pygame.time.get_ticks
         self._fin_en: int | None = None               # cuándo termina la demora del fin (None: no hay demora en curso)
         self._aviso_del_fin: str | None = None        # el aviso del fin que se muestra al terminar la demora
+        self._activaciones = 0                        # botones activados y esperas hechas; nunca baja (PantallaDTO.activaciones)
 
     def activo(self) -> bool:
         return self._activo
@@ -204,6 +205,7 @@ class ControladorPygame:
 
     def _activar(self, indice: int) -> None:
         """Lo que hace el botón 'indice' de la pantalla actual. Enter y el clic llegan aquí."""
+        self._activaciones += 1
         if self._pantalla == MENU:
             self._activar_en_menu(indice)
         elif self._pantalla == CRIPTAS:
@@ -220,6 +222,9 @@ class ControladorPygame:
     # ================================================================== lo que la Vista dibuja
     def pantalla(self) -> PantallaDTO:
         self._pasar_al_fin_si_termino_la_demora()
+        return replace(self._armar_pantalla(), activaciones=self._activaciones)
+
+    def _armar_pantalla(self) -> PantallaDTO:
         if self._pantalla == MENU:
             return PantallaDTO(MENU, "CRIPTA", self._opciones_del_menu(), self._seleccion,
                                aviso=self._aviso, ayuda=list(_AYUDA_MENU))
@@ -303,6 +308,7 @@ class ControladorPygame:
         if evento.key == pygame.K_ESCAPE:
             self._ir_a(MENU)
         elif evento.key in _TECLAS_ENTER:
+            self._activaciones += 1
             self._activar_en_nombre(_OPCION_ACEPTAR)
         elif evento.key == pygame.K_BACKSPACE:
             self._texto = self._texto[:-1]
@@ -327,7 +333,10 @@ class ControladorPygame:
             return
         es_clic = evento.type == pygame.MOUSEBUTTONDOWN and evento.button in (_CLIC_IZQUIERDO, _CLIC_DERECHO)
         elemento = self._vista.elemento_en(evento.pos) if es_clic else None   # la rueda no necesita saber qué hay debajo
+        espera = self._es_esperar(evento, elemento)
         orden = self._juego.procesar_evento(evento, elemento)
+        if espera and self._juego.aviso is None:        # esperar suena; si el backend la rechazó, no
+            self._activaciones += 1
         if self._juego.estado.terminado:
             self._terminar_partida()
         elif orden == PIDE_PAUSA:
@@ -336,6 +345,14 @@ class ControladorPygame:
             self._guardar_partida()
         elif orden == PIDE_CARGAR:
             self._cargar_partida()
+
+    @staticmethod
+    def _es_esperar(evento, elemento) -> bool:
+        """El clic en el botón Esperar, o la tecla Z (con Ctrl es retroceder, no esperar)."""
+        if evento.type == pygame.KEYDOWN:
+            return evento.key == pygame.K_z and not evento.mod & pygame.KMOD_CTRL
+        return evento.type == pygame.MOUSEBUTTONDOWN and evento.button == _CLIC_IZQUIERDO \
+            and elemento is not None and elemento.tipo == ELEMENTO_BOTON
 
     def _guardar_partida(self) -> None:
         bytes_escritos = self._backend.guardar(RUTA_GUARDADO)
@@ -438,4 +455,7 @@ class ControladorPygame:
             self._seleccion = (self._seleccion - 1) % cantidad
         elif evento.key == pygame.K_DOWN:
             self._seleccion = (self._seleccion + 1) % cantidad
-        return evento.key in _TECLAS_ENTER
+        if evento.key in _TECLAS_ENTER:
+            self._activaciones += 1                       # Enter activa el botón resaltado
+            return True
+        return False

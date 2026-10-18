@@ -75,7 +75,7 @@ def _crear_analizador() -> _Analizador:
         opciones["color"] = False    # 3.14 colorea la ayuda en la terminal; TEXTO_AYUDA debe ser texto plano
     analizador = _Analizador(
         prog="python main.py",
-        description="Cripta: juego de exploración por eventos (Estructuras de Datos II, UNA).",
+        description="Cripta: juego de exploración por eventos (Estructuras de Datos, UNA).",
         add_help=False,          # la ayuda se maneja como un campo del DTO (ver arriba)
         allow_abbrev=False,
         exit_on_error=False,

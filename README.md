@@ -1,6 +1,6 @@
 # Cripta
 
-Juego de exploración por eventos para el Primer Proyecto de Estructuras de Datos II (UNA, II ciclo 2026).
+Juego de exploración por eventos para el Primer Proyecto de Estructuras de Datos (UNA, II ciclo 2026).
 El cliente obtiene la cripta desde el servicio web (o desde un paquete local con `--offline`), simula la partida
 con un reloj virtual y guarda partidas, puntajes y bitácoras de replay en disco.
 
@@ -10,48 +10,71 @@ con un reloj virtual y guarda partidas, puntajes y bitácoras de replay en disco
 - Dependencias:
   - `requests`: acceso al servicio web (`Data/ClienteHttp.py`).
   - `pygame-ce`: interfaz gráfica (solo para jugar; `--replay` y `--bench` no lo necesitan).
+  - Ambas están en `requirements.txt` (y en `pyproject.toml`).
+- **No hace falta `uv`**: es opcional. Solo se necesita Python y `pip`, que vienen con Python.
 
 ## Instalación
 
-Desde la raíz del proyecto (la carpeta donde está `main.py`).
+Desde la raíz del proyecto (la carpeta donde está `main.py`). Se crea un entorno virtual `.venv` y se instalan las dos
+dependencias. **No hace falta activar el entorno**: los comandos de este README llaman directamente al Python del entorno
+(así tampoco molesta la política de scripts de PowerShell).
 
-**Opción recomendada: uv.** Instala las mismas versiones que usamos (`uv.lock`) y, si hace falta, descarga un Python compatible:
-
-```
-uv sync
-```
-
-**Alternativa: pip** (necesita Python 3.11 o superior ya instalado):
+**Windows (PowerShell)**
 
 ```
 python -m venv .venv
-.venv\Scripts\python.exe -m pip install pygame-ce requests        (Windows)
-.venv/bin/python -m pip install pygame-ce requests                (Linux / macOS)
+.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
+
+**Linux / macOS**
+
+```
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+```
+
+Para comprobar que quedó bien (debe mostrar las opciones y no dar error):
+
+| Windows (PowerShell) | Linux / macOS |
+|---|---|
+| `.venv\Scripts\python.exe main.py --ayuda` | `.venv/bin/python main.py --ayuda` |
+
+**Alternativa con uv** (opcional; instala las mismas versiones de `uv.lock`): `uv sync`, y después cada comando de abajo
+se escribe como `uv run python main.py ...`.
+
+### Si algo falla
+
+- *`python` no se reconoce* (Windows): prueba `py -m venv .venv`, o instala Python 3.11 o superior desde python.org
+  marcando "Add python.exe to PATH".
+- *`uv` no se reconoce*: no se necesita. Usa los comandos de Windows o de Linux / macOS de este README.
+- *PowerShell no deja activar el entorno*: no hace falta activarlo; usa `.venv\Scripts\python.exe`.
+- Si ya activaste el entorno (`.venv\Scripts\Activate.ps1` o `source .venv/bin/activate`), basta con escribir
+  `python main.py ...` en lugar de la ruta completa.
 
 ## Cómo ejecutar
 
-Con uv, cada comando se antepone con `uv run`. Sin uv, se usa el Python del entorno virtual
-(`.venv\Scripts\python.exe` en Windows, `.venv/bin/python` en Linux / macOS); así no hace falta activar el entorno,
-algo que PowerShell bloquea por defecto.
+| Qué hace | Windows (PowerShell) | Linux / macOS |
+|---|---|---|
+| Abre el juego conectado al servicio web. | `.venv\Scripts\python.exe main.py` | `.venv/bin/python main.py` |
+| Abre el juego con el paquete local de `paquete/`, sin usar la red. | `.venv\Scripts\python.exe main.py --offline` | `.venv/bin/python main.py --offline` |
+| Cambia el tope de fichas del catálogo en memoria (entero mayor o igual a 1; por defecto 25). Se puede combinar con los demás modos. | `.venv\Scripts\python.exe main.py --cache-size 10` | `.venv/bin/python main.py --cache-size 10` |
+| Reproduce una partida desde su bitácora, sin abrir la ventana, y muestra cada acción y el resultado final. | `.venv\Scripts\python.exe main.py --replay logs/partida_001.log --offline` | `.venv/bin/python main.py --replay logs/partida_001.log --offline` |
+| Corre las mediciones de rendimiento con cargas sintéticas, sin abrir la ventana, y muestra una tabla por subsistema. | `.venv\Scripts\python.exe main.py --bench` | `.venv/bin/python main.py --bench` |
+| Muestra las opciones. | `.venv\Scripts\python.exe main.py --ayuda` | `.venv/bin/python main.py --ayuda` |
 
-| Comando | Qué hace |
+`--replay` y `--bench` no se pueden usar juntos. Con uv, cada comando se escribe `uv run python main.py ...`.
+
+**Sobre `--replay`:** `logs/` está vacía en una copia nueva del repositorio (se llena al jugar). Para probarlo sin jugar
+antes, el repositorio incluye una partida de muestra hecha con el paquete local:
+`... main.py --replay ejemplos/partida_ejemplo.log --offline`. Sin `--offline`, el replay pide la cripta al servicio web
+(y cuenta como solicitudes de red); con `--offline` la lee de `paquete/`.
+
+**Nota sobre `--bench`:** la tabla es larga. La terminal integrada de PyCharm puede no mostrarla completa; en una terminal
+normal sale entera. Para guardarla en un archivo:
+
+| Windows (PowerShell) | Linux / macOS |
 |---|---|
-| `uv run python main.py` | Abre el juego conectado al servicio web. |
-| `uv run python main.py --offline` | Abre el juego con el paquete local de `paquete/`, sin usar la red. |
-| `uv run python main.py --cache-size N` | Cambia el tope de fichas del catálogo en memoria (entero mayor o igual a 1; por defecto 25). Se puede combinar con los demás modos. |
-| `uv run python main.py --replay logs/partida_001.log` | Reproduce una partida desde su bitácora, sin abrir la ventana, y muestra cada acción y el resultado final. |
-| `uv run python main.py --bench` | Corre las mediciones de rendimiento con cargas sintéticas, sin abrir la ventana, y muestra una tabla por subsistema. |
-| `uv run python main.py --ayuda` | Muestra las opciones. |
-
-`--replay` y `--bench` no se pueden usar juntos.
-
-**Nota sobre `--bench`:** la tabla es larga. La terminal integrada de PyCharm puede no mostrarla completa;
-en una terminal normal sale entera. Para guardarla en un archivo:
-
-```
-uv run python main.py --bench > bench.txt
-```
+| `.venv\Scripts\python.exe main.py --bench \| Out-File -Encoding utf8 bench.txt` | `.venv/bin/python main.py --bench > bench.txt` |
 
 ### Controles
 
@@ -87,7 +110,8 @@ Para agregar o actualizar una cripta en el paquete (esto sí usa la red; el cat�
 completa con las fichas nuevas):
 
 ```
-uv run python -m Data.DescargadorPaquete <id-de-la-cripta>
+.venv\Scripts\python.exe -m Data.DescargadorPaquete <id-de-la-cripta>        (Windows)
+.venv/bin/python -m Data.DescargadorPaquete <id-de-la-cripta>             (Linux / macOS)
 ```
 
 ### Modo `--replay`
@@ -118,16 +142,17 @@ Ninguna de estas carpetas se sube al repositorio (están en `.gitignore`). Se cr
 Para correr todas de una vez (no abre ventanas; termina con código 0 si todo pasa):
 
 ```
-uv run python tests/correr_pruebas.py
+.venv\Scripts\python.exe tests/correr_pruebas.py        (Windows)
+.venv/bin/python tests/correr_pruebas.py             (Linux / macOS)
 ```
 
 Hay dos tipos de pruebas, y el script corre los dos:
 
 - **De `unittest`** (`tests/Test*.py` y algunos `tests/test_*.py`):
-  `uv run python -m unittest discover -s tests -p "[Tt]est*.py"`.
+  `.venv\Scripts\python.exe -m unittest discover -s tests -p "[Tt]est*.py"` (en Linux / macOS, `.venv/bin/python ...`).
 - **Scripts `probar_*`** (el resto de `tests/test_*.py`: Servicios, controladores, Vista...). `unittest discover` no los
   encuentra; cada uno se corre por separado y termina con una línea `OK: ...`, por ejemplo
-  `uv run python tests/test_servicios.py`.
+  `.venv\Scripts\python.exe tests/test_servicios.py`.
 
 Las pruebas de la Vista necesitan `pygame-ce`. Los scripts `tests/capturar_*.py` no son pruebas: guardan capturas de
 pantalla en `capturas/` para revisarlas a ojo.

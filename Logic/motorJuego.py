@@ -171,6 +171,8 @@ class Motor:
         objeto = self.inventario.soltar_actual()
         self.mazmorra.soltar_objeto(self.jugador.Sala_Actual, objeto.id, objeto.clase != self.PERGAMINO)
         self._sincronizar_equipo()
+        if objeto.clase == "antorcha":                 # soltar una antorcha apaga la que esté encendida
+            self.efectos.cancelar(self.jugador, "antorcha")
         self.mensaje(f"Sueltas {objeto.nombre}")
         self.terminar_accion_jugador(self.COSTO_SOLTAR)
         return "ok"

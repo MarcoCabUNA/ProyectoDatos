@@ -24,6 +24,8 @@ pantalla actual quedan en su valor por omisión (None o vacío).
     criterio   el criterio con que está ordenada esa tabla
     elemento_bajo_el_raton   lo que había bajo el ratón en su último movimiento ("juego"); None si el ratón no se ha
                movido desde la última tecla, clic o rueda. La Vista lo usa para mostrar el nombre de un objeto del suelo
+    activaciones   cuántas veces se activó un botón (con el ratón o con Enter) y cuántas veces se esperó en la partida
+               (botón Esperar o tecla Z). Nunca se reinicia; la Vista toca un sonido cuando sube
 
 Regla de los DTOs: solo transportan datos.
 """
@@ -51,3 +53,4 @@ class PantallaDTO:
     puntajes: list[PuntajeDTO] = field(default_factory=list)
     criterio: str | None = None
     elemento_bajo_el_raton: ElementoDTO | None = None
+    activaciones: int = 0
