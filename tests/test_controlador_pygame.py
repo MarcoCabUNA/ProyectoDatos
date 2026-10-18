@@ -352,7 +352,8 @@ def probar_recoger_del_suelo_y_usar_con_doble_clic_llegan_hasta_el_motor():
         e.reloj.ahora += DOBLE_CLIC_MS // 2
         e.c.procesar_evento(clic(casilla))                                  # doble clic: usa la antorcha
         estado = e.pantalla().estado
-        assert estado.inventario.objetos == [] and [x.tipo for x in estado.efectos] == ["antorcha"]
+        assert [o.id for o in estado.inventario.objetos] == ["itm_antorcha"]     # no se gasta: se apaga al soltarla
+        assert [x.tipo for x in estado.efectos] == ["antorcha"]
 
 
 def probar_un_movimiento_rechazado_y_e_sin_puertas_cerradas_dejan_su_aviso():

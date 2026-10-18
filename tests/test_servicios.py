@@ -214,8 +214,10 @@ def probar_recoger_usar_y_soltar(carpeta):
     assert estado.sala.objetos == [antorcha.id]
     acciones.ejecutar(ctx, AccionDTO("recoger", objeto=antorcha.id))
     estado = acciones.ejecutar(ctx, AccionDTO("usar", objeto=antorcha.id))
-    assert estado.inventario.capacidad == 0 and [e.tipo for e in estado.efectos] == ["antorcha"]
+    assert estado.inventario.capacidad == 1 and [e.tipo for e in estado.efectos] == ["antorcha"]   # no se gasta al usarla
     assert estado.efectos[0].restante > 0
+    estado = acciones.ejecutar(ctx, AccionDTO("soltar", objeto=antorcha.id))
+    assert estado.inventario.capacidad == 0 and estado.efectos == []                              # soltarla apaga el velo
 
 
 def probar_equipar_sube_el_ataque_y_lo_muestra(carpeta):

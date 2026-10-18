@@ -11,6 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")       # pygame sin ventana
+os.environ.setdefault("SDL_AUDIODRIVER", "dummy")       # y sin dispositivo de audio
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
 import pygame  # noqa: E402

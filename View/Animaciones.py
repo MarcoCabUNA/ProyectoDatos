@@ -10,6 +10,8 @@ leen ningún reloj: quien las llama pasa el instante. Las tablas y duraciones es
     alfa_de_fundido(p)             255 al empezar (opaco) y 0 al terminar
     fotograma_unico(n, transcurrido, duracion)   fotograma de una animación que se reproduce una vez y se queda en el último
 """
+import math
+
 from View import Componentes as c
 
 
@@ -92,6 +94,22 @@ def alfa_destello(p: float) -> int:
 
 def alfa_borde(p: float) -> int:
     return round(c.BORDE_ALFA * (1.0 - _limitar(p)))
+
+
+def alfa_velo_golpe(p: float) -> int:
+    """El velo rojo del golpe: parpadea VELO_GOLPE_PARPADEOS veces mientras se va apagando."""
+    p = _limitar(p)
+    pulso = 0.5 + 0.5 * math.cos(2 * math.pi * c.VELO_GOLPE_PARPADEOS * p)
+    return round(c.VELO_GOLPE_ALFA * (1.0 - p) * pulso)
+
+
+def alfa_vineta(fraccion_vida: float, ms: int) -> int:
+    """La viñeta de vida baja: 0 con la vida por encima de VINETA_UMBRAL; crece hasta VINETA_ALFA con la vida en 0 y late."""
+    if fraccion_vida >= c.VINETA_UMBRAL:
+        return 0
+    gravedad = 1.0 - _limitar(fraccion_vida / c.VINETA_UMBRAL)
+    latido = 0.8 + 0.2 * math.sin(2 * math.pi * ms / c.VINETA_PERIODO_MS)
+    return round(c.VINETA_ALFA * gravedad * latido)
 
 
 def escala_muerte(p: float) -> float:

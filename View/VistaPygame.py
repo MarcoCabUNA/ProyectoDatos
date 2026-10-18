@@ -1,7 +1,7 @@
 """
 VistaPygame (Vista): la ventana del juego. Cumple el contrato de cuatro métodos que usa ControladorPygame:
 
-    abrir()              crea la ventana (aquí se inicia pygame, sin audio)
+    abrir()              crea la ventana (aquí se inicia pygame; el audio solo con sonido=True)
     dibujar(pantalla)    dibuja UN cuadro a partir de un PantallaDTO
     cerrar()             libera pygame; es seguro aunque abrir() no se haya llamado
     elemento_en(punto)   qué hay en ese punto de lo último que se dibujó (ElementoDTO) o None
@@ -25,10 +25,12 @@ from DTO.PantallaDTO import PantallaDTO
 from View import Componentes as c
 from View.AlmacenSprites import AlmacenSprites
 from View.EfectosEscena import EfectosEscena
+from View.EventosSonoros import EventosSonoros
 from View.EscenaJuego import EscenaJuego
 from View.HudJuego import HudJuego
 from View.PantallaFin import PANTALLAS_FIN, PantallaFin
 from View.PantallaMenus import PantallaMenus
+from View.Sonidos import Sonidos
 from View.ZonasClic import ZonasClic
 
 TITULO_VENTANA = "Cripta"
@@ -44,10 +46,17 @@ def _carpeta_de_recursos() -> str:
 
 class VistaPygame:
 
-    def __init__(self, animaciones: bool = False, reloj=None, ruta_assets: str | None = None):
+    def __init__(self, animaciones: bool = False, reloj=None, ruta_assets: str | None = None, sonido: bool = False,
+                 fabrica_sonidos=None):
         """'animaciones' activa las animaciones de View/EfectosEscena.py (sin ellas la salida es la de siempre). 'reloj' es una
-        función sin argumentos que da milisegundos (por omisión pygame.time.get_ticks): lo único que mueve las animaciones."""
+        función sin argumentos que da milisegundos (por omisión pygame.time.get_ticks): lo único que mueve las animaciones.
+        'sonido' activa los sonidos (View/Sonidos.py y View/EventosSonoros.py); sin él el mezclador ni se inicia.
+        'fabrica_sonidos(ruta_assets)' crea el motor de sonido (por omisión Sonidos): las pruebas pasan uno falso."""
         self._animaciones = animaciones
+        self._sonido = sonido
+        self._fabrica_sonidos = fabrica_sonidos if fabrica_sonidos is not None else Sonidos
+        self._sonidos = None                  # el motor de sonido (solo con sonido=True y audio disponible)
+        self._eventos: EventosSonoros | None = None
         self._reloj = reloj if reloj is not None else pygame.time.get_ticks
         self._efectos: EfectosEscena | None = None
         self._con_mano = False                # el cursor es la mano (solo con animaciones)
@@ -73,6 +82,11 @@ class VistaPygame:
         self._hud = HudJuego(almacen, self._fuentes, self._zonas)
         self._menus = PantallaMenus(almacen, self._fuentes, self._zonas, self._escena)
         self._fin = PantallaFin(almacen, self._fuentes, self._zonas, self._menus)
+        if self._sonido:
+            motor = self._fabrica_sonidos(self._ruta_assets)
+            if motor.abrir():                 # sin dispositivo de audio el juego sigue en silencio
+                self._sonidos = motor
+                self._eventos = EventosSonoros(motor)
 
     def dibujar(self, pantalla: PantallaDTO) -> None:
         self._zonas.limpiar()                 # las zonas son las de ESTE cuadro, nunca las del anterior
@@ -94,11 +108,15 @@ class VistaPygame:
                 self._efectos.fundido_de_la_sala(self._superficie, ahora)   # sobre la escena, DEBAJO del HUD
             self._hud.dibujar(self._superficie, pantalla)         # velos, estadísticas, mensajes, inventario, botón, ayuda
             if self._efectos is not None:
+                jugador = pantalla.estado.jugador
+                self._efectos.vineta_de_vida(self._superficie, jugador.vida, jugador.vida_max, ahora)
                 self._efectos.borde_rojo(self._superficie, ahora)   # el borde enrojecido cubre el HUD también
             self._escena.dibujar_nombre(self._superficie, pantalla.estado, pantalla.elemento_bajo_el_raton)    # encima de todo
         else:
             self._superficie.fill(c.NEGRO_TINTA)
         pygame.display.flip()
+        if self._eventos is not None:
+            self._eventos.actualizar(pantalla, ahora)
         self._poner_el_cursor(pantalla)
 
     def _poner_el_cursor(self, pantalla: PantallaDTO) -> None:
@@ -121,6 +139,10 @@ class VistaPygame:
             self._efectos.fundido_de_la_pantalla(self._superficie, ahora)
 
     def cerrar(self) -> None:
+        if self._sonidos is not None:
+            self._sonidos.cerrar()
+        self._sonidos = None
+        self._eventos = None
         self._superficie = None
         self._fuentes = None
         self._menus = None

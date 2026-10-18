@@ -226,9 +226,11 @@ def probar_recoger_soltar_equipar_y_usar_llegan_al_motor_cada_uno_con_su_accion(
         assert estado.resultado is None and estado.inventario.objetos == []
         assert [o.id for o in estado.objetos_suelo] == ["itm_antorcha"]
         b.recoger("itm_antorcha")
-        estado = b.usar("itm_antorcha")                                     # se consume y se enciende
-        assert estado.resultado is None and estado.inventario.objetos == []
+        estado = b.usar("itm_antorcha")                                     # se enciende y se queda en el inventario
+        assert estado.resultado is None and [o.id for o in estado.inventario.objetos] == ["itm_antorcha"]
         assert [e.tipo for e in estado.efectos] == ["antorcha"]
+        estado = b.soltar("itm_antorcha")                                   # soltarla la apaga: se quita el velo
+        assert estado.efectos == [] and [o.id for o in estado.objetos_suelo] == ["itm_antorcha"]
 
 
 def probar_si_falla_armar_el_estado_no_queda_una_partida_a_medias_ni_se_pierde_la_anterior():

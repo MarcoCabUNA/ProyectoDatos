@@ -13,6 +13,7 @@ La Vista busca cada imagen **por nombre**. Ningún id de cripta está escrito en
 | `objetos` | `<id del catálogo>.png` y el respaldo `objeto.png` | PNG con transparencia |
 | `fondos` | Fondos de pantalla completa | JPG |
 | `ui` | Puertas e inventario | PNG con transparencia |
+| `sonidos` | Efectos y músicas (ver "Sonidos" más abajo) | MP3 |
 
 ## Nombres
 
@@ -52,6 +53,30 @@ Colores propuestos (ajustables en la Vista; la transparencia debe ser baja para 
 | `antorcha` | naranja cálido |
 
 Cada velo se crea una sola vez y se reutiliza en cada cuadro. Con varios efectos a la vez, los velos se superponen.
+
+## Sonidos (`sonidos/`, solo con `VistaPygame(sonido=True)`; `main.py` lo activa)
+
+Los 11 archivos son `.mp3` (44,1 kHz estéreo) y el nombre es el que escribe la tabla de `View/Componentes.py`
+(`SONIDOS_CORTOS`, `MUSICAS`): si falta uno, ese sonido simplemente calla. Sin dispositivo de audio, el juego sigue en
+silencio. Qué suena y cuándo lo decide `View/EventosSonoros.py`; el mezclador solo lo toca `View/Sonidos.py`.
+`python tests/medir_sonidos.py` imprime la duración, el silencio inicial y el pico de cada archivo y lo que haría el cargador.
+
+| Archivo | Cuándo suena | Fase |
+|---|---|---|
+| `Main_Menu` | Música de menú, criptas, nombre y puntajes (empieza en 2 s la primera vez). Bucle a mano en `fin_util_ms` | 1 |
+| `Game_Ambient` | Música de la partida y la pausa (a 35 % de su volumen en la pausa); se desvanece al terminar la partida | 1 |
+| `Click` | Al activar un botón (ratón o Enter), al esperar (botón Esperar o tecla Z) y al recoger un objeto que no sea una llave | 1 |
+| `Main_Room_Sound` | Una vez, al empezar una partida NUEVA (no al cargar) | 1 |
+| `Enemies_Impact_Hit`, `Hero_Impact_Hit` | Cuando baja la vida de un enemigo o del protagonista | 2 |
+| `Grab_Key_Sound` | Al recoger una llave (en lugar de `Click`) | 2 |
+| `Locked_Room_Change` | Al abrirse una puerta cerrada de la misma sala | 2 |
+| `Low_Health` | En bucle mientras la vida del protagonista sea baja (30 % para entrar, 40 % para salir) | 2 |
+| `Defeat_Music`, `Victory_Music` | Al aparecer la pantalla de derrota o de victoria | 2 |
+
+El cargador prepara cada sonido corto una sola vez al abrir la ventana (unos 0,5 s en total): le quita el silencio del
+inicio (hasta superar el 10 % del pico, menos 5 ms), lo limita a su tope, sube el volumen solo a los que tienen el pico
+muy bajo (`Main_Room_Sound`, `Victory_Music`) y les pone fundidos contra los chasquidos. La fase 2 está pendiente: sus
+sonidos ya se cargan, pero todavía no los toca nadie.
 
 ## Conjuntos que hay hoy
 
