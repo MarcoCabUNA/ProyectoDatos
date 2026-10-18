@@ -1,3 +1,4 @@
+from DTO.EfectoFichaDTO import REGENERACION, TIPOS_CONOCIDOS
 from Logic.ActorBase import ActorBase
 from Logic.Comportamientos import crear_comportamiento
 
@@ -33,5 +34,23 @@ class Enemigo(ActorBase):
     def objetos_que_suelta(self):
         return self.ficha.suelta
 
+    # Efectos del catálogo (§2.10, DTO/EfectoFichaDTO.py): los que aplica al jugador cuando lo golpea
+    # y los que tiene él mismo desde que se activa (regeneración). Los de tipo desconocido van con los propios:
+    # el Motor avisa una vez, al activarse, que no los simula (en cada golpe llenaría la bitácora).
+    def efectos_al_golpear(self):
+        return _filtrar(self.ficha.efectos, propios=False)
+
+    def efectos_propios(self):
+        return _filtrar(self.ficha.efectos, propios=True)
+
     def activar(self, motor, evento):
         motor.turno_enemigo(self)
+
+
+def _filtrar(efectos, propios):
+    resultado = []
+    for efecto in efectos:
+        es_propio = efecto.tipo == REGENERACION or efecto.tipo not in TIPOS_CONOCIDOS
+        if es_propio == propios:
+            resultado.append(efecto)
+    return resultado
