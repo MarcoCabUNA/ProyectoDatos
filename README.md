@@ -6,7 +6,7 @@ con un reloj virtual y guarda partidas, puntajes y bitácoras de replay en disco
 
 ## Requisitos
 
-- **Python 3.14 o superior** (lo exige `pyproject.toml`).
+- **Python 3.11 o superior** (lo exige `pyproject.toml`; probado con 3.11 y 3.14).
 - Dependencias:
   - `requests`: acceso al servicio web (`Data/ClienteHttp.py`).
   - `pygame-ce`: interfaz gráfica (solo para jugar; `--replay` y `--bench` no lo necesitan).
@@ -15,13 +15,13 @@ con un reloj virtual y guarda partidas, puntajes y bitácoras de replay en disco
 
 Desde la raíz del proyecto (la carpeta donde está `main.py`).
 
-**Opción recomendada: uv.** Instala las mismas versiones que usamos (`uv.lock`) y, si hace falta, descarga Python 3.14:
+**Opción recomendada: uv.** Instala las mismas versiones que usamos (`uv.lock`) y, si hace falta, descarga un Python compatible:
 
 ```
 uv sync
 ```
 
-**Alternativa: pip** (necesita Python 3.14 ya instalado):
+**Alternativa: pip** (necesita Python 3.11 o superior ya instalado):
 
 ```
 python -m venv .venv

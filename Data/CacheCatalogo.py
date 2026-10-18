@@ -102,6 +102,14 @@ class CacheCatalogo:
             self._recientes.mover_al_frente(entrada.nodo)
         return entrada.ficha
 
+    def registrar_fallo(self) -> None:
+        """
+        Cuenta un fallo sin pasar por obtener(). Lo usa ResolvedorCatalogo al precargar: allí pregunta
+        con contiene() (que no cuenta) y, si la ficha no está en memoria ni en disco, la descarga.
+        Sin esto, las fichas que llegan por precarga nunca aparecían como fallos en el reporte (§5.1).
+        """
+        self._fallos += 1
+
     def esta_en_uso(self, id_ficha: str) -> bool:
         posicion, encontrada = self._buscar(id_ficha)
         return encontrada and self._entradas[posicion].usos > 0

@@ -119,7 +119,7 @@ class ResolvedorCatalogo:
         pendientes = Cola()
         vistos: list[str] = []
         self._encolar_si_falta(id_ficha, pendientes, vistos)
-        for descargada in self._descargar(pendientes, vistos):
+        for descargada in self._descargar(pendientes, vistos, ya_contada=id_ficha):
             if descargada.id == id_ficha:
                 return descargada
         # obtener_catalogo ya valida que la respuesta traiga todos los ids pedidos.
@@ -190,10 +190,12 @@ class ResolvedorCatalogo:
             return
         pendientes.encolar(id_ficha)
 
-    def _descargar(self, pendientes: Cola, vistos: list[str]) -> list[Ficha]:
+    def _descargar(self, pendientes: Cola, vistos: list[str], ya_contada: str | None = None) -> list[Ficha]:
         """
         Vacía la cola en lotes de hasta 10, en orden de llegada. Cada ficha recibida se guarda en
         disco (persistente) y en memoria; si es un enemigo, lo que suelta se agrega a la cola.
+        Cada ficha descargada cuenta como un fallo de caché: no estaba ni en memoria ni en disco (§5.1).
+        ya_contada: el id que ficha() ya contó como fallo en CacheCatalogo.obtener(); no se cuenta otra vez.
         """
         descargadas: list[Ficha] = []
         while not pendientes.esta_vacia():
@@ -206,6 +208,8 @@ class ResolvedorCatalogo:
                 self._almacen.guardar(ficha)
                 self._cache.insertar(ficha)
                 self._fichas_descargadas += 1
+                if ficha.id != ya_contada:
+                    self._cache.registrar_fallo()
                 descargadas.append(ficha)
                 if isinstance(ficha, FichaEnemigoDTO):
                     for id_suelta in ficha.suelta:

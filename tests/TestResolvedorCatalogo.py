@@ -73,6 +73,23 @@ class PruebasResolvedorCatalogo(unittest.TestCase):
         self.assertEqual(todos[:4], ["itm_antorcha", "ent_rata_gigante", "trp_dardos", "itm_daga_oxidada"])
         self.assertEqual(r.solicitudes_catalogo(), 2)
 
+    def test_cada_ficha_descargada_cuenta_como_un_fallo(self):
+        r = self.crear(ApiFalsa())
+        r.resolver_contenido(contenidos_reales())
+        self.assertEqual((r.aciertos(), r.fallos()), (0, IDS_REALES))   # la precarga sí cuenta sus fallos
+        r.resolver_contenido(contenidos_reales())                      # ya estaba todo: nada nuevo
+        self.assertEqual((r.aciertos(), r.fallos()), (0, IDS_REALES))
+        r.ficha("ent_rata_gigante")
+        self.assertEqual((r.aciertos(), r.fallos()), (1, IDS_REALES))
+
+    def test_precargar_desde_disco_no_cuenta_el_fallo_dos_veces(self):
+        self.crear(ApiFalsa()).resolver_contenido(contenidos_reales())
+        r = self.crear(ApiFalsa())                                     # el programa se reinició
+        r.resolver_contenido(contenidos_reales())                      # están en disco: no se descarga nada
+        self.assertEqual(r.fallos(), 0)
+        r.ficha("ent_rata_gigante")                                    # el fallo se cuenta al leerla del disco
+        self.assertEqual(r.fallos(), 1)
+
     def test_segunda_vez_no_pide_nada(self):
         api = ApiFalsa()
         r = self.crear(api)
@@ -147,6 +164,7 @@ class PruebasResolvedorCatalogo(unittest.TestCase):
         r = self.crear(api)
         r.ficha("ent_rata_gigante")
         self.assertEqual(ids_pedidos_al_catalogo(api), [["ent_rata_gigante"], ["itm_pocion_menor"]])
+        self.assertEqual(r.fallos(), 2)                                # la rata (una sola vez) y la poción
 
     def test_ficha_inexistente_lanza_error_en_vez_de_none(self):
         r = self.crear(ApiFalsa())
