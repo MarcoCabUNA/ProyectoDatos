@@ -78,7 +78,7 @@ def jugar(config: ConfiguracionDTO) -> int:
         if error.name == "pygame":
             print("Instálalo con: uv add pygame-ce")
         return 1
-    ControladorPygame(VistaPygame(), config).ejecutar()
+    ControladorPygame(VistaPygame(animaciones=True), config, demora_fin_ms=1500).ejecutar()
     return 0
 
 

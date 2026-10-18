@@ -153,6 +153,56 @@ VELO_RAPIDO = (60, 110, 255, 36)             # velocidad con valor > 0
 VELO_LENTO = (150, 70, 220, 40)              # velocidad con valor < 0
 VELO_ANTORCHA = (255, 150, 40, 40)
 
+# ---------------------------------------------------------------------------- animaciones (Etapa 9; solo con VistaPygame(animaciones=True))
+# Todo va por el reloj en milisegundos de la Vista (nunca el reloj virtual del juego). Las tablas son listas que dan un valor
+# por cada paso de su periodo.
+ANIM_IDLE_FPS = 6                            # reposo de los enemigos con varios fotogramas: fotogramas por segundo
+ANIM_IDLE_JUGADOR_FPS = 3                    # reposo del protagonista: 3 fotogramas en un ciclo de 1 s
+BAMBOLEO = [0, 1, 1, 2, 2, 2, 1, 1, 0, -1, -1, -2, -2, -2, -1, -1]      # píxeles de subida (+) del actor de un solo fotograma
+BAMBOLEO_PERIODO_MS = 1600
+BAMBOLEO_FASE = 5                            # pasos de la tabla de desfase por cada posición en la lista de enemigos
+AURA_INTENSIDAD_ANIMADA = 255                # con animaciones el aura se prepara a tope y su alfa se mueve con la tabla
+AURA_RESPIRA = [118, 126, 136, 146, 156, 164, 170, 164, 156, 146, 136, 126]    # alfa del aura en reposo (~el 150 de siempre)
+AURA_RESPIRA_PERIODO_MS = 2400
+AURA_BRILLA = [212, 224, 236, 246, 255, 246, 236, 224]                          # alfa con el ratón encima
+AURA_BRILLA_PERIODO_MS = 1100
+AURA_FASE = 3                                # pasos de desfase por cada objeto de la lista
+FUNDIDO_SALA_MS = 280                        # al entrar a una sala nueva (sobre la escena, debajo del HUD)
+FUNDIDO_PANTALLA_MS = 180                    # al cambiar de pantalla de menú (sobre toda la pantalla)
+FUNDIDO_COLOR = (0, 0, 0)
+PANTALLAS_CON_FUNDIDO = ["menu", "criptas", "nombre", "victoria", "derrota", "puntajes"]
+PARPADEO = [4, 7, 3, 10, 14, 9, 5, 12, 16, 11, 6, 2, 8, 13, 7, 3, 9, 15, 10, 4, 6, 12, 16, 13, 8, 3, 5, 11, 7, 2, 9, 6]
+PARPADEO_PERIODO_MS = 2500                   # alfa (0-255) de una capa oscura sobre el fondo de la sala: luz que vacila
+PARPADEO_COLOR = (0, 0, 0)
+MUERTE_JUGADOR_MS = 600                      # el protagonista cae (fotogramas 'muerte') desde el primer cuadro de la derrota
+
+# Feedback de combate (fase 2): todo se deduce de las diferencias entre un cuadro y el anterior, nunca de los mensajes
+MAX_ANIMACIONES = 24                         # las que la Vista recuerda a la vez (si llegan más, se olvidan las más viejas)
+NUMERO_MS = 700                              # número flotante de vida: -N rojo, +N verde
+NUMERO_SUBE = 36                             # píxeles que sube en ese tiempo
+NUMERO_FIJO = 0.55                           # la parte del tiempo en que se ve entero antes de desvanecerse
+NUMERO_TAMANO = 40
+NUMERO_ROJO = ROJO_VIVO
+NUMERO_VERDE = (110, 214, 104)
+NUMERO_CONTORNO = (14, 8, 10)
+DESTELLO_MS = 160                            # el actor golpeado se aclara
+DESTELLO_ALFA = 190
+DESTELLO_COLOR = (255, 255, 255)
+BORDE_MS = 220                               # el borde de la pantalla se enrojece cuando el protagonista pierde vida
+BORDE_ALFA = 210
+BORDE_GROSOR = 22
+BORDE_COLOR = ROJO_VIVO
+MUERTE_ENEMIGO_MS = 450                      # el enemigo muere (fotogramas 'muerte' si los tiene; si no, se encoge y se desvanece)
+MUERTE_ENCOGE = 0.55                         # el tamaño que le queda al final, sin fotogramas propios
+RECOGIDO_MS = 220                            # el objeto recogido se desvanece subiendo
+RECOGIDO_SUBE = 26
+PUERTA_DESVANECE_MS = 260                    # la puerta cerrada que se abre se desvanece
+PUERTA_CALIDO_MS = 300                       # y la puerta final, además, brilla
+PUERTA_CALIDO_ALFA = 190
+PUERTA_CALIDO_COLOR = (255, 206, 120)
+PUERTA_CALIDO_MARGEN = 16
+CURSOR_MANO = True                           # con animaciones, el cursor es una mano sobre lo que se puede pulsar
+
 # Etiqueta con el nombre del objeto bajo el ratón
 ETIQUETA_SEPARACION = 6                      # entre el objeto y la etiqueta
 ETIQUETA_RELLENO = (20, 12)                  # lo que la etiqueta sobresale del texto (ancho, alto)

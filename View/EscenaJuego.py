@@ -23,15 +23,17 @@ Los objetos del suelo llevan un aura (los enemigos no) y su nombre solo aparece 
 PantallaDTO.elemento_bajo_el_raton, que la Vista recibe ya hecho (no lee el ratón).
 """
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import pygame
 
 from DTO.Direcciones import E, N, S
 from DTO.ElementoDTO import ELEMENTO_ENEMIGO, ELEMENTO_OBJETO_SUELO, ELEMENTO_PUERTA, ElementoDTO
 from DTO.EstadoJuegoDTO import EstadoJuegoDTO
+from View import Animaciones as anim
 from View import Componentes as c
 from View.AlmacenSprites import es_de_respaldo
+from View.EfectosEscena import Instantanea, MarcaEnemigo, MarcaObjeto, MarcaPuerta
 
 FONDO_INICIAL, FONDO_REGULAR, FONDO_FINAL = c.FONDO_INICIAL, c.FONDO_REGULAR, c.FONDO_FINAL
 PUERTA_CERRADA, PUERTA_FINAL = c.PUERTA_CERRADA, c.PUERTA_FINAL
@@ -165,6 +167,7 @@ class Reparto:
     sprites: list                    # el sprite de cada enemigo, a su tamaño
     fuente_chica: bool               # nombres con la fuente chica (muchos enemigos)
     objetos: list                    # zona de clic de cada objeto del suelo
+    conjuntos: list = field(default_factory=list)    # el ConjuntoSprites (todos los fotogramas) de cada enemigo
 
 
 def repartir_escena(almacen, fuentes: c.Fuentes, enemigos: list, objetos: list, salidas: list,
@@ -181,15 +184,17 @@ def repartir_escena(almacen, fuentes: c.Fuentes, enemigos: list, objetos: list, 
     margen = c.AURA_MARGEN
     sprites_objetos = [almacen.objeto(o.id, o.clase, c.LADO_OBJETO).fotogramas[0] for o in objetos]
     tamanos_objetos = [(s.get_width() + 2 * margen, s.get_height() + 2 * margen) for s in sprites_objetos]
-    rectangulos, sprites, chica, huellas = [], [], False, []
+    rectangulos, sprites, conjuntos, chica, huellas = [], [], [], False, []
     for factor in c.FACTORES_ENEMIGOS:
         chica = factor < c.FACTOR_NOMBRE_CHICO
         fuente = fuentes.chico if chica else fuentes.pie
-        sprites, tamanos = [], []
+        sprites, conjuntos, tamanos = [], [], []
         for a, es_respaldo_ in zip(enemigos, respaldo):
             alto = round(c.ALTURA_ENEMIGO * (c.FACTOR_RESPALDO if es_respaldo_ else 1.0) * factor)
-            sprite = almacen.actor_a_altura(a.tipo, max(c.ALTURA_MINIMA, alto), nombre=a.nombre).fotogramas[0]
+            conjunto = almacen.actor_a_altura(a.tipo, max(c.ALTURA_MINIMA, alto), nombre=a.nombre)
+            sprite = conjunto.fotogramas[0]
             ancho_nombre = min(fuente.size(a.nombre)[0], c.NOMBRE_ANCHO_MAX)
+            conjuntos.append(conjunto)
             sprites.append(sprite)
             tamanos.append((max(sprite.get_width(), c.BARRA_VIDA[0], ancho_nombre), sprite.get_height() + c.FICHA))
         rectangulos, caben = colocar(tamanos, ocupadas, c.SUELO, pies, c.REPARTO_RADIO_ENEMIGOS, c.REPARTO_PASO,
@@ -198,15 +203,19 @@ def repartir_escena(almacen, fuentes: c.Fuentes, enemigos: list, objetos: list, 
                                          c.REPARTO_RADIO_OBJETOS, c.REPARTO_PASO, c.REPARTO_SEPARACION)
         if caben and caben_objetos:                  # si los objetos no caben, los enemigos se achican un poco más
             break
-    return Reparto(rectangulos, sprites, chica, [huella.inflate(-2 * margen, -2 * margen) for huella in huellas])
+    return Reparto(rectangulos, sprites, chica, [huella.inflate(-2 * margen, -2 * margen) for huella in huellas], conjuntos)
 
 
 class EscenaJuego:
 
-    def __init__(self, almacen, fuentes: c.Fuentes, zonas):
+    def __init__(self, almacen, fuentes: c.Fuentes, zonas, efectos=None):
+        """'efectos' (View/EfectosEscena.py) solo se da con animaciones; sin él todo se dibuja como siempre."""
         self._almacen = almacen
         self._fuentes = fuentes
         self._zonas = zonas
+        self._efectos = efectos
+        self._ahora = 0                              # el instante del cuadro (solo con animaciones)
+        self._objeto_resaltado = -1                  # qué objeto del suelo tiene el ratón encima (solo con animaciones)
         self._con_zonas = True
         self._id_visto: int | None = None            # la sala del cuadro anterior (None: no hay, o se olvidó)
         self._pies = c.PIES_CENTRO                   # dónde pisa el protagonista en la sala actual
@@ -216,22 +225,37 @@ class EscenaJuego:
     def olvidar_la_sala(self) -> None:
         """Se llama al mostrar menu, criptas, nombre, victoria, derrota o puntajes: la próxima partida empieza de cero."""
         self._id_visto = None
+        if self._efectos is not None:
+            self._efectos.olvidar()                  # y tampoco recuerda lo que pasó en el cuadro anterior
 
     def dibujar(self, superficie: pygame.Surface, estado: EstadoJuegoDTO, objetivo: str | None,
                 con_zonas: bool = True, elemento_bajo_el_raton: ElementoDTO | None = None,
-                con_nombre: bool = True) -> None:
+                con_nombre: bool = True, ahora: int | None = None) -> None:
         """Dibuja la sala. Con 'con_zonas' False (la pausa) no registra nada clicable. Con 'con_nombre' False no dibuja el
-        nombre del objeto bajo el ratón: la Vista lo pide después con dibujar_nombre, por encima del HUD."""
+        nombre del objeto bajo el ratón: la Vista lo pide después con dibujar_nombre, por encima del HUD.
+        'ahora' (ms) solo lo usan las animaciones; sin él (la pausa) la escena se dibuja congelada en el último instante."""
         self._con_zonas = con_zonas
+        if self._efectos is not None:
+            self._ahora = self._efectos.ahora_de_la_escena(ahora)
+            self._objeto_resaltado = elemento_bajo_el_raton.indice if (
+                elemento_bajo_el_raton is not None and elemento_bajo_el_raton.tipo == ELEMENTO_OBJETO_SUELO) else -1
         if estado.sala.id != self._id_visto:
             self._pies = posicion_del_protagonista(estado.sala.salidas, self._id_visto)
             self._id_visto = estado.sala.id
+            if self._efectos is not None and ahora is not None:
+                self._efectos.sala_nueva(ahora)               # empieza el fundido de entrada
         fondo = fondo_para(estado)
         ambiente = self._almacen.fondo_ambientado(fondo, (c.ANCHO, c.ALTO), c.AMBIENTE_INTENSIDAD)
         superficie.blit(ambiente.fotogramas[0], (0, 0))
+        if self._efectos is not None:
+            self._efectos.parpadeo(superficie, self._ahora)    # la luz vacila: una capa oscura sobre el fondo
         self._marcos_sin_salida(superficie, estado, fondo)
-        self._puertas(superficie, estado, fondo)
+        puertas = self._puertas(superficie, estado, fondo)
         reparto = self._repartir(estado)
+        if self._efectos is not None:
+            if ahora is not None:                                  # en la pausa la escena está congelada: no se observa nada
+                self._efectos.observar(self._instantanea(estado, reparto, puertas), ahora, self._cuadros_de_muerte)
+            self._efectos.dibujar_puertas(superficie, self._ahora)
         entradas = [("jugador", 0, self._pies[1])]
         entradas += [("enemigo", i, r.bottom) for i, r in enumerate(reparto.enemigos)]
         entradas += [("objeto", i, r.bottom) for i, r in enumerate(reparto.objetos)]
@@ -243,6 +267,9 @@ class EscenaJuego:
                 self._enemigo(superficie, estado.enemigos[i], i, reparto, objetivo)
             else:
                 self._objeto(superficie, estado.objetos_suelo[i], i, reparto)
+        if self._efectos is not None:
+            self._efectos.dibujar_fantasmas(superficie, self._ahora)
+            self._efectos.dibujar_numeros(superficie, self._ahora)
         if con_nombre:
             self._nombre_del_objeto(superficie, estado, reparto, elemento_bajo_el_raton)
 
@@ -266,13 +293,51 @@ class EscenaJuego:
             pygame.draw.polygon(capa, c.COLOR_OSCURO, [(x - marco.x, y - marco.y) for x, y in trapecio(marco, direccion)])
             superficie.blit(capa, marco)
 
-    def _puertas(self, superficie, estado, fondo) -> None:
+    def _puertas(self, superficie, estado, fondo) -> list:
+        """Dibuja las puertas cerradas y devuelve dónde quedó cada una (las animaciones recuerdan cuáles se abren)."""
         marcos = marcos_de(fondo)
+        marcas = []
         for direccion, nombre in puertas_a_dibujar(estado):
             sprite = self._almacen.puerta(nombre, direccion, escala_de_puerta(nombre)).fotogramas[0]
             rectangulo = sprite.get_rect(center=marcos[direccion].center).clamp(PANTALLA)
             superficie.blit(sprite, rectangulo)
             self._registrar(rectangulo, ElementoDTO(ELEMENTO_PUERTA, direccion))
+            marcas.append(MarcaPuerta(direccion, rectangulo, sprite, nombre == PUERTA_FINAL))
+        return marcas
+
+    # ------------------------------------------------------------------ lo que las animaciones de combate recuerdan
+    def _rect_del_jugador(self, estado) -> pygame.Rect:
+        jugador = estado.jugador
+        reposo = self._almacen.actor_a_altura(jugador.tipo, c.ALTURA_JUGADOR, nombre=jugador.nombre).fotogramas[0]
+        return reposo.get_rect(midbottom=self._pies)
+
+    def _instantanea(self, estado, reparto, puertas) -> Instantanea:
+        """Lo que se acaba de decidir dibujar, para que la Vista lo compare con el cuadro anterior."""
+        destinos = [salida.sala_destino for salida in estado.sala.salidas if salida is not None]
+        marca = Instantanea(estado.sala.id, estado.reloj, destinos, estado.jugador.vida, self._rect_del_jugador(estado),
+                            puertas=puertas)
+        for i, enemigo in enumerate(estado.enemigos):
+            sprite = reparto.sprites[i]
+            rect = sprite.get_rect(midbottom=reparto.enemigos[i].midbottom)
+            marca.enemigos.append(MarcaEnemigo(enemigo.id, enemigo.vida, rect, sprite, enemigo.tipo, enemigo.nombre))
+        for i, objeto in enumerate(estado.objetos_suelo):
+            sprite = self._almacen.objeto(objeto.id, objeto.clase, c.LADO_OBJETO).fotogramas[0]
+            marca.objetos.append(MarcaObjeto(objeto.id, reparto.objetos[i].copy(), sprite))
+        return marca
+
+    def _cuadros_de_muerte(self, tipo: str, alto: int, nombre: str) -> list:
+        """Los fotogramas 'muerte' de un enemigo a la altura 'alto', o una lista vacía si ese enemigo no los tiene (entonces
+        el almacén devolvió su reposo o la figura de respaldo, y la muerte se dibuja encogiéndolo)."""
+        conjunto = self._almacen.actor_a_altura(tipo, alto, "muerte", nombre)
+        return list(conjunto.fotogramas) if conjunto.origen.endswith("_muerte") else []
+
+    def _destello(self, superficie, sprite, destino, del_jugador: bool, id_enemigo: str) -> None:
+        """El golpeado se aclara un instante: su silueta blanca, translúcida, sobre su sprite."""
+        alfa = self._efectos.alfa_de_destello(del_jugador, id_enemigo, self._ahora)
+        if alfa > 0:
+            silueta = self._almacen.silueta_blanca(sprite)
+            silueta.set_alpha(alfa)
+            superficie.blit(silueta, destino)
 
     # ------------------------------------------------------------------ reparto
     def _repartir(self, estado) -> Reparto:
@@ -297,9 +362,18 @@ class EscenaJuego:
 
     def _jugador(self, superficie, estado) -> None:
         jugador = estado.jugador
-        sprite = self._almacen.actor_a_altura(jugador.tipo, c.ALTURA_JUGADOR, nombre=jugador.nombre).fotogramas[0]
-        sprite_rect = sprite.get_rect(midbottom=self._pies)
-        superficie.blit(sprite, sprite_rect)
+        fotogramas = self._almacen.actor_a_altura(jugador.tipo, c.ALTURA_JUGADOR, nombre=jugador.nombre).fotogramas
+        sprite_rect = fotogramas[0].get_rect(midbottom=self._pies)       # la ficha va sobre el reposo, no salta con el cuadro
+        sprite = fotogramas[0]
+        if self._efectos is not None:                                    # reposo en bucle
+            sprite = fotogramas[anim.fotograma(len(fotogramas), self._ahora, c.ANIM_IDLE_JUGADOR_FPS)]
+            muerte = self._efectos.ms_de_muerte(self._ahora, estado.terminado and estado.resultado == "derrota")
+            if muerte is not None:                                       # la derrota: cae y se queda en el último fotograma
+                caida = self._almacen.actor_a_altura(jugador.tipo, c.ALTURA_JUGADOR, "muerte", jugador.nombre).fotogramas
+                sprite = caida[anim.fotograma_unico(len(caida), muerte, c.MUERTE_JUGADOR_MS)]
+        superficie.blit(sprite, sprite.get_rect(midbottom=self._pies))
+        if self._efectos is not None:
+            self._destello(superficie, sprite, sprite.get_rect(midbottom=self._pies), True, "")
         self._ficha_de_actor(superficie, jugador, sprite_rect, c.JUGADOR_OCUPA[0], self._fuentes.pie)
 
     def _enemigo(self, superficie, enemigo, i, reparto, objetivo) -> None:
@@ -308,15 +382,27 @@ class EscenaJuego:
         if enemigo.id == objetivo:
             halo = sprite_rect.inflate(*c.HALO_MARGEN)       # el que atacaría Espacio: un marco dorado translúcido
             c.panel(superficie, halo, c.HALO_COLOR, c.ORO, 2)
-        superficie.blit(sprite, sprite_rect)
+        if self._efectos is None:
+            superficie.blit(sprite, sprite_rect)
+        else:
+            fotogramas = reparto.conjuntos[i].fotogramas
+            if len(fotogramas) > 1:                                      # varios fotogramas: reposo en bucle
+                sprite = fotogramas[anim.fotograma(len(fotogramas), self._ahora, c.ANIM_IDLE_FPS)]
+                destino = sprite.get_rect(midbottom=zona.midbottom)
+            else:                                                        # uno solo: vaivén vertical, con fase según su posición
+                destino = sprite_rect.move(0, -anim.bamboleo(self._ahora, i))
+            superficie.blit(sprite, destino)
+            self._destello(superficie, sprite, destino, False, enemigo.id)
         self._ficha_de_actor(superficie, enemigo, sprite_rect, zona.width,
                              self._fuentes.chico if reparto.fuente_chica else self._fuentes.pie)
         self._registrar(zona, ElementoDTO(ELEMENTO_ENEMIGO, i))
 
     def _objeto(self, superficie, objeto, i, reparto) -> None:
         zona = reparto.objetos[i]
-        aura = self._almacen.aura_de_objeto(objeto.id, objeto.clase, c.LADO_OBJETO, c.AURA_MARGEN, c.AURA_COLOR,
-                                            c.AURA_INTENSIDAD)
+        intensidad = c.AURA_INTENSIDAD if self._efectos is None else c.AURA_INTENSIDAD_ANIMADA
+        aura = self._almacen.aura_de_objeto(objeto.id, objeto.clase, c.LADO_OBJETO, c.AURA_MARGEN, c.AURA_COLOR, intensidad)
+        if self._efectos is not None:                                    # el aura respira y brilla más con el ratón encima
+            aura.set_alpha(anim.alfa_aura(self._ahora, i, i == self._objeto_resaltado))
         superficie.blit(aura, zona.inflate(2 * c.AURA_MARGEN, 2 * c.AURA_MARGEN).topleft)
         superficie.blit(self._almacen.objeto(objeto.id, objeto.clase, c.LADO_OBJETO).fotogramas[0], zona)
         self._registrar(zona, ElementoDTO(ELEMENTO_OBJETO_SUELO, i))

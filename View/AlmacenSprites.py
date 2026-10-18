@@ -139,6 +139,17 @@ class AlmacenSprites:
         difuso.fill((255, 255, 255, intensidad), special_flags=pygame.BLEND_RGBA_MULT)
         return self._recordar(clave, difuso)
 
+    def silueta_blanca(self, sprite: pygame.Surface) -> pygame.Surface:
+        """La silueta de 'sprite' toda de DESTELLO_COLOR (opaca donde el sprite no es transparente): el destello del golpeado.
+        Se prepara una vez por sprite y se guarda en la caché (junto al sprite, para que su id no se reutilice)."""
+        clave = f"silueta|{id(sprite)}|{sprite.get_size()}"
+        guardada = self._recordado(clave)
+        if guardada is not None:
+            return guardada[1]
+        silueta = pygame.mask.from_surface(sprite).to_surface(setcolor=(*c.DESTELLO_COLOR, 255), unsetcolor=(0, 0, 0, 0))
+        self._recordar(clave, (sprite, silueta))
+        return silueta
+
     def fondo(self, nombre: str, tamano: tuple[int, int]) -> ConjuntoSprites:
         """Un fondo de pantalla completa, suavizado hasta 'tamano'. Sin archivo, un fondo liso."""
         clave = f"fondo|{nombre}|{tamano}"
