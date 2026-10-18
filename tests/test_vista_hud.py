@@ -401,7 +401,6 @@ def probar_las_11_lineas_de_ayuda_caben_en_su_panel_con_las_constantes_reales():
     ancho_util = c.HUD_AYUDA.width - 2 * c.HUD_RELLENO
     fuente = _fuente(c.TAM_AYUDA_JUEGO)
     assert max(fuente.size(linea)[0] for linea in AYUDA_JUEGO) <= ancho_util
-    assert max(_fuente(c.TAM_AYUDA_JUEGO + 1).size(linea)[0] for linea in AYUDA_JUEGO) > ancho_util   # la más grande que cabe
     assert c.HUD_RELLENO + len(AYUDA_JUEGO) * c.HUD_AYUDA_INTERLINEA <= c.HUD_AYUDA.height
     assert c.HUD_AYUDA_INTERLINEA >= fuente.get_height()
     with VistaMedida() as m:

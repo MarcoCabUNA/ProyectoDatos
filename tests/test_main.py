@@ -93,7 +93,7 @@ def _correr_en_un_interprete_limpio(argumentos, carpeta):
     codigo = (f"import sys; sys.path.insert(0, {str(RAIZ)!r}); import main; "
               f"rc = main.main({argumentos!r}); print('RESULTADO', rc, 'pygame' in sys.modules)")
     resultado = subprocess.run([sys.executable, "-B", "-c", codigo], cwd=carpeta, capture_output=True, text=True,
-                               encoding="utf-8", timeout=300)
+                               encoding="utf-8", timeout=300, env={**os.environ, "PYTHONIOENCODING": "utf-8"})
     ultima = [l for l in resultado.stdout.splitlines() if l.startswith("RESULTADO ")]
     assert ultima, (resultado.stdout[-500:], resultado.stderr[-800:])
     _, rc, con_pygame = ultima[-1].split()
@@ -124,7 +124,8 @@ def probar_importar_main_no_importa_pygame_ni_la_vista():
     with en_carpeta_temporal() as carpeta:
         codigo = (f"import sys; sys.path.insert(0, {str(RAIZ)!r}); import main; "
                   "print('RESULTADO', 0, 'pygame' in sys.modules or 'View.VistaPygame' in sys.modules)")
-        r = subprocess.run([sys.executable, "-B", "-c", codigo], cwd=carpeta, capture_output=True, text=True, timeout=120)
+        r = subprocess.run([sys.executable, "-B", "-c", codigo], cwd=carpeta, capture_output=True, text=True,
+                           encoding="utf-8", timeout=120, env={**os.environ, "PYTHONIOENCODING": "utf-8"})
         assert "RESULTADO 0 False" in r.stdout, (r.stdout, r.stderr[-500:])
 
 
@@ -132,7 +133,8 @@ def probar_si_falta_pygame_el_modo_interactivo_lo_dice_y_sale_con_1():
     codigo = (f"import sys; sys.path.insert(0, {str(RAIZ)!r}); sys.modules['pygame'] = None; import main; "
               "rc = main.main(['--offline']); print('RESULTADO', rc)")
     with en_carpeta_temporal() as carpeta:
-        r = subprocess.run([sys.executable, "-B", "-c", codigo], cwd=carpeta, capture_output=True, text=True, timeout=120)
+        r = subprocess.run([sys.executable, "-B", "-c", codigo], cwd=carpeta, capture_output=True, text=True,
+                           encoding="utf-8", timeout=120, env={**os.environ, "PYTHONIOENCODING": "utf-8"})
     assert "RESULTADO 1" in r.stdout, (r.stdout, r.stderr[-500:])
     assert "No se puede abrir la interfaz gráfica: falta el módulo 'pygame'" in r.stdout
     assert "Instálalo con: uv add pygame-ce" in r.stdout
