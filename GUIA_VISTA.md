@@ -86,7 +86,7 @@ Datos  <->  Lógica  <->  Servicios  <->  Interfaz (Controlador + Vista)        
 | `DTO/` | Datos que viajan entre capas (`@dataclass(frozen=True)`, sin lógica) | Solo `EstadoJuegoDTO` (Etapa 1) |
 | `Data/`, `Logic/`, `Estructuras/`, `Security/` | Red/disco/caché, motor del juego, estructuras propias, validador | No (`Security` solo se *usa*) |
 | `Service/` | Servicios y `ArmadorEstado` | Solo `ArmadorEstado` (Etapa 1) |
-| `UIController/` | `ControladorBackend`, `ControladorPygame`, `ControlesJuego`, `LectorArgumentos` | **No** |
+| `UIController/` | `ControladorBackend`, `ControladorPygame`, `ControlesJuego`, `LectorArgumentos` | **No**, salvo `ControladorPygame` (dos excepciones autorizadas por el usuario: `elemento_bajo_el_raton`, y en la Etapa 9, fase 2B, `demora_fin_ms` y `reloj_ms`) |
 | `View/` | Vacía (solo `prueba.txt`, parece un marcador) | **Aquí se trabaja** |
 | `tests/` | `Test*.py` (unittest) y `test_*.py` (scripts con funciones `probar_*`) | Se agregan pruebas de la Vista |
 | `Assets/assets/` | Recursos gráficos (ver 2.4 sobre su ubicación) | Se usa |
@@ -98,7 +98,7 @@ Las carpetas del proyecto **no tienen `__init__.py`** (excepto `tests/`). No lo 
 
 | Archivo | Qué es | Cómo se relaciona con la Vista |
 |---|---|---|
-| `UIController/ControladorPygame.py` | Flujo de pantallas, botones, bucle principal (`FPS = 30`). Su docstring define el contrato de la Vista. | Llama a los 4 métodos de la Vista. **No se modifica.** |
+| `UIController/ControladorPygame.py` | Flujo de pantallas, botones, bucle principal (`FPS = 30`). Su docstring define el contrato de la Vista. | Llama a los 4 métodos de la Vista. **Ya no es "no se modifica"**: tiene `demora_fin_ms` y `reloj_ms` (excepciones autorizadas por el usuario en la fase 2B de la Etapa 9). |
 | `UIController/ControlesJuego.py` | Controles de la partida (teclado y ratón). Constantes `BOTONES`, `AYUDA_JUEGO`, `DOBLE_CLIC_MS`. | Decide qué hace cada clic sobre lo que la Vista dibuja. **No se modifica.** |
 | `UIController/ControladorBackend.py` | Fachada única hacia los Servicios (`ErrorOperacion`, `CRITERIOS_INVENTARIO`, `CRITERIOS_PUNTAJES`, `LARGO_MAXIMO_NOMBRE = 16`). | La Vista **no** lo usa; lo usa el Controlador. |
 | `DTO/PantallaDTO.py` | Lo que la Vista recibe en cada cuadro. | Entrada de `dibujar`. |
@@ -499,7 +499,8 @@ necesite**, y fusiona los que te queden pequeños (regla de la sección 3.2).
 | `View/PantallaFin.py` | `victoria` y `derrota`. | 5 |
 | `View/EscenaJuego.py` | Fondo, puertas, protagonista, enemigos y objetos del suelo; funciones puras `fondo_para`, `puertas_a_dibujar`, `posicion_del_protagonista`, `colocar`, `repartir_escena`, `orden_de_dibujo`. Todas sus medidas están en `View/Componentes.py`. | 6 |
 | `View/HudJuego.py` | Estadísticas, mensajes, inventario, efectos, botón, aviso, ayuda. | 7 |
-| `View/Animaciones.py` | Solo si se hace la Etapa 9. | 9 |
+| `View/Animaciones.py` | Funciones puras de las animaciones (tiempo -> valor). | 9 |
+| `View/EfectosEscena.py` | Lo que la Vista recuerda entre cuadros para animar (fundidos, parpadeo, feedback de combate). Solo existe con `VistaPygame(animaciones=True)`. | 9 |
 
 **Decisiones puras, sin pygame (para poder probarlas sin dibujar píxeles).** Extrae a funciones pequeñas lo que
 decide *qué* dibujar, y pruébalas por separado:
@@ -751,6 +752,13 @@ ataca. Es frágil (depende del texto del mensaje): si el usuario la rechaza, dé
 
 **Comprobaciones:** la selección de fotograma es una función pura del tiempo (`fotograma(n_fotogramas, ms)`); pruébala. Captura
 dos instantes distintos y comprueba que cambian.
+
+#### Lo que se hizo de la Etapa 9 (con autorización del usuario)
+
+- **`VistaPygame(animaciones=False, reloj=None)`**: con `False` la salida es idéntica píxel a píxel; con `True` (así la crea `main.py`) las animaciones usan solo ese reloj en milisegundos (por omisión `pygame.time.get_ticks`), nunca el reloj virtual del juego, y nunca registran zonas de clic.
+- **Fase 1 (ambiente):** reposo del protagonista a 3 fps, vaivén de los actores de un fotograma, aura que respira, fundidos de sala (280 ms, debajo del HUD) y de menú (180 ms), parpadeo de la luz.
+- **Fase 2B (muerte del protagonista):** `ControladorPygame(..., demora_fin_ms=0, reloj_ms=None)`. Con `demora_fin_ms > 0` el controlador sigue devolviendo la pantalla de juego con el estado final durante esa demora y después pasa a victoria/derrota; el puntaje se guarda al terminar, no después. `main.py` pasa `1500`. La Vista, con derrota, reproduce los fotogramas `muerte` del protagonista en 600 ms.
+- **Fase 2 (feedback de combate):** la Vista compara cada cuadro con el anterior (nunca lee los mensajes) y dibuja números flotantes (-N rojo, +N verde), destello del golpeado, borde rojo si es el protagonista, muerte de enemigo, objeto recogido, puerta que se abre (la final, cuyo destino es la sala de salida, además brilla) y cursor de mano. La memoria (a lo sumo 24 animaciones) se reinicia sin animar en el primer cuadro, si el reloj de la Vista o el del estado retroceden, si la sala cambia de forma no contigua y al mostrar menú, criptas, nombre, victoria, derrota o puntajes; **no** se reinicia por estar terminado el estado (la demora del fin sigue mostrando el golpe mortal).
 
 ### Etapa 10 — Cierre
 
