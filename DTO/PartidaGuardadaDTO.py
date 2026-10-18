@@ -83,7 +83,7 @@ class ContadorTipoDTO:
 
 @dataclass(frozen=True)
 class EfectoGuardadoDTO:
-    tipo: str                # "veneno", "velocidad" o "antorcha"
+    tipo: str                # "veneno", "velocidad", "antorcha" o "regeneracion"
     actor: str               # "jugador" o la instancia del enemigo
     duracion: int
     valor: int | None        # daño del veneno, modificador de la velocidad; None en la antorcha

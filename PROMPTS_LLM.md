@@ -274,3 +274,41 @@ Kristel ya trajo lo de Marco y avanzó con la Vista y el Controlador. Revisa su 
 * Qué me falta a mí para terminar mi parte
 
 **Uso de la respuesta:** se comprobó que la rama no cambiaba archivos de Datos y que pasaban las pruebas; se resolvió el aviso de `pygame-ce` sincronizando el entorno con `uv.lock`, y se armó la lista de pendientes (bitácora de LLM, README y Documento de Decisiones).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Domingo 18 de octubre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+**Uso de la respuesta:** revisión del proyecto contra el enunciado y la rúbrica. Se probó en vivo (partida automática en cripta-04 con 8 de 52 solicitudes, `--replay`, `--bench`) y se armó la lista de pendientes por prioridad: Documento de Decisiones, efectos de §2.10 sin implementar (el veneno nunca se aplicaba y no había regeneración), versión de Python, precarga síncrona, archivos de la Vista sin subir, paquete offline y cómo correr las pruebas. La lista se fue actualizando durante la sesión.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Domingo 18 de octubre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+**Uso de la respuesta:** commit `5d43898`. Se bajó `requires-python` de 3.14 a 3.11 (lo que pide el enunciado) y se verificó con un Python 3.11 real: pruebas, `--replay` y `--bench`. Se corrigió el conteo de fallos de caché (§5.1): la precarga descargaba fichas sin contarlas, así que el reporte mostraba 0 fallos con 11 fichas descargadas. Se agregaron 3 pruebas.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Domingo 18 de octubre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+**Uso de la respuesta:** commit `e4a4c3f`. Se implementaron los efectos de §2.10 que faltaban: veneno al golpear o por trampa, regeneración cada 200 unidades y trampas con cambio de velocidad. También se cancelan los efectos de un actor al morir. Como el API todavía no publica esos campos, `DTO/EfectoFichaDTO.py` los lee de forma tolerante (varias formas y nombres, valores inválidos ignorados, tipos desconocidos conservados con un aviso). Las fichas conservan los campos que no conocen para que la caché en disco no los pierda. Es reversible con el pergamino y se guarda sin cambiar el formato binario. Se agregaron 28 pruebas y se comprobó, rompiendo el código a propósito, que detectan errores. Decisiones que van al Documento de Decisiones: un veneno nuevo reemplaza al anterior y las ralentizaciones se acumulan.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Domingo 18 de octubre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+**Uso de la respuesta:** no hizo falta reescribir la Vista. `View/Animaciones.py` y `View/EfectosEscena.py` ya estaban en `origin/kris`, en commits posteriores al que se había integrado, y se integraron con el merge `de49c3d`. En el cierre (commit `4740816`) se corrigieron dos defectos reales: con 12 enemigos y 12 objetos al centro de la sala no cabían, y una línea de la ayuda se cortaba. También se recalibraron tres pruebas que fallaban sin que la Vista estuviera mal. Además se agregó al README la sección de controles y se actualizó `GUIA_VISTA.md` con el estado final.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Domingo 18 de octubre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+**Uso de la respuesta:** se evaluó pasar la precarga (§4.2) a un hilo en segundo plano: un solo hilo para toda la red, la `Cola` propia en vez de `ThreadPoolExecutor` (§7) y la incorporación con un desfase fijo de una acción para mantener el determinismo. El equipo decidió dejarla síncrona porque funciona, y defenderla con mediciones en el Documento de Decisiones. En el commit `9a7f177` se agregaron al paquete offline cripta-02 a cripta-04, se ajustaron 3 pruebas que daban por hecho una sola cripta y se creó `tests/correr_pruebas.py`, que corre las 350 pruebas de `unittest` y los 27 scripts `probar_*`. El trabajo de la sesión se dividió en los commits `5d43898`, `e4a4c3f`, `4740816` y `9a7f177`, y se comprobó que cada uno pasa las pruebas por sí solo.
+
+-----------------------------------------------------------------------------------------------------------------------
+

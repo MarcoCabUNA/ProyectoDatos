@@ -7,12 +7,15 @@ Las clases 'enemigo' y 'trampa' NO son objetos: usan FichaEnemigoDTO y FichaTram
 
 Los campos que no aplican a la clase quedan en None.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
+from DTO.EfectoFichaDTO import campos_extra
 
 CLASES_OBJETO = ["arma", "armadura", "pocion", "antidoto", "llave", "antorcha", "pergamino_retroceso"]
 
 # Campos opcionales en el orden del Swagger. Solo se recorren; no se modifican.
 _CAMPOS_OPCIONALES = ["ataque_bonus", "defensa_bonus", "cura", "modificador_velocidad", "duracion", "abre"]
+_CAMPOS = ["id", "nombre", "clase", "peso", "valor"] + _CAMPOS_OPCIONALES
 
 
 def es_clase_objeto(clase: str) -> bool:
@@ -35,6 +38,9 @@ class ObjetoDTO:
     modificador_velocidad: int | None = None  # pocion
     duracion: int | None = None               # pocion, antorcha
     abre: str | int | None = None             # llave
+    # Campos del JSON que no son de esta clase; se reescriben en a_diccionario para que la caché en disco
+    # no pierda nada que el API agregue.
+    extras: tuple = field(default=(), hash=False)
 
     @classmethod
     def desde_diccionario(cls, d: dict) -> "ObjetoDTO":
@@ -54,6 +60,7 @@ class ObjetoDTO:
             modificador_velocidad=d.get("modificador_velocidad"),
             duracion=d.get("duracion"),
             abre=d.get("abre"),
+            extras=campos_extra(d, _CAMPOS),
         )
 
     def a_diccionario(self) -> dict:
@@ -64,4 +71,6 @@ class ObjetoDTO:
             valor = getattr(self, nombre)
             if valor is not None:
                 d[nombre] = valor
+        for clave, valor in self.extras:
+            d[clave] = valor
         return d

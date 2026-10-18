@@ -28,6 +28,16 @@ class GestorEfectos:
         self.quitar(efecto)
         return True
 
+    # Al morir un actor: sus efectos no vuelven a activarse (§4.1). Recorre solo los efectos activos, no la agenda.
+    def cancelar_de(self, actor):
+        propios = []
+        for efecto in self.activos:
+            if efecto.actor is actor:
+                propios.append(efecto)
+        for efecto in propios:
+            efecto.evento.cancelar()
+            self.quitar(efecto)
+
     def quitar(self, efecto):
         indice = self.activos.index(efecto)
         self.motor.historial.registrar_cambio(lambda: self.activos.insert(indice, efecto))

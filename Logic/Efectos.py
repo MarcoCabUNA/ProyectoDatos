@@ -22,8 +22,9 @@ class Veneno(Efecto):
     DURACION = 400
     UNICO = True
 
-    def __init__(self, actor, dano):
-        super().__init__("veneno", actor, self.DURACION, dano, self.PULSO)
+    # duracion: la del enunciado (400) salvo que la ficha del catálogo indique otra
+    def __init__(self, actor, dano, duracion=None):
+        super().__init__("veneno", actor, self.DURACION if duracion is None else duracion, dano, self.PULSO)
 
     def activar(self, motor, evento):
         if not self.actor.Vivo():
@@ -63,3 +64,26 @@ class Antorcha(Efecto):
     def activar(self, motor, evento):
         motor.mensaje("La antorcha se apaga")
         motor.efectos.quitar(self)
+
+
+# Un enemigo que declare regeneración recupera 'valor' cada 200 unidades mientras viva (§2.10).
+# No termina por tiempo: 'fin' es el instante del próximo pulso (lo que muestra 'restante').
+class Regeneracion(Efecto):
+    PULSO = 200
+    UNICO = True
+
+    def __init__(self, actor, cantidad):
+        super().__init__("regeneracion", actor, self.PULSO, cantidad, self.PULSO)
+
+    def activar(self, motor, evento):
+        if not self.actor.Vivo():
+            motor.efectos.quitar(self)
+            return
+        antes = self.actor.vida
+        self.actor.Curacion(self.valor)        # Curacion ya topa en vida_max
+        if self.actor.vida > antes:
+            motor.mensaje(f"{self.actor.nombre_visible()} regenera {self.actor.vida - antes} de vida")
+        motor.historial.registrar_atributo(self, "fin", self.fin)
+        self.fin = motor.reloj + self.PULSO
+        motor.historial.registrar_atributo(self, "evento", self.evento)
+        self.evento = motor.programar_efecto(self.PULSO, self.tipo, self)

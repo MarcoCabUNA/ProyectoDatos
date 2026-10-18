@@ -1009,10 +1009,12 @@ def probar_la_barra_de_vida_es_proporcional_y_aguanta_los_extremos():
         fuentes = Fuentes()
 
         def verde(vida, vida_max):
-            """Hasta dónde llega el relleno (el último píxel verde de la fila de arriba; el texto va en medio)."""
+            """Hasta dónde llega el relleno: el último píxel verde de CUALQUIER fila. El número va encima, en medio de la
+            barra, y es más alto que ella: a media vida tapa en la fila de arriba justo el final del relleno."""
             lienzo = pygame.Surface((120, 14))
             barra_de_vida(lienzo, fuentes, pygame.Rect(0, 0, 120, 14), vida, vida_max)
-            return max((x for x in range(120) if lienzo.get_at((x, 1))[:3] == (84, 168, 72)), default=0)
+            return max((x for x in range(120) for y in range(14) if lienzo.get_at((x, y))[:3] == (84, 168, 72)),
+                       default=0)
         completa, mitad = verde(12, 12), verde(6, 12)
         assert completa > 110 and abs(mitad - completa / 2) <= 3
         assert verde(0, 12) == 0 and verde(-3, 12) == 0 and verde(5, 0) == 0

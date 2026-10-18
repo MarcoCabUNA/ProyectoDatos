@@ -56,7 +56,8 @@ class PruebasReporteDatos(unittest.TestCase):
         # general, salas, versión del catálogo, 1 lote de contenido, 2 lotes de catálogo
         self.assertEqual((r.solicitudes_realizadas, r.presupuesto), (6, general_real()["presupuesto_solicitudes"]))
         self.assertEqual(r.solicitudes_realizadas, api.solicitudes_realizadas)
-        self.assertEqual((r.aciertos_cache, r.fallos_cache), (12, 0))      # 12 entidades, todas ya en memoria
+        # 11 fichas descargadas al precargar = 11 fallos; luego las 12 entidades ya estaban en memoria
+        self.assertEqual((r.aciertos_cache, r.fallos_cache), (12, 11))
         self.assertEqual((r.fichas_descargadas, r.solicitudes_catalogo, r.lecturas_disco), (11, 2, 0))
         self.assertEqual((r.lotes_contenido, r.salas_pedidas, r.offline), (1, 6, False))
 
