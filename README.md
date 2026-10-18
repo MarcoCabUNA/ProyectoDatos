@@ -79,10 +79,12 @@ Para salir: `Salir` en el menú principal, `Salir al menú` en la pausa, o cerra
 
 ### Modo `--offline`
 
-Lee la cripta desde la carpeta `paquete/`, que viene en el repositorio con `cripta-01`. Las lecturas locales
-no cuentan como solicitudes de red, así que el reporte final muestra 0 solicitudes.
+Lee las criptas desde la carpeta `paquete/`, que viene en el repositorio con las cuatro publicadas al 18 de octubre
+(`cripta-01` a `cripta-04`, de 6 a 50 salas). Las lecturas locales no cuentan como solicitudes de red, así que el
+reporte final muestra 0 solicitudes.
 
-Para descargar otra cripta al paquete (esto sí usa la red):
+Para agregar o actualizar una cripta en el paquete (esto sí usa la red; el catálogo se comparte entre criptas y se
+completa con las fichas nuevas):
 
 ```
 uv run python -m Data.DescargadorPaquete <id-de-la-cripta>
@@ -113,9 +115,22 @@ Ninguna de estas carpetas se sube al repositorio (están en `.gitignore`). Se cr
 
 ## Pruebas
 
+Para correr todas de una vez (no abre ventanas; termina con código 0 si todo pasa):
+
 ```
-uv run python -m unittest discover -s tests -p "[Tt]est*.py"
+uv run python tests/correr_pruebas.py
 ```
+
+Hay dos tipos de pruebas, y el script corre los dos:
+
+- **De `unittest`** (`tests/Test*.py` y algunos `tests/test_*.py`):
+  `uv run python -m unittest discover -s tests -p "[Tt]est*.py"`.
+- **Scripts `probar_*`** (el resto de `tests/test_*.py`: Servicios, controladores, Vista...). `unittest discover` no los
+  encuentra; cada uno se corre por separado y termina con una línea `OK: ...`, por ejemplo
+  `uv run python tests/test_servicios.py`.
+
+Las pruebas de la Vista necesitan `pygame-ce`. Los scripts `tests/capturar_*.py` no son pruebas: guardan capturas de
+pantalla en `capturas/` para revisarlas a ojo.
 
 ## Documentación
 

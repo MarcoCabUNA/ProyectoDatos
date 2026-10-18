@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import sys
@@ -246,13 +247,16 @@ def probar_comenzar_muestra_las_criptas_con_un_boton_volver():
     with Entorno() as e:
         e.pulsar(ENTER)
         p = e.pantalla()
-        assert p.pantalla == CRIPTAS and p.opciones == ["Osario menor - 6 salas, dificultad 1", "Volver"] and p.ayuda
+        del_paquete = json.loads((RAIZ / "paquete" / "criptas.json").read_text(encoding="utf-8"))["criptas"]
+        esperadas = [f"{d['nombre']} - {d['salas']} salas, dificultad {d['dificultad']}" for d in del_paquete]
+        assert p.pantalla == CRIPTAS and p.opciones == esperadas + ["Volver"] and p.ayuda
+        assert p.opciones[0] == "Osario menor - 6 salas, dificultad 1"
         e.pulsar(ESC)
         assert e.pantalla().pantalla == MENU
-        e.pulsar(ENTER, ABAJO, ENTER)                      # "Volver" con el teclado
+        e.pulsar(ENTER, *[ABAJO] * len(del_paquete), ENTER)    # "Volver" con el teclado: va después de todas las criptas
         assert e.pantalla().pantalla == MENU
         e.pulsar(ENTER)
-        e.clic_en_boton(1)                                 # "Volver" con el ratón
+        e.clic_en_boton(len(del_paquete))                  # "Volver" con el ratón
         assert e.pantalla().pantalla == MENU
 
 

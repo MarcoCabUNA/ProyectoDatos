@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import sys
@@ -72,7 +73,11 @@ def probar_sin_partida_todo_lo_que_la_necesita_falla_con_un_mensaje():
 def probar_las_criptas_salen_del_paquete():
     with Carpeta() as c:
         criptas = crear_backend(c).criptas()
-        assert [x.id for x in criptas] == ["cripta-01"] and criptas[0].nombre == "Osario menor"
+        del_paquete = json.loads((Path(__file__).resolve().parent.parent / "paquete" / "criptas.json")
+                                 .read_text(encoding="utf-8"))["criptas"]          # las que tenga el paquete, en su orden
+        assert [x.id for x in criptas] == [d["id"] for d in del_paquete]
+        assert [x.nombre for x in criptas] == [d["nombre"] for d in del_paquete]
+        assert criptas[0].id == "cripta-01" and criptas[0].nombre == "Osario menor"
 
 
 # ---------------------------------------------------------------- validación de forma

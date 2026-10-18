@@ -16,7 +16,7 @@ sigue de este documento es el plan con el que se construyó; donde contradiga es
 |---|---|
 | Recursos en `Assets/assets/`; `pygame-ce` fuera de `pyproject.toml`; `main.py` de prueba (2.4) | Resuelto: `assets/` en la raíz, `pygame-ce` en `pyproject.toml`, `main.py` real. |
 | Python ≥ 3.14 | **Python ≥ 3.11**, como pide el enunciado (probado con 3.11 y 3.14). |
-| Línea base: 319 pruebas y 17 scripts (2.3) | `unittest discover`: **350 pruebas**; scripts `probar_*` que no son de `unittest` (se corren uno por uno): **27** (`grep -L unittest $(grep -l __main__ tests/test_*.py)`). Todo pasa en 3.11 y 3.14. |
+| Línea base: 319 pruebas y 17 scripts (2.3) | `unittest discover`: **350 pruebas**; scripts `probar_*` que no son de `unittest` (se corren uno por uno): **27** (`grep -L unittest $(grep -l __main__ tests/test_*.py)`). Todo pasa en 3.11 y 3.14. Para correr ambos tipos de una vez: `python tests/correr_pruebas.py`. |
 | README con controles (Etapa 10) | Hecho: sección "Controles" del `README.md`. |
 
 Correcciones hechas al cerrar (las pruebas de la escena y del HUD fallaban también en Linux con `SDL_VIDEODRIVER=dummy`):
