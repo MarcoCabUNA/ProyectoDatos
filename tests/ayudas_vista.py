@@ -129,3 +129,60 @@ def las_ocho_pantallas(recorrido, al_dibujar=None):
     recorrido.pulsar(ABAJO, ENTER)
     ver("puntajes")
     return vistas
+
+
+# ================================================================== estados armados a mano (la escena de juego)
+from DTO.ActorDTO import ActorDTO  # noqa: E402
+from DTO.Direcciones import E, N, O, S  # noqa: E402
+from DTO.ObjetoDTO import ObjetoDTO  # noqa: E402
+from DTO.SalaDTO import SalidaDTO  # noqa: E402
+
+DIRECCIONES = {"N": N, "S": S, "E": E, "O": O}
+_OBJETOS = [("itm_antorcha", "Antorcha", "antorcha"), ("itm_daga_oxidada", "Daga oxidada", "arma"),
+            ("itm_pocion_menor", "Poción menor", "pocion"), ("itm_antidoto", "Antídoto", "antidoto"),
+            ("itm_llave_bronce", "Llave de bronce", "llave"), ("itm_coraza_cuero", "Coraza de cuero", "armadura")]
+
+
+def con_sala(estado, id_sala=None, **salidas):
+    """El mismo estado en otra sala: 'salidas' son N=, S=, E=, O= con un SalidaDTO (las que no se nombran no tienen salida)."""
+    lista = [None, None, None, None]
+    for nombre, salida in salidas.items():
+        lista[DIRECCIONES[nombre]] = salida
+    sala = replace(estado.sala, salidas=lista)
+    return replace(estado, sala=sala if id_sala is None else replace(sala, id=id_sala))
+
+
+def cerrada(destino=99):
+    return SalidaDTO(destino, cerrada=True, llave="itm_llave_bronce")
+
+
+def con_enemigos(estado, cantidad):
+    """'cantidad' enemigos (ratas y guardianes, con nombres e ids distintos) y vidas distintas."""
+    enemigos = []
+    for i in range(cantidad):
+        tipo, nombre = ("ent_guardian_oseo", f"Guardián óseo #{i + 1}") if i % 3 == 2 else (
+            "ent_rata_gigante", f"Rata gigante #{i + 1}")
+        enemigos.append(ActorDTO(f"enemigo-{i + 1}", tipo, nombre, 12 - i % 12, 12, 3, 1, 100, estado.sala.id))
+    return replace(estado, enemigos=enemigos)
+
+
+def con_objetos(estado, cantidad):
+    """'cantidad' objetos en el suelo, de los que tienen sprite propio, con nombres de catálogo."""
+    objetos = []
+    for i in range(cantidad):
+        id_objeto, nombre, clase = _OBJETOS[i % len(_OBJETOS)]
+        objetos.append(ObjetoDTO(f"{id_objeto}", nombre, clase, 1, 1))
+    return replace(estado, objetos_suelo=objetos)
+
+
+def estado_base(id_sala=3, **salidas):
+    """Un estado de partida armado a mano, sin servicios: sala 'id_sala' (la inicial es la 1 y la de salida la 6), el
+    jugador herido, sin enemigos ni objetos. 'salidas' como en con_sala."""
+    from DTO.EstadoJuegoDTO import EstadoJuegoDTO
+    from DTO.InventarioDTO import InventarioDTO
+    from DTO.SalaDTO import SalaDTO
+    jugador = ActorDTO("jugador", "jugador", "Jugador", 18, 30, 6, 2, 100, id_sala)
+    estado = EstadoJuegoDTO(sala=SalaDTO(id_sala, "Sala de prueba", [None] * 4, "v"), jugador=jugador, enemigos=[],
+                            objetos_suelo=[], efectos=[], inventario=InventarioDTO([], 0, 0, 10), mensajes=[], reloj=0,
+                            sala_inicial=1, sala_salida=6)
+    return con_sala(estado, **salidas) if salidas else estado

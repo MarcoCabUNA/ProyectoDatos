@@ -122,6 +122,7 @@ class ControladorPygame:
         self._reporte = None
         self._tabla: list = []
         self._criterio = 0                            # posición en CRITERIOS_PUNTAJES
+        self._bajo_el_raton = None                    # el ElementoDTO bajo el ratón en su último movimiento (o None)
 
     def activo(self) -> bool:
         return self._activo
@@ -152,6 +153,7 @@ class ControladorPygame:
         if evento.type not in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN, pygame.MOUSEWHEEL):
             return
         self._aviso = None
+        self._bajo_el_raton = None                    # una tecla, un clic o la rueda: lo que se mostró ya puede ser otro
         try:
             if self._pantalla == JUEGO:
                 self._en_juego(evento)
@@ -179,6 +181,7 @@ class ControladorPygame:
     # ================================================================== ratón en las pantallas con botones
     def _resaltar_el_boton_bajo_el_raton(self, posicion) -> None:
         elemento = self._vista.elemento_en(posicion)
+        self._bajo_el_raton = elemento
         if elemento is not None and elemento.tipo == ELEMENTO_BOTON:
             self._seleccion = elemento.indice
         elif self._pantalla == JUEGO:
@@ -221,7 +224,8 @@ class ControladorPygame:
         if self._pantalla == JUEGO:
             return PantallaDTO(JUEGO, opciones=self._juego.botones(), seleccion=self._seleccion,
                                aviso=self._aviso or self._juego.aviso, ayuda=self._juego.ayuda(),
-                               estado=self._juego.estado, objetivo=self._juego.objetivo())
+                               estado=self._juego.estado, objetivo=self._juego.objetivo(),
+                               elemento_bajo_el_raton=self._bajo_el_raton)
         if self._pantalla == PAUSA:
             return PantallaDTO(PAUSA, "Pausa", list(_OPCIONES_PAUSA), self._seleccion, aviso=self._aviso,
                                ayuda=list(_AYUDA_PAUSA), estado=self._juego.estado)
@@ -405,6 +409,7 @@ class ControladorPygame:
         self._pantalla = pantalla
         self._seleccion = -1 if pantalla == JUEGO else 0
         self._aviso = None
+        self._bajo_el_raton = None
 
     def _navegar(self, evento, cantidad: int) -> bool:
         """Arriba y abajo mueven el resaltado (dando la vuelta). True si el jugador pulsó Enter."""

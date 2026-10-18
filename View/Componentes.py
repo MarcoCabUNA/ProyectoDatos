@@ -25,12 +25,19 @@ TEXTO = (236, 230, 218)
 TEXTO_SUAVE = (170, 160, 150)
 AVISO = (255, 128, 108)
 AVISO_FONDO = (70, 14, 16, 230)
+SOMBRA = (8, 6, 8)                           # contorno del texto que va sobre la escena
+VIDA_BUENA = (84, 168, 72)
+VIDA_BAJA = (200, 52, 48)                    # con menos de la cuarta parte de la vida
+VIDA_FONDO = (30, 12, 14)
 
 # Tamaños de fuente (pygame.font.Font(None, tamaño))
 TAM_TITULO = 60
 TAM_BOTON = 30
 TAM_TEXTO = 28
 TAM_PIE = 22
+TAM_CHICO = 18                               # números dentro de las barras de vida
+TAM_MENSAJES = 17                            # la más grande en que caben, en 350 px, los mensajes más largos del motor
+TAM_AYUDA_JUEGO = 20                         # la más grande en que caben, en 340 px, las 11 líneas de AYUDA_JUEGO
 
 # Medidas de las pantallas con botones
 BOTON_ALTO = 44
@@ -47,6 +54,109 @@ AVISO_SEPARACION = 8                         # espacio entre el aviso y la prime
 PIE_BASE_Y = 760                             # las líneas de ayuda se apilan hacia arriba desde aquí
 PIE_INTERLINEA = 20
 
+# ---------------------------------------------------------------------------- escena de juego (tamaños y reparto)
+# Aquí, y solo aquí, están todas las medidas de la escena: EscenaJuego no tiene números propios.
+# Tamaños: el alto del CONTENIDO del sprite (recortado), en píxeles de la resolución lógica.
+ALTURA_JUGADOR = 90                          # el protagonista: siempre igual, en todas las escenas
+ALTURA_ENEMIGO = 190                         # enemigo con sprites propios (como la rata)
+FACTOR_RESPALDO = 0.85                       # enemigo de respaldo (conjunto genérico): este tanto de ALTURA_ENEMIGO
+FACTORES_ENEMIGOS = [1.0, 0.85, 0.7, 0.58, 0.48, 0.4, 0.33, 0.27, 0.22, 0.18, 0.15]   # si no caben, todos se achican igual
+FACTOR_NOMBRE_CHICO = 0.6                    # con un factor menor, los nombres usan la fuente chica
+LADO_OBJETO = 52                             # cuadrado en que cabe el sprite de un objeto del suelo
+FICHA = 40                                   # alto del nombre y la barra de vida sobre un actor
+FICHA_SEPARACION = (4, 2)                    # hueco entre el sprite y la barra, y entre la barra y el nombre
+ALTURA_MINIMA = 8                            # ningún sprite de actor se dibuja más bajo que esto
+HALO_MARGEN = (12, 8)                        # cuánto sobresale del sprite el marco del enemigo objetivo
+HALO_COLOR = (232, 184, 84, 55)
+BARRA_VIDA = (96, 14)
+NOMBRE_ANCHO_MAX = 170                       # un nombre más largo se corta con "..."
+
+# Dónde pisa el protagonista (los pies, en píxeles) y qué puede ocupar la gente
+SUELO = pygame.Rect(280, 170, 816, 450)      # la parte del suelo que comparten los tres fondos de sala
+PIES_CENTRO = (688, 430)                     # sin sala anterior, o si no se sabe por dónde entró
+PIES_PUERTA = [(688, 300), (688, 600), (1060, 430), (316, 430)]    # delante de la puerta N, S, E y O
+JUGADOR_OCUPA = (120, ALTURA_JUGADOR + FICHA)    # lo que el protagonista reserva alrededor de sus pies (ancho, alto)
+PASILLOS = [pygame.Rect(618, 170, 140, 50), pygame.Rect(618, 570, 140, 50),    # junto a cada puerta con salida: libre
+            pygame.Rect(1046, 360, 50, 140), pygame.Rect(280, 360, 50, 140)]  # (N, S, E, O)
+
+# Reparto de enemigos y objetos (las funciones puras colocar y posicion_del_protagonista de EscenaJuego)
+REPARTO_PASO = 12                            # separación de las posiciones candidatas
+REPARTO_SEPARACION = 8                       # hueco mínimo entre dos elementos
+REPARTO_RADIO_ENEMIGOS = 230                 # a qué distancia del protagonista prefieren estar (píxeles)
+REPARTO_RADIO_OBJETOS = 330
+
+# Aura de los objetos del suelo (los enemigos no llevan)
+AURA_MARGEN = 8                              # cuánto sobresale del sprite
+AURA_COLOR = (255, 214, 120)
+AURA_INTENSIDAD = 150                        # 0 (invisible) a 255 (opaca)
+
+# Fondos de sala y marcos de puerta medidos sobre ellos (1376x768)
+FONDO_INICIAL, FONDO_REGULAR, FONDO_FINAL = "fondo_inicial", "fondo_regular", "fondo_final"
+FONDOS_CONOCIDOS = [FONDO_INICIAL, FONDO_REGULAR, FONDO_FINAL]
+# Rectángulo de cada marco de puerta, en el orden N, S, E, O (los índices de DTO/Direcciones.py), por fondo, medido
+# sobre ampliaciones con regla (tests/capturar_pantallas.py las dibuja: capturas/medicion_*.png).
+MARCOS = [
+    [pygame.Rect(625, 46, 132, 92), pygame.Rect(625, 632, 132, 92), pygame.Rect(1150, 318, 90, 134),
+     pygame.Rect(138, 318, 90, 134)],
+    [pygame.Rect(618, 20, 148, 98), pygame.Rect(618, 650, 148, 100), pygame.Rect(1190, 312, 100, 152),
+     pygame.Rect(88, 312, 100, 152)],
+    [pygame.Rect(632, 40, 126, 80), pygame.Rect(625, 636, 132, 92), pygame.Rect(1174, 318, 90, 134),
+     pygame.Rect(112, 318, 90, 134)],
+]
+MARCOS_OSCURECIBLES = [True, True, False]    # False: el fondo solo trae la puerta del norte (fondo_final)
+FRACCION_ESTRECHA = 0.27                     # lo que se achica el hueco de la puerta hacia dentro de la sala
+COLOR_OSCURO = (0, 0, 0, 205)
+
+# Ambientación lúgubre de los fondos de SALA (no de menú, victoria ni derrota). Receta a intensidad 1.0; la ambientación
+# final mezcla linealmente el original (0) con la receta (1). AMBIENTE_INTENSIDAD es la única perilla (0 = sin ambientar).
+AMBIENTE_INTENSIDAD = 0.5
+AMBIENTE_GRIS = 0.25                         # cuánto de la versión en grises se mezcla con la imagen
+AMBIENTE_TINTE = (122, 110, 122)             # cada canal se multiplica por esto / 255
+AMBIENTE_VINETA = 0.45                       # fuerza de la viñeta radial (0 = sin viñeta; en las esquinas oscurece este tanto)
+AMBIENTE_VINETA_TAMANO = (64, 36)            # el degradado se calcula en miniatura y se amplía
+PUERTA_CERRADA, PUERTA_FINAL = "puerta_cerrada", "puerta_final"       # nombres de los sprites de ui/
+ESCALA_PUERTA = [(PUERTA_CERRADA, 2.5), (PUERTA_FINAL, 1.25)]        # (sprite, escala): miran al norte y se giran
+
+# ---------------------------------------------------------------------------- HUD de la partida (Etapa 7)
+# Cada panel es un rectángulo fijo. Los de la izquierda y la derecha de arriba (estadísticas, efectos, inventario) no pisan
+# el suelo; MENSAJES y el grupo de abajo a la derecha sí, así que repartir_escena los trata como zonas ocupadas. Los tramos
+# y 296-470 de las bandas laterales quedan libres: ahí están las puertas este y oeste y el sitio del protagonista.
+HUD_ESTADISTICAS = pygame.Rect(8, 8, 264, 128)
+HUD_EFECTOS = pygame.Rect(8, 144, 264, 148)
+HUD_MENSAJES = pygame.Rect(8, 470, 350, 290)
+HUD_INVENTARIO = pygame.Rect(1104, 8, 264, 284)
+HUD_ESPERAR = pygame.Rect(1028, 470, 340, 40)
+HUD_AVISO = pygame.Rect(1028, 516, 340, 52)
+HUD_AYUDA = pygame.Rect(1028, 574, 340, 186)
+HUD_PANELES = [HUD_ESTADISTICAS, HUD_EFECTOS, HUD_MENSAJES, HUD_INVENTARIO, HUD_ESPERAR, HUD_AVISO, HUD_AYUDA]
+HUD_RELLENO = 8                              # margen interior de los paneles
+HUD_MENSAJES_LINEAS = 20                     # capacidad del panel de mensajes
+HUD_MENSAJES_INTERLINEA = 13
+HUD_MENSAJES_ARRIBA = 22                     # donde empieza la primera línea (debajo del rótulo)
+HUD_AVISO_LINEAS = 3
+HUD_AYUDA_INTERLINEA = 15
+HUD_EFECTOS_INTERLINEA = 22
+HUD_EFECTOS_ARRIBA = 28
+HUD_STATS_FILAS = (38, 66, 94)               # y (dentro del panel) de cada fila de números de las estadísticas
+HUD_STATS_COLUMNA = 132                      # x (dentro del panel) de la segunda columna
+# Inventario: casillas en filas de INV_COLUMNAS; si capacidad_maxima pasa de INV_CASILLAS_MAX, solo se dibujan esas
+INV_COLUMNAS = 5
+INV_CASILLAS_MAX = 15
+INV_LADO = 46
+INV_HUECO = 4
+INV_SPRITE = 38                              # cuadrado en que cabe el sprite de un objeto dentro de su casilla
+INV_ARRIBA = 30                              # y (dentro del panel) de la primera fila de casillas
+INV_INTERLINEA = 16                          # líneas de datos del objeto bajo el cursor
+# Velos de efectos (RGBA de baja opacidad: el juego se tiene que seguir leyendo)
+VELO_VENENO = (60, 200, 70, 36)
+VELO_RAPIDO = (60, 110, 255, 36)             # velocidad con valor > 0
+VELO_LENTO = (150, 70, 220, 40)              # velocidad con valor < 0
+VELO_ANTORCHA = (255, 150, 40, 40)
+
+# Etiqueta con el nombre del objeto bajo el ratón
+ETIQUETA_SEPARACION = 6                      # entre el objeto y la etiqueta
+ETIQUETA_RELLENO = (20, 12)                  # lo que la etiqueta sobresale del texto (ancho, alto)
+
 
 class Fuentes:
     """Las fuentes del juego. Se crean al abrir la ventana (después de pygame.font.init())."""
@@ -56,6 +166,9 @@ class Fuentes:
         self.boton = pygame.font.Font(None, TAM_BOTON)
         self.texto = pygame.font.Font(None, TAM_TEXTO)
         self.pie = pygame.font.Font(None, TAM_PIE)
+        self.chico = pygame.font.Font(None, TAM_CHICO)
+        self.mensajes = pygame.font.Font(None, TAM_MENSAJES)
+        self.ayuda_juego = pygame.font.Font(None, TAM_AYUDA_JUEGO)
 
 
 # ============================================================================ texto
@@ -63,6 +176,17 @@ def texto_en(superficie, fuente, texto: str, color, posicion, ancla: str = "cent
     """Dibuja 'texto' con su 'ancla' (center, midtop, topleft, midbottom, ...) en 'posicion'. Devuelve su rectángulo."""
     imagen = fuente.render(texto, True, color)
     rectangulo = imagen.get_rect(**{ancla: posicion})
+    superficie.blit(imagen, rectangulo)
+    return rectangulo
+
+
+def texto_sombreado(superficie, fuente, texto: str, color, posicion, ancla: str = "center") -> pygame.Rect:
+    """Como texto_en, con un contorno oscuro para que se lea sobre cualquier fondo (la escena de juego)."""
+    imagen = fuente.render(texto, True, color)
+    rectangulo = imagen.get_rect(**{ancla: posicion})
+    sombra = fuente.render(texto, True, SOMBRA)
+    for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1), (1, 1)):
+        superficie.blit(sombra, rectangulo.move(dx, dy))
     superficie.blit(imagen, rectangulo)
     return rectangulo
 
@@ -100,6 +224,18 @@ def panel(superficie, rectangulo: pygame.Rect, relleno=PANEL, borde=PANEL_BORDE,
     if borde is not None and grosor > 0:
         pygame.draw.rect(capa, borde, capa.get_rect(), width=grosor, border_radius=RADIO)
     superficie.blit(capa, rectangulo)
+
+
+def barra_de_vida(superficie, fuentes: Fuentes, rectangulo: pygame.Rect, vida: int, vida_max: int) -> None:
+    """Una barra proporcional a vida/vida_max con los números dentro. Soporta vida fuera de rango y vida_max <= 0."""
+    pygame.draw.rect(superficie, VIDA_FONDO, rectangulo, border_radius=3)
+    fraccion = 0.0 if vida_max <= 0 else max(0.0, min(1.0, vida / vida_max))
+    relleno = pygame.Rect(rectangulo.left + 1, rectangulo.top + 1, round((rectangulo.width - 2) * fraccion),
+                          rectangulo.height - 2)
+    if relleno.width > 0:
+        pygame.draw.rect(superficie, VIDA_BAJA if fraccion < 0.25 else VIDA_BUENA, relleno, border_radius=3)
+    pygame.draw.rect(superficie, PANEL_BORDE, rectangulo, width=1, border_radius=3)
+    texto_sombreado(superficie, fuentes.chico, f"{vida}/{vida_max}", TEXTO, rectangulo.center)
 
 
 def dibujar_boton(superficie, fuentes: Fuentes, rectangulo: pygame.Rect, texto: str, resaltado: bool) -> None:

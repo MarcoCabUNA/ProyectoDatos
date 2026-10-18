@@ -8,8 +8,8 @@ Todas comparten el mismo esqueleto: fondo -> título -> contenido -> botones (ca
     criptas   fondo_menu con velo suave, título propio y una cuadrícula de botones (más pequeños, o en más columnas,
               si hay muchas criptas). El último botón (Volver) queda siempre aparte, abajo.
     nombre    campo de texto con cursor parpadeante y los botones Aceptar y Volver.
-    pausa     PROVISIONAL (Etapa 4): fondo_menu con velo fuerte. En la Etapa 6 el fondo pasará a ser la escena de la
-              partida (pantalla.estado) con este mismo velo encima.
+    pausa     la escena de la partida (pantalla.estado, sin zonas de clic) con un velo fuerte encima. Sin estado
+              (solo en pruebas), fondo_menu.
     puntajes  tabla (nombre, cripta, acciones, enemigos derrotados, tiempo final) y el criterio de orden.
 """
 import pygame
@@ -43,8 +43,9 @@ _ETIQUETAS = ["enemigos derrotados", "tiempo final", "acciones", "nombre"]
 
 class PantallaMenus:
 
-    def __init__(self, almacen, fuentes: c.Fuentes, zonas: ZonasClic):
+    def __init__(self, almacen, fuentes: c.Fuentes, zonas: ZonasClic, escena=None):
         self._almacen = almacen
+        self._escena = escena
         self._fuentes = fuentes
         self._zonas = zonas
         self._velo_suave = self._crear_velo(c.VELO_SUAVE)
@@ -53,7 +54,10 @@ class PantallaMenus:
     def dibujar(self, superficie: pygame.Surface, pantalla: PantallaDTO, ms: int) -> None:
         """Dibuja una de las cinco pantallas. 'ms' es el reloj en milisegundos (solo para el cursor parpadeante)."""
         nombre = pantalla.pantalla
-        superficie.blit(self._almacen.fondo(FONDO_MENU, (c.ANCHO, c.ALTO)).fotogramas[0], (0, 0))
+        if nombre == "pausa" and pantalla.estado is not None and self._escena is not None:
+            self._escena.dibujar(superficie, pantalla.estado, None, con_zonas=False)
+        else:
+            superficie.blit(self._almacen.fondo(FONDO_MENU, (c.ANCHO, c.ALTO)).fotogramas[0], (0, 0))
         if nombre == "menu":
             self._botones(superficie, pantalla, c.distribuir_botones(len(pantalla.opciones), _AREA_MENU,
                                                                       c.BOTON_ALTO_MENU, 6))

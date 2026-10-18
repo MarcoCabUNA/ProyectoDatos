@@ -13,7 +13,7 @@ from ayudas_controladores import RAIZ  # noqa: E402
 from ayudas_pygame import pygame  # noqa: E402  (fija SDL_VIDEODRIVER=dummy antes de importar pygame)
 
 from DTO.Direcciones import E, N, O, S  # noqa: E402
-from View.AlmacenSprites import ORIGEN_FIGURA, AlmacenSprites  # noqa: E402
+from View.AlmacenSprites import ORIGEN_FIGURA, AlmacenSprites, es_de_respaldo  # noqa: E402
 
 ASSETS = str(RAIZ / "assets")
 
@@ -290,6 +290,59 @@ def probar_la_figura_de_respaldo_se_comparte_por_inicial():
     _con_carpeta([], prueba)
 
 
+def probar_actor_a_altura_mide_lo_pedido_y_ocho_ratas_a_la_misma_altura_comparten_el_conjunto():
+    def prueba(almacen):
+        for tipo in ("jugador", "ent_rata_gigante", "ent_guardian_oseo", "no-existe"):
+            for alto in (30, 90, 161, 190):
+                assert abs(almacen.actor_a_altura(tipo, alto, nombre="X").fotogramas[0].get_height() - alto) <= 1, (tipo, alto)
+        primera = almacen.actor_a_altura("ent_rata_gigante", 120, nombre="Rata gigante #1")
+        entradas = almacen.entradas_cache
+        for numero in range(2, 9):
+            assert almacen.actor_a_altura("ent_rata_gigante", 120, nombre=f"Rata gigante #{numero}") is primera
+        assert almacen.entradas_cache == entradas                              # ocho ratas, un solo conjunto, caché quieta
+        assert almacen.actor_a_altura("ent_rata_gigante", 121, nombre="Rata gigante #1") is not primera   # otra altura, otro
+    _con_almacen(ASSETS, prueba)
+
+
+def probar_la_cache_de_actor_a_altura_no_lleva_el_nombre_de_la_instancia_solo_la_inicial_en_la_figura():
+    def prueba(almacen):
+        for numero in range(1, 4):
+            almacen.actor_a_altura("ent_rata_gigante", 100, nombre=f"Rata gigante #{numero}")
+            almacen.actor_a_altura("ent_guardian_oseo", 100, nombre=f"Guardián óseo #{numero}")
+        claves = almacen._claves
+        assert not [k for k in claves if "#" in k or "gigante" in k.split("|")[-1]], claves
+        reales = [k for k in claves if k.startswith("actor|ent_rata_gigante")]
+        assert reales and all(len(k.split("|")) == 4 for k in reales), reales  # actor|tipo|estado|escala: sin nada más
+    _con_almacen(ASSETS, prueba)
+
+    def sin_sprites(almacen):                                                   # una carpeta sin nada: todo es figura
+        for numero in range(1, 4):
+            almacen.actor_a_altura("ent_inventado", 100, nombre=f"Zzyzx el temible #{numero}")
+        claves = almacen._claves
+        assert not [k for k in claves if "temible" in k or "#" in k], claves
+        figuras = [k for k in claves if k.startswith("actor|ent_inventado")]
+        assert figuras and all(k.endswith("|Z") for k in figuras), figuras     # solo la inicial, y solo en la figura
+        uno = almacen.actor_a_altura("ent_inventado", 77, nombre="Zorro #1")
+        assert almacen.actor_a_altura("ent_inventado", 77, nombre="Zorro #2") is uno      # misma inicial: la misma figura
+        assert almacen.actor_a_altura("ent_inventado", 77, nombre="Araña #1") is not uno
+    _con_carpeta([], sin_sprites)
+
+
+def probar_es_de_respaldo_se_decide_por_el_origen_no_por_el_nombre():
+    def prueba(almacen):
+        assert not es_de_respaldo(almacen.actor("jugador", "idle", 1.0, "Jugador"))
+        assert not es_de_respaldo(almacen.actor("ent_rata_gigante", "idle", 1.0, "Rata gigante #1"))
+        assert not es_de_respaldo(almacen.actor("ent_rata_gigante", "ataque", 1.0, "Rata gigante #1"))
+        assert es_de_respaldo(almacen.actor("ent_guardian_oseo", "idle", 1.0, "Rata gigante #1"))   # el nombre no cuenta
+        assert es_de_respaldo(almacen.actor("enemigo", "idle", 1.0, "X"))
+        assert es_de_respaldo(almacen.actor("no-existe", "idle", 1.0, "X"))
+    _con_almacen(ASSETS, prueba)
+
+    def sin_sprites(almacen):
+        assert es_de_respaldo(almacen.actor("ent_x", "idle", 1.0, "X")) and es_de_respaldo(almacen.actor("jugador", "idle", 1.0, "J"))
+    _con_carpeta([], sin_sprites)                                              # la figura de respaldo también cuenta
+
+
 def probar_el_codigo_de_la_vista_no_usa_dict_ni_set_ni_ordenamientos():
     carpeta = RAIZ / "View"
     assert (carpeta / "AlmacenSprites.py").is_file()
@@ -317,5 +370,8 @@ if __name__ == "__main__":
     probar_instancias_distintas_del_mismo_tipo_comparten_el_conjunto_y_la_cache_no_crece()
     probar_la_figura_de_respaldo_se_comparte_por_inicial()
     probar_los_nombres_que_no_existen_tambien_se_recuerdan()
+    probar_actor_a_altura_mide_lo_pedido_y_ocho_ratas_a_la_misma_altura_comparten_el_conjunto()
+    probar_la_cache_de_actor_a_altura_no_lleva_el_nombre_de_la_instancia_solo_la_inicial_en_la_figura()
+    probar_es_de_respaldo_se_decide_por_el_origen_no_por_el_nombre()
     probar_el_codigo_de_la_vista_no_usa_dict_ni_set_ni_ordenamientos()
     print("OK: todas las pruebas de AlmacenSprites pasaron")

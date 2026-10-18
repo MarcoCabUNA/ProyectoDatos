@@ -22,11 +22,14 @@ pantalla actual quedan en su valor por omisión (None o vacío).
     reporte    solicitudes de red y caché de la partida terminada ("victoria" y "derrota")
     puntajes   la tabla de puntajes ya ordenada ("puntajes")
     criterio   el criterio con que está ordenada esa tabla
+    elemento_bajo_el_raton   lo que había bajo el ratón en su último movimiento ("juego"); None si el ratón no se ha
+               movido desde la última tecla, clic o rueda. La Vista lo usa para mostrar el nombre de un objeto del suelo
 
 Regla de los DTOs: solo transportan datos.
 """
 from dataclasses import dataclass, field
 
+from DTO.ElementoDTO import ElementoDTO
 from DTO.EstadoJuegoDTO import EstadoJuegoDTO
 from DTO.PuntajeDTO import PuntajeDTO
 from DTO.ReporteDatosDTO import ReporteDatosDTO
@@ -47,3 +50,4 @@ class PantallaDTO:
     reporte: ReporteDatosDTO | None = None
     puntajes: list[PuntajeDTO] = field(default_factory=list)
     criterio: str | None = None
+    elemento_bajo_el_raton: ElementoDTO | None = None

@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from ayudas_pygame import pygame  # noqa: E402  (fija SDL_VIDEODRIVER=dummy antes de importar pygame)
-from ayudas_vista import ESC, Recorrido, las_ocho_pantallas  # noqa: E402
+from ayudas_vista import Recorrido, las_ocho_pantallas  # noqa: E402
 
 from DTO.PantallaDTO import PantallaDTO  # noqa: E402
 from UIController.ControladorPygame import ControladorPygame  # noqa: E402

@@ -29,6 +29,7 @@ import pygame
 
 from DTO.Direcciones import E, N, O, S
 from Security.ValidadorAcceso import es_nombre_seguro
+from View import Componentes as c
 
 PERSONAJES, ENEMIGOS, OBJETOS, FONDOS, UI = "personajes", "enemigos", "objetos", "fondos", "ui"
 JUGADOR = "jugador"
@@ -45,6 +46,12 @@ _ACTOR_FIGURA = (400, 500)                  # tamaño de la figura de respaldo d
 _COLOR_FIGURA = (150, 60, 60)
 _COLOR_FONDO_LISO = (20, 16, 24)
 _COLOR_UI = (90, 70, 60)
+
+
+def es_de_respaldo(conjunto: "ConjuntoSprites") -> bool:
+    """True si el actor se dibuja con el conjunto genérico de enemigos o con la figura de respaldo (no tiene sprites
+    propios). Se reconoce por 'origen', no por el nombre del enemigo."""
+    return conjunto.origen == ORIGEN_FIGURA or conjunto.origen.startswith(f"{ENEMIGOS}/{GENERICO}_")
 
 
 @dataclass(frozen=True)
@@ -94,6 +101,12 @@ class AlmacenSprites:
         figura = self._figura(_ACTOR_FIGURA, escala, inicial)
         return self._recordar(clave_figura, ConjuntoSprites([figura], ORIGEN_FIGURA))
 
+    def actor_a_altura(self, tipo: str, alto: int, estado: str = ESTADO_BASE, nombre: str = "") -> ConjuntoSprites:
+        """Como actor(), pero la escala se elige para que el primer fotograma (ya recortado a su contenido) mida 'alto'
+        píxeles: así un jugador, una rata y un enemigo genérico, de tamaños originales muy distintos, se ven parejos."""
+        alto_original = self.actor(tipo, estado, 1.0, nombre).fotogramas[0].get_height()
+        return self.actor(tipo, estado, round(max(1, alto) / alto_original, 4), nombre)
+
     def objeto(self, id_objeto: str, clase: str, lado: int) -> ConjuntoSprites:
         """El sprite de un objeto, ajustado para caber en un cuadrado de 'lado' píxeles."""
         clave = f"objeto|{id_objeto}|{clase}|{lado}"
@@ -106,6 +119,25 @@ class AlmacenSprites:
                 reducida = self._escalar(imagen, lado / max(imagen.get_size()))
                 return self._recordar(clave, ConjuntoSprites([reducida], f"{OBJETOS}/{nombre}"))
         return self._recordar(clave, ConjuntoSprites([self._figura((lado, lado), 1.0, "?")], ORIGEN_FIGURA))
+
+    def aura_de_objeto(self, id_objeto: str, clase: str, lado: int, margen: int, color: tuple, intensidad: int):
+        """El resplandor de un objeto del suelo: su silueta teñida de 'color' y difuminada, en un lienzo transparente
+        'margen' píxeles más grande por cada lado que el sprite. Se prepara una vez por objeto y se guarda en la caché."""
+        clave = f"aura|{id_objeto}|{clase}|{lado}|{margen}|{color}|{intensidad}"
+        guardada = self._recordado(clave)
+        if guardada is not None:
+            return guardada
+        sprite = self.objeto(id_objeto, clase, lado).fotogramas[0]
+        tamano = (sprite.get_width() + 2 * margen, sprite.get_height() + 2 * margen)
+        silueta = pygame.mask.from_surface(sprite).to_surface(setcolor=(*color, 255), unsetcolor=(0, 0, 0, 0))
+        lienzo = pygame.Surface(tamano, pygame.SRCALPHA)
+        for dx in (-2, 0, 2):                                         # la silueta engordada un poco y luego difuminada
+            for dy in (-2, 0, 2):
+                lienzo.blit(silueta, (margen + dx, margen + dy))
+        pequeno = pygame.transform.smoothscale(lienzo, (max(1, tamano[0] // 3), max(1, tamano[1] // 3)))
+        difuso = pygame.transform.smoothscale(pequeno, tamano)
+        difuso.fill((255, 255, 255, intensidad), special_flags=pygame.BLEND_RGBA_MULT)
+        return self._recordar(clave, difuso)
 
     def fondo(self, nombre: str, tamano: tuple[int, int]) -> ConjuntoSprites:
         """Un fondo de pantalla completa, suavizado hasta 'tamano'. Sin archivo, un fondo liso."""
@@ -120,6 +152,42 @@ class AlmacenSprites:
             return self._recordar(clave, ConjuntoSprites([liso], ORIGEN_FIGURA))
         ajustado = pygame.transform.smoothscale(imagen, tamano)
         return self._recordar(clave, ConjuntoSprites([ajustado], f"{FONDOS}/{nombre}"))
+
+    def fondo_ambientado(self, nombre: str, tamano: tuple[int, int], intensidad: float) -> ConjuntoSprites:
+        """El fondo() con la ambientación lúgubre (receta en Componentes.AMBIENTE_*), calculada una sola vez por
+        (fondo, tamaño, intensidad) y guardada en la caché. Con intensidad 0 devuelve el mismo conjunto que fondo()."""
+        intensidad = min(1.0, max(0.0, intensidad))
+        original = self.fondo(nombre, tamano)
+        if intensidad == 0:
+            return original
+        clave = f"fondo_ambientado|{nombre}|{tamano}|{intensidad}"
+        guardado = self._recordado(clave)
+        if guardado is not None:
+            return guardado
+        base = original.fotogramas[0]
+        receta = base.copy()
+        grises = pygame.transform.grayscale(base)
+        grises.set_alpha(round(255 * c.AMBIENTE_GRIS))
+        receta.blit(grises, (0, 0))
+        receta.fill(c.AMBIENTE_TINTE, special_flags=pygame.BLEND_RGB_MULT)
+        receta.blit(self._vineta(tamano), (0, 0), special_flags=pygame.BLEND_RGB_MULT)
+        resultado = base.copy()
+        receta.set_alpha(round(255 * intensidad))
+        resultado.blit(receta, (0, 0))
+        return self._recordar(clave, ConjuntoSprites([resultado], f"{original.origen}+ambiente"))
+
+    @staticmethod
+    def _vineta(tamano: tuple[int, int]) -> pygame.Surface:
+        """Degradado radial (blanco al centro, oscuro en las esquinas) calculado en miniatura y ampliado a 'tamano'."""
+        ancho, alto = c.AMBIENTE_VINETA_TAMANO
+        miniatura = pygame.Surface((ancho, alto))
+        for y in range(alto):
+            for x in range(ancho):
+                dx, dy = (x + 0.5) / ancho * 2 - 1, (y + 0.5) / alto * 2 - 1
+                distancia = min(1.0, (dx * dx + dy * dy) / 2)                 # 0 al centro, 1 en las esquinas
+                nivel = round(255 * (1 - c.AMBIENTE_VINETA * distancia))
+                miniatura.set_at((x, y), (nivel, nivel, nivel))
+        return pygame.transform.smoothscale(miniatura, tamano)
 
     def ui(self, nombre: str, escala: float = 1.0) -> ConjuntoSprites:
         """Una imagen de ui/ (pixel art: se amplía sin suavizar)."""

@@ -174,7 +174,7 @@ Esas cifras se verificaron con **Python 3.12 y pygame-ce 2.5.8**. El proyecto ex
 1. **Importa solo de:** `pygame`, `DTO/`, `Security/` y la biblioteca estándar mínima. **Nunca** de `UIController/`, `Service/`, `Logic/`, `Data/` ni `Estructuras/`.
 2. **La Vista no lee el teclado ni el ratón.** No llames `pygame.event.get/poll/pump`, `pygame.key.get_mods`, ni `pygame.mouse.get_pos`. El bucle de eventos es del Controlador.
 3. **No actives el repetidor de teclas** (`pygame.key.set_repeat`): mantener pulsada una tecla repetiría acciones del juego.
-4. **No cambies ningún DTO** salvo `EstadoJuegoDTO` en la Etapa 1.
+4. **No cambies ningún DTO** salvo `EstadoJuegoDTO` en la Etapa 1 y `PantallaDTO.elemento_bajo_el_raton` en la Etapa 6 (excepción autorizada por el usuario, junto con el cambio mínimo en `ControladorPygame` que lo llena; ver 4.3).
 5. **Inicia pygame sin audio:** `pygame.display.init()` y `pygame.font.init()`, no `pygame.init()` (comprobado: así no se inicia el mezclador).
 6. **`dibujar` no modifica nada:** recibe un DTO inmutable; no lo guardes para alterarlo ni lo uses para decidir reglas del juego.
 
@@ -220,7 +220,7 @@ resaltado en `opciones` (teclado o ratón); **`-1` = ninguno**.
 | `"menu"` | `"CRIPTA"` | `Comenzar juego`, `Modo: Offline` u `Online`, `Cargar partida`, `Puntajes`, `Salir` | `aviso`, `ayuda` (2 líneas) |
 | `"criptas"` | `"Elige una cripta"` | una por cripta: `<nombre> - <salas> salas, dificultad <n>`; **y al final** `Volver` | `aviso`, `ayuda` (3) |
 | `"nombre"` | `"¿Cómo te llamas?"` o `"Nombre para cargar la partida"` | `Aceptar`, `Volver` | `texto` (lo que se escribe, máx. 16), `aviso`, `ayuda` (3) |
-| `"juego"` | `""` | `Esperar` | `estado`, `objetivo`, `aviso`, `ayuda` (11 líneas), `seleccion` ∈ {-1, 0} |
+| `"juego"` | `""` | `Esperar` | `estado`, `objetivo`, `elemento_bajo_el_raton`, `aviso`, `ayuda` (11 líneas), `seleccion` ∈ {-1, 0} |
 | `"pausa"` | `"Pausa"` | `Continuar`, `Guardar partida`, `Cargar partida`, `Salir al menú` | `estado` (para dibujar la partida de fondo), `aviso`, `ayuda` (3) |
 | `"victoria"` | `""` | `Jugar de nuevo`, `Ver puntajes`, `Menú principal` | `estado`, `puntaje` (puede ser `None`), `reporte`, `aviso`, `ayuda` (3) |
 | `"derrota"` | `""` | las mismas tres | las mismas |
@@ -231,6 +231,10 @@ Notas:
 - `aviso` es un mensaje breve (error o motivo de una acción rechazada); `None` si no hay. Dura hasta la siguiente acción del jugador.
 - `objetivo` es el **id** del enemigo al que atacaría la tecla Espacio (`None` si no hay enemigos).
 - En `"victoria"`/`"derrota"`, `puntaje` es `None` si no se pudo guardar; en ese caso `aviso` lo explica.
+- **`elemento_bajo_el_raton`** (solo en `"juego"`; `None` en las demás): el `ElementoDTO` que `vista.elemento_en` devolvió en el último
+  `MOUSEMOTION`. El controlador lo guarda sin consultas nuevas a la Vista y lo borra con cualquier tecla, clic o rueda y al cambiar de
+  pantalla (para no mostrar un nombre desfasado). La Vista lo usa para escribir el nombre de un objeto del suelo junto a él; con cualquier
+  otro tipo de elemento, o un índice fuera de rango, no dibuja nada. La Vista sigue sin leer el ratón.
 
 ### 4.4 `ElementoDTO` y zonas de clic
 
@@ -426,8 +430,8 @@ Debe mostrar (§10.2):
 |---|---|
 | **Sala actual** (nombre) | `estado.sala.nombre` |
 | **Salidas** | `estado.sala.salidas`: puertas cerradas dibujadas (6.3); marcos del fondo para las abiertas |
-| **Enemigos** | `estado.enemigos`: sprite (6.3), `nombre`, barra `vida`/`vida_max`; el `objetivo` resaltado |
-| **Objetos del suelo** | `estado.objetos_suelo`: sprite (6.3) y, al pasar o en una etiqueta, su `nombre` |
+| **Enemigos** | `estado.enemigos`: sprite (6.3), `nombre`, barra `vida`/`vida_max`; el `objetivo` resaltado; sin aura |
+| **Objetos del suelo** | `estado.objetos_suelo`: sprite (6.3) con un **aura** (resplandor dorado suave, sin etiqueta permanente); su `nombre` aparece **solo al pasar el ratón** (`pantalla.elemento_bajo_el_raton`, ver 4.3) |
 | **Jugador** | sprite `jugador` y barra `vida`/`vida_max` |
 | **Estadísticas** | `estado.jugador`: vida, ataque, defensa, velocidad; y `estado.reloj` |
 | **Efectos** | velo + línea de texto por cada `EfectoDTO` (6.5) |
@@ -442,8 +446,41 @@ casillas); cada objeto ocupa una casilla con su sprite y registra `ELEMENTO_INVE
 vista ("Orden: real / peso / valor / nombre"); el contador `capacidad/capacidad_maxima`; y los datos del objeto bajo el
 cursor (`nombre`, `clase`, `peso`, `valor` y los bonus que no sean `None`).
 
-**Orden de dibujo (y de registro de zonas):** fondo → marcos oscurecidos → puertas → objetos del suelo → enemigos →
-jugador → velos de efectos → HUD (stats, mensajes, inventario) → botón → aviso/ayuda.
+**Orden de dibujo (y de registro de zonas):** fondo → marcos oscurecidos → puertas → **protagonista, enemigos y objetos del suelo
+ordenados por los pies (el de más abajo, encima)** → nombre del objeto bajo el ratón → velos de efectos → HUD (stats, mensajes,
+inventario) → botón → aviso/ayuda. La prioridad de las zonas de clic coincide con ese orden.
+
+**Tamaños de la escena** (alto del contenido del sprite, todo en `View/Componentes.py`; sin ids de cripta, §9). Son tres categorías,
+no una tabla por nombre:
+
+| Categoría | Cómo se reconoce | Alto |
+|---|---|---|
+| protagonista | `ActorDTO.tipo == "jugador"` | **90 px fijos** (`ALTURA_JUGADOR`), igual en todas las escenas |
+| enemigo con sprites propios (la rata) | `ConjuntoSprites.origen` no es el genérico | 190 px (`ALTURA_ENEMIGO`) |
+| enemigo de respaldo (conjunto `enemigo`, o figura dibujada) | `View.AlmacenSprites.es_de_respaldo(conjunto)` mira el `origen` | 85 % del anterior (`FACTOR_RESPALDO`) |
+
+Se cumple propios ≥ genérico > protagonista. Con una escala común el genérico saldría diminuto (su contenido mide 226 px y el del
+jugador 462), por eso la escala sale de la altura pedida (`AlmacenSprites.actor_a_altura`). Si hay tantos enemigos que no caben, **todos**
+los enemigos se achican con el mismo factor (`FACTORES_ENEMIGOS`) para conservar sus proporciones; el protagonista no cambia.
+
+**Dónde pisa el protagonista** (`posicion_del_protagonista(salidas, id_sala_anterior)`, función pura): sin sala anterior (inicio de
+partida, partida cargada o vuelta desde el menú), en el **centro del suelo**; al entrar a una sala nueva, **delante de la puerta por la
+que entró**, que es la salida de la sala nueva cuya `sala_destino` es la sala anterior. Si esa puerta no se puede determinar (la sala
+anterior no es contigua, o hay varias salidas hacia ella), en el centro. La escena recuerda la sala anterior comparando el id de sala
+entre cuadros y la olvida al mostrar `menu`, `criptas`, `nombre`, `victoria`, `derrota` o `puntajes` (la pausa no la olvida). Limitación:
+una partida cargada desde la pausa no pasa por el menú, así que si la sala cargada fuera contigua a la anterior, el protagonista
+aparecería junto a esa puerta.
+
+**Reparto de enemigos y objetos** (`colocar`, función pura: tamaños, zonas ocupadas, suelo, pies del protagonista → rectángulos):
+repartidos por el suelo (`SUELO`) **alrededor del protagonista** (cada uno toma la posición libre más cercana a un radio preferido:
+enemigos cerca, objetos más lejos), sin tapar al protagonista ni los pasillos de las puertas con salida. Es determinista (nada de
+azar), sus zonas no se solapan y caben de 1 a 12 enemigos y de 1 a 12 objetos a la vez, con el protagonista en el centro o junto a
+cualquiera de las cuatro puertas. `repartir_escena` aplica `colocar` a enemigos y objetos y es lo que usan las pruebas para saber dónde
+hacer clic. El resultado se guarda y solo se recalcula si cambia algo de lo que depende (el cálculo más pesado, 12+12, tarda unos 150 ms).
+
+**Aura de los objetos del suelo:** silueta del sprite teñida de dorado, difuminada (`AlmacenSprites.aura_de_objeto`, una vez por
+objeto y guardada en la caché). No cambia la zona de clic (que es la del sprite) ni tapa a otros. Los enemigos no llevan aura.
+Intensidad en `AURA_INTENSIDAD`.
 
 ---
 
@@ -460,7 +497,7 @@ necesite**, y fusiona los que te queden pequeños (regla de la sección 3.2).
 | `View/Componentes.py` | Elementos reutilizables: botón, panel translúcido, barra de vida, texto con ajuste de línea. | 4 |
 | `View/PantallaMenus.py` | `menu`, `criptas`, `nombre`, `pausa`, `puntajes`. | 4 |
 | `View/PantallaFin.py` | `victoria` y `derrota`. | 5 |
-| `View/EscenaJuego.py` | Fondo, puertas, actores, objetos del suelo. | 6 |
+| `View/EscenaJuego.py` | Fondo, puertas, protagonista, enemigos y objetos del suelo; funciones puras `fondo_para`, `puertas_a_dibujar`, `posicion_del_protagonista`, `colocar`, `repartir_escena`, `orden_de_dibujo`. Todas sus medidas están en `View/Componentes.py`. | 6 |
 | `View/HudJuego.py` | Estadísticas, mensajes, inventario, efectos, botón, aviso, ayuda. | 7 |
 | `View/Animaciones.py` | Solo si se hace la Etapa 9. | 9 |
 
@@ -630,11 +667,23 @@ translúcido; el texto con ajuste; y las cinco pantallas según 7.1. `VistaPygam
 - Con un estado construido a mano con una salida cerrada hacia `sala_salida`: se dibuja `puerta_final` y `elemento_en` sobre ella devuelve `puerta` con la dirección correcta (prueba N, S, E y O).
 - **Clic real de punta a punta:** un clic sobre la antorcha recoge el objeto (el controlador real y los servicios reales);
   un clic sobre un enemigo produce un mensaje "Jugador ataca a …".
-- Capturas de: sala inicial, sala de las ratas y una sala con puerta cerrada. Revisa anclaje de los pies, escala, rotación de puertas y que nada salga de la pantalla.
+- Tamaños (medidos sobre lo que se dibuja): propios ≥ genérico > protagonista; protagonista fijo.
+- Posición del protagonista: centro sin sala anterior; delante de la puerta correcta al entrar por N, S, E y O; centro si la anterior no es contigua; olvido tras el menú.
+- Reparto: de 1 a 12 enemigos y objetos, sin solapes, dentro del suelo, sin tapar al protagonista ni las puertas; orden de dibujo = prioridad de zonas.
+- Clics de punta a punta en el punto que da la función pura de reparto (no según el índice que registró la Vista).
+- Aura en los objetos y no en los enemigos; sin etiquetas permanentes; nombre al pasar el ratón (`elemento_bajo_el_raton`).
+- Capturas de: sala inicial, sala de las ratas, entrada por cada puerta, puertas cerradas, puerta final, muchos enemigos y objetos, y el nombre de un objeto. Revisa anclaje de los pies, escala, rotación de puertas y que nada salga de la pantalla.
 
 **Hecho cuando:** pasan y el usuario aprueba las capturas.
 
 ### Etapa 7 — HUD: estadísticas, mensajes, inventario, efectos, botón y ayuda
+
+**Como quedó (medidas en `View/Componentes.py`, sección HUD; contenido en `View/HudJuego.py`):** columna izquierda: estadísticas
+(8, 8, 264×128), efectos (8, 144, 264×148) y mensajes (8, 470, **350**×290, 20 líneas, fuente 17 elegida por medida); columna
+derecha: inventario (1104, 8, 264×284, 10 casillas de 46 px en 2 filas) y, abajo, Esperar, aviso y ayuda (x 1028–1368, ayuda en
+fuente 20 elegida por medida). `SUELO` no se reduce: los paneles que lo pisan (mensajes y el grupo de abajo a la derecha) entran en
+`ocupadas` de `repartir_escena`. Los tramos y 296–470 de las bandas laterales quedan libres. Orden: escena, velos, HUD, botón,
+aviso, ayuda y, por último, el nombre del objeto bajo el ratón (`EscenaJuego.dibujar_nombre`). La pausa dibuja la escena sin HUD.
 
 **Objetivo:** todo lo demás que exige §10.2 durante la partida.
 
@@ -787,7 +836,7 @@ marcar todos como equipados). Hazlo sobre una **copia** del proyecto, un cambio 
 | 4 | ¿Dónde y cómo mostrar `ayuda` (11 líneas) durante la partida? | Panel compacto y discreto; decidir con capturas. |
 | 5 | Disposición del HUD, del inventario y de los mensajes | Decidir con capturas por etapa. |
 | 6 | ¿Hacer la Etapa 9 (animaciones) y cómo disparar `ataque`? | Solo si sobra tiempo; la propuesta de los mensajes es frágil. |
-| 7 | ¿Cómo mostrar un objeto del suelo: nombre siempre o solo al pasar el ratón? | Etiqueta corta siempre visible. |
+| 7 | ¿Cómo mostrar un objeto del suelo: nombre siempre o solo al pasar el ratón? | **Decidido (Etapa 6):** aura permanente y nombre solo al pasar el ratón. Antes se probó una etiqueta siempre visible. |
 
 ---
 
