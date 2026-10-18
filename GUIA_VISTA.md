@@ -7,6 +7,32 @@
 > Basado en el estado del repositorio al **15 de octubre de 2026**. Todo lo que se afirma aquí fue comprobado contra
 > el código y los archivos. La Etapa 0 vuelve a comprobarlo en tu copia, porque el repositorio pudo cambiar.
 
+## Estado al 18 de octubre de 2026: la Vista está terminada
+
+Las etapas 0 a 10 están hechas, incluida la 9 (animaciones: `View/Animaciones.py` y `View/EfectosEscena.py`). Lo que
+sigue de este documento es el plan con el que se construyó; donde contradiga esta sección, manda esta sección.
+
+| Lo que el plan decía | Cómo quedó |
+|---|---|
+| Recursos en `Assets/assets/`; `pygame-ce` fuera de `pyproject.toml`; `main.py` de prueba (2.4) | Resuelto: `assets/` en la raíz, `pygame-ce` en `pyproject.toml`, `main.py` real. |
+| Python ≥ 3.14 | **Python ≥ 3.11**, como pide el enunciado (probado con 3.11 y 3.14). |
+| Línea base: 319 pruebas y 17 scripts (2.3) | `unittest discover`: **350 pruebas**; scripts `probar_*` que no son de `unittest` (se corren uno por uno): **27** (`grep -L unittest $(grep -l __main__ tests/test_*.py)`). Todo pasa en 3.11 y 3.14. Para correr ambos tipos de una vez: `python tests/correr_pruebas.py`. |
+| README con controles (Etapa 10) | Hecho: sección "Controles" del `README.md`. |
+
+Correcciones hechas al cerrar (las pruebas de la escena y del HUD fallaban también en Linux con `SDL_VIDEODRIVER=dummy`):
+
+- **Reparto de 12 enemigos + 12 objetos con el protagonista al centro:** no cabía con ningún factor, porque la ficha (barra
+  y nombre) nunca bajaba de 98 px aunque el sprite se achicara. Ahora, con un factor menor que `FACTOR_FICHA_ESTRECHA`
+  (0.5), la ficha baja hasta `FICHA_ANCHO_MIN` (70 px) y el nombre se corta con "...".
+- **Ayuda de 11 líneas:** "U (o doble clic): usar   Q (o clic derecho): equipar" se cortaba. `TAM_AYUDA_JUEGO` pasó de
+  20 a 18 (la fuente por defecto mide igual en 19 y en 20).
+- **Pruebas mal calibradas** (la Vista estaba bien): la barra de vida se medía en una fila que tapa el número; el ancho de
+  los mensajes exigía 10 px de margen que ningún tamaño de fuente da; el fundido usaba una ayuda de una línea.
+- Los mensajes nuevos de Lógica (veneno al golpear o por trampa, regeneración, velocidad) están en la prueba de anchos.
+
+Pendiente fuera del código: la **prueba manual** de la Etapa 8 (con ventana real, los clics caen donde se ven, la ventana
+se redimensiona, `Esc` y la X cierran) y anotar en `PROMPTS_LLM.md` los prompts de las sesiones de la Vista.
+
 ---
 
 ## 0. Cómo usar este documento (leer primero)
@@ -128,7 +154,7 @@ Los scripts `test_*.py` **no son de `unittest`**: cada uno ejecuta sus funciones
 `if __name__ == "__main__":` e imprime una línea `OK` al final. `unittest discover` no los cuenta: hay que correrlos
 uno por uno. Hay 17 scripts en total.
 
-Esas cifras se verificaron con **Python 3.12 y pygame-ce 2.5.8**. El proyecto exige Python **≥ 3.14**
+Esas cifras se verificaron con **Python 3.12 y pygame-ce 2.5.8** (hoy son otras: ver "Estado al 18 de octubre"). El proyecto exige Python **≥ 3.11**
 (`pyproject.toml`): la Etapa 0 las confirma en el intérprete real del usuario.
 
 ### 2.4 Hallazgos del entorno que requieren acción (Etapa 0)
@@ -527,7 +553,7 @@ Borra `View/prueba.txt` al crear el primer archivo de la carpeta.
 
 **Pasos**
 1. Lee el repositorio y confirma las secciones 2.1 y 2.2 (los archivos existen; los controladores y DTO nuevos están).
-2. Intérprete: `python --version` (debe ser ≥ 3.14). Si el `.venv` no existe o falla: `uv sync`.
+2. Intérprete: `python --version` (debe ser ≥ 3.11). Si el `.venv` no existe o falla: `uv sync`.
 3. Dependencia: si `python -c "import pygame"` falla o `pyproject.toml` no lista `pygame-ce`, ejecuta `uv add pygame-ce`.
 4. `.gitignore`: agrega `.venv/` y `capturas/`.
 5. Ubicación de los recursos (2.4): **pregunta** al usuario y actúa según su respuesta. Mientras tanto, usa la carpeta que exista.
@@ -768,7 +794,7 @@ dos instantes distintos y comprueba que cambian.
 4. Recuerda al usuario que debe **anotar en `PROMPTS_LLM.md`** los prompts de esta sesión (§10.3 del enunciado: fecha,
    herramienta, prompt textual y para qué se usó). **No lo hagas tú.**
 
-**Qué agregar al README (§10.1 del enunciado):** versión de Python (≥ 3.14), dependencias (`requests`, `pygame-ce`),
+**Qué agregar al README (§10.1 del enunciado):** versión de Python (≥ 3.11), dependencias (`requests`, `pygame-ce`),
 instalación (`uv sync`), comandos (`python main.py`, `--offline`, `--cache-size N`, `--replay ARCHIVO`, `--bench`),
 controles (resumen de `ControlesJuego.AYUDA_JUEGO`), y dónde se generan archivos (`cache/`, `logs/`, `saves/`).
 

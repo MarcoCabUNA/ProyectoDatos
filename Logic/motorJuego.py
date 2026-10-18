@@ -1,8 +1,9 @@
 import random
 
 from DTO.Direcciones import DIRECCIONES
+from DTO.EfectoFichaDTO import REGENERACION, VELOCIDAD, VENENO
 from Logic.ColaEventos import ColaEventos
-from Logic.Efectos import Antorcha, Velocidad
+from Logic.Efectos import Antorcha, Regeneracion, Velocidad, Veneno
 from Logic.EventoPorg import EventoProgramado
 from Logic.GestorEfectos import GestorEfectos
 from Logic.HistorialRetroceso import HistorialRetroceso
@@ -58,6 +59,8 @@ class Motor:
             self.historial.registrar_atributo(enemigo, "activo", enemigo.activo)
             enemigo.activo = True
             self.programar_accion(enemigo, 100)
+            for efecto in enemigo.efectos_propios():
+                self._aplicar_efecto_de_ficha(efecto, enemigo, enemigo.nombre_visible())
 
     def programar_accion(self, actor, costo):
         tiempo = self.reloj + actor.Calcu_de_Intervalo(costo)
@@ -221,11 +224,15 @@ class Motor:
         self.mensaje(f"{atacante.nombre_visible()} ataca a {defensor.nombre_visible()}: {dano} de daño")
         if not defensor.Vivo():
             self.morir(defensor)
+        elif atacante is not self.jugador:
+            for efecto in atacante.efectos_al_golpear():
+                self._aplicar_efecto_de_ficha(efecto, defensor, atacante.nombre_visible())
 
     # COORDINAR (Integrante 2): la ficha del enemigo muerto deja de estar en uso en la caché
     def morir(self, actor):
         if actor.Evento_pendiente is not None:
             actor.Evento_pendiente.cancelar()
+        self.efectos.cancelar_de(actor)
         if actor is self.jugador:
             self._registrar_fin()
             self.terminado = True
@@ -245,14 +252,17 @@ class Motor:
 
     def _activar_trampas(self, id_sala):
         for trampa in self.mazmorra.trampas_armadas(id_sala):
-            self.jugador.Recibir_Dannio(trampa.ficha.danio)
+            dano = trampa.ficha.dano_al_activarse()
+            self.jugador.Recibir_Dannio(dano)
             self.historial.registrar_atributo(trampa, "armada", trampa.armada)
             trampa.armada = False
-            self.mensaje(f"{trampa.ficha.nombre}: {trampa.ficha.danio} de daño")
+            self.mensaje(f"{trampa.ficha.nombre}: {dano} de daño" if dano > 0 else f"Se activa {trampa.ficha.nombre}")
             self.programar_efecto(trampa.ficha.rearme, "rearme_trampa", trampa)
             if not self.jugador.Vivo():
                 self.morir(self.jugador)
                 return
+            for efecto in trampa.ficha.efectos:
+                self._aplicar_efecto_de_ficha(efecto, self.jugador, trampa.ficha.nombre)
 
     # Los cambios de preparar la partida (antes de la primera acción) no se pueden deshacer
     def _cerrar_intervalo(self):
@@ -283,6 +293,21 @@ class Motor:
         self.inventario.soltar_actual()
         self.mensaje("Lees el pergamino: el tiempo retrocede")
         return "ok"
+
+    # Un EfectoFichaDTO del catálogo (DTO/EfectoFichaDTO.py) aplicado sobre 'objetivo'. 'origen' es para el mensaje.
+    # No usa el azar, así que no cambia la secuencia del generador ni el replay de partidas sin estos efectos.
+    def _aplicar_efecto_de_ficha(self, efecto, objetivo, origen):
+        if efecto.tipo == VENENO:
+            self.efectos.aplicar(Veneno(objetivo, efecto.valor, efecto.duracion))
+            self.mensaje(f"{origen} envenena a {objetivo.nombre_visible()} ({efecto.valor})")
+        elif efecto.tipo == VELOCIDAD:
+            self.efectos.aplicar(Velocidad(objetivo, efecto.valor, efecto.duracion))
+            cambio = "acelera" if efecto.valor > 0 else "ralentiza"
+            self.mensaje(f"{origen} {cambio} a {objetivo.nombre_visible()}")
+        elif efecto.tipo == REGENERACION:
+            self.efectos.aplicar(Regeneracion(objetivo, efecto.valor))
+        else:
+            self.mensaje(f"{origen}: efecto '{efecto.tipo}' desconocido")
 
     def _beber_pocion(self, pocion):
         if pocion.cura is not None:

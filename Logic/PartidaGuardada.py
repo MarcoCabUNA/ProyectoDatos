@@ -2,7 +2,7 @@ from DTO.PartidaGuardadaDTO import (ContadorTipoDTO, EfectoGuardadoDTO, EnemigoG
                                     EventoGuardadoDTO, InventarioGuardadoDTO, JugadorGuardadoDTO,
                                     PartidaGuardadaDTO, SalaGuardadaDTO, TrampaGuardadaDTO)
 from Estructuras.Ordenador import Ordenador
-from Logic.Efectos import Antorcha, Veneno, Velocidad
+from Logic.Efectos import Antorcha, Regeneracion, Veneno, Velocidad
 from Logic.Enemigo import Enemigo
 from Logic.EventoPorg import EventoProgramado
 from Logic.Inventario import Inventario
@@ -10,7 +10,7 @@ from Logic.Mazmorra import CierrePuerta, Mazmorra, TrampaViva
 from Logic.jugador import Jugador
 from Logic.motorJuego import Motor
 
-EFECTOS = ["veneno", "velocidad", "antorcha"]
+EFECTOS = ["veneno", "velocidad", "antorcha", "regeneracion"]
 
 
 # Pasa el estado vivo de Lógica a los DTOs de DTO/PartidaGuardadaDTO.py y lo vuelve a armar.
@@ -179,10 +179,12 @@ def _cargar_jugador(jugador, guardado, inventario):
 
 def _crear_efecto(guardado, actor):
     if guardado.tipo == "veneno":
-        efecto = Veneno(actor, guardado.valor)
+        efecto = Veneno(actor, guardado.valor, guardado.duracion)
     elif guardado.tipo == "velocidad":
         efecto = Velocidad(actor, guardado.valor, guardado.duracion)
         efecto.cambio_real = guardado.cambio_real
+    elif guardado.tipo == "regeneracion":
+        efecto = Regeneracion(actor, guardado.valor)
     else:
         efecto = Antorcha(actor, guardado.duracion)
     efecto.fin = guardado.fin

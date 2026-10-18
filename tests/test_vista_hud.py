@@ -330,7 +330,9 @@ def _mensajes_peores_del_motor():
     for e in enemigos:
         n = f"{e} #99"
         mensajes += [f"{t}{n} ataca a Jugador: 999 de daño", f"{t}Jugador ataca a {n}: 999 de daño",
-                     f"{t}{n} entra a la sala", f"{t}{n} muere", f"{t}El veneno hace 999 de daño a {n}"]
+                     f"{t}{n} entra a la sala", f"{t}{n} muere", f"{t}El veneno hace 999 de daño a {n}",
+                     f"{t}{n} envenena a Jugador (999)", f"{t}{n} regenera 999 de vida",
+                     f"{t}{n} ralentiza a Jugador", f"{t}{n} acelera a Jugador"]
     mensajes += [f"{t}El veneno hace 999 de daño a Jugador", f"{t}Has muerto", f"{t}La antorcha se apaga",
                  f"{t}Has escapado de la cripta", f"{t}Lees el pergamino: el tiempo retrocede",
                  f"{t}Abres la puerta Norte", f"{t}Abres la puerta Sur"]
@@ -338,6 +340,7 @@ def _mensajes_peores_del_motor():
                  for m in [m + s for s in salas]]
     mensajes += [f"{t}{verbo} {o}" for o in objetos for verbo in ("Recoges", "Sueltas", "Equipas", "Usas")]
     mensajes += [f"{t}{x}: 999 de daño" for x in trampas]
+    mensajes += [f"{t}{x} envenena a Jugador (999)" for x in trampas] + [f"{t}Se activa {x}" for x in trampas]
     return mensajes
 
 
@@ -360,7 +363,9 @@ def probar_todos_los_mensajes_reales_del_motor_caben_en_el_ancho_util_del_panel_
     pygame.font.init()
     fuente = _fuente(c.TAM_MENSAJES)
     mas_ancho = max(mensajes, key=lambda m: fuente.size(m)[0])
-    assert fuente.size(mas_ancho)[0] <= ancho_util - 10, (mas_ancho, fuente.size(mas_ancho)[0], ancho_util)   # con margen
+    # Sin margen extra: la fuente por defecto mide igual en 16 y 17 y en 18 el peor ya no cabe, así que ningún tamaño
+    # deja 10 px libres. Lo que importa es que ninguno se corte con "..." y que no haya una fuente mayor que sirva.
+    assert fuente.size(mas_ancho)[0] <= ancho_util, (mas_ancho, fuente.size(mas_ancho)[0], ancho_util)
     siguiente = _fuente(c.TAM_MENSAJES + 1)
     assert max(siguiente.size(m)[0] for m in mensajes) > ancho_util, "hay una fuente más grande en la que caben todos"
     assert c.HUD_MENSAJES_INTERLINEA >= fuente.get_height() + 1

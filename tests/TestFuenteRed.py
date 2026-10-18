@@ -10,7 +10,7 @@ from Data.FuenteDatos import FuenteDatos
 from DTO.FichaEnemigoDTO import FichaEnemigoDTO
 from DTO.FichaTrampaDTO import FichaTrampaDTO
 from DTO.ObjetoDTO import ObjetoDTO
-from tests.Utilidades import ID_CRIPTA, ApiFalsa, catalogo_real, fuente_red, general_real
+from tests.Utilidades import ID_CRIPTA, ApiFalsa, catalogo_real, fuente_red, general_real, leer_paquete
 
 
 class PruebasFuenteRed(unittest.TestCase):
@@ -24,7 +24,9 @@ class PruebasFuenteRed(unittest.TestCase):
             FuenteDatos()   # type: ignore[abstract]
 
     def test_listar_criptas(self):
-        self.assertEqual([c.id for c in self.fuente.listar_criptas()], [ID_CRIPTA])
+        esperadas = [c["id"] for c in leer_paquete("criptas.json")["criptas"]]     # las que tenga el paquete
+        self.assertEqual([c.id for c in self.fuente.listar_criptas()], esperadas)
+        self.assertIn(ID_CRIPTA, esperadas)
 
     def test_datos_generales_fijan_el_presupuesto(self):
         cripta = self.fuente.obtener_datos_generales(ID_CRIPTA)

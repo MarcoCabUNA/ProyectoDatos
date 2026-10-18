@@ -193,10 +193,12 @@ def repartir_escena(almacen, fuentes: c.Fuentes, enemigos: list, objetos: list, 
             alto = round(c.ALTURA_ENEMIGO * (c.FACTOR_RESPALDO if es_respaldo_ else 1.0) * factor)
             conjunto = almacen.actor_a_altura(a.tipo, max(c.ALTURA_MINIMA, alto), nombre=a.nombre)
             sprite = conjunto.fotogramas[0]
-            ancho_nombre = min(fuente.size(a.nombre)[0], c.NOMBRE_ANCHO_MAX)
+            ancho_ficha = max(c.BARRA_VIDA[0], min(fuente.size(a.nombre)[0], c.NOMBRE_ANCHO_MAX))
+            if factor < c.FACTOR_FICHA_ESTRECHA:                # _ficha_de_actor ya ajusta barra y nombre al ancho
+                ancho_ficha = min(ancho_ficha, c.FICHA_ANCHO_MIN)
             conjuntos.append(conjunto)
             sprites.append(sprite)
-            tamanos.append((max(sprite.get_width(), c.BARRA_VIDA[0], ancho_nombre), sprite.get_height() + c.FICHA))
+            tamanos.append((max(sprite.get_width(), ancho_ficha), sprite.get_height() + c.FICHA))
         rectangulos, caben = colocar(tamanos, ocupadas, c.SUELO, pies, c.REPARTO_RADIO_ENEMIGOS, c.REPARTO_PASO,
                                      c.REPARTO_SEPARACION)
         huellas, caben_objetos = colocar(tamanos_objetos, ocupadas + rectangulos, c.SUELO, pies,

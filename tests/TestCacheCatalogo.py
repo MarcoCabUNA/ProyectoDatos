@@ -85,6 +85,11 @@ class PruebasCacheCatalogo(unittest.TestCase):
         self.assertFalse(c.contiene("b"))
         self.assertEqual((c.aciertos(), c.fallos()), (0, 0))
 
+    def test_registrar_fallo_solo_suma_un_fallo(self):
+        c = llena(5, "a")
+        c.registrar_fallo()
+        self.assertEqual((c.aciertos(), c.fallos(), c.tamano()), (0, 1, 1))
+
     def test_el_array_queda_ordenado_aunque_se_inserte_en_desorden(self):
         ids = [f"id_{i:03d}" for i in range(60)]
         desorden = list(ids)
