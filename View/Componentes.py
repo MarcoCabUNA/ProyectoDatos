@@ -37,7 +37,7 @@ TAM_TEXTO = 28
 TAM_PIE = 22
 TAM_CHICO = 18                               # números dentro de las barras de vida
 TAM_MENSAJES = 17                            # la más grande en que caben, en 350 px, los mensajes más largos del motor
-TAM_AYUDA_JUEGO = 20                         # la más grande en que caben, en 340 px, las 11 líneas de AYUDA_JUEGO
+TAM_AYUDA_JUEGO = 18                         # la más grande en que caben, en 340 px, las 11 líneas de AYUDA_JUEGO (en 19 y 20 "U (o doble clic)..." se cortaba)
 
 # Medidas de las pantallas con botones
 BOTON_ALTO = 44
@@ -70,6 +70,10 @@ HALO_MARGEN = (12, 8)                        # cuánto sobresale del sprite el m
 HALO_COLOR = (232, 184, 84, 55)
 BARRA_VIDA = (96, 14)
 NOMBRE_ANCHO_MAX = 170                       # un nombre más largo se corta con "..."
+FACTOR_FICHA_ESTRECHA = 0.5                  # con un factor menor (sala muy llena), la ficha se estrecha hasta...
+FICHA_ANCHO_MIN = 70                         # ...este ancho: barra más corta y nombre cortado con "..." (si no, con
+                                             # 12 enemigos + 12 objetos alrededor del centro no cabían: la ficha no
+                                             # bajaba de 98 px aunque el sprite sí se achicara)
 
 # Dónde pisa el protagonista (los pies, en píxeles) y qué puede ocupar la gente
 SUELO = pygame.Rect(280, 170, 816, 450)      # la parte del suelo que comparten los tres fondos de sala

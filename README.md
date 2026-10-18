@@ -53,6 +53,30 @@ en una terminal normal sale entera. Para guardarla en un archivo:
 uv run python main.py --bench > bench.txt
 ```
 
+### Controles
+
+En los menús: flechas o ratón para elegir, `Enter` o clic para aceptar, `Esc` para volver.
+
+Durante la partida (el inventario está siempre visible; la ventana muestra este resumen abajo a la derecha):
+
+| Acción | Teclado | Ratón |
+|---|---|---|
+| Moverse | `W A S D` o flechas | |
+| Atacar | `Espacio` (ataca al enemigo resaltado) | clic sobre el enemigo |
+| Recoger | | clic sobre el objeto del suelo |
+| Abrir una puerta | `E` | clic sobre la puerta cerrada |
+| Esperar | `Z` | botón `Esperar` |
+| Recorrer el inventario | `Tab` (`Mayús + Tab` hacia atrás) | rueda, o clic en una casilla |
+| Usar | `U` | doble clic sobre la casilla |
+| Equipar | `Q` | clic derecho sobre la casilla |
+| Soltar | `G` | `Mayús` + clic sobre la casilla |
+| Cambiar la vista del inventario | `V` (real, peso, valor, nombre; el orden real no cambia) | |
+| Pergamino de retroceso | `Retroceso` o `Ctrl + Z` | |
+| Guardar / Cargar | `Ctrl + S` o `F5` / `Ctrl + L` o `F9` | botones de la pausa |
+| Pausa | `Esc` (Continuar, Guardar, Cargar, Salir al menú) | |
+
+Para salir: `Salir` en el menú principal, `Salir al menú` en la pausa, o cerrar la ventana.
+
 ### Modo `--offline`
 
 Lee la cripta desde la carpeta `paquete/`, que viene en el repositorio con `cripta-01`. Las lecturas locales

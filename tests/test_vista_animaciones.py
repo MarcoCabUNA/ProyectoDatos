@@ -16,6 +16,7 @@ import View.Animaciones as anim  # noqa: E402
 import View.Componentes as c  # noqa: E402
 from DTO.ElementoDTO import ELEMENTO_OBJETO_SUELO, ElementoDTO  # noqa: E402
 from DTO.PantallaDTO import PantallaDTO  # noqa: E402
+from UIController.ControlesJuego import AYUDA_JUEGO  # noqa: E402
 from View.VistaPygame import VistaPygame  # noqa: E402
 
 
@@ -273,7 +274,9 @@ def probar_el_aura_respira_con_el_alfa_de_la_tabla_y_brilla_mas_en_el_objeto_baj
 
 
 def probar_el_fundido_de_sala_empieza_opaco_termina_transparente_y_nunca_tapa_el_hud():
-    pantalla = _juego(estado_base(3))
+    # Con la ayuda real del juego (11 líneas): con solo "Esc: menú" el panel no llega a 100 píxeles de texto
+    # aunque se vea perfectamente, y la prueba fallaba sin que hubiera nada mal.
+    pantalla = replace(_juego(estado_base(3)), ayuda=list(AYUDA_JUEGO))
     reloj = Reloj(1000)
     libre = pygame.Rect(300, 200, 300, 150)                                               # escena sin HUD ni puertas
     with tablas_quietas(), vista_abierta(True, reloj) as vista:
