@@ -126,6 +126,64 @@ def probar_en_la_victoria_y_la_derrota_los_botones_cuentan_y_el_contador_nunca_b
         assert valores[-1] == antes + 2
 
 
+def _llegar_a(e, nombre):
+    """Lleva el controlador hasta la pantalla 'nombre' (sin tocar el contador más de lo necesario) y la deja lista para una activación."""
+    if nombre == "criptas":
+        e.pulsar(ENTER)
+    elif nombre == "nombre":
+        e.pulsar(ENTER, ENTER)
+        e.escribir("Ana")                                  # con el nombre ya escrito, Aceptar no se rechaza
+    elif nombre == "pausa":
+        e.al_juego()
+        e.pulsar(ESC)
+    elif nombre == "puntajes":
+        e.pulsar(ABAJO, ABAJO, ABAJO, ENTER)
+    elif nombre == "fin":
+        e.al_juego()
+        e.hasta_el_fin()
+    assert e.pantalla().pantalla == {"menu": MENU, "criptas": "criptas", "nombre": "nombre", "pausa": PAUSA,
+                                     "puntajes": PUNTAJES, "fin": e.pantalla().pantalla}[nombre]
+
+
+def probar_cada_activacion_suma_exactamente_uno_con_enter_y_con_clic_en_cada_pantalla():
+    """Enter pasa por _navegar y el clic por _activar: si alguno de los dos contara también lo del otro, la suma sería 2."""
+    for pantalla in ("menu", "criptas", "nombre", "pausa", "puntajes", "fin"):
+        for via in ("enter", "clic"):
+            with Entorno() as e:
+                _llegar_a(e, pantalla)
+                antes = contador(e)
+                assert contador(e) == antes and contador(e) == antes          # pedir la pantalla muchas veces no cuenta
+                if via == "enter":
+                    e.pulsar(ENTER)
+                else:
+                    e.clic_en_boton(0)
+                assert contador(e) == antes + 1, (pantalla, via, antes, contador(e))
+                assert contador(e) == antes + 1                               # y tampoco al volver a pedirla
+
+
+def probar_esperar_suma_exactamente_uno_con_el_clic_y_con_la_tecla_z():
+    for via in ("clic", "z"):
+        with Entorno() as e:
+            e.al_juego()
+            antes = contador(e)
+            if via == "clic":
+                e.clic_en_boton(0)
+            else:
+                e.pulsar(pygame.K_z)
+            assert contador(e) == antes + 1, (via, antes, contador(e))
+
+
+def probar_navegar_con_flechas_y_escribir_en_el_nombre_suman_cero():
+    with Entorno() as e:
+        e.pulsar(ABAJO, ABAJO, ARRIBA, ARRIBA, ABAJO)
+        assert contador(e) == 0
+        e.pulsar(ARRIBA, ENTER, ENTER)                      # Comenzar -> cripta -> nombre: dos activaciones
+        assert contador(e) == 2
+        e.escribir("Ana")
+        e.pulsar(pygame.K_BACKSPACE)
+        assert contador(e) == 2
+
+
 def probar_cargar_partida_desde_el_menu_cuenta_como_boton():
     with Entorno() as e:
         e.clic_en_boton(CARGAR)
@@ -142,4 +200,7 @@ if __name__ == "__main__":
     probar_mover_atacar_recoger_retroceder_y_mover_el_raton_no_cuentan()
     probar_en_la_victoria_y_la_derrota_los_botones_cuentan_y_el_contador_nunca_baja()
     probar_cargar_partida_desde_el_menu_cuenta_como_boton()
+    probar_cada_activacion_suma_exactamente_uno_con_enter_y_con_clic_en_cada_pantalla()
+    probar_esperar_suma_exactamente_uno_con_el_clic_y_con_la_tecla_z()
+    probar_navegar_con_flechas_y_escribir_en_el_nombre_suman_cero()
     print("OK: todas las pruebas de las activaciones del controlador pasaron")

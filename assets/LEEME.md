@@ -61,22 +61,31 @@ Los 11 archivos son `.mp3` (44,1 kHz estéreo) y el nombre es el que escribe la 
 silencio. Qué suena y cuándo lo decide `View/EventosSonoros.py`; el mezclador solo lo toca `View/Sonidos.py`.
 `python tests/medir_sonidos.py` imprime la duración, el silencio inicial y el pico de cada archivo y lo que haría el cargador.
 
-| Archivo | Cuándo suena | Fase |
-|---|---|---|
-| `Main_Menu` | Música de menú, criptas, nombre y puntajes (empieza en 2 s la primera vez). Bucle a mano en `fin_util_ms` | 1 |
-| `Game_Ambient` | Música de la partida y la pausa (a 35 % de su volumen en la pausa); se desvanece al terminar la partida | 1 |
-| `Click` | Al activar un botón (ratón o Enter), al esperar (botón Esperar o tecla Z) y al recoger un objeto que no sea una llave | 1 |
-| `Main_Room_Sound` | Una vez, al empezar una partida NUEVA (no al cargar) | 1 |
-| `Enemies_Impact_Hit`, `Hero_Impact_Hit` | Cuando baja la vida de un enemigo o del protagonista | 2 |
-| `Grab_Key_Sound` | Al recoger una llave (en lugar de `Click`) | 2 |
-| `Locked_Room_Change` | Al abrirse una puerta cerrada de la misma sala | 2 |
-| `Low_Health` | En bucle mientras la vida del protagonista sea baja (30 % para entrar, 40 % para salir) | 2 |
-| `Defeat_Music`, `Victory_Music` | Al aparecer la pantalla de derrota o de victoria | 2 |
+| Archivo | Cuándo suena |
+|---|---|
+| `Main_Menu` | Música de menú, criptas, nombre y puntajes (empieza en 2 s la primera vez). Bucle a mano antes del silencio del final del archivo (`fin_util_ms`) |
+| `Game_Ambient` | Música de la partida y la pausa (a 35 % de su volumen en la pausa); se desvanece al terminar la partida, ya durante la demora del fin |
+| `Click` | Al activar un botón (ratón o Enter), al esperar (botón Esperar o tecla Z) y al recoger un objeto que no sea una llave |
+| `Main_Room_Sound` | Una vez, al empezar una partida NUEVA (no al cargar). En ese cuadro no suena `Click` |
+| `Enemies_Impact_Hit` | Cuando baja la vida de un enemigo (comparando por id con el cuadro anterior) o desaparece uno que tenía vida. Como mucho uno por cuadro |
+| `Hero_Impact_Hit` | Cuando baja la vida del protagonista, por golpes, trampas o veneno. Como mucho uno por cuadro |
+| `Grab_Key_Sound` | Cuando desaparece del suelo un objeto de clase `llave` (en lugar de `Click`) |
+| `Locked_Room_Change` | Cuando una puerta cerrada de la sala pasa a abierta: suena al abrirla, no al cruzarla |
+| `Low_Health` | En bucle (canal reservado 0) con vida <= 30 % de la máxima y > 0; se apaga al superar el 40 %, al terminar la partida o al salir de juego y pausa. La pausa lo pausa |
+| `Defeat_Music`, `Victory_Music` | Al aparecer la pantalla de derrota o de victoria (canal reservado 1). Al salir de ella se apagan con un fundido corto y entra `Main_Menu` |
 
-El cargador prepara cada sonido corto una sola vez al abrir la ventana (unos 0,5 s en total): le quita el silencio del
-inicio (hasta superar el 10 % del pico, menos 5 ms), lo limita a su tope, sube el volumen solo a los que tienen el pico
-muy bajo (`Main_Room_Sound`, `Victory_Music`) y les pone fundidos contra los chasquidos. La fase 2 está pendiente: sus
-sonidos ya se cargan, pero todavía no los toca nadie.
+Los efectos de la partida (golpes, llave, puerta, `Click` por recoger) no suenan en el primer cuadro de una partida, cuando
+el reloj del estado retrocede (retroceso o cargar), cuando cambia la sala ni en las pantallas que no son la partida. La
+música, `Low_Health`, los sonidos de fin y el `Click` de los botones sí suenan fuera de la partida.
+
+**Latido visual.** Con sonido, la viñeta rojo oscuro-negro de vida baja (`VINETA_*` en `View/Componentes.py`) late al
+ritmo de `Low_Health`: su alfa es proporcional a la envolvente del sonido (máximo por ventana de 20 ms, suavizada) en la
+posición de reproducción, que es el tiempo sonado sin contar las pausas, módulo la duración del sonido recortado. Sin
+sonido (o sin la envolvente) conserva su pulso fijo de 1,8 s.
+
+El cargador prepara cada sonido corto una sola vez al abrir la ventana (entre 0,5 y 0,7 s en total): le quita el silencio
+del inicio (hasta superar el 10 % del pico, menos 5 ms), lo limita a su tope, sube el volumen solo a los que tienen el pico
+muy bajo (`Main_Room_Sound`, `Victory_Music`) y les pone fundidos contra los chasquidos.
 
 ## Conjuntos que hay hoy
 

@@ -4,6 +4,8 @@ View/EventosSonoros.py, que solo le pide cosas a este motor:
 
     abrir()                                       inicia el mezclador y carga los efectos; False si no hay audio
     efecto(nombre)                                toca un sonido corto (los de la tabla SONIDOS_CORTOS)
+    latido(encender) / pausar_latido(pausado)     Low_Health en bucle en el canal reservado 0; duracion_latido_ms es lo que dura
+    fin(nombre) / parar_fin(fundido_ms)           derrota o victoria en el canal reservado 1; parar_fin los apaga con un fundido
     musica(nombre, volumen, inicio_ms, entrada_ms)   empieza un tema largo (streaming) con fundido de entrada
     volumen_musica(v) / parar_musica()            ajustes del tema en curso
     posicion_musica_ms()                          cuánto lleva sonando el tema (contando el inicio pedido); -1 si no suena
@@ -107,7 +109,8 @@ class Sonidos:
         self._carpeta = Path(ruta_assets) / c.CARPETA_SONIDOS
         self.activo = False
         self.ms_de_carga = 0                       # cuánto tardó abrir() (mezclador y carga de efectos)
-        self.envolvente_latido: list[float] = []   # la de Low_Health ya recortado (la usará el latido visual)
+        self.envolvente_latido: list[float] = []   # la de Low_Health ya recortado (la sigue el latido visual)
+        self.duracion_latido_ms = 0                # lo que dura Low_Health ya recortado (0 si no se cargó)
         self._efectos: list = []                   # (nombre, Sound)
         self._inicio_musica = 0
 
@@ -157,20 +160,72 @@ class Sonidos:
                         self.envolvente_latido = envolvente(preparado, canales, frecuencia)
                     sonido = pygame.mixer.Sound(buffer=preparado)
                 sonido.set_volume(volumen)
+                if nombre == c.SONIDO_LATIDO:
+                    self.duracion_latido_ms = round(sonido.get_length() * 1000)
             except (pygame.error, OSError, ValueError):
                 continue                           # ese sonido calla; los demás siguen
             self._efectos.append((nombre, sonido))
 
     def efecto(self, nombre: str) -> None:
+        sonido = self._sonido(nombre)
+        if sonido is not None:
+            try:
+                sonido.play()
+            except pygame.error:
+                pass
+
+    def _sonido(self, nombre: str):
         if not self.activo:
-            return
+            return None
         for clave, sonido in self._efectos:
             if clave == nombre:
-                try:
-                    sonido.play()
-                except pygame.error:
-                    pass
-                return
+                return sonido
+        return None
+
+    # ------------------------------------------------------------------ los canales reservados
+    def latido(self, encender: bool) -> None:
+        """Low_Health en bucle en el canal 0 (encender) o silencio (apagar)."""
+        sonido = self._sonido(c.SONIDO_LATIDO)
+        if sonido is None:
+            return
+        try:
+            canal = pygame.mixer.Channel(0)
+            if encender:
+                canal.play(sonido, -1)
+            else:
+                canal.stop()
+        except pygame.error:
+            pass
+
+    def pausar_latido(self, pausado: bool) -> None:
+        if self._sonido(c.SONIDO_LATIDO) is None:
+            return
+        try:
+            canal = pygame.mixer.Channel(0)
+            if pausado:
+                canal.pause()
+            else:
+                canal.unpause()
+        except pygame.error:
+            pass
+
+    def fin(self, nombre: str) -> None:
+        """Defeat_Music o Victory_Music, una vez, en el canal 1."""
+        sonido = self._sonido(nombre)
+        if sonido is None:
+            return
+        try:
+            pygame.mixer.Channel(1).play(sonido)
+        except pygame.error:
+            pass
+
+    def parar_fin(self, fundido_ms: int) -> None:
+        if not self.activo:
+            return
+        try:
+            pygame.mixer.Channel(1).fadeout(fundido_ms)
+        except pygame.error:
+            pass
 
     # ------------------------------------------------------------------ la música
     def musica(self, nombre: str, volumen: float, inicio_ms: int, entrada_ms: int) -> None:

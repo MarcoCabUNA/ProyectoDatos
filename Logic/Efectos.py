@@ -58,8 +58,6 @@ class Velocidad(Efecto):
 
 
 class Antorcha(Efecto):
-    UNICO = True                                   # usarla de nuevo reinicia la duración, no apila velos
-
     def __init__(self, actor, duracion):
         super().__init__("antorcha", actor, duracion)
 

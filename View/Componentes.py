@@ -36,8 +36,35 @@ TAM_BOTON = 30
 TAM_TEXTO = 28
 TAM_PIE = 22
 TAM_CHICO = 18                               # números dentro de las barras de vida
-TAM_MENSAJES = 17                            # la más grande en que caben, en 350 px, los mensajes más largos del motor
-TAM_AYUDA_JUEGO = 18                         # la más grande en que caben, en 340 px, las 11 líneas de AYUDA_JUEGO (en 19 y 20 "U (o doble clic)..." se cortaba)
+# La ayuda y los mensajes NO tienen tamaño fijo: Fuentes lo elige al abrir la Vista (elegir_tamano), así no depende de la versión de
+# pygame ni de la máquina. Es el mayor tamaño del rango en que la línea más ancha deja HUD_HOLGURA píxeles libres en el panel.
+TAM_HUD_MIN, TAM_HUD_MAX = 14, 22
+HUD_HOLGURA = 8
+# Copia de UIController.ControlesJuego.AYUDA_JUEGO (la Vista no puede importarla; test_vista_hud comprueba que son iguales)
+AYUDA_PARA_MEDIR = (
+    "WASD / flechas: moverse",
+    "Clic en un enemigo (o Espacio): atacar",
+    "Clic en un objeto del suelo: recoger",
+    "E (o clic en la puerta): abrir una puerta",
+    "Z: esperar",
+    "Rueda o Tab: recorrer el inventario",
+    "U (o doble clic): usar   Q (o clic derecho): equipar",
+    "G (o Mayús + clic): soltar   V: cambiar el orden",
+    "Retroceso o Ctrl + Z: pergamino de retroceso",
+    "Ctrl + S / F5: guardar   Ctrl + L / F9: cargar",
+    "Esc: menú",
+)
+# Los peores mensajes del motor (tiempo de 4 cifras, enemigo #99, daño de 999 y los nombres más largos del paquete offline);
+# test_vista_hud comprueba que con ellos se elige el mismo tamaño que con TODAS las plantillas
+MENSAJES_PARA_MEDIR = (
+    "[t=9999] Guardián óseo #99 ataca a Jugador: 999 de daño",
+    "[t=9999] Jugador ataca a Guardián óseo #99: 999 de daño",
+    "[t=9999] El veneno hace 999 de daño a Guardián óseo #99",
+    "[t=9999] Partida cargada: estás en Pasillo de las urnas",
+    "[t=9999] Rata gigante #99 ataca a Jugador: 999 de daño",
+    "[t=9999] Jugador ataca a Rata gigante #99: 999 de daño",
+    "[t=9999] El veneno hace 999 de daño a Rata gigante #99",
+)
 
 # Medidas de las pantallas con botones
 BOTON_ALTO = 44
@@ -204,6 +231,8 @@ VINETA_ALFA = 235                            # alfa máximo (con la vida en 0)
 VINETA_GROSOR = 150
 VINETA_PERIODO_MS = 1800                     # un latido lento
 VINETA_ROJO = (96, 8, 12)                    # hacia adentro; el filo de la pantalla es negro
+VINETA_PISO_LATIDO = 0.35                    # con el sonido de vida baja, lo que queda de la viñeta entre latidos (0 a 1)
+VINETA_SUAVIZADO = (1, 2, 3, 2, 1)           # pesos de la envolvente suavizada (ventanas vecinas, en círculo)
 MUERTE_ENEMIGO_MS = 450                      # el enemigo muere (fotogramas 'muerte' si los tiene; si no, se encoge y se desvanece)
 MUERTE_ENCOGE = 0.55                         # el tamaño que le queda al final, sin fotogramas propios
 RECOGIDO_MS = 220                            # el objeto recogido se desvanece subiendo
@@ -262,6 +291,26 @@ MUSICA_SIN_NOTICIAS_MS = 2000                # si la música no suena (get_pos <
 SONIDO_CLICK = "Click"
 SONIDO_SALA = "Main_Room_Sound"
 SONIDO_LATIDO = "Low_Health"                 # el de vida baja: de él se saca la envolvente del latido
+SONIDO_GOLPE_ENEMIGO = "Enemies_Impact_Hit"
+SONIDO_GOLPE_HEROE = "Hero_Impact_Hit"
+SONIDO_LLAVE = "Grab_Key_Sound"
+SONIDO_PUERTA = "Locked_Room_Change"
+# Sonidos de fin (canal reservado 1): (pantalla, archivo)
+SONIDOS_DE_FIN = [("derrota", "Defeat_Music"), ("victoria", "Victory_Music")]
+SONIDO_FIN_FUNDIDO_MS = 300                  # fundido corto al salir de la pantalla de victoria o derrota
+VIDA_BAJA_ENTRA = 0.30                       # Low_Health empieza con vida <= 30 % de la máxima (y vida > 0)...
+VIDA_BAJA_SALE = 0.40                        # ...y se apaga al superar el 40 % (histéresis)
+
+
+def elegir_tamano(textos, ancho_util: int, alto_maximo: int, minimo: int = TAM_HUD_MIN, maximo: int = TAM_HUD_MAX,
+                  holgura: int = HUD_HOLGURA) -> int:
+    """El mayor tamaño de fuente de [minimo, maximo] en que el más ancho de 'textos' deja 'holgura' píxeles libres en 'ancho_util' y
+    la línea no es más alta que 'alto_maximo'. Si ni el mínimo cabe, devuelve el mínimo. Pide pygame.font.init()."""
+    for tamano in range(maximo, minimo - 1, -1):
+        fuente = pygame.font.Font(None, tamano)
+        if fuente.get_height() <= alto_maximo and max(fuente.size(texto)[0] for texto in textos) + holgura <= ancho_util:
+            return tamano
+    return minimo
 
 
 class Fuentes:
@@ -273,8 +322,10 @@ class Fuentes:
         self.texto = pygame.font.Font(None, TAM_TEXTO)
         self.pie = pygame.font.Font(None, TAM_PIE)
         self.chico = pygame.font.Font(None, TAM_CHICO)
-        self.mensajes = pygame.font.Font(None, TAM_MENSAJES)
-        self.ayuda_juego = pygame.font.Font(None, TAM_AYUDA_JUEGO)
+        self.tam_mensajes = elegir_tamano(MENSAJES_PARA_MEDIR, HUD_MENSAJES.width - 2 * HUD_RELLENO, HUD_MENSAJES_INTERLINEA - 1)
+        self.tam_ayuda = elegir_tamano(AYUDA_PARA_MEDIR, HUD_AYUDA.width - 2 * HUD_RELLENO, HUD_AYUDA_INTERLINEA)
+        self.mensajes = pygame.font.Font(None, self.tam_mensajes)
+        self.ayuda_juego = pygame.font.Font(None, self.tam_ayuda)
 
 
 # ============================================================================ texto

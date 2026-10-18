@@ -150,7 +150,7 @@ class TestPartidaGuardada(unittest.TestCase):
 
     def test_guarda_el_equipo_por_posicion(self):
         inventario = self.partida.inventario
-        self.assertEqual(["cota", "daga", "daga", "llave_k", "antorcha"], inventario.objetos)   # la antorcha no se gasta al usarla
+        self.assertEqual(["cota", "daga", "daga", "llave_k"], inventario.objetos)
         self.assertEqual(1, inventario.arma)
         self.assertEqual(0, inventario.armadura)
 

@@ -103,13 +103,36 @@ def alfa_velo_golpe(p: float) -> int:
     return round(c.VELO_GOLPE_ALFA * (1.0 - p) * pulso)
 
 
-def alfa_vineta(fraccion_vida: float, ms: int) -> int:
-    """La viñeta de vida baja: 0 con la vida por encima de VINETA_UMBRAL; crece hasta VINETA_ALFA con la vida en 0 y late."""
+def alfa_vineta(fraccion_vida: float, ms: int, intensidad: float | None = None) -> int:
+    """La viñeta de vida baja: 0 con la vida por encima de VINETA_UMBRAL; crece hasta VINETA_ALFA con la vida en 0 y late.
+    Sin 'intensidad' late con un pulso fijo de VINETA_PERIODO_MS; con ella (0 a 1: la envolvente del sonido de vida baja en
+    este instante) el latido es proporcional a esa intensidad, con VINETA_PISO_LATIDO como mínimo."""
     if fraccion_vida >= c.VINETA_UMBRAL:
         return 0
     gravedad = 1.0 - _limitar(fraccion_vida / c.VINETA_UMBRAL)
-    latido = 0.8 + 0.2 * math.sin(2 * math.pi * ms / c.VINETA_PERIODO_MS)
+    if intensidad is None:
+        latido = 0.8 + 0.2 * math.sin(2 * math.pi * ms / c.VINETA_PERIODO_MS)
+    else:
+        latido = c.VINETA_PISO_LATIDO + (1.0 - c.VINETA_PISO_LATIDO) * _limitar(intensidad)
     return round(c.VINETA_ALFA * gravedad * latido)
+
+
+def suavizar_envolvente(valores: list[float]) -> list[float]:
+    """La envolvente con cada valor mezclado con sus vecinos (VINETA_SUAVIZADO, dando la vuelta al final: el sonido va en bucle),
+    vuelta a escala 0..1. Lista vacía si no hay envolvente."""
+    n = len(valores)
+    if n == 0:
+        return []
+    pesos = c.VINETA_SUAVIZADO
+    mitad = len(pesos) // 2
+    suave = []
+    for i in range(n):
+        suma = 0.0
+        for k in range(len(pesos)):
+            suma += pesos[k] * valores[(i + k - mitad) % n]
+        suave.append(suma / sum(pesos))
+    mayor = max(suave)
+    return suave if mayor == 0 else [v / mayor for v in suave]
 
 
 def escala_muerte(p: float) -> float:

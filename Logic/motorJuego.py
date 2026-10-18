@@ -171,7 +171,7 @@ class Motor:
         objeto = self.inventario.soltar_actual()
         self.mazmorra.soltar_objeto(self.jugador.Sala_Actual, objeto.id, objeto.clase != self.PERGAMINO)
         self._sincronizar_equipo()
-        if objeto.clase == "antorcha" and not self._tiene_antorcha():
+        if objeto.clase == "antorcha":                 # soltar una antorcha apaga la que esté encendida
             self.efectos.cancelar(self.jugador, "antorcha")
         self.mensaje(f"Sueltas {objeto.nombre}")
         self.terminar_accion_jugador(self.COSTO_SOLTAR)
@@ -195,8 +195,7 @@ class Motor:
             return self._usar_pergamino(id_objeto)
         if objeto.clase != "pocion" and objeto.clase != "antidoto" and objeto.clase != "antorcha":
             return "no_usable"
-        if objeto.clase != "antorcha":                 # la antorcha no se gasta: se apaga al soltarla
-            self.inventario.soltar_actual()
+        self.inventario.soltar_actual()
         self.mensaje(f"Usas {objeto.nombre}")
         if objeto.clase == "pocion":
             self._beber_pocion(objeto)
@@ -317,12 +316,6 @@ class Motor:
             self.jugador.Curacion(pocion.cura)
         if pocion.modificador_velocidad is not None:
             self.efectos.aplicar(Velocidad(self.jugador, pocion.modificador_velocidad, pocion.duracion))
-
-    def _tiene_antorcha(self):
-        for objeto in self.inventario.objetos():
-            if objeto.clase == "antorcha":
-                return True
-        return False
 
     # Jugador.arma y Jugador.armadura siguen a lo que el Inventario tiene equipado
     def _sincronizar_equipo(self):

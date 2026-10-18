@@ -347,11 +347,13 @@ class EfectosEscena:
             destino = a.imagen.get_rect(midbottom=(a.rect.centerx, a.rect.top - c.FICHA - anim.sube_numero(p)))
             superficie.blit(a.imagen, destino.clamp(pantalla))
 
-    def vineta_de_vida(self, superficie: pygame.Surface, vida: int, vida_max: int, ahora: int) -> None:
-        """La viñeta de vida baja (debajo del borde del golpe, encima de todo lo demás, el HUD incluido)."""
+    def vineta_de_vida(self, superficie: pygame.Surface, vida: int, vida_max: int, ahora: int,
+                       intensidad: float | None = None) -> None:
+        """La viñeta de vida baja (debajo del borde del golpe, encima de todo lo demás, el HUD incluido). 'intensidad' es la
+        envolvente del sonido de vida baja en este instante (0 a 1); sin ella, el pulso es fijo."""
         if vida_max <= 0:
             return
-        alfa = anim.alfa_vineta(vida / vida_max, ahora)
+        alfa = anim.alfa_vineta(vida / vida_max, ahora, intensidad)
         if alfa > 0:
             self._vineta.set_alpha(alfa)
             superficie.blit(self._vineta, (0, 0))

@@ -109,7 +109,8 @@ class VistaPygame:
             self._hud.dibujar(self._superficie, pantalla)         # velos, estadísticas, mensajes, inventario, botón, ayuda
             if self._efectos is not None:
                 jugador = pantalla.estado.jugador
-                self._efectos.vineta_de_vida(self._superficie, jugador.vida, jugador.vida_max, ahora)
+                intensidad = None if self._eventos is None else self._eventos.intensidad_latido(ahora)
+                self._efectos.vineta_de_vida(self._superficie, jugador.vida, jugador.vida_max, ahora, intensidad)
                 self._efectos.borde_rojo(self._superficie, ahora)   # el borde enrojecido cubre el HUD también
             self._escena.dibujar_nombre(self._superficie, pantalla.estado, pantalla.elemento_bajo_el_raton)    # encima de todo
         else:

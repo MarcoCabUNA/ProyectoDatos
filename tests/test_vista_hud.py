@@ -361,15 +361,18 @@ def probar_todos_los_mensajes_reales_del_motor_caben_en_el_ancho_util_del_panel_
     mensajes = _mensajes_peores_del_motor()
     assert len(mensajes) > 40
     pygame.font.init()
-    fuente = _fuente(c.TAM_MENSAJES)
+    tam = c.Fuentes().tam_mensajes                                        # el que la Vista eligió al abrirse
+    fuente = _fuente(tam)
+    assert c.TAM_HUD_MIN <= tam <= c.TAM_HUD_MAX
     mas_ancho = max(mensajes, key=lambda m: fuente.size(m)[0])
-    # Sin margen extra: la fuente por defecto mide igual en 16 y 17 y en 18 el peor ya no cabe, así que ningún tamaño
-    # deja 10 px libres. Lo que importa es que ninguno se corte con "..." y que no haya una fuente mayor que sirva.
-    assert fuente.size(mas_ancho)[0] <= ancho_util, (mas_ancho, fuente.size(mas_ancho)[0], ancho_util)
-    siguiente = _fuente(c.TAM_MENSAJES + 1)
-    assert max(siguiente.size(m)[0] for m in mensajes) > ancho_util, "hay una fuente más grande en la que caben todos"
+    assert fuente.size(mas_ancho)[0] + c.HUD_HOLGURA <= ancho_util, (mas_ancho, fuente.size(mas_ancho)[0], ancho_util)   # cabe con holgura
     assert c.HUD_MENSAJES_INTERLINEA >= fuente.get_height() + 1
     assert c.HUD_MENSAJES_ARRIBA + c.HUD_MENSAJES_LINEAS * c.HUD_MENSAJES_INTERLINEA <= c.HUD_MENSAJES.height
+    # ... y es el mayor del rango que cabe con TODAS las plantillas reales (no solo con las de MENSAJES_PARA_MEDIR)
+    for mayor in range(tam + 1, c.TAM_HUD_MAX + 1):
+        f = _fuente(mayor)
+        assert (f.get_height() + 1 > c.HUD_MENSAJES_INTERLINEA
+                or max(f.size(m)[0] for m in mensajes) + c.HUD_HOLGURA > ancho_util), f"el tamaño {mayor} también cabe"
 
 
 def probar_los_mensajes_de_una_partida_real_caben_enteros_sin_cortes():
@@ -396,12 +399,19 @@ def probar_los_mensajes_de_una_partida_real_caben_enteros_sin_cortes():
         vista.cerrar()
 
 
-def probar_las_11_lineas_de_ayuda_caben_en_su_panel_con_las_constantes_reales():
+def probar_las_11_lineas_de_ayuda_caben_en_su_panel_con_holgura_y_con_el_mayor_tamano_que_cabe():
     assert len(AYUDA_JUEGO) == 11
+    assert c.AYUDA_PARA_MEDIR == tuple(AYUDA_JUEGO)                      # la copia de la Vista no se quedó atrás
     ancho_util = c.HUD_AYUDA.width - 2 * c.HUD_RELLENO
-    fuente = _fuente(c.TAM_AYUDA_JUEGO)
-    assert max(fuente.size(linea)[0] for linea in AYUDA_JUEGO) <= ancho_util
-    assert max(_fuente(c.TAM_AYUDA_JUEGO + 1).size(linea)[0] for linea in AYUDA_JUEGO) > ancho_util   # la más grande que cabe
+    pygame.font.init()
+    tam = c.Fuentes().tam_ayuda                                          # el que la Vista eligió al abrirse
+    fuente = _fuente(tam)
+    assert c.TAM_HUD_MIN <= tam <= c.TAM_HUD_MAX
+    assert max(fuente.size(linea)[0] for linea in AYUDA_JUEGO) + c.HUD_HOLGURA <= ancho_util       # cabe con holgura
+    for mayor in range(tam + 1, c.TAM_HUD_MAX + 1):                       # y es el mayor del rango que cabe
+        f = _fuente(mayor)
+        assert (f.get_height() > c.HUD_AYUDA_INTERLINEA
+                or max(f.size(linea)[0] for linea in AYUDA_JUEGO) + c.HUD_HOLGURA > ancho_util), f"el tamaño {mayor} también cabe"
     assert c.HUD_RELLENO + len(AYUDA_JUEGO) * c.HUD_AYUDA_INTERLINEA <= c.HUD_AYUDA.height
     assert c.HUD_AYUDA_INTERLINEA >= fuente.get_height()
     with VistaMedida() as m:
@@ -872,7 +882,7 @@ def probar_los_avisos_fijos_del_controlador_caben_en_el_panel_y_uno_de_red_se_co
     import re
     import Service.ServicioAccionJugador as acciones
     pygame.font.init()
-    fuente = _fuente(c.TAM_MENSAJES)
+    fuente = _fuente(c.Fuentes().tam_mensajes)
     ancho = c.HUD_AVISO.width - 2 * c.HUD_RELLENO
     fijos = [mensaje for _, mensaje in acciones._MENSAJES_DE_RECHAZO]
     for archivo in ("ControlesJuego.py", "ControladorBackend.py"):
@@ -989,7 +999,7 @@ if __name__ == "__main__":
     probar_si_el_reparto_ignorara_los_paneles_si_se_pisarian_los_paneles_del_suelo()
     probar_todos_los_mensajes_reales_del_motor_caben_en_el_ancho_util_del_panel_de_mensajes()
     probar_los_mensajes_de_una_partida_real_caben_enteros_sin_cortes()
-    probar_las_11_lineas_de_ayuda_caben_en_su_panel_con_las_constantes_reales()
+    probar_las_11_lineas_de_ayuda_caben_en_su_panel_con_holgura_y_con_el_mayor_tamano_que_cabe()
     probar_las_estadisticas_y_el_reloj_se_ven_con_los_valores_del_jugador()
     probar_los_20_mensajes_se_dibujan_completos_la_mas_reciente_abajo_y_dentro_del_panel()
     probar_un_mensaje_muy_largo_se_corta_con_puntos_suspensivos_dentro_del_panel_y_el_normal_no()

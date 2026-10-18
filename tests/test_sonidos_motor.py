@@ -6,11 +6,12 @@ Se ejecuta desde cualquier carpeta.
 import sys
 import tempfile
 import time
+from dataclasses import replace
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from ayudas_pygame import letra, pygame, tecla  # noqa: E402  (fija los controladores dummy de video y audio)
-from ayudas_vista import Recorrido  # noqa: E402
+from ayudas_vista import Recorrido, estado_base  # noqa: E402
 
 from DTO.PantallaDTO import PantallaDTO  # noqa: E402
 from UIController.ControladorPygame import ControladorPygame  # noqa: E402
@@ -54,9 +55,11 @@ def preparado(*segmentos, tope_ms=0, fundido_ms=50):
 
 
 class MotorFalso:
-    def __init__(self, abre=True):
+    def __init__(self, abre=True, envolvente=None):
         self.abre = abre
         self.llamadas = []
+        self.envolvente_latido = envolvente if envolvente is not None else []
+        self.duracion_latido_ms = len(self.envolvente_latido) * c.SONIDO_VENTANA_MS
 
     def abrir(self):
         self.llamadas.append(("abrir",))
@@ -79,6 +82,18 @@ class MotorFalso:
 
     def posicion_musica_ms(self):
         return 0
+
+    def latido(self, encender):
+        self.llamadas.append(("latido", encender))
+
+    def pausar_latido(self, pausado):
+        self.llamadas.append(("pausa_latido", pausado))
+
+    def fin(self, nombre):
+        self.llamadas.append(("fin", nombre))
+
+    def parar_fin(self, fundido_ms):
+        self.llamadas.append(("parar_fin", fundido_ms))
 
 
 # ================================================================== el cargador (funciones puras)
@@ -330,12 +345,117 @@ def probar_las_zonas_de_clic_no_cambian_con_sonido_y_dibujar_casi_no_cuesta():
     print(f"  dibujar(): {sin:.2f} ms sin sonido, {con:.2f} ms con sonido (diferencia {con - sin:+.2f} ms)")
 
 
+# ================================================================== los canales reservados del motor real
+def probar_low_health_suena_en_bucle_en_el_canal_0_y_se_apaga_sin_tocar_los_efectos():
+    motor = Sonidos(ASSETS)
+    try:
+        assert motor.abrir()
+        assert motor.duracion_latido_ms > 20000 and abs(motor.duracion_latido_ms - len(motor.envolvente_latido) * 20) <= 20
+        motor.latido(True)
+        assert pygame.mixer.Channel(0).get_busy()
+        motor.pausar_latido(True)
+        motor.pausar_latido(False)
+        assert pygame.mixer.Channel(0).get_busy()
+        motor.efecto(c.SONIDO_CLICK)                                         # los efectos usan otros canales, no el 0 ni el 1
+        assert not pygame.mixer.Channel(1).get_busy()
+        motor.latido(False)
+        assert not pygame.mixer.Channel(0).get_busy()
+    finally:
+        motor.cerrar()
+
+
+def probar_la_derrota_y_la_victoria_suenan_en_el_canal_1_y_se_apagan_con_fundido():
+    motor = Sonidos(ASSETS)
+    try:
+        assert motor.abrir()
+        motor.fin("Defeat_Music")
+        assert pygame.mixer.Channel(1).get_busy() and not pygame.mixer.Channel(0).get_busy()
+        motor.parar_fin(c.SONIDO_FIN_FUNDIDO_MS)
+        time.sleep(c.SONIDO_FIN_FUNDIDO_MS / 1000 + 0.3)
+        assert not pygame.mixer.Channel(1).get_busy()                        # el fundido terminó y el canal quedó libre
+        motor.fin("Victory_Music")
+        assert pygame.mixer.Channel(1).get_busy()
+    finally:
+        motor.cerrar()
+
+
+def probar_los_metodos_de_la_fase_2_no_fallan_con_el_motor_apagado_o_sin_archivos():
+    with tempfile.TemporaryDirectory() as vacia:
+        for ruta, abrir in ((vacia, True), (ASSETS, False)):                  # sin archivos, y sin haberse abierto nunca
+            motor = Sonidos(ruta)
+            if abrir:
+                motor.abrir()
+            motor.latido(True)
+            motor.pausar_latido(True)
+            motor.fin("Defeat_Music")
+            motor.parar_fin(100)
+            motor.latido(False)
+            motor.cerrar()
+
+
+# ================================================================== la Vista: el latido visual y los sonidos de fin
+def _pantalla_de_juego(vida):
+    estado = estado_base()
+    estado = replace(estado, jugador=replace(estado.jugador, vida=vida, vida_max=30))
+    return PantallaDTO("juego", opciones=["Esperar"], seleccion=-1, estado=estado)
+
+
+def _borde_tras_dibujar(envolvente, vida=3):
+    """El brillo medio de la franja izquierda (donde más se nota la viñeta) en el segundo cuadro con vida baja, con esa envolvente."""
+    reloj = [1000]
+    vista = VistaPygame(animaciones=True, sonido=True, reloj=lambda: reloj[0],
+                        fabrica_sonidos=lambda ruta: MotorFalso(envolvente=envolvente))
+    vista.abrir()
+    try:
+        pantalla = _pantalla_de_juego(vida)
+        vista.dibujar(pantalla)                                              # este cuadro hace que empiece a sonar Low_Health
+        reloj[0] += 33
+        vista.dibujar(pantalla)                                              # este ya dibuja la viñeta con la envolvente
+        superficie = pygame.display.get_surface()
+        puntos = [superficie.get_at((x, y))[:3] for x in range(30, 90, 10) for y in range(300, 400, 10)]
+        return sum(sum(punto) for punto in puntos) / len(puntos), vista
+    finally:
+        vista.cerrar()
+
+
+def probar_con_sonido_la_vineta_sigue_la_envolvente_y_sin_envolvente_usa_el_pulso_fijo():
+    fuerte, _ = _borde_tras_dibujar([1.0] * 60)
+    suave, _ = _borde_tras_dibujar([0.0] * 60)
+    assert abs(fuerte - suave) > 1, (fuerte, suave)                          # la envolvente al máximo y al mínimo se ven distintas
+    sin_sonido = VistaPygame(animaciones=True, reloj=lambda: 1033)           # sin sonido: pulso fijo de 1,8 s, sin excepciones
+    sin_sonido.abrir()
+    try:
+        sin_sonido.dibujar(_pantalla_de_juego(3))
+        sin_sonido.dibujar(_pantalla_de_juego(3))
+    finally:
+        sin_sonido.cerrar()
+
+
+def probar_la_vista_llama_a_latido_y_a_los_sonidos_de_fin_del_motor():
+    motor = MotorFalso(envolvente=[0.5] * 40)
+    vista = VistaPygame(animaciones=True, sonido=True, reloj=lambda: 5000, fabrica_sonidos=lambda ruta: motor)
+    vista.abrir()
+    try:
+        vista.dibujar(_pantalla_de_juego(25))
+        assert ("latido", True) not in motor.llamadas                         # vida alta
+        vista.dibujar(_pantalla_de_juego(5))
+        assert ("latido", True) in motor.llamadas
+        estado = _pantalla_de_juego(0).estado
+        vista.dibujar(PantallaDTO("derrota", opciones=["Menú"], estado=replace(estado, terminado=True, resultado="derrota")))
+        assert ("latido", False) in motor.llamadas and ("fin", "Defeat_Music") in motor.llamadas
+        vista.dibujar(PantallaDTO("puntajes", "Puntajes", ["Volver"], 0))
+        assert ("parar_fin", c.SONIDO_FIN_FUNDIDO_MS) in motor.llamadas
+    finally:
+        vista.cerrar()
+
+
 def _eventos_de_una_partida_perdida():
     """Menú -> Comenzar -> cripta -> nombre -> partida -> esperar hasta perder -> salir. Un lote de eventos por cuadro."""
     lotes = [[], [tecla(pygame.K_RETURN)], [tecla(pygame.K_RETURN)]]        # el primer cuadro es el menú, sin eventos
     lotes.append([letra(caracter) for caracter in "Ana"])
     lotes.append([tecla(pygame.K_RETURN)])
     lotes.append([tecla(pygame.K_UP)])                                      # a la sala de las ratas: aquí se pierde
+    lotes.extend([[tecla(pygame.K_SPACE)] for _ in range(3)])               # el héroe ataca a una rata (golpe a un enemigo)
     lotes.extend([[tecla(pygame.K_z)] for _ in range(100)])
     lotes.append([tecla(pygame.K_DOWN)])
     lotes.append([tecla(pygame.K_RETURN)])                                  # en la derrota: "Ver puntajes"
@@ -345,21 +465,40 @@ def _eventos_de_una_partida_perdida():
 
 def probar_una_partida_perdida_en_el_bucle_real_con_el_motor_real_no_da_excepciones():
     nombres = []
+    pedidos = []
+
+    class MotorQueAnota(Sonidos):
+        def efecto(self, nombre):
+            pedidos.append(("efecto", nombre))
+            super().efecto(nombre)
+
+        def fin(self, nombre):
+            pedidos.append(("fin", nombre))
+            super().fin(nombre)
+
+        def latido(self, encender):
+            pedidos.append(("latido", encender))
+            super().latido(encender)
 
     class Vigilada(VistaPygame):
         def dibujar(self, pantalla):
             nombres.append(pantalla.pantalla)
             super().dibujar(pantalla)
 
-    vista = Vigilada(sonido=True)
+    vista = Vigilada(animaciones=True, sonido=True, fabrica_sonidos=MotorQueAnota)
     with Recorrido(vista) as recorrido:
-        controlador = ControladorPygame(vista, CONFIG_OFFLINE, recorrido.controlador._fabrica)
+        # con una demora del fin (como en main.py) se dibuja el estado final: el golpe que mata se ve en un cuadro de partida
+        controlador = ControladorPygame(vista, CONFIG_OFFLINE, recorrido.controlador._fabrica, demora_fin_ms=400)
         lotes = _eventos_de_una_partida_perdida()
         controlador.ejecutar(lambda: lotes.pop(0) if lotes else [])
         assert vista._sonidos is None                                       # ejecutar() la cerró
     for esperada in ("menu", "criptas", "nombre", "juego", "derrota", "puntajes"):
         assert esperada in nombres, (esperada, nombres)
     assert pygame.mixer.get_init() is None
+    assert ("efecto", c.SONIDO_SALA) in pedidos and ("efecto", c.SONIDO_CLICK) in pedidos      # la partida nueva y los botones
+    assert ("efecto", c.SONIDO_GOLPE_HEROE) in pedidos and ("efecto", c.SONIDO_GOLPE_ENEMIGO) in pedidos   # el combate con las ratas
+    assert pedidos.count(("fin", "Defeat_Music")) == 1 and ("fin", "Victory_Music") not in pedidos     # perdió: solo la derrota
+    assert pedidos.count(("latido", True)) == pedidos.count(("latido", False))                          # lo que se enciende se apaga
 
 
 if __name__ == "__main__":
@@ -384,5 +523,10 @@ if __name__ == "__main__":
     probar_con_sonido_true_las_llamadas_al_motor_coinciden_con_lo_que_se_ve_y_se_oye()
     probar_si_el_motor_no_puede_abrirse_la_vista_sigue_en_silencio()
     probar_las_zonas_de_clic_no_cambian_con_sonido_y_dibujar_casi_no_cuesta()
+    probar_low_health_suena_en_bucle_en_el_canal_0_y_se_apaga_sin_tocar_los_efectos()
+    probar_la_derrota_y_la_victoria_suenan_en_el_canal_1_y_se_apagan_con_fundido()
+    probar_los_metodos_de_la_fase_2_no_fallan_con_el_motor_apagado_o_sin_archivos()
+    probar_con_sonido_la_vineta_sigue_la_envolvente_y_sin_envolvente_usa_el_pulso_fijo()
+    probar_la_vista_llama_a_latido_y_a_los_sonidos_de_fin_del_motor()
     probar_una_partida_perdida_en_el_bucle_real_con_el_motor_real_no_da_excepciones()
     print("OK: todas las pruebas del motor de sonido pasaron")
