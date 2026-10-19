@@ -334,6 +334,26 @@ class TestMazmorra(unittest.TestCase):
         self.assertTrue(m.salida(0, E).cerrada)
         self.assertTrue(m.salida(1, O).cerrada)
 
+    def test_puerta_con_llave_en_una_sola_cara(self):
+        # Así vienen las criptas reales: la llave y el cierre solo en la cara de ida (Apéndice B)
+        m = Mazmorra(sala_salida=1, llave_salida="x")
+        m.cargar_esqueleto([
+            SalaDTO(0, "A", [None, None, SalidaDTO(1, True, "k", cierre_automatico=30), None], "1"),
+            SalaDTO(1, "B", [None, None, None, SalidaDTO(0)], "1"),
+        ])
+        self.assertTrue(m.salida(1, O).cerrada)                 # cerrada también desde adentro
+        self.assertEqual(m.llave_requerida(1, O), "k")
+        m.sala(0).contenido_cargado = m.sala(1).contenido_cargado = True
+        motor, _ = crear_motor(m)
+        m.abrir_puerta(0, E, motor)
+        evento = motor.cola.obtener_siguiente()
+        evento.dueno.activar(motor, evento)                      # se cierra sola con el jugador en B
+        self.assertEqual(m.llave_requerida(1, O), "k")           # y se puede volver a abrir desde B
+        m.abrir_puerta(1, O, motor)
+        self.assertFalse(m.salida(0, E).cerrada)
+        self.assertFalse(m.salida(1, O).cerrada)
+        self.assertEqual(motor.cola.obtener_siguiente().tipo, "cierre_puerta")   # vuelve a programar el cierre
+
     def test_abrir_puerta_hacia_sala_sin_esqueleto(self):
         # Esqueleto paginado: la sala destino todavia no se descargo.
         m = Mazmorra(sala_salida=9, llave_salida="x")

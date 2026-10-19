@@ -63,6 +63,7 @@ class Mazmorra:
             while len(self.salas) <= sala_dto.id:
                 self.salas.append(None)
             self.salas[sala_dto.id] = SalaViva(sala_dto)
+        self._igualar_caras()
 
     # COORDINAR (Integrante 2): enemigos con .instancia, .tipo y .vida; trampas con .instancia y .tipo; objetos como ids
     # COORDINAR (Integrante 2): fn_ficha(tipo) la provee la caché del catálogo y nunca devuelve None
@@ -197,6 +198,24 @@ class Mazmorra:
             if objetos[i] == id_objeto:
                 objetos.pop(i)
                 return
+
+    # Una puerta es UNA sola entre dos salas (§2.1), pero la cripta declara la llave en una sola de sus caras.
+    # Se copia a la cara de vuelta para que la puerta sea igual desde los dos lados: si no, cuando se cierra
+    # sola (cierre_automatico) no hay llave del otro lado y el jugador queda encerrado (Apéndice B).
+    def _igualar_caras(self):
+        for sala in self.salas:
+            if sala is None:
+                continue
+            for salida in sala.salidas:
+                if salida is None or salida.llave is None:
+                    continue
+                inversa = self._salida_inversa(sala.id, salida.destino)
+                if inversa is None or inversa.llave is not None:
+                    continue
+                inversa.llave = salida.llave
+                inversa.cerrada = salida.cerrada
+                if inversa.cierre_automatico is None:
+                    inversa.cierre_automatico = salida.cierre_automatico
 
     def _existe(self, id_sala):
         return id_sala < len(self.salas) and self.salas[id_sala] is not None
