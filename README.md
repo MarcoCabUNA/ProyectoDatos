@@ -165,3 +165,4 @@ pantalla en `capturas/` para revisarlas a ojo.
 ## Documentación
 
 - `PROMPTS_LLM.md`: bitácora de uso de modelos de lenguaje.
+- `docs/Documento_Decisiones.pdf`: Documento de Decisiones de Diseño (§8).
