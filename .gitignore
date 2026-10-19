@@ -1,0 +1,15 @@
+# Generado por Python
+__pycache__/
+
+# Caché del catálogo en disco: es de cada computadora (Data/AlmacenCatalogo.py)
+cache/
+
+# Configuración personal de PyCharm
+.idea/
+
+# Partidas guardadas y logs de --replay: son de cada jugador (Data/GuardadoBinario.py, Data/BitacoraReplayIO.py)
+saves/
+logs/
+# Entorno virtual y capturas de la Vista (tests/capturar_pantallas.py)
+.venv/
+capturas/
