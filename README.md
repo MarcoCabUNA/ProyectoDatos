@@ -1,4 +1,9 @@
-# Cripta
+# Crypta
+
+**Intergantes:**
+- Kristel Peraza Sánchez
+- Derek García Herra
+- Marco Cabrera Mora
 
 Juego de exploración por eventos para el Primer Proyecto de Estructuras de Datos (UNA, II ciclo 2026).
 El cliente obtiene la cripta desde el servicio web (o desde un paquete local con `--offline`), simula la partida
