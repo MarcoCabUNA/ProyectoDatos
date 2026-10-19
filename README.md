@@ -1,6 +1,6 @@
 # Crypta
 
-**Intergantes:**
+**Integrantes:**
 - Kristel Peraza Sánchez
 - Derek García Herra
 - Marco Cabrera Mora
