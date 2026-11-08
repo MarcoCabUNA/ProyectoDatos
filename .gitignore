@@ -13,3 +13,9 @@ logs/
 # Entorno virtual y capturas de la Vista (tests/capturar_pantallas.py)
 .venv/
 capturas/
+
+# Secretos, cachés de pytest y config local de Claude Code (spec-kit)
+.env
+*.pyc
+.pytest_cache/
+.claude/settings.local.json
