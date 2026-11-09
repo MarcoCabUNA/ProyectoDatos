@@ -424,3 +424,46 @@ Requisitos FR-101 en adelante. No nombrar estructuras de datos, clases ni módul
 **Uso de la respuesta:** se generó `specs/001-terreno-cazador/spec.md` (FR-101 a FR-118, NFR-101 a NFR-103, SC-101 a SC-106) con los 7 casos del Apéndice B como escenarios con ejemplos numéricos y su tabla de trazabilidad, más `checklists/requirements.md`. Los puntos que el enunciado no fija quedaron como supuestos para `/speckit.clarify`.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5, spec-kit)
+
+/speckit.clarify Convertir cada punto de "Supuestos" en una clarificación confirmada: registrar
+pregunta y respuesta en "Clarificaciones" (Sesión de hoy), actualizar o crear el FR que corresponda
+y quitarlo de "Supuestos". Preguntarme uno por uno antes de confirmarlo:
+1) Dos salidas hacia la misma vecina: el cazador usa la más barata. ¿Qué hace el errante en ese caso?
+2) Otros enemigos no bloquean el paso del cazador.
+3) Un cazador que entra a la sala del jugador no ataca en ese mismo turno.
+4) Una ficha de cazador sin rango es un error de datos, no recibe valor por defecto.
+5) Con d == rango el cazador se mueve (la regla dice "si d > rango, espera").
+6) FR-115: confirmar que la decisión del cazador no consume el generador aleatorio.
+Al terminar, la sección "Supuestos" debe quedar vacía o eliminada. No nombrar estructuras de datos,
+clases ni módulos.
+
+**Uso de la respuesta:** se confirmaron las 6 preguntas con la opción recomendada y quedaron en «Clarificaciones», Sesión 2026-11-09, de `specs/001-terreno-cazador/spec.md`. Se crearon FR-119 (salida más barata hacia la misma vecina), FR-120 (otros actores no bloquean), FR-121 (no ataca en el turno en que llega), FR-122 (`rango` o costo inválido: error de datos, la partida no inicia) y FR-123 (activación según P1 §2.4). Se ajustaron FR-104, FR-106, FR-108, FR-110 y FR-118. Se eliminó la sección «Supuestos».
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+Corregir FR-115 y su clarificación (pregunta 6): la decisión del cazador de moverse o esperar
+(búsqueda de ruta y desempate) no usa el generador aleatorio de la partida. Cuando el cazador
+ataca, el daño se calcula con la fórmula de combate de la primera parte (P1 §2.6), que sí usa
+el generador, igual que cualquier enemigo. No cambiar ningún otro requisito.
+
+**Uso de la respuesta:** se corrigieron FR-115 y la clarificación de la pregunta 6 en `specs/001-terreno-cazador/spec.md`. Moverse o esperar no usa el azar, y el daño del ataque usa la fórmula de P1 §2.6 con el generador de la partida.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+Reescribir SC-103 así: "Misma cripta, misma semilla y mismas acciones producen la misma partida,
+con o sin cazadores. Las decisiones de moverse o esperar de los cazadores no consumen el generador
+aleatorio: en una partida donde ningún cazador ataca, agregar cazadores no cambia lo que eligen
+los errantes." No cambiar ningún otro requisito.
+
+**Uso de la respuesta:** se reescribió SC-103 en `specs/001-terreno-cazador/spec.md` con el texto indicado, para que no contradiga FR-115.
+
+-----------------------------------------------------------------------------------------------------------------------

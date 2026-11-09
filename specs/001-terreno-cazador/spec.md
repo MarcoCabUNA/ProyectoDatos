@@ -10,6 +10,9 @@
 
 **Constitución**: v1.2.0 · Requisitos con prefijo FR-1xx (Principio IX)
 
+**Fuera de alcance**: la búsqueda de rutas del jugador («ir a») y la niebla de guerra son de la feature
+`002-niebla-ir-a`. Esta spec solo exige que el cazador ignore la niebla (FR-112).
+
 **Entrada**: Descripción del usuario: "Feature 001-terreno-cazador. Terreno con costo por salida y un nuevo enemigo "cazador". Cada salida puede declarar un costo entero >= 1 (100 si no lo declara), igual en ambos sentidos. Moverse por una salida cuesta su costo para todos los actores, con intervalo = max(1, costo*100 // velocidad); atacar, esperar y demás acciones no cambian. Errantes y rastreadores conservan su comportamiento. El cazador tiene un "rango" en unidades de costo. En su turno: si comparte sala con el jugador, ataca; si no, calcula el costo mínimo d hasta la sala del jugador usando solo salidas abiertas en ese instante; si no hay ruta o d > rango, espera (costo 100); si hay, avanza un paso cuyo costo es el de la salida. Desempate: entre las vecinas v con costo(u,v) + dist(v,jugador) = d, va a la de menor id. Conoce el esqueleto completo y el estado actual de las puertas, no lo afecta la niebla, no abre puertas. Su decisión debe ser idéntica a calcularla desde cero en ese instante, aunque se reutilicen cálculos. Incluir como escenarios de aceptación los 7 casos del Apéndice B "Terreno y cazador", con una tabla de trazabilidad. Requisitos FR-101 en adelante. No nombrar estructuras de datos, clases ni módulos."
 
 > Este archivo contiene reglas del juego, historias, escenarios y requisitos. No nombra estructuras
@@ -22,6 +25,17 @@
 - «Salida 1–2 (costo 250)» es una salida entre la sala 1 y la sala 2 cuyo costo es 250 en ambos sentidos.
 - «t» es el reloj virtual. «Velocidad» es la del actor en ese instante.
 - Salvo que se diga otra cosa, todas las salidas mencionadas están abiertas y el `rango` del cazador es 600.
+
+## Clarificaciones
+
+### Sesión 2026-11-09
+
+- P: Si una sala tiene dos salidas abiertas hacia la misma vecina con costos distintos, ¿qué hacen el cazador y el errante? → R: El cazador usa la salida abierta más barata hacia esa vecina. El errante sortea entre las salidas abiertas como en P1 §2.8, donde cada salida es una opción, y paga el costo de la salida que le toca.
+- P: ¿Los demás enemigos, incluidos otros cazadores, bloquean el paso del cazador o cuentan al calcular su ruta? → R: No. Varios actores pueden compartir sala, como en P1, y la ruta depende solo del esqueleto, los costos y el estado de las puertas.
+- P: Un cazador que se mueve y llega a la sala del jugador, ¿ataca en ese mismo turno o en el siguiente? → R: En el siguiente. Moverse es su acción del turno (P1 §2.8), y ataca en su próximo turno si el jugador sigue en la sala.
+- P: Si la ficha de un cazador no trae `rango` o no es un entero ≥ 0, o una salida declara un costo menor que 1 o no entero, ¿qué debe pasar? → R: Es un error de datos sin valor por defecto. Se informa con contexto, la partida no inicia con esos datos y el programa no se cae.
+- P: Cuando el costo mínimo d es exactamente igual al `rango`, ¿el cazador se mueve o espera? → R: Se mueve. Solo espera si d > `rango` (lectura literal del §3.2).
+- P: ¿La decisión del cazador usa el generador aleatorio de la partida? → R: La decisión de moverse o esperar (búsqueda de ruta y desempate) no lo usa: es determinista por completo gracias al desempate por menor id. Cuando el cazador ataca, el daño se calcula con la fórmula de combate de P1 §2.6, que sí usa el generador, igual que para cualquier enemigo (FR-115, Principio IV).
 
 ---
 
@@ -155,12 +169,11 @@ que muestra la interfaz.
 
 ### Casos borde
 
-- **d igual a `rango`**: el cazador se mueve. Solo espera cuando d > `rango` (escenario 2.6).
+- **d igual a `rango`**: el cazador se mueve. Solo espera cuando d > `rango` (FR-110, escenario H2-6).
 - **`rango` 0**: el cazador solo ataca si comparte sala con el jugador. En los demás casos espera, porque
   toda ruta cuesta al menos 1.
-- **Varias salidas de una sala hacia la misma vecina, con costos distintos**: para la ruta y el
-  desempate, costo(u, v) es el de la salida abierta más barata entre u y v, y el cazador atraviesa esa
-  salida (ver Supuestos).
+- **Varias salidas de una sala hacia la misma vecina, con costos distintos**: el cazador usa la más
+  barata (FR-119). El errante sortea entre salidas y paga la que le toca (FR-104).
 - **El jugador solo es alcanzable por puertas cerradas**: no hay ruta y el cazador espera (escenario 2.1).
   Para el cazador, una puerta cerrada no existe aunque tenga la llave a la vista: no abre puertas.
 - **Muchas rutas de igual costo**: el desempate por menor id de la vecina siempre define un único paso,
@@ -169,14 +182,13 @@ que muestra la interfaz.
   `rango`. El resultado es el mismo que si cada uno calculara desde cero.
 - **Cazador dormido**: se activa como cualquier enemigo cuando el jugador entra a su sala (P1 §2.4). Hasta
   entonces no actúa.
-- **Otros actores en el camino**: no bloquean al cazador, igual que en la primera parte (ver Supuestos).
+- **Otros actores en el camino**: no bloquean al cazador (FR-120).
 - **Un cazador entra a la sala del jugador**: moverse consume su turno. Ataca en su siguiente turno si el
-  jugador sigue en la sala (P1 §2.8).
+  jugador sigue en la sala (FR-121).
 - **Costo de salida mayor que 100 y velocidad baja**: el intervalo crece en proporción (por ejemplo, costo
   250 con velocidad 50 da 500).
 - **Datos inválidos**: una salida con costo menor que 1 o no entero, o una ficha de cazador sin `rango`
-  entero ≥ 0, se trata como dato de cripta o catálogo inválido. El programa informa del error con
-  contexto y no se cae (ver Supuestos).
+  entero ≥ 0, impide iniciar la partida. Se informa con contexto y el programa no se cae (FR-122).
 
 ---
 
@@ -194,7 +206,9 @@ que muestra la interfaz.
 - **FR-103**: Atacar, esperar, usar, equipar, recoger, soltar y abrir una puerta con llave DEBEN conservar
   los costos de la primera parte.
 - **FR-104**: Errantes, rastreadores y guardianes DEBEN conservar su forma de decidir de la primera parte.
-  Solo cambia lo que tarda su movimiento, según FR-102.
+  Solo cambia lo que tarda su movimiento, según FR-102. En particular, el errante sortea entre las
+  salidas abiertas, donde cada salida es una opción aunque dos lleven a la misma vecina, y paga el costo
+  de la salida que le toca.
 - **FR-105**: Si la velocidad de un actor cambia mientras tiene programada una acción, incluso tras
   atravesar una salida costosa, el tiempo restante DEBE escalarse con la regla de P1 §2.3:
   restante_nuevo = max(1, (tiempo_siguiente − t) × velocidad_anterior // velocidad_nueva).
@@ -202,16 +216,34 @@ que muestra la interfaz.
 **Cazador**
 
 - **FR-106**: El juego DEBE admitir un cuarto comportamiento de enemigo, «cazador», cuya ficha de catálogo
-  incluye el campo `rango`, un entero en unidades de costo.
+  incluye el campo `rango`, un entero en unidades de costo. El costo de cada salida llega en el esqueleto
+  de la cripta, y `comportamiento` y `rango` llegan en el catálogo (Apéndice A). Su validez de versión sigue
+  las reglas de la primera parte.
 - **FR-107**: En su turno, si el cazador comparte sala con el jugador, DEBE atacar según P1 §2.8 y no
   moverse.
 - **FR-108**: Si no comparte sala, el cazador DEBE considerar el costo mínimo d desde su sala hasta la sala
   actual del jugador. d es la suma de los costos de las salidas recorridas, contando solo las salidas
-  abiertas en ese instante.
+  abiertas en ese instante. «Abierta en ese instante» incluye las puertas que el jugador ya abrió con llave
+  y excluye las que un cierre automático cerró en ese instante o antes, según el orden de eventos de
+  P1 §2.3.
 - **FR-109**: Si no existe ruta, o si d > `rango`, el cazador DEBE esperar con costo 100.
-- **FR-110**: Si existe ruta y d ≤ `rango`, el cazador DEBE moverse un paso por una ruta de costo d. El
+- **FR-110**: Si existe ruta y d ≤ `rango` (incluido d = `rango`), el cazador DEBE moverse un paso por una
+  ruta de costo d. El
   costo de esa acción DEBE ser el costo de la salida que atraviesa, y el intervalo se calcula según
   FR-102.
+- **FR-119**: Si varias salidas abiertas unen la sala u con la misma vecina v, costo(u, v) DEBE ser el
+  menor de sus costos, tanto para calcular d como para el desempate. Al moverse a v, el cazador DEBE
+  atravesar una salida de ese costo mínimo.
+- **FR-120**: Los demás actores, incluidos otros cazadores, NO DEBEN bloquear el paso del cazador. Su
+  posición no afecta d ni el paso escogido. Varios actores pueden compartir sala, como en la primera parte.
+- **FR-121**: El cazador DEBE ejecutar una sola acción por turno. Si se mueve y llega a la sala del jugador,
+  NO DEBE atacar en ese mismo turno. Ataca en su siguiente turno si el jugador sigue en esa sala (FR-107).
+- **FR-122**: Una ficha de cazador sin `rango`, o con un `rango` que no sea un entero ≥ 0, y una salida
+  que declare un costo menor que 1 o no entero, DEBEN tratarse como datos inválidos, sin valor por
+  defecto. El programa DEBE informar el error con contexto (qué ficha o qué salida y qué campo), NO DEBE
+  iniciar la partida con esos datos y NO DEBE caerse.
+- **FR-123**: El cazador DEBE activarse y programar su primera acción igual que los demás enemigos
+  (P1 §2.4). Mientras está dormido no actúa.
 - **FR-111**: Sea u la sala del cazador. Entre las vecinas v que cumplen costo(u, v) + dist(v, jugador) = d,
   el cazador DEBE moverse a la de menor id. Este resultado DEBE cumplirse siempre, aunque muchas rutas
   tengan el mismo costo e independientemente del orden en que se describen las salidas.
@@ -224,15 +256,17 @@ que muestra la interfaz.
   desde cero en ese instante, aunque se reutilicen cálculos anteriores. En particular, DEBE reflejar las
   puertas que se abrieron o cerraron, el movimiento del jugador, los cambios de sala o la muerte de otros
   actores y los cambios de velocidad ocurridos desde su turno anterior.
-- **FR-115**: La decisión del cazador DEBE ser determinista. NO DEBE consumir el generador aleatorio de la
-  partida, de modo que agregar o quitar cazadores no altere el azar que reciben los demás actores.
-  Misma cripta, misma semilla y mismas acciones DEBEN producir las mismas decisiones del cazador.
+- **FR-115**: La decisión del cazador de moverse o esperar (cálculo de d, elección del paso y desempate)
+  DEBE ser determinista y NO DEBE consumir el generador aleatorio de la partida. Cuando el cazador ataca,
+  el daño DEBE calcularse con la fórmula de combate de P1 §2.6, que sí consume el generador, igual que
+  para cualquier enemigo. Misma cripta, misma semilla y mismas acciones DEBEN producir las mismas
+  decisiones y los mismos ataques del cazador.
 
 **Interfaz**
 
 - **FR-116**: La interfaz DEBE mostrar el costo de cada salida de la sala actual del jugador.
 - **FR-117**: La interfaz DEBE distinguir a los cazadores de los demás enemigos.
-- **FR-118**: Las reglas de FR-101 a FR-115 DEBEN funcionar igual en los modos sin vista (`--replay`,
+- **FR-118**: Las reglas de FR-101 a FR-115 y de FR-119 a FR-123 DEBEN funcionar igual en los modos sin vista (`--replay`,
   `--replay … --hasta`, `--verificar` y `--bench`).
 
 ### Requisitos de rendimiento
@@ -283,9 +317,9 @@ Cada prueba citará el identificador del requisito que verifica (Principio X).
   cita su requisito.
 - **SC-102**: En el 100 % de los turnos de cazador de las pruebas y de las partidas reproducidas, la decisión
   coincide con la de un cálculo desde cero en ese instante.
-- **SC-103**: Dos ejecuciones con la misma cripta, semilla y acciones producen registros de partida
-  idénticos, con y sin cazadores en la cripta de prueba. Agregar cazadores no cambia lo que eligen los
-  errantes.
+- **SC-103**: Misma cripta, misma semilla y mismas acciones producen la misma partida, con o sin
+  cazadores. Las decisiones de moverse o esperar de los cazadores no consumen el generador aleatorio:
+  en una partida donde ningún cazador ataca, agregar cazadores no cambia lo que eligen los errantes.
 - **SC-104**: `--bench` muestra que el ciclo de eventos entre dos decisiones del jugador tarda menos de
   20 ms en la cripta de referencia con decenas de cazadores activos.
 - **SC-105**: En `--bench`, al aumentar el tamaño de la cripta sin cambiar la región dentro del `rango`,
@@ -294,29 +328,3 @@ Cada prueba citará el identificador del requisito que verifica (Principio X).
   a un cazador de los demás enemigos sin salir de la pantalla de la sala.
 
 ---
-
-## Supuestos
-
-Valores razonables adoptados donde el enunciado no es explícito. Se confirman en `/speckit.clarify`.
-
-- **Varias salidas hacia la misma vecina**: si dos salidas abiertas de una sala llevan a la misma vecina
-  con costos distintos, costo(u, v) es el menor de ellos, y el cazador atraviesa esa salida. Si empatan
-  en costo, da igual cuál atraviese, porque el destino y el costo son los mismos. El errante sigue
-  escogiendo entre salidas como en la primera parte y paga el costo de la salida que escoge.
-- **Otros actores no bloquean**: como en la primera parte, varios actores pueden estar en la misma sala.
-  Por eso la presencia de otros enemigos no cambia las rutas del cazador.
-- **Movimiento y ataque en el mismo turno**: un cazador que llega a la sala del jugador no ataca en ese
-  mismo turno. Moverse es su acción de ese turno (P1 §2.8).
-- **Azar**: el cazador no usa el generador aleatorio (FR-115), porque su regla es determinista por
-  completo gracias al desempate por menor id.
-- **Activación**: el cazador se activa y programa su primera acción igual que los demás enemigos (P1 §2.4).
-- **Datos inválidos**: un costo de salida menor que 1 o no entero, o una ficha de cazador sin `rango` entero
-  ≥ 0, se trata como error de datos. Se informa con contexto y el programa no se cae. No se inventa un
-  `rango` por defecto.
-- **Estado de las puertas**: «abierta en ese instante» incluye las puertas que el jugador abrió con llave y
-  excluye las que un cierre automático ya cerró en ese instante o antes, según el orden de eventos de
-  P1 §2.3.
-- **Dependencias de datos**: el esqueleto trae el costo de cada salida y el catálogo trae `comportamiento:
-  cazador` y `rango` (Apéndice A). Su lectura y validez de versión siguen las reglas de la primera parte.
-- **Fuera de alcance**: la búsqueda de rutas del jugador («ir a», niebla de guerra) es la feature
-  `002-niebla-ir-a`. Esta spec solo exige que el cazador ignore la niebla.
