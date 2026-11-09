@@ -404,3 +404,23 @@ Seguimiento: "sigamos con lo que recomiendas en los puntos 2 al 4 y dime que ser
 
 -----------------------------------------------------------------------------------------------------------------------
 
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5, spec-kit)
+
+/speckit.specify Feature 001-terreno-cazador. Terreno con costo por salida y un nuevo enemigo "cazador".
+Cada salida puede declarar un costo entero >= 1 (100 si no lo declara), igual en ambos sentidos.
+Moverse por una salida cuesta su costo para todos los actores, con intervalo = max(1, costo*100 // velocidad);
+atacar, esperar y demás acciones no cambian. Errantes y rastreadores conservan su comportamiento.
+El cazador tiene un "rango" en unidades de costo. En su turno: si comparte sala con el jugador, ataca;
+si no, calcula el costo mínimo d hasta la sala del jugador usando solo salidas abiertas en ese instante;
+si no hay ruta o d > rango, espera (costo 100); si hay, avanza un paso cuyo costo es el de la salida.
+Desempate: entre las vecinas v con costo(u,v) + dist(v,jugador) = d, va a la de menor id.
+Conoce el esqueleto completo y el estado actual de las puertas, no lo afecta la niebla, no abre puertas.
+Su decisión debe ser idéntica a calcularla desde cero en ese instante, aunque se reutilicen cálculos.
+Incluir como escenarios de aceptación los 7 casos del Apéndice B "Terreno y cazador", con una tabla de trazabilidad.
+Requisitos FR-101 en adelante. No nombrar estructuras de datos, clases ni módulos.
+
+**Uso de la respuesta:** se generó `specs/001-terreno-cazador/spec.md` (FR-101 a FR-118, NFR-101 a NFR-103, SC-101 a SC-106) con los 7 casos del Apéndice B como escenarios con ejemplos numéricos y su tabla de trazabilidad, más `checklists/requirements.md`. Los puntos que el enunciado no fija quedaron como supuestos para `/speckit.clarify`.
+
+-----------------------------------------------------------------------------------------------------------------------
