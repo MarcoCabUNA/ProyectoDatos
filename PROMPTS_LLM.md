@@ -311,4 +311,96 @@ Kristel ya trajo lo de Marco y avanzó con la Vista y el Controlador. Revisa su 
 **Uso de la respuesta:** se evaluó pasar la precarga (§4.2) a un hilo en segundo plano: un solo hilo para toda la red, la `Cola` propia en vez de `ThreadPoolExecutor` (§7) y la incorporación con un desfase fijo de una acción para mantener el determinismo. El equipo decidió dejarla síncrona porque funciona, y defenderla con mediciones en el Documento de Decisiones. En el commit `9a7f177` se agregaron al paquete offline cripta-02 a cripta-04, se ajustaron 3 pruebas que daban por hecho una sola cripta y se creó `tests/correr_pruebas.py`, que corre las 350 pruebas de `unittest` y los 27 scripts `probar_*`. El trabajo de la sesión se dividió en los commits `5d43898`, `e4a4c3f`, `4740816` y `9a7f177`, y se comprobó que cada uno pasa las pruebas por sí solo.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Domingo 8 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5), comando de spec-kit `/speckit-constitution`
+
+/speckit-constitution Escribe la constitución, en español, del proyecto Cripta II (Estructuras de Datos II, UNA, II ciclo 2026): un juego de exploración por eventos en Python, con reloj virtual, que obtiene criptas de un servicio web o de un paquete local (--offline). Esta es la segunda entrega y continúa el código funcional de la primera. Usa estos principios casi textualmente, con redacción MUST/MUST NOT. No agregues principios, tecnologías ni capas que no estén aquí.
+
+I. Arquitectura MVC en n-capas, estricta
+- El proyecto MUST seguir MVC con arquitectura en n-capas. No se admite ningún otro estilo de organización.
+- Las capas son: Data (red y disco), Logic (reglas del juego y estructuras de datos), Service (casos de uso), UIController + View (interfaz) y DTO (transversal). Security (validación de acceso y de versión/integridad) acompaña a la interfaz y a los datos. Se mantienen los nombres de carpetas que ya existen en el repositorio.
+- El flujo de llamadas es UIController -> Service -> Logic -> Data. Cada capa MUST llamar solo a la capa inmediatamente adyacente. La interfaz MUST NOT llamar a Data, y Data MUST NOT conocer reglas del juego.
+- El paquete Estructuras es un paquete de apoyo sin dependencias hacia ninguna otra capa; cualquier capa puede importarlo.
+- Logic (el modelo) MUST NOT conocer HTTP, archivos ni la interfaz concreta. El acceso a red y a disco se hace detrás de una interfaz común (FuenteDatos) para que --offline sustituya la fuente sin if dispersos.
+- Los DTO son clases simples de datos, sin reglas de negocio, y son el único formato en que fluye información entre capas.
+- Cada capa valida lo suyo: Data solo conexión y formato; Logic reglas de negocio; Service no valida; la interfaz valida la estructura de lo que el usuario ingresa.
+
+II. Lenguaje, bibliotecas y estructuras de datos
+- El proyecto MUST escribirse únicamente en Python 3.11 o superior.
+- Siguen vigentes todas las restricciones del enunciado de la primera parte (Primer Proyecto, §7) y se suman las de Cripta - Parte II (§6.2). La única excepción es cuando Cripta - Parte II mencione expresamente un cambio a alguna de ellas.
+- Restricciones de la primera parte: las estructuras de datos de los problemas evaluados MUST implementarse a mano y MUST NOT sustituirse por equivalentes de bibliotecas; dict MUST NOT usarse como índice, caché, tabla de búsqueda o estructura propia (los dict que entrega respuesta.json() solo se leen); list MAY usarse solo como almacenamiento contiguo de bajo nivel; list.sort() y sorted() MUST NOT usarse en los ordenamientos evaluados (se usa el Ordenador del equipo).
+- Restricciones que suma la segunda parte: MUST NOT usarse heapq, bisect, collections (deque, OrderedDict, defaultdict, Counter), networkx ni ninguna biblioteca de grafos o de búsqueda de rutas; set queda prohibido en las mismas condiciones que dict.
+- Bibliotecas permitidas: requests (con tiempo de espera explícito) y pygame-ce, que ya están establecidas en el proyecto; json, struct, uuid y random.Random; y las de la biblioteca estándar os, pathlib, argparse, time, subprocess y unittest, ya consultadas con el profesor para la primera entrega. Agregar cualquier otra dependencia MUST requerir acuerdo de los tres integrantes y quedar registrada en requirements.txt y pyproject.toml.
+- Se MUST mantener las bibliotecas y las estructuras de datos que ya están implementadas en el proyecto. Antes de comenzar cualquier implementación, el grupo MUST revisar las limitaciones de cada estructura ya implementada contra lo que solicita Cripta - Parte II, y dejar el resultado de esa revisión en el plan.md correspondiente.
+- spec-kit y el agente de programación son solo herramientas de proceso: MUST NOT introducir dependencias ni estructuras prohibidas. Las dependencias que proponga un plan generado se revisan antes de aceptarlo.
+
+III. Simplicidad: KISS, YAGNI, responsabilidad única y Abierto/Cerrado
+- KISS: se elige la solución más simple que cumpla la especificación. El código lo deben poder leer y defender los tres integrantes, incluso los que son principiantes en Python.
+- YAGNI: MUST NOT implementarse clases, capas, parámetros ni opciones que ningún requisito numerado pida.
+- Responsabilidad única: cada clase y cada módulo hace una sola cosa; las funciones son cortas; los nombres son claros, con type hints y un docstring breve.
+- Abierto/Cerrado: el código de la primera entrega que ya funciona está cerrado a modificación y abierto a extensión. Las capacidades nuevas MUST agregarse con clases o módulos nuevos, o extendiendo lo existente, sin reescribir implementaciones funcionales. Solo se modifica código existente cuando es indispensable para cumplir un requisito de la segunda parte o para corregir un defecto; en ese caso el cambio MUST justificarse en plan.md y, si cambia una decisión de la primera parte, mostrarse el antes y el después en DECISIONES.md.
+
+IV. Determinismo
+- Misma cripta, misma semilla y mismas acciones MUST producir la misma partida.
+- El tiempo real de red MUST NOT avanzar el reloj virtual. Las respuestas pendientes o concurrentes se incorporan en un orden determinista.
+
+V. Modos sin interfaz
+- --replay y --bench MUST ejecutarse sin instanciar la vista. Si el modelo necesita una ventana o el teclado para funcionar, la separación de capas está mal.
+
+VI. Sin datos de una cripta concreta en el código
+- MUST NOT escribirse en el código números de salas, ids de entidades, páginas, presupuestos ni estadísticas de una cripta específica. El programa debe funcionar con una cripta que el grupo no haya visto.
+
+VII. Red y presupuesto de solicitudes
+- El programa MUST respetar presupuesto_solicitudes. Un reintento cuenta dentro del presupuesto.
+- El X-Cripta-Client-Id se genera una sola vez por ejecución y se envía en todas las solicitudes.
+- Un HTTP 429 o un error de red MUST manejarse con un mensaje con contexto, sin que el programa se caiga.
+
+VIII. Rendimiento con evidencia
+- Toda afirmación de rendimiento MUST respaldarse con mediciones propias de --bench. Las mediciones de la primera parte se repiten con la carga nueva.
+- Cada decisión de estructura de datos se documenta en DECISIONES.md con: problema, alternativas consideradas, decisión, complejidad, evidencia empírica y límites conocidos, enlazando a la spec y al plan de donde proviene e indicando si la decisión final coincide con la del plan.md original. Las criptas sintéticas de --bench son deterministas por semilla.
+
+IX. Especificación antes del código
+- Una especificación MUST confirmarse (commit) antes que cualquier código que la implemente. Si la especificación estaba mal, se corrige primero la especificación y luego el código, en commits separados.
+- spec.md contiene reglas del juego, historias de usuario, escenarios de aceptación y requisitos numerados, y MUST NOT nombrar estructuras de datos, clases ni módulos. plan.md contiene las estructuras elegidas, alternativas, complejidad y mediciones previstas. tasks.md contiene tareas pequeñas y verificables, cada una con el requisito que atiende.
+- Specs: 001-terreno-cazador, 002-niebla-ir-a, 003-resolubilidad y 004-linea-tiempo. Los requisitos usan el prefijo FR-1xx, FR-2xx, FR-3xx y FR-4xx respectivamente, para que los identificadores no choquen.
+
+X. Trazabilidad y pruebas
+- Cada requisito tiene un identificador estable. Cada escenario de aceptación MUST tener al menos una prueba automatizada (con las herramientas que ya usa el repo: unittest y tests/correr_pruebas.py) o un partida.log de reproducción, y la prueba cita el identificador del requisito.
+
+XI. Bitácora de uso de LLM
+- Cada prompt enviado a un LLM, incluidos los comandos de spec-kit con texto propio, MUST registrarse en PROMPTS_LLM.md con fecha, herramienta, prompt textual y para qué se usó la respuesta. No se incluyen credenciales ni datos personales.
+- El código generado con ayuda de un LLM es responsabilidad del grupo, y cada integrante MUST poder explicarlo y modificarlo.
+
+Gobernanza: esta constitución solo se cambia con acuerdo de los tres integrantes, en un commit propio. Si un plan o una tarea contradice la constitución, el plan o la tarea se corrige.
+
+**Uso de la respuesta:** se generó `.specify/memory/constitution.md` (versión 1.0.0, ratificada el 2026-11-08) a partir de la plantilla de spec-kit, con los principios I a XI y la gobernanza casi textuales. Se quitaron las dos secciones genéricas de la plantilla que no tenían contenido. Quedan pendientes algunos ajustes de la constitución que se revisarán con el equipo.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Domingo 8 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+estos son los ajustes que el equipo vio luego de hacer la version 1.0.1 que es la actual asi que nesesitaremos analizar algunas partes del flujo del codigo y añadir algunas partes que se dejaron por fuera, estas serian las recomendaciones:
+
+Ajustes recomendados
+Falta dataclasses en las bibliotecas permitidas. Todos los DTOs usan @dataclass, y la regla dice que cualquier otra dependencia requiere acuerdo. Pasa lo mismo con typing, si la usan para los type hints. Y si piensan hacer los puntos de control de la línea de tiempo con copy.deepcopy, también hay que agregar copy, o decidir desde ya que la copia se hace a mano.
+El flujo de capas puede contradecir el código actual. El principio I dice que cada capa solo llama a la adyacente (UIController → Service → Logic → Data). Pero en la primera parte, cuando el motor devuelve "pendiente", quien pide el contenido a la capa de Datos es Servicios, no Lógica, porque Lógica no conoce la red. Revisen cómo está hoy el repo y ajusten la frase. Si no, /speckit.analyze va a marcar como violación algo que ya funciona.
+El principio V debería incluir --verificar y --replay … --hasta. El §3.5 y el §3.6 exigen que esas dos banderas también corran sin instanciar la vista.
+El principio X podría pedir el Apéndice B explícitamente. El §2.5 exige que cada caso del Apéndice B aparezca como escenario de aceptación en alguna spec. Con una línea en la constitución, el agente lo va a revisar en cada fase.
+
+y luego de eso esta esta recomendacion: Un detalle a tener en cuenta: el principio III pide type hints y docstrings, y el código de Lógica de la primera parte no los tiene. Como el mismo principio dice que no se reescribe lo que ya funciona, lo razonable es aplicarlo solo al código nuevo. Conviene que eso quede claro para que nadie lo tome como una tarea de refactor.
+
+Seguimiento: "sigamos con lo que recomiendas en los puntos 2 al 4 y dime que seria mas conveniente para el codigo nuevo en relacion a copy y deepcopy"
+
+**Uso de la respuesta:** se revisaron las importaciones del repo. Service importa de Data en 8 archivos, Logic no importa de Data y solo 38 de 207 funciones de Logic tienen type hints. Con eso se pasó la constitución a la versión 1.1.0: flujo UIController -> Service -> (Logic y Data) en el principio I, type hints y docstrings solo para el código nuevo en el III, `--replay … --hasta` y `--verificar` en el V y Apéndice B en el X. Quedan pendientes la lista de bibliotecas permitidas y la decisión sobre `copy`.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Domingo 8 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+**Uso de la respuesta:** la constitución pasó a la versión 1.2.0. En el principio II se agregaron a las bibliotecas permitidas `dataclasses`, `typing`, `abc`, `urllib.parse`, `shutil`, `sys` y `math`, que ya usaba la primera entrega. `tempfile`, `contextlib`, `io`, `re`, `types` y `copy` quedan permitidos solo en `tests/`. `copy` no se usa en el código del juego, así que las copias de estado (como los puntos de control de la línea de tiempo) se hacen a mano.
+
+-----------------------------------------------------------------------------------------------------------------------
 

@@ -14,9 +14,12 @@ local (`--offline`). Esta es la segunda entrega y continúa el código funcional
   (casos de uso), UIController + View (interfaz) y DTO (transversal). Security (validación de
   acceso y de versión/integridad) acompaña a la interfaz y a los datos. Se mantienen los nombres
   de carpetas que ya existen en el repositorio.
-- El flujo de llamadas es UIController -> Service -> Logic -> Data. Cada capa MUST llamar solo a
-  la capa inmediatamente adyacente. La interfaz MUST NOT llamar a Data, y Data MUST NOT conocer
-  reglas del juego.
+- El flujo de llamadas es UIController -> Service -> (Logic y Data). Service coordina los casos de
+  uso: pide a Logic que aplique las reglas y pide a Data lo que haga falta de red o disco (por
+  ejemplo, cuando Logic responde que el contenido de una sala está pendiente, Service lo pide a
+  Data y se lo entrega a Logic). Logic MUST NOT llamar a Data ni a Service. Data MUST NOT llamar
+  a Logic ni a Service, ni conocer reglas del juego. La interfaz MUST NOT llamar a Logic ni a
+  Data.
 - El paquete Estructuras es un paquete de apoyo sin dependencias hacia ninguna otra capa;
   cualquier capa puede importarlo.
 - Logic (el modelo) MUST NOT conocer HTTP, archivos ni la interfaz concreta. El acceso a red y a
@@ -45,9 +48,15 @@ local (`--offline`). Esta es la segunda entrega y continúa el código funcional
 - Bibliotecas permitidas: `requests` (con tiempo de espera explícito) y `pygame-ce`, que ya
   están establecidas en el proyecto; `json`, `struct`, `uuid` y `random.Random`; y las de la
   biblioteca estándar `os`, `pathlib`, `argparse`, `time`, `subprocess` y `unittest`, ya
-  consultadas con el profesor para la primera entrega. Agregar cualquier otra dependencia MUST
-  requerir acuerdo de los tres integrantes y quedar registrada en `requirements.txt` y
-  `pyproject.toml`.
+  consultadas con el profesor para la primera entrega. También se permiten los módulos de la
+  biblioteca estándar que ya usa el código de la primera entrega: `dataclasses` (DTO), `typing`
+  (type hints), `abc`, `urllib.parse`, `shutil`, `sys` y `math`. Agregar cualquier otra
+  dependencia MUST requerir acuerdo de los tres integrantes y quedar registrada en
+  `requirements.txt` y `pyproject.toml`.
+- Solo en `tests/` se permiten además `tempfile`, `contextlib`, `io`, `re`, `types` y `copy`.
+  `copy` (incluido `copy.deepcopy`) MUST NOT usarse en el código del juego: las copias de estado,
+  como los puntos de control de la línea de tiempo, MUST hacerse a mano, de modo que se pueda
+  explicar y medir qué se copia.
 - Se MUST mantener las bibliotecas y las estructuras de datos que ya están implementadas en el
   proyecto. Antes de comenzar cualquier implementación, el grupo MUST revisar las limitaciones
   de cada estructura ya implementada contra lo que solicita Cripta - Parte II, y dejar el
@@ -63,7 +72,9 @@ local (`--offline`). Esta es la segunda entrega y continúa el código funcional
 - YAGNI: MUST NOT implementarse clases, capas, parámetros ni opciones que ningún requisito
   numerado pida.
 - Responsabilidad única: cada clase y cada módulo hace una sola cosa; las funciones son cortas;
-  los nombres son claros, con type hints y un docstring breve.
+  los nombres son claros. El código nuevo de la segunda parte MUST llevar type hints y un
+  docstring breve. Esta exigencia no aplica al código de la primera entrega: agregarle type hints
+  o docstrings MUST NOT planificarse como tarea de refactor (ver Abierto/Cerrado).
 - Abierto/Cerrado: el código de la primera entrega que ya funciona está cerrado a modificación y
   abierto a extensión. Las capacidades nuevas MUST agregarse con clases o módulos nuevos, o
   extendiendo lo existente, sin reescribir implementaciones funcionales. Solo se modifica código
@@ -79,7 +90,8 @@ local (`--offline`). Esta es la segunda entrega y continúa el código funcional
 
 ### V. Modos sin interfaz
 
-- `--replay` y `--bench` MUST ejecutarse sin instanciar la vista. Si el modelo necesita una
+- `--replay`, `--replay … --hasta`, `--verificar` y `--bench` MUST ejecutarse sin instanciar la
+  vista (§3.5 y §3.6 de Cripta - Parte II). Si el modelo necesita una
   ventana o el teclado para funcionar, la separación de capas está mal.
 
 ### VI. Sin datos de una cripta concreta en el código
@@ -126,6 +138,8 @@ local (`--offline`). Esta es la segunda entrega y continúa el código funcional
   menos una prueba automatizada (con las herramientas que ya usa el repo: `unittest` y
   `tests/correr_pruebas.py`) o un `partida.log` de reproducción, y la prueba cita el
   identificador del requisito.
+- Cada caso del Apéndice B de Cripta - Parte II MUST aparecer como escenario de aceptación en al
+  menos una spec (§2.5).
 
 ### XI. Bitácora de uso de LLM
 
@@ -140,4 +154,4 @@ local (`--offline`). Esta es la segunda entrega y continúa el código funcional
 - Esta constitución solo se cambia con acuerdo de los tres integrantes, en un commit propio.
 - Si un plan o una tarea contradice la constitución, el plan o la tarea se corrige.
 
-**Versión**: 1.0.1 | **Ratificada**: 2026-11-08 | **Última enmienda**: 2026-11-08
+**Versión**: 1.2.0 | **Ratificada**: 2026-11-08 | **Última enmienda**: 2026-11-08
