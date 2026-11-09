@@ -1,25 +1,3 @@
-<!--
-Sync Impact Report
-- Versión: (plantilla sin completar) → 1.0.0
-- Principios: se reemplazan los 5 marcadores de la plantilla por 11 principios (I–XI):
-  I. Arquitectura MVC en n-capas, estricta
-  II. Lenguaje, bibliotecas y estructuras de datos
-  III. Simplicidad: KISS, YAGNI, responsabilidad única y Abierto/Cerrado
-  IV. Determinismo
-  V. Modos sin interfaz
-  VI. Sin datos de una cripta concreta en el código
-  VII. Red y presupuesto de solicitudes
-  VIII. Rendimiento con evidencia
-  IX. Especificación antes del código
-  X. Trazabilidad y pruebas
-  XI. Bitácora de uso de LLM
-- Secciones agregadas: Gobernanza.
-- Secciones eliminadas: [SECTION_2_NAME] y [SECTION_3_NAME] de la plantilla (el grupo pidió no
-  agregar contenido fuera de los principios dados).
-- Plantillas dependientes: no se modifican (las leen en tiempo de ejecución).
-- TODO: ninguno. Fecha de ratificación = fecha de adopción de esta primera versión.
--->
-
 # Constitución de Cripta II
 
 Proyecto de Estructuras de Datos II, UNA, II ciclo 2026. Cripta II es un juego de exploración
@@ -162,4 +140,4 @@ local (`--offline`). Esta es la segunda entrega y continúa el código funcional
 - Esta constitución solo se cambia con acuerdo de los tres integrantes, en un commit propio.
 - Si un plan o una tarea contradice la constitución, el plan o la tarea se corrige.
 
-**Versión**: 1.0.0 | **Ratificada**: 2026-11-08 | **Última enmienda**: 2026-11-08
+**Versión**: 1.0.1 | **Ratificada**: 2026-11-08 | **Última enmienda**: 2026-11-08
