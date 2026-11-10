@@ -87,6 +87,18 @@ def probar_accion_objetivo_coincide_con_actor():
     assert AccionDTO.desde_linea(accion.a_linea()).objetivo == "e-201"
 
 
+def probar_actor_comportamiento_ida_y_vuelta() -> None:
+    """H4-2 / FR-117: ActorDTO.comportamiento va y vuelve; sin él no hay clave; lo antiguo se lee."""
+    cazador = ActorDTO("e-1", "sabueso", "Sabueso", 18, 18, 6, 2, 120, 3, "cazador")
+    assert ActorDTO.desde_diccionario(cazador.a_diccionario()) == cazador
+    assert cazador.a_diccionario()["comportamiento"] == "cazador"
+    jugador = ActorDTO("jugador", "jugador", "J", 20, 20, 5, 2, 100, 1)
+    assert jugador.comportamiento is None
+    assert "comportamiento" not in jugador.a_diccionario()
+    antiguo = jugador.a_diccionario()
+    assert ActorDTO.desde_diccionario(antiguo) == jugador
+
+
 def probar_puntaje_ida_y_vuelta():
     puntaje = PuntajeDTO("Ana", "cripta-01", "a3f91c", 42, 5, 1800)
     assert PuntajeDTO.desde_diccionario(puntaje.a_diccionario()) == puntaje
@@ -155,6 +167,7 @@ if __name__ == "__main__":
     probar_accion_inmutable()
     probar_accion_abrir_apunta_a_una_salida_de_la_sala()
     probar_accion_objetivo_coincide_con_actor()
+    probar_actor_comportamiento_ida_y_vuelta()
     probar_puntaje_ida_y_vuelta()
     probar_puntaje_se_arma_desde_la_cripta()
     probar_inventario_con_objetos_reales()
