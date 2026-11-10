@@ -5,7 +5,8 @@
 ## Requisitos previos
 
 - Python 3.11 o superior, con las dependencias del proyecto (`uv sync`, o `pip install -r requirements.txt`).
-- `SalidaDTO.costo` y `FichaEnemigoDTO.rango` incorporados según [contrato-datos.md](contracts/contrato-datos.md).
+- `SalidaDTO.costo` (el costo declarado, `int | None`) y `FichaEnemigoDTO.rango` incorporados según
+  [contrato-datos.md](contracts/contrato-datos.md).
 
 ## 1. Todas las pruebas
 
@@ -19,10 +20,11 @@ nombre o en el docstring.
 ## 2. Los 7 casos del Apéndice B
 
 ```bash
-python -m unittest tests.test_terreno_cazador -v
+python -m unittest tests.test_terreno_cazador tests.test_rutas_equivalencia -v
 ```
 
-Esperado: un caso por fila de la tabla de trazabilidad de [spec.md](spec.md):
+Los casos 1, 2, 3, 4, 6 y 7 están en `test_terreno_cazador`, y el caso 5 en `test_rutas_equivalencia`
+(escenario H3-1). Esperado: un caso por fila de la tabla de trazabilidad de [spec.md](spec.md):
 
 | Caso | Se comprueba |
 |---|---|
@@ -55,12 +57,24 @@ los errantes.
 python -m Service.ServicioBench
 ```
 
-Esperado: en la tabla aparecen los subsistemas `rutas del cazador`, `invalidación de rutas` y
-`ciclo de eventos` con cazadores. La nota del ciclo dice «cumple» (< 20 ms) con decenas de
-cazadores. Con `rango` fijo, la decisión de un cazador tarda aproximadamente lo mismo en
-cuadrículas de 100, 1 000 y 10 000 salas.
+Esperado: en la tabla aparecen los subsistemas `rutas del cazador`, `invalidación de rutas`,
+`ciclo de eventos` con cazadores y `agenda de eventos` con costos variables.
 
-## 6. Prueba manual en el juego
+- **NFR-101, SC-104**: en la cuadrícula de 1 000 salas con 30 cazadores, la nota del ciclo dice
+  «cumple» (< 20 ms).
+- **SC-105**: con `rango` 200, la decisión de un cazador tarda como mucho el doble al pasar de 100 a
+  1 000 salas, y otra vez como mucho el doble al pasar de 1 000 a 10 000.
+
+## 6. Modos sin vista (FR-118)
+
+```bash
+python tests/test_modos_sin_vista_terreno.py
+```
+
+Esperado: una línea `OK: ...` al final. Con una cripta de prueba con costos y un cazador,
+`--replay`, `--replay … --hasta` y `--verificar` reproducen los mismos estados sin instanciar la vista.
+
+## 7. Prueba manual en el juego
 
 Hace falta una cripta con costos y un cazador:
 
@@ -69,12 +83,14 @@ python main.py --offline
 ```
 
 Entrar a una sala con salidas de costos distintos y ver el costo de cada salida y al cazador
-marcado. La interfaz es del integrante 3. Si todavía no está, esta parte queda pendiente.
+marcado. La interfaz es del integrante 3 (tareas T038, T039 y T041). Si todavía no está, esta parte
+queda pendiente. Hoy ninguna cripta de `paquete/` trae costos ni cazadores.
 
-## 7. Revisión de restricciones (Principio II)
+## 8. Revisión de restricciones (Principios I y II)
 
 ```bash
-grep -rnE "heapq|bisect|collections|import copy|networkx|\bdict\(|\bset\(" Logic Estructuras DTO
+grep -rnE "heapq|bisect|collections|import copy|networkx|\bdict\(|\bset\(|sorted\(|\.sort\(" Logic Estructuras DTO
+grep -rnE "^(from|import) (Data|Service)" Logic Estructuras
 ```
 
 Esperado: ninguna coincidencia nueva en el código de esta feature.

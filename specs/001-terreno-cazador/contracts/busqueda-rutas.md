@@ -3,6 +3,13 @@
 **Dueño**: integrante 1 · **Usuarios**: el cazador (esta feature) y «ir a» (feature 002, integrantes 2 y 3)
 **Capa**: Lógica · Ver [research.md](../research.md), R3 y R5
 
+**Por qué el grafo es un parámetro**: el cazador lo necesita para separar la búsqueda de la
+`Mazmorra` y probarla con grafos pequeños hechos en las pruebas. Además, el §5.3 del enunciado pide
+que «ir a» use el mismo desempate sobre el mapa conocido, así que no hace falta una segunda búsqueda.
+
+Vocabulario: una **puerta** está abierta o cerrada; una **sala** de la búsqueda está **resuelta**
+cuando su distancia ya es definitiva.
+
 ## Grafo de búsqueda
 
 Cualquier objeto con estos tres métodos sirve como grafo:
@@ -21,6 +28,11 @@ Reglas que el grafo debe cumplir:
 3. Si cambia cuándo una salida es utilizable y la búsqueda ya está en curso, quien implementa el
    grafo avisa con `puerta_cambio(a, b)` a quien guarda la búsqueda, o empieza una búsqueda nueva.
 
+**Qué salas pasar a `puerta_cambio(a, b)`**: la búsqueda va al revés, así que una salida u→v solo
+se lee al resolver v. Basta con pasar el **destino** de cada cara que cambió. Si la puerta tiene dos
+caras, son sus dos extremos. Si tiene una sola cara (salida sin vuelta), se pasa su destino dos
+veces. Quien recibe el aviso descarta la búsqueda si `a` o `b` ya está resuelta.
+
 | Grafo | «Utilizable» | Implementa |
 |---|---|---|
 | `GrafoEsqueleto` | abierta ahora, en el esqueleto completo | Integrante 1 |
@@ -32,6 +44,8 @@ Reglas que el grafo debe cumplir:
 BusquedaCostoMinimo(grafo)
   .reiniciar(origen)                           # O(1)
   .distancia_hasta(sala, limite) -> int|None   # extiende solo lo necesario; None si d > limite o sin ruta
+  .esta_resuelta(sala) -> bool                 # O(1)
+  .distancia_resuelta(sala) -> int             # O(1)
   .paso_hacia_origen(u, d) -> (destino, costo) # vecina de menor id con costo(u,v) + dist(v) = d
 
 paso_desde_cero(grafo, origen, u, limite) -> (destino, costo) | None   # referencia sin reutilización

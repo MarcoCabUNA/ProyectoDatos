@@ -529,3 +529,32 @@ listo, ya hice el commit; marca H-1 como resuelto en plan.md
 **Uso de la respuesta:** se generó `specs/001-terreno-cazador/tasks.md` con 46 tareas en 7 fases (preparación, base, una fase por historia H1 a H4, y bench y cierre), pruebas antes del código y cada prueba con su FR. Las tareas de `SalidaDTO.costo` (integrante 2) y `ActorDTO.comportamiento` (integrante 3) quedan como coordinación, no como código del integrante 1. El cazador se implementa primero calculando desde cero (H2) y después con la búsqueda compartida (H3).
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5, spec-kit)
+
+/speckit.analyze
+
+**Uso de la respuesta:** informe de solo lectura sobre `spec.md`, `plan.md` y `tasks.md` de la feature 001: 1 hallazgo crítico (C1, ubicación de `DECISIONES.md`), 4 altos (H1 costo declarado en un solo lado de la salida, H2 FR-122 sin tareas, H3 pruebas de interfaz de H4, H4 repetir la medición de la agenda), 6 medios y 6 bajos. Cobertura de requisitos: 30 de 32. Las correcciones se aplicaron en el prompt siguiente.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+Sí, prepará los cambios con estas decisiones:
+H1: si solo un lado de la salida declara costo, ambos lados lo usan; si ninguno, 100; si declaran
+valores distintos, es error de datos (FR-122). La igualación va junto a _igualar_caras, extendiendo
+sin reescribir. Si eso queda en Data, marcalo como coordinación con el integrante 2.
+M3: cripta sintética de 1 000 salas en grilla y 30 cazadores. SC-105: al multiplicar por 10 el
+tamaño de la cripta, la decisión de un cazador con rango pequeño no tarda más del doble.
+C1: DECISIONES.md en la raíz del repo.
+Aplicá también H2, H3, H4, M1, M2, M4, M5, M6 y los LOW L1, L2, L3, L5 y L6.
+Separá los cambios en dos commits:
+1) "spec(001): costo en ambos lados de la salida y criterios medibles" (H1, M3, L3) solo con spec.md.
+2) "plan(001): correcciones tras analyze" con plan, tasks, data-model, quickstart, contratos,
+checklist y PROMPTS_LLM.md.
+
+**Uso de la respuesta:** commit 1 (`spec.md`): FR-101 y FR-122 con el costo en uno o dos lados, escenario H1-8, dos clarificaciones nuevas, NFR-101, SC-104 y SC-105 medibles, y FR-119 a FR-123 reordenados. Commit 2: `SalidaDTO.costo` pasa a `int | None` (costo declarado) y Lógica iguala los dos lados con `_igualar_costos()` junto a `_igualar_caras()`; `ArmadorEstado` debe copiar el costo igualado (coordinación con el integrante 3); tareas nuevas para FR-122 (integrante 2), pruebas de interfaz de H4 (integrante 3), la agenda con costos, el cierre automático en el mismo instante y los modos sin vista; `DECISIONES.md` en la raíz; «sala resuelta» en lugar de «sala cerrada» en la búsqueda; tareas renumeradas (T001 a T051). También se ajustó `research.md` (vocabulario, R5, R6 y R7).
+
+-----------------------------------------------------------------------------------------------------------------------

@@ -33,11 +33,11 @@
 
 - [x] IX: no se nombran estructuras de datos, clases ni módulos; los requisitos usan FR-1xx / NFR-1xx.
 - [x] X: los 7 casos del Apéndice B «Terreno y cazador» aparecen como escenarios (H1-4, H1-5, H2-1 a H2-4, H3-1) con tabla de trazabilidad.
-- [x] IV: el uso del azar por el cazador queda planteado (FR-115) y supuesto para confirmar.
+- [x] IV: el uso del azar por el cazador queda definido en FR-115 y confirmado en «Clarificaciones».
 - [x] V: FR-118 exige las mismas reglas en los modos sin vista.
 
 ## Notes
 
 - Las únicas menciones técnicas son las banderas de línea de comandos (`--replay`, `--bench`, etc.) y las fórmulas de tiempo del enunciado. Son parte del contrato observable del juego, no detalles de implementación.
-- Sin marcadores [NEEDS CLARIFICATION]. Las decisiones no explícitas en el enunciado quedaron en «Supuestos» para confirmar en `/speckit.clarify`: varias salidas hacia la misma vecina, bloqueo por otros actores, ataque tras moverse, azar, `rango` ausente y datos inválidos.
-- La columna «Prueba» de la tabla de trazabilidad se completa en `/speckit.tasks`.
+- Sin marcadores [NEEDS CLARIFICATION]. Las decisiones no explícitas en el enunciado quedaron confirmadas en «Clarificaciones» (sesión 2026-11-09).
+- La columna «Prueba» de la tabla de trazabilidad se completa con los nombres de las pruebas al implementarlas (tarea T047 de `tasks.md`).
