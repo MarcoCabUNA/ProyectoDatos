@@ -631,3 +631,25 @@ incluyendo PROMPTS_LLM.md con este prompt.
 **Uso de la respuesta:** en `specs/001-terreno-cazador/tasks.md`, T043 (`medir_agenda_con_costos`) mide además muchos eventos con el mismo tiempo (un solo tiempo y 10 tiempos) y muchas cancelaciones (50 % y 90 %), con 100 / 1 000 / 10 000 eventos; se mantienen sus referencias (R6, Principio VIII). En `plan.md` se agregaron las dos filas correspondientes a la tabla de mediciones de `--bench`.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 10 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5, spec-kit)
+
+/speckit.implement Implementar solo T040 y quitar el skip de T037.
+T040: en Enemigo, sobrescribir a_dto() para que devuelva
+dataclasses.replace(super().a_dto(), comportamiento=self.ficha.comportamiento), sin modificar
+ActorBase.a_dto() (Principio III, extender sin reescribir). El Jugador sigue con comportamiento None.
+Código nuevo con type hints y docstring breve.
+T037: quitar el skip y verificar que la prueba pasa y cita su FR.
+Corré tests/correr_pruebas.py. Un commit: "feat(001): T040 comportamiento en ActorDTO de enemigos [FR-117]",
+incluyendo PROMPTS_LLM.md. No tocar ninguna otra tarea.
+
+Respuesta a la pregunta de Claude (la prueba de T037 no existía): Opción 1, pero sin el caso del cazador:
+Enemigo todavía no puede construirse con comportamiento "cazador" porque esa clase aún no existe. Escribí
+T037 en tests/test_dto_terreno.py con errante → "errante", guardián o rastreador → su valor, y jugador →
+None, citando FR-117. Agregá en tasks.md, en la tarea que crea la clase Cazador, una nota: "agregar el caso
+cazador → 'cazador' a la prueba de T037".
+
+**Uso de la respuesta:** `Logic/Enemigo.py` redefine `a_dto()` con `dataclasses.replace(super().a_dto(), comportamiento=self.ficha.comportamiento)`, sin tocar `ActorBase.a_dto()`. Se creó `tests/test_dto_terreno.py` con `test_h4_2_fr117_actor_dto_trae_el_comportamiento` (errante, guardián y rastreador traen su comportamiento; el jugador, `None`), sin skip. En `tasks.md` se marcaron T037 y T040 y se agregó en T024 la nota de sumar el caso del cazador a esa prueba.
+
+-----------------------------------------------------------------------------------------------------------------------
