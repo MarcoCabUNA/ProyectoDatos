@@ -520,3 +520,12 @@ listo, ya hice el commit; marca H-1 como resuelto en plan.md
 **Uso de la respuesta:** en `specs/001-terreno-cazador/plan.md` se marcó H-1 como resuelto (commit `58f7310`, FR-104 y pregunta 7 de «Clarificaciones»), y el Principio IX de la tabla de la constitución pasó de ⚠️ a ✅.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5, spec-kit)
+
+/speckit.tasks
+
+**Uso de la respuesta:** se generó `specs/001-terreno-cazador/tasks.md` con 46 tareas en 7 fases (preparación, base, una fase por historia H1 a H4, y bench y cierre), pruebas antes del código y cada prueba con su FR. Las tareas de `SalidaDTO.costo` (integrante 2) y `ActorDTO.comportamiento` (integrante 3) quedan como coordinación, no como código del integrante 1. El cazador se implementa primero calculando desde cero (H2) y después con la búsqueda compartida (H3).
+
+-----------------------------------------------------------------------------------------------------------------------
