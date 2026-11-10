@@ -511,3 +511,12 @@ sorteando entre salidas como en P1. Registrarlo en Clarificaciones y en el FR co
 **Uso de la respuesta:** se corrigió el hallazgo H-1 del plan en `specs/001-terreno-cazador/spec.md`: nueva pregunta en «Clarificaciones», Sesión 2026-11-09, y FR-104 ampliado (el rastreador usa la salida más barata hacia la vecina; el errante sortea entre salidas). Se ajustó el caso borde que ya trataba ese punto, para que no contradiga FR-104. El commit lo hace el integrante.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+listo, ya hice el commit; marca H-1 como resuelto en plan.md
+
+**Uso de la respuesta:** en `specs/001-terreno-cazador/plan.md` se marcó H-1 como resuelto (commit `58f7310`, FR-104 y pregunta 7 de «Clarificaciones»), y el Principio IX de la tabla de la constitución pasó de ⚠️ a ✅.
+
+-----------------------------------------------------------------------------------------------------------------------

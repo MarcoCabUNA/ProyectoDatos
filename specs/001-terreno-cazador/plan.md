@@ -64,22 +64,21 @@ el bench. Decenas de cazadores activos (pruebas del enunciado), hasta 100 en el 
 | VI. Sin datos de una cripta concreta | Las cargas del bench son sintéticas y deterministas por semilla. No hay ids ni costos fijos en el código. | ✅ | ✅ |
 | VII. Red y presupuesto | Sin solicitudes nuevas: `costo` y `rango` llegan en las respuestas que ya se piden (Apéndice A). | ✅ | ✅ |
 | VIII. Rendimiento con evidencia | Cada decisión (R1 a R6) tiene alternativas, complejidad y medición prevista. Las secciones §5.1, §5.2 y §5.6 de `DECISIONES.md` salen de aquí. | ✅ | ✅ |
-| IX. Spec antes del código | Este plan no agrega reglas que no estén en `spec.md`. El hallazgo H-1 (abajo) se corrige primero en la spec. | ⚠️ H-1 | ⚠️ H-1 |
+| IX. Spec antes del código | Este plan no agrega reglas que no estén en `spec.md`. El hallazgo H-1 (abajo) ya se corrigió en la spec (FR-104). | ✅ | ✅ |
 | X. Trazabilidad | Hay una prueba por escenario y una por caso del Apéndice B, y cada una cita su FR. | ✅ | ✅ |
 | XI. Bitácora de LLM | Este prompt se registra en `PROMPTS_LLM.md`. | ✅ | ✅ |
 
-**Resultado**: pasa. La única observación es H-1, que no bloquea el plan pero se resuelve en la
-spec antes de `/speckit.tasks`.
+**Resultado**: pasa. La única observación era H-1, resuelta en la spec antes de `/speckit.tasks`.
 
 ### Hallazgos para la spec
 
-- **H-1 (Principio IX)**: la spec define qué salida usan el cazador (FR-119) y el errante (FR-104)
-  cuando dos salidas abiertas llevan a la misma vecina, pero **no el rastreador**. El rastreador
-  escoge una sala (P1 §2.9), no una salida. Este plan asume que el rastreador paga la salida
-  abierta **más barata** hacia la sala escogida, igual que el cazador. Esa regla debe agregarse a
-  la spec (por ejemplo, en FR-104) en un commit propio antes de implementarla. Las criptas
-  publicadas no tienen salidas repetidas hacia la misma sala, así que hoy no cambia ninguna
-  partida.
+- **H-1 (Principio IX) — Resuelto**: la spec definía qué salida usan el cazador (FR-119) y el
+  errante (FR-104) cuando dos salidas abiertas llevan a la misma vecina, pero **no el rastreador**,
+  que escoge una sala (P1 §2.9), no una salida. Se resolvió en la spec, en su propio commit
+  (`58f7310`): FR-104 y la pregunta 7 de «Clarificaciones» dicen que el rastreador, igual que el
+  cazador, se mueve por la salida abierta **más barata** hacia la sala escogida y paga su costo; el
+  errante sigue sorteando entre salidas. Las criptas publicadas no tienen salidas repetidas hacia
+  la misma sala, así que hoy no cambia ninguna partida.
 
 ## Contrato de datos
 
