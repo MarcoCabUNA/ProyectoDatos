@@ -158,7 +158,7 @@ actual y el comportamiento de cada enemigo.
 ### Pruebas de la historia 4 ⚠️
 
 - [ ] T036 [US4] En `tests/test_dto_terreno.py`, `test_h4_1_fr116_el_costo_llega_a_la_vista`: armar el estado con `Service/ArmadorEstado.py` para una sala con salidas de costo 100, 250, una sin costo y una cuyo costo 300 solo lo declara el **otro** lado, y comprobar que los `SalidaDTO` que recibe la vista traen 100, 250, 100 y 300 (el costo ya igualado por Lógica, no el declarado). Marcarla con `unittest.skip("pendiente del integrante 3: T038")` hasta que T038 esté hecho.
-- [X] T037 [US4] En `tests/test_dto_terreno.py`, `test_h4_2_fr117_actor_dto_trae_el_comportamiento`: el `ActorDTO` de un cazador trae `comportamiento == "cazador"`, el de un errante `"errante"` y el del jugador `None`. Marcarla con `unittest.skip("pendiente del integrante 3: T039")` hasta que T039 esté confirmado.
+- [X] T037 [US4] En `tests/test_dto_terreno.py`, `test_h4_2_fr117_actor_dto_trae_el_comportamiento` (FR-117), sin `skip`: el `ActorDTO` de un errante trae `comportamiento == "errante"`, el de un guardián `"guardián"`, el de un rastreador `"rastreador"` y el del jugador `None`. El caso del cazador se agrega con T024 (ver su nota).
 
 ### Implementación de la historia 4
 

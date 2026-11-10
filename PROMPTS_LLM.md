@@ -653,3 +653,15 @@ cazador → 'cazador' a la prueba de T037".
 **Uso de la respuesta:** `Logic/Enemigo.py` redefine `a_dto()` con `dataclasses.replace(super().a_dto(), comportamiento=self.ficha.comportamiento)`, sin tocar `ActorBase.a_dto()`. Se creó `tests/test_dto_terreno.py` con `test_h4_2_fr117_actor_dto_trae_el_comportamiento` (errante, guardián y rastreador traen su comportamiento; el jugador, `None`), sin skip. En `tasks.md` se marcaron T037 y T040 y se agregó en T024 la nota de sumar el caso del cazador a esa prueba.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 10 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+En tasks.md, actualizá el texto de T037 para que describa la prueba tal como quedó: errante,
+guardián y rastreador traen su comportamiento y el jugador trae None, sin skip. El caso del
+cazador queda en la nota de T024. Commit: "tasks(001): actualizar descripción de T037",
+incluyendo PROMPTS_LLM.md.
+
+**Uso de la respuesta:** en `specs/001-terreno-cazador/tasks.md`, T037 describe la prueba como quedó: errante, guardián y rastreador traen su comportamiento y el jugador `None`, sin `skip`; el caso del cazador remite a la nota de T024.
+
+-----------------------------------------------------------------------------------------------------------------------
