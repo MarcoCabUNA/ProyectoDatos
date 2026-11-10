@@ -37,6 +37,8 @@
 - P: Cuando el costo mínimo d es exactamente igual al `rango`, ¿el cazador se mueve o espera? → R: Se mueve. Solo espera si d > `rango` (lectura literal del §3.2).
 - P: ¿La decisión del cazador usa el generador aleatorio de la partida? → R: La decisión de moverse o esperar (búsqueda de ruta y desempate) no lo usa: es determinista por completo gracias al desempate por menor id. Cuando el cazador ataca, el daño se calcula con la fórmula de combate de P1 §2.6, que sí usa el generador, igual que para cualquier enemigo (FR-115, Principio IV).
 - P: Si una sala tiene dos salidas abiertas hacia la misma vecina con costos distintos, ¿por cuál se mueve el rastreador? → R: Igual que el cazador, por la más barata, y paga su costo. El errante sigue sorteando entre salidas como en P1 (FR-104).
+- P: Si solo uno de los dos lados de una salida declara costo, o los dos declaran costos distintos, ¿cuánto cuesta atravesarla? → R: Si solo un lado lo declara, ese costo vale en ambos sentidos. Si ninguno lo declara, vale 100. Si los dos declaran valores distintos, es un error de datos (FR-101, FR-122).
+- P: ¿Con qué cripta y cuántos cazadores se miden el ciclo de eventos y el crecimiento del tiempo de decisión? → R: Con una cripta sintética de 1 000 salas en cuadrícula y 30 cazadores activos. Al multiplicar por 10 el tamaño de la cripta, la decisión de un cazador con `rango` pequeño no tarda más del doble (NFR-101, SC-104, SC-105).
 
 ---
 
@@ -74,6 +76,9 @@ una y comparar el instante de su siguiente acción. Aporta valor aunque no exist
 7. **Dado** un errante en una sala cuya única salida abierta es de costo 300, **cuando** decide moverse
    por ella, **entonces** elige la salida con la misma regla de la primera parte y su siguiente acción
    se programa con costo 300.
+8. **Dada** la salida 1–2 donde solo el lado de la sala 1 declara costo 250, **cuando** un actor de
+   velocidad 100 la atraviesa de 2 a 1 en t = 0, **entonces** cuesta 250 y su siguiente acción queda en
+   t = 250.
 
 ---
 
@@ -188,8 +193,10 @@ que muestra la interfaz.
   jugador sigue en la sala (FR-121).
 - **Costo de salida mayor que 100 y velocidad baja**: el intervalo crece en proporción (por ejemplo, costo
   250 con velocidad 50 da 500).
-- **Datos inválidos**: una salida con costo menor que 1 o no entero, o una ficha de cazador sin `rango`
-  entero ≥ 0, impide iniciar la partida. Se informa con contexto y el programa no se cae (FR-122).
+- **Solo un lado de la salida declara costo**: ese costo vale en ambos sentidos (FR-101, escenario H1-8).
+- **Datos inválidos**: una salida con costo menor que 1 o no entero, una salida cuyos dos lados declaran
+  costos distintos, o una ficha de cazador sin `rango` entero ≥ 0, impide iniciar la partida. Se informa
+  con contexto y el programa no se cae (FR-122).
 
 ---
 
@@ -199,8 +206,9 @@ que muestra la interfaz.
 
 **Terreno**
 
-- **FR-101**: Cada salida PUEDE declarar un costo entero ≥ 1. Si no lo declara, su costo DEBE ser 100.
-  El costo DEBE ser el mismo en ambos sentidos.
+- **FR-101**: Cada salida PUEDE declarar un costo entero ≥ 1, en uno o en los dos lados. El costo DEBE
+  ser el mismo en ambos sentidos: si solo un lado lo declara, ese costo DEBE valer para los dos; si
+  ninguno lo declara, DEBE ser 100. Si los dos lados declaran costos distintos, aplica FR-122.
 - **FR-102**: Moverse a través de una salida DEBE ser una acción cuyo costo base es el costo de esa
   salida, para todos los actores (jugador y enemigos). El intervalo hasta la siguiente acción DEBE ser
   max(1, costo_salida × 100 // velocidad).
@@ -230,22 +238,8 @@ que muestra la interfaz.
   P1 §2.3.
 - **FR-109**: Si no existe ruta, o si d > `rango`, el cazador DEBE esperar con costo 100.
 - **FR-110**: Si existe ruta y d ≤ `rango` (incluido d = `rango`), el cazador DEBE moverse un paso por una
-  ruta de costo d. El
-  costo de esa acción DEBE ser el costo de la salida que atraviesa, y el intervalo se calcula según
-  FR-102.
-- **FR-119**: Si varias salidas abiertas unen la sala u con la misma vecina v, costo(u, v) DEBE ser el
-  menor de sus costos, tanto para calcular d como para el desempate. Al moverse a v, el cazador DEBE
-  atravesar una salida de ese costo mínimo.
-- **FR-120**: Los demás actores, incluidos otros cazadores, NO DEBEN bloquear el paso del cazador. Su
-  posición no afecta d ni el paso escogido. Varios actores pueden compartir sala, como en la primera parte.
-- **FR-121**: El cazador DEBE ejecutar una sola acción por turno. Si se mueve y llega a la sala del jugador,
-  NO DEBE atacar en ese mismo turno. Ataca en su siguiente turno si el jugador sigue en esa sala (FR-107).
-- **FR-122**: Una ficha de cazador sin `rango`, o con un `rango` que no sea un entero ≥ 0, y una salida
-  que declare un costo menor que 1 o no entero, DEBEN tratarse como datos inválidos, sin valor por
-  defecto. El programa DEBE informar el error con contexto (qué ficha o qué salida y qué campo), NO DEBE
-  iniciar la partida con esos datos y NO DEBE caerse.
-- **FR-123**: El cazador DEBE activarse y programar su primera acción igual que los demás enemigos
-  (P1 §2.4). Mientras está dormido no actúa.
+  ruta de costo d. El costo de esa acción DEBE ser el costo de la salida que atraviesa, y el intervalo
+  se calcula según FR-102.
 - **FR-111**: Sea u la sala del cazador. Entre las vecinas v que cumplen costo(u, v) + dist(v, jugador) = d,
   el cazador DEBE moverse a la de menor id. Este resultado DEBE cumplirse siempre, aunque muchas rutas
   tengan el mismo costo e independientemente del orden en que se describen las salidas.
@@ -263,6 +257,20 @@ que muestra la interfaz.
   el daño DEBE calcularse con la fórmula de combate de P1 §2.6, que sí consume el generador, igual que
   para cualquier enemigo. Misma cripta, misma semilla y mismas acciones DEBEN producir las mismas
   decisiones y los mismos ataques del cazador.
+- **FR-119**: Si varias salidas abiertas unen la sala u con la misma vecina v, costo(u, v) DEBE ser el
+  menor de sus costos, tanto para calcular d como para el desempate. Al moverse a v, el cazador DEBE
+  atravesar una salida de ese costo mínimo.
+- **FR-120**: Los demás actores, incluidos otros cazadores, NO DEBEN bloquear el paso del cazador. Su
+  posición no afecta d ni el paso escogido. Varios actores pueden compartir sala, como en la primera parte.
+- **FR-121**: El cazador DEBE ejecutar una sola acción por turno. Si se mueve y llega a la sala del jugador,
+  NO DEBE atacar en ese mismo turno. Ataca en su siguiente turno si el jugador sigue en esa sala (FR-107).
+- **FR-122**: Una ficha de cazador sin `rango`, o con un `rango` que no sea un entero ≥ 0, una salida
+  que declare un costo menor que 1 o no entero, y una salida cuyos dos lados declaren costos distintos,
+  DEBEN tratarse como datos inválidos, sin valor por defecto. El programa DEBE informar el error con
+  contexto (qué ficha o qué salida y qué campo), NO DEBE iniciar la partida con esos datos y NO DEBE
+  caerse.
+- **FR-123**: El cazador DEBE activarse y programar su primera acción igual que los demás enemigos
+  (P1 §2.4). Mientras está dormido no actúa.
 
 **Interfaz**
 
@@ -273,8 +281,8 @@ que muestra la interfaz.
 
 ### Requisitos de rendimiento
 
-- **NFR-101**: El ciclo de eventos entre dos decisiones del jugador DEBE tardar menos de 20 ms en la cripta
-  de referencia con decenas de cazadores activos, medido en el equipo local sin red ni renderizado (§6.1).
+- **NFR-101**: El ciclo de eventos entre dos decisiones del jugador DEBE tardar menos de 20 ms en una cripta
+  sintética de 1 000 salas en cuadrícula con 30 cazadores activos, medido en el equipo local sin red ni renderizado (§6.1).
 - **NFR-102**: El trabajo de decidir el paso de un cazador con `rango` pequeño DEBE crecer con la región de
   la cripta que queda dentro de su `rango`, y no con el tamaño total de la cripta (§5.1).
 - **NFR-103**: Las afirmaciones de rendimiento de esta feature DEBEN respaldarse con mediciones de `--bench`:
@@ -283,8 +291,8 @@ que muestra la interfaz.
 
 ### Entidades clave
 
-- **Salida**: conecta dos salas en una dirección de la sala de origen. Tiene costo (por defecto 100,
-  igual en ambos sentidos), estado abierta o cerrada, llave opcional y cierre automático opcional.
+- **Salida**: conecta dos salas en una dirección de la sala de origen. Tiene costo (igual en ambos
+  sentidos; lo declara uno de los lados, los dos con el mismo valor, o ninguno y vale 100), estado abierta o cerrada, llave opcional y cierre automático opcional.
 - **Esqueleto de la cripta**: todas las salas y salidas con sus costos. Se conoce completo al iniciar la
   cripta, antes de que se descargue el contenido de las salas.
 - **Cazador**: enemigo con comportamiento «cazador» y `rango`. Además tiene los atributos de cualquier
@@ -323,9 +331,9 @@ Cada prueba citará el identificador del requisito que verifica (Principio X).
   cazadores. Las decisiones de moverse o esperar de los cazadores no consumen el generador aleatorio:
   en una partida donde ningún cazador ataca, agregar cazadores no cambia lo que eligen los errantes.
 - **SC-104**: `--bench` muestra que el ciclo de eventos entre dos decisiones del jugador tarda menos de
-  20 ms en la cripta de referencia con decenas de cazadores activos.
-- **SC-105**: En `--bench`, al aumentar el tamaño de la cripta sin cambiar la región dentro del `rango`,
-  el tiempo de decisión de un cazador de `rango` pequeño se mantiene aproximadamente constante.
+  20 ms en una cripta sintética de 1 000 salas en cuadrícula con 30 cazadores activos.
+- **SC-105**: En `--bench`, al multiplicar por 10 el tamaño de la cripta, la decisión de un cazador con
+  `rango` pequeño no tarda más del doble.
 - **SC-106**: En todas las salas con salidas, el jugador puede ver el costo de cada salida y distinguir
   a un cazador de los demás enemigos sin salir de la pantalla de la sala.
 
