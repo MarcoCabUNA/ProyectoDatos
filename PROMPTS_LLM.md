@@ -558,3 +558,15 @@ checklist y PROMPTS_LLM.md.
 **Uso de la respuesta:** commit 1 (`spec.md`): FR-101 y FR-122 con el costo en uno o dos lados, escenario H1-8, dos clarificaciones nuevas, NFR-101, SC-104 y SC-105 medibles, y FR-119 a FR-123 reordenados. Commit 2: `SalidaDTO.costo` pasa a `int | None` (costo declarado) y Lógica iguala los dos lados con `_igualar_costos()` junto a `_igualar_caras()`; `ArmadorEstado` debe copiar el costo igualado (coordinación con el integrante 3); tareas nuevas para FR-122 (integrante 2), pruebas de interfaz de H4 (integrante 3), la agenda con costos, el cierre automático en el mismo instante y los modos sin vista; `DECISIONES.md` en la raíz; «sala resuelta» en lugar de «sala cerrada» en la búsqueda; tareas renumeradas (T001 a T051). También se ajustó `research.md` (vocabulario, R5, R6 y R7).
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+En spec.md, definir "rango pequeño" como rango = 200 (dos salidas de costo por defecto) en SC-105
+y en NFR-102 si también lo menciona. Registrarlo en Clarificaciones (sesión de hoy) como pregunta y
+respuesta. Revisar que plan.md y la tarea del bench usen ese mismo valor; si coinciden, no tocarlos.
+No hacer commit todavía: mostrame el cambio.
+
+**Uso de la respuesta:** en `specs/001-terreno-cazador/spec.md` se definió `rango` pequeño = 200 en NFR-102 y SC-105 y se agregó la pregunta a «Clarificaciones». `plan.md` y las tareas T043 y T045 ya usaban `rango` 200, así que no se tocaron.
+
+-----------------------------------------------------------------------------------------------------------------------

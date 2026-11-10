@@ -39,6 +39,7 @@
 - P: Si una sala tiene dos salidas abiertas hacia la misma vecina con costos distintos, ¿por cuál se mueve el rastreador? → R: Igual que el cazador, por la más barata, y paga su costo. El errante sigue sorteando entre salidas como en P1 (FR-104).
 - P: Si solo uno de los dos lados de una salida declara costo, o los dos declaran costos distintos, ¿cuánto cuesta atravesarla? → R: Si solo un lado lo declara, ese costo vale en ambos sentidos. Si ninguno lo declara, vale 100. Si los dos declaran valores distintos, es un error de datos (FR-101, FR-122).
 - P: ¿Con qué cripta y cuántos cazadores se miden el ciclo de eventos y el crecimiento del tiempo de decisión? → R: Con una cripta sintética de 1 000 salas en cuadrícula y 30 cazadores activos. Al multiplicar por 10 el tamaño de la cripta, la decisión de un cazador con `rango` pequeño no tarda más del doble (NFR-101, SC-104, SC-105).
+- P: ¿Qué valor es un `rango` pequeño en NFR-102 y SC-105? → R: `rango` = 200, el costo de dos salidas de costo por defecto (NFR-102, SC-105).
 
 ---
 
@@ -283,8 +284,9 @@ que muestra la interfaz.
 
 - **NFR-101**: El ciclo de eventos entre dos decisiones del jugador DEBE tardar menos de 20 ms en una cripta
   sintética de 1 000 salas en cuadrícula con 30 cazadores activos, medido en el equipo local sin red ni renderizado (§6.1).
-- **NFR-102**: El trabajo de decidir el paso de un cazador con `rango` pequeño DEBE crecer con la región de
-  la cripta que queda dentro de su `rango`, y no con el tamaño total de la cripta (§5.1).
+- **NFR-102**: El trabajo de decidir el paso de un cazador con `rango` pequeño (`rango` = 200, el costo de
+  dos salidas de costo por defecto) DEBE crecer con la región de la cripta que queda dentro de su `rango`,
+  y no con el tamaño total de la cripta (§5.1).
 - **NFR-103**: Las afirmaciones de rendimiento de esta feature DEBEN respaldarse con mediciones de `--bench`:
   un cazador frente a muchos, `rango` pequeño frente a grande, y un escenario con puertas que cambian con
   frecuencia frente a otro donde casi no cambian (§5.1, §5.2, §6.3).
@@ -333,7 +335,7 @@ Cada prueba citará el identificador del requisito que verifica (Principio X).
 - **SC-104**: `--bench` muestra que el ciclo de eventos entre dos decisiones del jugador tarda menos de
   20 ms en una cripta sintética de 1 000 salas en cuadrícula con 30 cazadores activos.
 - **SC-105**: En `--bench`, al multiplicar por 10 el tamaño de la cripta, la decisión de un cazador con
-  `rango` pequeño no tarda más del doble.
+  `rango` pequeño (`rango` = 200, el costo de dos salidas de costo por defecto) no tarda más del doble.
 - **SC-106**: En todas las salas con salidas, el jugador puede ver el costo de cada salida y distinguir
   a un cazador de los demás enemigos sin salir de la pantalla de la sala.
 
