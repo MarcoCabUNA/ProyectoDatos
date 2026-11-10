@@ -36,6 +36,7 @@
 - P: Si la ficha de un cazador no trae `rango` o no es un entero ≥ 0, o una salida declara un costo menor que 1 o no entero, ¿qué debe pasar? → R: Es un error de datos sin valor por defecto. Se informa con contexto, la partida no inicia con esos datos y el programa no se cae.
 - P: Cuando el costo mínimo d es exactamente igual al `rango`, ¿el cazador se mueve o espera? → R: Se mueve. Solo espera si d > `rango` (lectura literal del §3.2).
 - P: ¿La decisión del cazador usa el generador aleatorio de la partida? → R: La decisión de moverse o esperar (búsqueda de ruta y desempate) no lo usa: es determinista por completo gracias al desempate por menor id. Cuando el cazador ataca, el daño se calcula con la fórmula de combate de P1 §2.6, que sí usa el generador, igual que para cualquier enemigo (FR-115, Principio IV).
+- P: Si una sala tiene dos salidas abiertas hacia la misma vecina con costos distintos, ¿por cuál se mueve el rastreador? → R: Igual que el cazador, por la más barata, y paga su costo. El errante sigue sorteando entre salidas como en P1 (FR-104).
 
 ---
 
@@ -172,8 +173,8 @@ que muestra la interfaz.
 - **d igual a `rango`**: el cazador se mueve. Solo espera cuando d > `rango` (FR-110, escenario H2-6).
 - **`rango` 0**: el cazador solo ataca si comparte sala con el jugador. En los demás casos espera, porque
   toda ruta cuesta al menos 1.
-- **Varias salidas de una sala hacia la misma vecina, con costos distintos**: el cazador usa la más
-  barata (FR-119). El errante sortea entre salidas y paga la que le toca (FR-104).
+- **Varias salidas de una sala hacia la misma vecina, con costos distintos**: el cazador (FR-119) y el
+  rastreador (FR-104) usan la más barata. El errante sortea entre salidas y paga la que le toca (FR-104).
 - **El jugador solo es alcanzable por puertas cerradas**: no hay ruta y el cazador espera (escenario 2.1).
   Para el cazador, una puerta cerrada no existe aunque tenga la llave a la vista: no abre puertas.
 - **Muchas rutas de igual costo**: el desempate por menor id de la vecina siempre define un único paso,
@@ -206,9 +207,10 @@ que muestra la interfaz.
 - **FR-103**: Atacar, esperar, usar, equipar, recoger, soltar y abrir una puerta con llave DEBEN conservar
   los costos de la primera parte.
 - **FR-104**: Errantes, rastreadores y guardianes DEBEN conservar su forma de decidir de la primera parte.
-  Solo cambia lo que tarda su movimiento, según FR-102. En particular, el errante sortea entre las
-  salidas abiertas, donde cada salida es una opción aunque dos lleven a la misma vecina, y paga el costo
-  de la salida que le toca.
+  Solo cambia lo que tarda su movimiento, según FR-102. Cuando dos o más salidas abiertas llevan a la
+  misma vecina: el errante sortea entre las salidas abiertas como en la primera parte, donde cada salida
+  es una opción, y paga el costo de la salida que le toca; el rastreador, igual que el cazador (FR-119),
+  se mueve por la más barata de esas salidas y paga su costo.
 - **FR-105**: Si la velocidad de un actor cambia mientras tiene programada una acción, incluso tras
   atravesar una salida costosa, el tiempo restante DEBE escalarse con la regla de P1 §2.3:
   restante_nuevo = max(1, (tiempo_siguiente − t) × velocidad_anterior // velocidad_nueva).
