@@ -596,3 +596,24 @@ Mostrame los cambios antes del commit.
 **Uso de la respuesta:** `plan.md` cita los commits de H-1 y H-2 por su mensaje; `contracts/busqueda-rutas.md` exige el costo ya igualado por Lógica en todo grafo, incluido el del mapa conocido; T003 agrega `cuadricula_con_costos(n, azar)` y T028 la usa.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5, spec-kit)
+
+/speckit.analyze
+
+**Uso de la respuesta:** tercera pasada de análisis (solo lectura) sobre `spec.md`, `plan.md` y `tasks.md` de la feature 001: sin hallazgos críticos ni altos; 1 medio (M1: T043 reutilizaba `_cuadricula`, que arma salidas sin costo) y 3 bajos (L1 y L2 ya aceptados, L3 reutilizar `cuadricula_con_costos` en T048). Cobertura de requisitos: 32 de 32.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+Aplicá M1 como recomendás: en T043, helper privado _cuadricula_con_costos(lado, azar) en
+Logic/BenchRutas.py que toma el resultado de _cuadricula(lado) y asigna el costo con
+dataclasses.replace, igual en ambos lados, sin modificar _cuadricula. Aplicá también L3 en T048.
+Un commit: "tasks(001): costos en las grillas del bench", incluyendo PROMPTS_LLM.md.
+
+**Uso de la respuesta:** en `specs/001-terreno-cazador/tasks.md`, T043 arma las cuadrículas del bench con `_cuadricula_con_costos(lado, azar)` (nuevo, privado, en `Logic/BenchRutas.py`, sobre `_cuadricula` sin modificarlo) y T048 arma su cuadrícula con `cuadricula_con_costos` de T003.
+
+-----------------------------------------------------------------------------------------------------------------------
