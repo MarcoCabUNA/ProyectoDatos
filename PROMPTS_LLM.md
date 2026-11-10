@@ -467,3 +467,47 @@ los errantes." No cambiar ningún otro requisito.
 **Uso de la respuesta:** se reescribió SC-103 en `specs/001-terreno-cazador/spec.md` con el texto indicado, para que no contradiga FR-115.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5, spec-kit)
+
+/speckit.plan Seguir la constitución v1.2.0. Python 3.11, sin dependencias nuevas; solo las bibliotecas
+permitidas por el Principio II. Prohibido dict, set, heapq, bisect, collections, copy (fuera de tests),
+sorted()/list.sort() en ordenamientos evaluados y cualquier biblioteca de grafos o rutas.
+Arquitectura: Logic no llama a Data ni a Service; los DTO son el único formato entre capas;
+el paquete Estructuras no depende de ninguna capa.
+Antes de diseñar, revisar las limitaciones de las estructuras existentes contra esta feature:
+Logic/ColaEventos.py (montículo binario; registra en HistorialRetroceso si tiene uno),
+Logic/Comportamientos.py (decidir() devuelve una sala destino, no una salida),
+Logic/Mazmorra.py (salidas_abiertas() devuelve destinos sin costo),
+Logic/motorJuego.py (el movimiento hoy cuesta 100 fijo).
+Abierto/Cerrado: el cazador entra como clase nueva en COMPORTAMIENTOS; cada cambio a código de la
+primera entrega debe justificarse con su requisito en una tabla.
+Decisiones a evaluar con alternativas y complejidad: 1) cola de prioridad; 2) un cálculo por cazador
+frente a uno compartido desde el jugador (el costo es simétrico); 3) cortar la búsqueda en el rango;
+4) qué eventos invalidan una ruta y si conviene reutilizar o recalcular siempre; 5) la búsqueda debe
+poder usarse sobre el mapa conocido del jugador para "ir a".
+Toda caché que sea estado del juego se registra en HistorialRetroceso.
+Código nuevo con type hints y docstring breve. Pruebas con unittest en tests/.
+Incluir las mediciones planificadas para --bench según el §6.3.
+Contrato de datos aún no confirmado con el integrante 2: proponer SalidaDTO.costo (int, 100 si
+falta) y FichaEnemigoDTO.rango (int, sin valor por defecto), con la validación de FR-122 en la
+capa Data. Marcarlo en el plan como "Propuesto — pendiente de confirmar con integrante 2" y no
+planificar código de la capa Data, que le corresponde a él.
+
+Seguimiento (durante la misma ejecución): "en FichaEnemigoDTO (int, sin default). Si una ficha de cazador no trae rango válido, o una salida trae un costo menor que 1 o no entero, es error de datos: se informa con contexto y la partida no inicia (FR-122). Esa validación va en Data, ¿te parece? FichaEnemigoDTO es mío, así que rango lo agrego yo; costo en SalidaDTO sería tuyo."
+
+**Uso de la respuesta:** se generaron `plan.md`, `research.md`, `data-model.md`, `quickstart.md` y `contracts/` (contrato de datos y búsqueda compartida) en `specs/001-terreno-cazador/`. Decisiones: montículo propio en Estructuras, búsqueda compartida desde el jugador, reanudable y cortada en el rango, invalidación por cambio de sala del jugador o por puertas que tocan salas ya cerradas, y descarte registrado en el historial. `FichaEnemigoDTO.rango` queda como `int | None = None` porque el dataclass lo exige; Data rechaza al cazador sin rango válido. Quedó el hallazgo H-1 (salida que usa el rastreador con dos salidas hacia la misma sala), que se corrige en la spec.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+Agregar a la spec, en su propio commit: cuando dos salidas abiertas llevan a la misma vecina,
+el rastreador, igual que el cazador, se mueve por la más barata y paga su costo. El errante sigue
+sorteando entre salidas como en P1. Registrarlo en Clarificaciones y en el FR correspondiente. yo hago el commit no lo hagas tu ok?
+
+**Uso de la respuesta:** se corrigió el hallazgo H-1 del plan en `specs/001-terreno-cazador/spec.md`: nueva pregunta en «Clarificaciones», Sesión 2026-11-09, y FR-104 ampliado (el rastreador usa la salida más barata hacia la vecina; el errante sortea entre salidas). Se ajustó el caso borde que ya trataba ese punto, para que no contradiga FR-104. El commit lo hace el integrante.
+
+-----------------------------------------------------------------------------------------------------------------------
