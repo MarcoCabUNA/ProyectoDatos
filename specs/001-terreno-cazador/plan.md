@@ -77,13 +77,14 @@ el bench. Decenas de cazadores activos (pruebas del enunciado), hasta 100 en el 
 - **H-1 (Principio IX) — Resuelto**: la spec definía qué salida usan el cazador (FR-119) y el
   errante (FR-104) cuando dos salidas abiertas llevan a la misma vecina, pero **no el rastreador**,
   que escoge una sala (P1 §2.9), no una salida. Se resolvió en la spec, en su propio commit
-  (`58f7310`): FR-104 y la pregunta 7 de «Clarificaciones» dicen que el rastreador, igual que el
-  cazador, se mueve por la salida abierta **más barata** hacia la sala escogida y paga su costo; el
+  («spec(001): salida usada por el rastreador con destinos repetidos»): FR-104 y la pregunta 7 de
+  «Clarificaciones» dicen que el rastreador, igual que el cazador, se mueve por la salida abierta **más barata** hacia la sala escogida y paga su costo; el
   errante sigue sorteando entre salidas. Las criptas publicadas no tienen salidas repetidas hacia
   la misma sala, así que hoy no cambia ninguna partida.
 - **H-2 (Principio IX) — Resuelto**: `/speckit.analyze` encontró que el §4.1 del enunciado declara
   `costo` en un solo lado de la salida, igual que la llave, y la spec no decía qué pasaba entonces.
-  Se resolvió en la spec, en su propio commit (`aa10b58`): si solo un lado declara costo, vale para
+  Se resolvió en la spec, en su propio commit («spec(001): costo en ambos lados de la salida y
+  criterios medibles»): si solo un lado declara costo, vale para
   los dos; si ninguno, 100; si los dos declaran valores distintos, es error de datos (FR-101,
   FR-122, escenario H1-8). En el plan: `SalidaDTO.costo` guarda lo declarado (`int | None`) y
   Lógica iguala los dos lados junto a `_igualar_caras`.

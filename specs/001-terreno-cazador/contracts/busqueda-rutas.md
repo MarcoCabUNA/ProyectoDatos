@@ -22,7 +22,10 @@ salidas(u: int)  -> list[(destino, costo)]   # salidas UTILIZABLES de u
 
 Reglas que el grafo debe cumplir:
 
-1. `costo` es un entero ≥ 1.
+1. `costo` es un entero ≥ 1, y es el costo **ya igualado por Lógica** (`SalidaViva.costo`, el mismo
+   en los dos sentidos según FR-101). Ningún grafo usa `SalidaDTO.costo` directamente: ese campo
+   guarda lo **declarado** en un lado y puede ser `None`. Esto vale también para el grafo del mapa
+   conocido de «ir a».
 2. `entradas` y `salidas` describen las mismas salidas vistas desde cada extremo, y en cada
    llamada reflejan el estado **actual** («utilizable» lo define quien implementa el grafo).
 3. Si cambia cuándo una salida es utilizable y la búsqueda ya está en curso, quien implementa el

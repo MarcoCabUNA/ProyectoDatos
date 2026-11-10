@@ -570,3 +570,29 @@ No hacer commit todavía: mostrame el cambio.
 **Uso de la respuesta:** en `specs/001-terreno-cazador/spec.md` se definió `rango` pequeño = 200 en NFR-102 y SC-105 y se agregó la pregunta a «Clarificaciones». `plan.md` y las tareas T043 y T045 ya usaban `rango` 200, así que no se tocaron.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5, spec-kit)
+
+/speckit.analyze
+
+**Uso de la respuesta:** segunda pasada de análisis (solo lectura) sobre `spec.md`, `plan.md` y `tasks.md` de la feature 001: sin hallazgos críticos ni altos; 3 medios (M1 hash de commit que ya no existe en `plan.md`, M2 de dónde sale el costo del grafo de búsqueda, M3 ayudante de cuadrícula con costos para T028) y 2 bajos. Cobertura de requisitos: 32 de 32.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+Sí, prepará M1, M2 y M3; no L1.
+M1: en plan.md, citar los commits por su mensaje en lugar del hash.
+M2: en contracts/busqueda-rutas.md, agregar la regla de que el mapa usa el costo ya igualado por
+Lógica, nunca SalidaDTO.costo directo.
+M3: agregar cuadricula_con_costos(n, azar) a T003 (mismo costo en ambos lados, desde un
+random.Random) y que T028 la use.
+Un solo commit: "plan(001): correcciones de la segunda pasada de analyze", incluyendo PROMPTS_LLM.md.
+Mostrame los cambios antes del commit.
+
+
+**Uso de la respuesta:** `plan.md` cita los commits de H-1 y H-2 por su mensaje; `contracts/busqueda-rutas.md` exige el costo ya igualado por Lógica en todo grafo, incluido el del mapa conocido; T003 agrega `cuadricula_con_costos(n, azar)` y T028 la usa.
+
+-----------------------------------------------------------------------------------------------------------------------
