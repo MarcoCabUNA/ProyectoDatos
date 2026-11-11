@@ -24,15 +24,19 @@ class SalidaDTO:
     cerrada: bool = False
     llave: str | None = None
     cierre_automatico: int | None = None
+    costo: int | None = None    # Parte II §3.1: costo DECLARADO por este lado; None = no lo declara.
+                                # Va último para no romper SalidaDTO(destino, cerrada, llave, ...).
+                                # Lógica lo iguala entre los dos lados; Data lo valida (FR-101, FR-122).
 
     @classmethod
     def desde_diccionario(cls, d: dict) -> "SalidaDTO":
-        # En el API, 'cerrada', 'llave' y 'cierre_automatico' pueden faltar o venir en null.
+        # En el API, 'cerrada', 'llave', 'cierre_automatico' y 'costo' pueden faltar o venir en null.
         return cls(
             sala_destino=d["sala"],
             cerrada=bool(d.get("cerrada")),          # null o ausente -> False
             llave=d.get("llave"),
             cierre_automatico=d.get("cierre_automatico"),
+            costo=d.get("costo"),                    # se guarda tal cual; aquí no se valida
         )
 
     def a_diccionario(self) -> dict:
@@ -43,6 +47,8 @@ class SalidaDTO:
             d["llave"] = self.llave
         if self.cierre_automatico is not None:
             d["cierre_automatico"] = self.cierre_automatico
+        if self.costo is not None:                   # sin costo -> mismo diccionario que en la Parte 1
+            d["costo"] = self.costo
         return d
 
 

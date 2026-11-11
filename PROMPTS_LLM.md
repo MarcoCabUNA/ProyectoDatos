@@ -665,3 +665,12 @@ incluyendo PROMPTS_LLM.md.
 **Uso de la respuesta:** en `specs/001-terreno-cazador/tasks.md`, T037 describe la prueba como quedó: errante, guardián y rastreador traen su comportamiento y el jugador `None`, sin `skip`; el caso del cazador remite a la nota de T024.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 10 y miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude
+
+Le pedí a Claude revisar las ramas de Marco y Kristel junto con la constitución v1.2.0 y la spec 001, confirmar el contrato de datos (specs/001-terreno-cazador/contracts/contrato-datos.md) y hacer la tarea T001: agregar costo a SalidaDTO como último campo, de tipo int | None con None por defecto, leerlo en desde_diccionario y escribirlo en a_diccionario solo si no es None, con pruebas que citen FR-101.
+
+**Uso de la respuesta:** se usó en `DTO/SalaDTO.py` y `tests/TestDtos.py` (T001, FR-101). Revisé el cambio y corrí las pruebas: 355 OK y 31/31.
+
+-----------------------------------------------------------------------------------------------------------------------
