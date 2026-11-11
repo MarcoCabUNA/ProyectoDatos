@@ -617,3 +617,57 @@ Un commit: "tasks(001): costos en las grillas del bench", incluyendo PROMPTS_LLM
 **Uso de la respuesta:** en `specs/001-terreno-cazador/tasks.md`, T043 arma las cuadrículas del bench con `_cuadricula_con_costos(lado, azar)` (nuevo, privado, en `Logic/BenchRutas.py`, sobre `_cuadricula` sin modificarlo) y T048 arma su cuadrícula con `cuadricula_con_costos` de T003.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 11 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Sonnet 5.5)
+
+/speckit-specify Línea de tiempo de Cripta II. Usa exactamente el directorio specs/004-linea-tiempo y numera los requisitos con el prefijo FR-4xx (FR-401, FR-402, ...).
+
+Antes de escribir, lee .specify/memory/constitution.md (sobre todo los principios IX y X) y, del enunciado de la Parte II (Proyecto II parte.pdf): §3.6, §7.3 y el Apéndice B (sección «Línea de tiempo»). Escribe SOLO el QUÉ: reglas, historias de usuario, escenarios de aceptación y requisitos numerados. No nombres estructuras de datos, clases, módulos ni algoritmos; eso va en el plan.
+
+Capacidad: consultar, sin modificar la partida, el estado de la partida en cualquier instante pasado, desde el inicio. Es independiente del pergamino de retroceso, que sigue limitado a 5 acciones.
+
+Reglas:
+- Estado en el instante t: el estado tras ejecutar todos los eventos con tiempo menor o igual que t. Si a t le corresponde una decisión del jugador, es el estado justo antes de tomarla. Estas dos frases pueden dar estados distintos cuando hay eventos con el mismo tiempo; deja UNA sola marca [NEEDS CLARIFICATION] sobre eso y no la resuelvas.
+- Comandos en partida: «historia <t>» e «historia #k» (estado justo antes de la acción número k del jugador). Muestran como mínimo: reloj, sala del jugador, vida y estadísticas, inventario, efectos activos, enemigos de esa sala con su vida y el mapa conocido en ese momento. La consulta no consume tiempo virtual, no se registra como acción y no altera el estado del juego ni el historial de retroceso.
+- Consultar un instante posterior al reloj actual se rechaza.
+- Sin interacción: «--replay partida.log --hasta <t>» reproduce hasta t e imprime el mismo resumen, sin interfaz gráfica.
+- Las acciones revertidas con un pergamino dejan de existir en la línea de tiempo.
+- Se puede configurar con «--checkpoint-cada K» cada cuántas acciones del jugador se guarda una copia completa. Una consulta no puede requerir aplicar o deshacer cambios de más de K acciones del jugador. El valor por defecto de K se justificará en el plan con mediciones (no lo fijes aquí).
+- Guardar y cargar la partida conserva la línea de tiempo completa. Un archivo de partida de la primera parte se reporta como incompatible (o se migra de forma explícita); nunca se carga en silencio.
+
+Historias de usuario (con prioridad): consultar un instante en partida; consultar sin interacción con --hasta; mantener la línea correcta al usar el pergamino; conservar la línea al guardar y cargar.
+
+Escenarios de aceptación: incluye estos seis casos del Apéndice B, cada uno en formato Dado/Cuando/Entonces y con su requisito FR-4xx:
+1. historia <t> con t mayor que el reloj actual: se rechaza.
+2. historia después de usar un pergamino: no muestra las acciones revertidas.
+3. Varios eventos ocurren en el mismo instante t: historia <t> muestra el estado después de todos ellos (sujeto a la aclaración pendiente).
+4. historia no consume tiempo virtual, no se registra en partida.log y no modifica el historial de retroceso.
+5. --replay partida.log --hasta t con t posterior al final de la partida: muestra el estado final e indica que la partida terminó antes.
+6. Se carga un archivo de partida de la primera parte: se reporta la incompatibilidad de formato o se migra explícitamente; nunca se carga en silencio.
+
+Suposiciones y fuera de alcance: el cursor del inventario y los mensajes del juego no forman parte del estado consultable; «ir a» y el mapa conocido son de la spec 002 (el resumen incluye el mapa conocido cuando exista); la verificación de resolubilidad es de la spec 003.
+
+No escribas código ni crees archivos fuera de specs/004-linea-tiempo.
+
+**Uso de la respuesta:** se usó en `specs/004-linea-tiempo/spec.md` con los requisitos FR-401 a FR-423 y los 6 casos del Apéndice B como escenarios de aceptación
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 11 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Sonnet 5.5)
+
+Edita SOLO specs/004-linea-tiempo/spec.md (y checklists/requirements.md si algo de lo que menciona cambia). No toques la marca [NEEDS CLARIFICATION] de FR-402, no resuelvas esa aclaración y no escribas código. No nombres estructuras, clases ni módulos.
+
+1. SC-405: reemplázalo por: «Una consulta `historia` se contesta en menos de 50 ms en una partida de al menos 5 000 acciones del jugador, con el valor de K por defecto, medido con --bench (§6.3 de la Parte II).»
+2. Agrega NFR-402: la memoria total de la línea de tiempo crece con la cantidad de cambios ocurridos más una copia completa cada K acciones del jugador, y no con el producto de las acciones por el tamaño del estado (§5.5).
+3. Agrega NFR-403: al usar un pergamino, la línea de tiempo se recorta sin recorrer toda la historia (§5.5).
+4. Amplía NFR-401: las mediciones cubren al menos tres valores de K y la alternativa sin puntos de control, y justifican el valor por defecto (§5.5 y §6.3).
+5. Historia 3, escenario 1: corrígelo para que sea coherente con FR-404, FR-409 y FR-413. Tras revertir la acción 5 solo existen 4 acciones: `historia #5` se rechaza por rango, y consultar el instante actual muestra al jugador en la sala 7, no en la 9. Mantén la referencia al Apéndice B caso 2 y agrega FR-409 a los requisitos del escenario.
+6. Elimina FR-422 y el escenario 4 de la Historia 4. Amplía FR-421 para cubrir también «un archivo de una versión distinta a la actual». Actualiza todas las referencias y la tabla de trazabilidad.
+7. En Suposiciones agrega: «Se asume que cada paso de «ir a» es una acción ordinaria del jugador; se confirmará en la spec 002.»
+8. Al final verifica que no queden referencias a FR-422 y que ninguna cifra de rendimiento contradiga la tabla de §6.3 del enunciado. Dime qué cambiaste.
+
+**Uso de la respuesta:** se usó en `specs/004-linea-tiempo/spec.md`para corregir la spec 004: cifra de rendimiento según §6.3, escenario de pergamino incoherente, requisitos de memoria y recorte (NFR-402/403) y se eliminó FR-422
+
+-----------------------------------------------------------------------------------------------------------------------
