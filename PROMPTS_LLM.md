@@ -728,3 +728,121 @@ Edita SOLO specs/004-linea-tiempo/spec.md (y checklists/requirements.md si algo 
 **Uso de la respuesta:** se usó en `specs/004-linea-tiempo/spec.md`para corregir la spec 004: cifra de rendimiento según §6.3, escenario de pergamino incoherente, requisitos de memoria y recorte (NFR-402/403) y se eliminó FR-422
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude
+
+Le pedí a Claude revisar la spec 004 de Kristel (revisión cruzada: el integrante 2 revisa la del 3) contra el enunciado de la Parte II (§3.6, §5.5, §6.1 y Apéndice B «Línea de tiempo») y la constitución (principios IX y X), y redactar las observaciones. También le pedí preparar el prompt de /speckit-specify de mi spec 003 y revisar el resultado contra el enunciado, la constitución y el código de la primera parte (SalidaDTO, Mazmorra._igualar_caras y los códigos de salida de main.py) antes de cada paso.
+
+**Uso de la respuesta:** se usó para las observaciones de la revisión cruzada de `specs/004-linea-tiempo/spec.md` y para definir el prompt, las correcciones y las respuestas de clarify de `specs/003-resolubilidad/spec.md`.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-specify SPECIFY_FEATURE_DIRECTORY=specs/003-resolubilidad
+
+Verificación de resolubilidad de Cripta II. Usa exactamente el directorio specs/003-resolubilidad. Numera los requisitos funcionales FR-301, FR-302, …; los de rendimiento NFR-301, …; y los criterios de éxito SC-301, …. No empieces en 001.
+
+Antes de escribir, lee .specify/memory/constitution.md (sobre todo los principios IX y X) y, del enunciado de la Parte II (Proyecto II parte.pdf): §3.5, §4.2, §4.3, §5.4, §6.1 y el Apéndice B (sección «Resolubilidad»). Escribe SOLO el QUÉ: reglas, historias de usuario, escenarios de aceptación y requisitos numerados. No nombres estructuras de datos, clases, módulos ni algoritmos; eso va en el plan.
+
+Reglas (§3.5):
+- Antes de iniciar una partida, el programa determina si la cripta puede ganarse usando el esqueleto y la ubicación de las llaves.
+- Supuestos de la verificación: el jugador puede atravesar cualquier salida abierta y cualquier salida cerrada cuya llave ya obtuvo; las llaves no se consumen; todo enemigo puede ser derrotado; una llave que suelta un enemigo se considera obtenible en la sala donde ese enemigo inicia; las trampas y los cierres automáticos no bloquean, porque una puerta puede volver a abrirse con la misma llave. El costo de las salidas no afecta la verificación.
+- Resoluble: partiendo de la sala inicial y bajo esos supuestos, el jugador puede obtener llave_salida y llegar a sala_salida a través de una puerta que la requiere.
+- Si es resoluble, el resultado es un orden de obtención de llaves en el que cada llave aparece después de todas las llaves necesarias para alcanzarla. Si hay varios órdenes válidos, el resultado es determinista: la misma cripta produce siempre el mismo orden.
+- Si no es resoluble, el reporte incluye: las llaves que no pueden obtenerse; las puertas de la frontera bloqueada (las puertas cerradas adyacentes a la región alcanzable) con la llave que requiere cada una; dónde se encuentra cada una de esas llaves; y, si una llave está ubicada detrás de puertas que solo ella abre, directamente o mediante una cadena de llaves, el ciclo concreto. La detección del ciclo es determinista.
+- Si la cripta no es resoluble, la partida no inicia y se muestra el reporte, salvo que se use --forzar.
+- --verificar <cripta> ejecuta únicamente la verificación y muestra el reporte, sin instanciar la vista. Funciona también con --offline.
+
+Datos (§4.2, §4.3):
+- La ubicación de cada llave trae su id, la sala y, opcionalmente, la instancia de enemigo que la suelta; en ese caso la sala es donde ese enemigo inicia.
+- La consulta de ubicación de llaves cuenta dentro de presupuesto_solicitudes. Su respuesta es válida mientras coincida la versión de la cripta y puede persistirse con el resto de los datos de la cripta. En --offline se lee del paquete local.
+- Lo persistido por la primera parte se invalida con la validación de versión que ya existe, no borrando archivos a mano.
+
+Rendimiento (§5.4, §6.1):
+- La verificación tarda menos de 200 ms con la cripta publicada más grande.
+- El costo total crece aproximadamente de forma lineal con salas, salidas y llaves: obtener una llave no puede implicar repetir el recorrido completo de la cripta.
+- El reporte de una cripta no resoluble (frontera y dependencias entre llaves) sale del mismo recorrido, no de recorridos adicionales por cada llave.
+- --bench compara contra la alternativa de repetir el recorrido por cada llave, en criptas sintéticas deterministas por semilla con muchas llaves encadenadas.
+
+Historias de usuario (con prioridad): saber antes de jugar si la cripta es resoluble y en qué orden obtener las llaves; entender por qué una cripta no es resoluble; verificar una cripta sin jugar con --verificar; jugar de todas formas con --forzar.
+
+Escenarios de aceptación: incluye estos cuatro casos del Apéndice B, cada uno en formato Dado/Cuando/Entonces y con su FR-3xx, y una tabla «Trazabilidad del Apéndice B «Resolubilidad»» como la de la spec 001:
+1. llave_salida está detrás de la única puerta que ella misma abre: no resoluble; el reporte señala el ciclo.
+2. Una llave está en el campo suelta de un enemigo errante: la verificación la ubica en la sala inicial del enemigo.
+3. Existen varios órdenes válidos de obtención de llaves: dos ejecuciones producen el mismo orden.
+4. Cripta no resoluble sin --forzar: la partida no inicia y se muestra el reporte.
+Agrega además escenarios para: una cripta sin puertas cerradas; un ciclo formado por una cadena de dos llaves; --forzar con una cripta no resoluble; --verificar con una cripta resoluble y con una no resoluble. Cada requisito funcional debe tener al menos un escenario.
+
+Si algo no está definido en el enunciado (por ejemplo, una ubicación de llave con una sala o un enemigo que no existen, o llave_salida ausente de la lista de llaves), márcalo con [NEEDS CLARIFICATION] en lugar de inventarlo.
+
+Fuera de alcance: cómo se dibuja el reporte en la interfaz gráfica (integrante 3); el costo de las salidas y el cazador (spec 001); el mapa conocido y «ir a» (spec 002); la línea de tiempo (spec 004).
+
+No escribas código ni crees archivos fuera de specs/003-resolubilidad.
+
+**Uso de la respuesta:** se usó para crear `specs/003-resolubilidad/spec.md` y `specs/003-resolubilidad/checklists/requirements.md` (FR-301 a FR-322, NFR-301 a NFR-304, SC-301 a SC-308). Dejó 3 marcadores [NEEDS CLARIFICATION] (FR-305, FR-321 y FR-322). Claude Code borró `.specify/feature.json` por la última instrucción del prompt; lo volví a crear a mano (es local y está en el .gitignore).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Respuestas y correcciones para specs/003-resolubilidad/spec.md. Edita SOLO ese archivo y checklists/requirements.md. No escribas código ni nombres estructuras, clases, módulos ni algoritmos. Registra las tres respuestas en una sección «Clarificaciones» → «Sesión 2026-11-11», con el formato «P: … → R: …», como en las specs 001 y 004, y quita los tres [NEEDS CLARIFICATION].
+
+1. FR-305 (P1 → A): el orden incluye todas las llaves obtenibles de la cripta, no solo las necesarias para ganar. Ajusta el caso borde «Una llave obtenible pero innecesaria para ganar».
+
+2. FR-321 (P2):
+   - Una llave que requiere alguna puerta (incluida llave_salida) y que no aparece en la lista de ubicaciones es no obtenible: aparece en el reporte con la indicación «sin ubicación». No es un error de datos, porque el servicio publica criptas no resolubles (§4.3).
+   - Una ubicación cuya sala no existe en el esqueleto es un error de datos: se informa con contexto (qué llave y qué sala), la verificación no concluye y tiene el mismo efecto que FR-320 (la partida no inicia salvo con --forzar). El programa no se cae.
+   - La instancia de enemigo de una ubicación no se valida en la verificación, porque comprobarla exigiría descargar el contenido de salas (FR-301); se usa la sala que trae la ubicación.
+   Ajusta el escenario H2-6 para que cubra los tres casos por separado.
+
+3. FR-322 (P3 → A): si ninguna puerta hacia sala_salida requiere llave_salida, la cripta no es resoluble. Motivo: en la primera parte (P1 §2.12) la victoria exige entrar a sala_salida después de abrir con la llave correspondiente la puerta que da acceso a ella, así que esa cripta no se puede ganar. El reporte DEBE indicar ese motivo de forma explícita. Ajusta H1-2 (cripta sin ninguna puerta cerrada → no resoluble, con ese motivo) y el caso borde correspondiente.
+
+4. Puertas de dos caras: agrega a FR-302 que una puerta es una sola para las dos salas que une: si solo una de sus caras declara que está cerrada o qué llave requiere, eso vale para las dos, igual que en la primera parte. Corrige el supuesto «Una salida cerrada que no declara llave…» para que diga «que no declara llave en ninguna de sus caras». Agrega en la Historia 1 un escenario donde la llave de una puerta está declarada solo en una cara.
+
+5. FR-308: define la frontera bloqueada como las salidas cerradas que van desde una sala de la región alcanzable hacia una sala fuera de ella. Una salida sin vuelta que solo va de afuera hacia adentro no es frontera. Ajusta también la entidad «Frontera bloqueada».
+
+6. FR-310: en lugar de «señalar al menos uno», exige que cada llave no obtenible que forma parte de un ciclo aparezca en al menos un ciclo señalado, sin repetir ciclos y en un orden determinista. Las llaves que solo dependen de un ciclo (H2-4) se listan junto con el ciclo del que dependen.
+
+7. En Supuestos, cambia «se trata como una cripta no resoluble para efectos de iniciar la partida» por «el programa informa que la verificación no concluyó (no que la cripta sea no resoluble); para iniciar la partida, solo --forzar permite jugar (FR-320)».
+
+8. Actualiza la tabla de cobertura y el checklist. Al final dime qué cambiaste y confirma que no queda ningún [NEEDS CLARIFICATION] ni ningún FR-0xx.
+
+**Uso de la respuesta:** se usó en `specs/003-resolubilidad/spec.md` para responder las 3 aclaraciones (FR-305, FR-321, FR-322), agregar los escenarios H1-10, H2-7 y H2-8, y corregir FR-302 (dos caras), FR-308 (frontera), FR-309, FR-310 (ciclos) y los supuestos.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-clarify
+
+Respuestas a las 4 preguntas:
+1. Si las dos caras de una misma puerta se contradicen (llaves distintas, o una cerrada y la otra abierta), ¿qué hace la verificación? → «A, solo llaves distintas»
+2. Si la lista de ubicaciones trae la misma llave más de una vez, con salas distintas, ¿cómo se trata? → «A, una vez en orden»
+3. ¿--verificar devuelve un código de salida distinto según el resultado? → «0 resoluble, 3 no, 1 error»
+4. ¿La verificación se ejecuta también al cargar una partida guardada o con --replay? → «A»
+
+**Uso de la respuesta:** se usó en `specs/003-resolubilidad/spec.md`: 4 aclaraciones nuevas en «Sesión 2026-11-11», los escenarios H1-11, H1-12, H2-9 y H4-4, y cambios en FR-301, FR-302, FR-305, FR-309, FR-314, FR-316 y SC-308.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Ajuste final en specs/003-resolubilidad/spec.md (edita SOLO ese archivo y su checklist; sin código ni nombres de clases):
+
+1. Mi respuesta a la pregunta de las dos caras fue «A, solo llaves distintas», y quedó registrada con más alcance. Corrige la aclaración, FR-302 y el caso borde «Las dos caras de una puerta se contradicen»: solo es error de datos cuando las dos caras declaran llaves distintas. El caso «una cara cerrada y la otra explícitamente abierta» no existe en los datos: como en la primera parte, «cerrada» ausente, null o false significan lo mismo (la cara no declara cierre). Quítalo de esos tres lugares.
+
+2. En FR-302, reemplaza la regla de una sola cara por la de la primera parte: si una cara declara la llave que requiere y la otra no declara ninguna llave, la llave, el estado cerrado y el cierre automático de la primera valen para las dos. Si ninguna de las dos caras declara llave, cada cara se rige por lo que declara: una cara cerrada sin llave no puede atravesarse en ese sentido. Ajusta igual el caso borde «Una puerta declara cierre o llave solo en una de sus caras» y el supuesto «Una salida cerrada que no declara llave…». El escenario H1-10 no cambia.
+
+3. En la aclaración de los códigos de salida y en FR-314, agrega que el código 2 sigue reservado para los argumentos inválidos, como en la primera parte, así que --verificar no lo usa para ningún veredicto.
+
+4. Actualiza la tabla de cobertura si cambia algo y dime exactamente qué líneas modificaste. Confirma que no queda ningún [NEEDS CLARIFICATION] ni ningún FR-0xx.
+
+**Uso de la respuesta:** se usó en `specs/003-resolubilidad/spec.md` para limitar el error de datos de las dos caras a llaves distintas, alinear la regla de una sola cara de FR-302 con la de la primera parte (`_igualar_caras`) y reservar el código de salida 2 para argumentos inválidos (FR-314).
+
+-----------------------------------------------------------------------------------------------------------------------
