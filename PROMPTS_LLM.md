@@ -617,7 +617,55 @@ Un commit: "tasks(001): costos en las grillas del bench", incluyendo PROMPTS_LLM
 **Uso de la respuesta:** en `specs/001-terreno-cazador/tasks.md`, T043 arma las cuadrículas del bench con `_cuadricula_con_costos(lado, azar)` (nuevo, privado, en `Logic/BenchRutas.py`, sobre `_cuadricula` sin modificarlo) y T048 arma su cuadrícula con `cuadricula_con_costos` de T003.
 
 -----------------------------------------------------------------------------------------------------------------------
-**Fecha:** Martes 11 de noviembre 2026
+**Fecha:** Martes 10 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+En specs/001-terreno-cazador/tasks.md, ampliá T043 (medir_agenda_con_costos, §5.6) para que el
+bench de la agenda de eventos también mida: (a) muchos eventos con el mismo tiempo y (b) muchas
+cancelaciones, que son el límite conocido del montículo con invalidación perezosa. Mantené los FR
+que ya cita. Agregá la medición correspondiente a la tabla de mediciones de plan.md si no está.
+Mostrame el cambio y hacé un commit: "tasks(001): T043 mide mismo tiempo y cancelaciones",
+incluyendo PROMPTS_LLM.md con este prompt.
+
+**Uso de la respuesta:** en `specs/001-terreno-cazador/tasks.md`, T043 (`medir_agenda_con_costos`) mide además muchos eventos con el mismo tiempo (un solo tiempo y 10 tiempos) y muchas cancelaciones (50 % y 90 %), con 100 / 1 000 / 10 000 eventos; se mantienen sus referencias (R6, Principio VIII). En `plan.md` se agregaron las dos filas correspondientes a la tabla de mediciones de `--bench`.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 10 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5, spec-kit)
+
+/speckit.implement Implementar solo T040 y quitar el skip de T037.
+T040: en Enemigo, sobrescribir a_dto() para que devuelva
+dataclasses.replace(super().a_dto(), comportamiento=self.ficha.comportamiento), sin modificar
+ActorBase.a_dto() (Principio III, extender sin reescribir). El Jugador sigue con comportamiento None.
+Código nuevo con type hints y docstring breve.
+T037: quitar el skip y verificar que la prueba pasa y cita su FR.
+Corré tests/correr_pruebas.py. Un commit: "feat(001): T040 comportamiento en ActorDTO de enemigos [FR-117]",
+incluyendo PROMPTS_LLM.md. No tocar ninguna otra tarea.
+
+Respuesta a la pregunta de Claude (la prueba de T037 no existía): Opción 1, pero sin el caso del cazador:
+Enemigo todavía no puede construirse con comportamiento "cazador" porque esa clase aún no existe. Escribí
+T037 en tests/test_dto_terreno.py con errante → "errante", guardián o rastreador → su valor, y jugador →
+None, citando FR-117. Agregá en tasks.md, en la tarea que crea la clase Cazador, una nota: "agregar el caso
+cazador → 'cazador' a la prueba de T037".
+
+**Uso de la respuesta:** `Logic/Enemigo.py` redefine `a_dto()` con `dataclasses.replace(super().a_dto(), comportamiento=self.ficha.comportamiento)`, sin tocar `ActorBase.a_dto()`. Se creó `tests/test_dto_terreno.py` con `test_h4_2_fr117_actor_dto_trae_el_comportamiento` (errante, guardián y rastreador traen su comportamiento; el jugador, `None`), sin skip. En `tasks.md` se marcaron T037 y T040 y se agregó en T024 la nota de sumar el caso del cazador a esa prueba.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 10 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+En tasks.md, actualizá el texto de T037 para que describa la prueba tal como quedó: errante,
+guardián y rastreador traen su comportamiento y el jugador trae None, sin skip. El caso del
+cazador queda en la nota de T024. Commit: "tasks(001): actualizar descripción de T037",
+incluyendo PROMPTS_LLM.md.
+
+**Uso de la respuesta:** en `specs/001-terreno-cazador/tasks.md`, T037 describe la prueba como quedó: errante, guardián y rastreador traen su comportamiento y el jugador `None`, sin `skip`; el caso del cazador remite a la nota de T024.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 10 de noviembre 2026
 
 **Herramienta:** Claude (Claude Code, modelo Claude Sonnet 5.5)
 
@@ -653,7 +701,7 @@ No escribas código ni crees archivos fuera de specs/004-linea-tiempo.
 **Uso de la respuesta:** se usó en `specs/004-linea-tiempo/spec.md` con los requisitos FR-401 a FR-423 y los 6 casos del Apéndice B como escenarios de aceptación
 
 -----------------------------------------------------------------------------------------------------------------------
-**Fecha:** Martes 11 de noviembre 2026
+**Fecha:** Martes 10 de noviembre 2026
 
 **Herramienta:** Claude (Claude Code, modelo Claude Sonnet 5.5)
 

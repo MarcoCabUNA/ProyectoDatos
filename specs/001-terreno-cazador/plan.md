@@ -183,6 +183,8 @@ cuadrículas son sintéticas, con costos por salida sacados de `random.Random(SE
 | invalidación de rutas | puertas inestables | Ídem, con cierres automáticos frecuentes cerca y lejos del jugador | Ídem | NFR-101 |
 | ciclo de eventos | con cazadores | Cuadrícula de 1 000 salas con **30** cazadores (y 10 y 100 como comparación), más errantes y rastreadores, costos variables | Peor ciclo frente al límite de 20 ms; la nota dice si cumple | NFR-101, SC-104 |
 | agenda de eventos (§5.6) | repetición con la carga nueva | `medir_agenda_con_costos`: tiempos generados con costos entre 1 y 300 y velocidades distintas | Montículo frente a array ordenado, otra vez (Principio VIII) | §5.6 |
+| agenda de eventos (§5.6) | muchos eventos con el mismo tiempo | `medir_agenda_con_costos`: 100, 1 000, 10 000 eventos en un solo tiempo y en 10 tiempos | Montículo frente a array ordenado cuando el orden lo decide el desempate por secuencia (límite conocido del montículo con invalidación perezosa) | §5.6 |
+| agenda de eventos (§5.6) | muchas cancelaciones | `medir_agenda_con_costos`: 100, 1 000, 10 000 eventos con el 50 % y el 90 % cancelados | Montículo frente a array ordenado; la nota dice cuántas entradas canceladas se descartaron y el tamaño del arreglo antes y después (límite conocido de la invalidación perezosa) | §5.6 |
 | historial (§5.6) | registros por intervalo | 30 cazadores | Registros por intervalo con y sin la búsqueda guardada | §5.6 |
 
 ## Pruebas planificadas (Principio X)
