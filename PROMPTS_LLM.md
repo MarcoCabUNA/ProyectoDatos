@@ -670,6 +670,10 @@ incluyendo PROMPTS_LLM.md.
 **Herramienta:** Claude
 
 Le pedí a Claude revisar las ramas de Marco y Kristel junto con la constitución v1.2.0 y la spec 001, confirmar el contrato de datos (specs/001-terreno-cazador/contracts/contrato-datos.md) y hacer la tarea T001: agregar costo a SalidaDTO como último campo, de tipo int | None con None por defecto, leerlo en desde_diccionario y escribirlo en a_diccionario solo si no es None, con pruebas que citen FR-101.
+
+**Uso de la respuesta:** se usó en `DTO/SalaDTO.py` y `tests/TestDtos.py` (T001, FR-101). Revisé el cambio y corrí las pruebas: 355 OK y 31/31.
+
+-----------------------------------------------------------------------------------------------------------------------
 **Fecha:** Martes 11 de noviembre 2026
 
 **Herramienta:** Claude (Claude Code, modelo Claude Sonnet 5.5)
@@ -722,9 +726,5 @@ Edita SOLO specs/004-linea-tiempo/spec.md (y checklists/requirements.md si algo 
 8. Al final verifica que no queden referencias a FR-422 y que ninguna cifra de rendimiento contradiga la tabla de §6.3 del enunciado. Dime qué cambiaste.
 
 **Uso de la respuesta:** se usó en `specs/004-linea-tiempo/spec.md`para corregir la spec 004: cifra de rendimiento según §6.3, escenario de pergamino incoherente, requisitos de memoria y recorte (NFR-402/403) y se eliminó FR-422
-
------------------------------------------------------------------------------------------------------------------------
-
-**Uso de la respuesta:** se usó en `DTO/SalaDTO.py` y `tests/TestDtos.py` (T001, FR-101). Revisé el cambio y corrí las pruebas: 355 OK y 31/31.
 
 -----------------------------------------------------------------------------------------------------------------------
