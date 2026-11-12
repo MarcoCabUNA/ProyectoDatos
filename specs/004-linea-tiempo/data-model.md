@@ -14,7 +14,7 @@ hace I/O ni conoce `Data`.
 |---|---|---|
 | `k` | `int ≥ 1` | Cada cuántas acciones del jugador se guarda un punto de control (FR-415). Fijo para la línea. |
 | `acciones` | arreglo de `AccionVigente` | La acción número k es la posición k (empezando en 1). Solo las vigentes. |
-| `marcadores` | arreglo de `MarcadorPergamino` | Ordenado por posición. |
+| `marcadores` | arreglo de `MarcadorPergamino` | Ordenado por posición (no decreciente: puede haber varios en la misma). |
 | `puntos` | arreglo de `PuntoControl` | Ordenado por acciones completadas (el primero, con 0, se toma al empezar). |
 | `cargas` | arreglo de `RegistroCarga` | En el orden **real** de carga. No se recorta (H-1). |
 | `fichas` | arreglo de fichas del catálogo | Una por id distinto visto. Búsqueda lineal por id (son pocas; no se usa `dict`). |
@@ -30,11 +30,18 @@ hace I/O ni conoce `Data`.
 
 | Campo | Tipo | Descripción |
 |---|---|---|
-| `posicion` | `int ≥ 0` | Acciones vigentes completadas cuando se descontó el pergamino. |
-| `id_objeto` | `str` | Id del pergamino descontado. |
+| `posicion` | `int ≥ 0` | Acciones vigentes completadas cuando ocurrió el cambio. |
+| `quitados` | arreglo de `str` | Ids de pergaminos que salen del inventario. El pergamino usado para revertir es un quitado. |
+| `agregados` | arreglo de `str` | Ids de pergaminos que quedan en el inventario aunque la acción que los trajo se revirtió (FR-424). |
+
+Regla: al llegar a `posicion` acciones completadas, se quitan los `quitados` del inventario y se agregan
+los `agregados`. Un marcador tiene al menos un elemento entre las dos listas, y un id no está en las
+dos a la vez.
 
 Regla de recorte: al pasar de `c+1` a `c` acciones, los marcadores con posición mayor que `c` se
-mueven a `c` y se agrega el nuevo en `c`.
+mueven a `c`, y se agrega el nuevo en `c` con lo que resulte de comparar los pergaminos del inventario
+vivo con los del estado reconstruido a `c` acciones (`quitados` los que sobran en el reconstruido,
+`agregados` los que sobran en el vivo).
 
 ### PuntoControl
 
@@ -63,7 +70,10 @@ A lo sumo uno por sala.
 | `agregar_accion(tiempo, accion)` | Anexa la acción vigente | O(1) amortizado |
 | `necesita_punto(acciones_completadas)` | `True` si pasaron K acciones desde el último punto | O(1) |
 | `agregar_punto(punto)` | Anexa un punto de control | O(1) amortizado |
-| `retroceder_una(id_pergamino)` | Quita la última acción y los puntos con más de `c` acciones; mueve marcadores; agrega el marcador | O(1 + r) |
+| `retroceder_una()` | Quita la última acción y los puntos con más de `c` acciones; mueve a `c` los marcadores con posición mayor | O(1 + r) |
+| `agregar_marcador(posicion, quitados, agregados)` | Anexa el marcador de pergamino (FR-424) | O(1) amortizado |
+| `validar_instante(t, reloj_actual)` | Lanza `ValueError` con el motivo y el rango válido si t no es un entero ≥ 0 o es posterior al reloj actual (FR-409) | O(1) |
+| `validar_accion(k)` | Lanza `ValueError` con el motivo y el rango válido si k no es un entero entre 1 y las acciones vigentes (FR-409) | O(1) |
 | `ubicar_punto(acciones)` | Último punto con `acciones_completadas ≤ acciones` | O(log P) |
 | `ubicar_accion_por_tiempo(t)` | Última acción con `tiempo ≤ t` | O(log A) |
 | `registrar_carga(ordinal, sala)` / `registrar_ficha(ficha)` | Anexa si no estaba | O(1) / O(F) |
@@ -92,17 +102,19 @@ No hay campo de mensajes (FR-406).
 inicio ──(motor.iniciar + primera decisión)──► punto 0
    │
    ├─ acción aceptada (jugador.acciones +1) ──► agregar_accion  (+ punto si pasaron K)
-   ├─ pergamino leído (jugador.acciones −1) ──► retroceder_una  (recorte por el final)
+   ├─ pergamino leído (jugador.acciones −1) ──► retroceder_una + agregar_marcador  (recorte por el final)
    ├─ acción rechazada (sin cambio) ──────────► nada
    └─ sala cargada / ficha pedida ────────────► registrar_carga / registrar_ficha
 ```
 
 Una consulta **no** transiciona nada: lee la línea y trabaja sobre un `Motor` aparte.
 
-## Reglas de validación (en Service, no en Logic ni en Data)
+## Reglas de validación
 
-- `historia <t>`: t entero ≥ 0 y no posterior al reloj actual (FR-409).
-- `historia #k`: k entero entre 1 y `jugador.acciones` (FR-409).
+- En **Logic** (`LineaTiempo`; son reglas de negocio, y Service no valida): `historia <t>` con t entero
+  ≥ 0 y no posterior al reloj actual; `historia #k` con k entero entre 1 y las acciones del jugador
+  (FR-409). Fallan con `ValueError`, con el motivo y el rango válido. `ServicioLineaTiempo` solo
+  propaga el error.
 - La validación de estructura del comando (que sea un entero) es de la interfaz.
 - `--hasta`: entero ≥ 0; `--hasta` sin `--replay` es error de uso (FR-410).
 - `--checkpoint-cada`: entero ≥ 1 (FR-415).

@@ -14,7 +14,7 @@ ninguna línea (Abierto/Cerrado).
 | Estructura | Qué hace hoy | Limitación frente a la línea de tiempo | Conclusión |
 |---|---|---|---|
 | `Logic/HistorialRetroceso.py` | Buffer circular de 5 intervalos; cada intervalo es un arreglo de funciones que invierten un cambio. | (1) Tope de 5, que es correcto para el pergamino (P1 §2.11). (2) Guarda **funciones**: no se pueden escribir en disco ni llevan tiempo. (3) El pergamino se lee, se suelta y se descuenta **fuera** del historial (`Inventario.py:227`, `Mazmorra.soltar_objeto/recoger_objeto(reversible=False)`, `Motor._usar_pergamino`), así que no se puede reconstruir hacia atrás. (4) Mientras se deshace ignora los registros nuevos. | **No se toca y no sirve** como línea. Esta feature no registra nada nuevo en él (decisión 9). |
-| `Logic/PartidaGuardada.py` | `guardar(motor, …)` pasa el estado vivo a DTOs (copia hecha a mano: `list(...)`, un DTO por cosa); `cargar(partida, salas, cripta, salas_esqueleto, fn_ficha, fn_mensaje)` arma un `Motor` nuevo. Guarda el estado del azar, los eventos **válidos** en orden, los efectos, el rastro y todas las salas. | No guarda: historial, mensajes, caché de rutas, mapa conocido (spec 002). Cada copia recorre todas las salas, los eventos y el inventario: O(S + E + V + I). | **Se reutiliza tal cual** como mecanismo de punto de control y de reconstrucción. No se toca. Coincide con lo que exige la Parte II: el punto de control incluye el estado de `random.Random`. |
+| `Logic/PartidaGuardada.py` | `guardar(motor, …)` pasa el estado vivo a DTOs (copia hecha a mano: `list(...)`, un DTO por cosa); `cargar(partida, salas, cripta, salas_esqueleto, fn_ficha, fn_mensaje)` arma un `Motor` nuevo. Guarda el estado del azar, los eventos **válidos** en orden, los efectos, el rastro y todas las salas. | No guarda: historial, mensajes, caché de rutas. El mapa conocido (spec 002, FR-223) será un campo de `PartidaGuardadaDTO` que actualiza el motor; lo agrega Derek. Cada copia recorre todas las salas, los eventos y el inventario: O(S + E + V + I). | **Se reutiliza tal cual** como mecanismo de punto de control y de reconstrucción. No se toca. Coincide con lo que exige la Parte II: el punto de control incluye el estado de `random.Random`. |
 | `Estructuras/BufferCircular.py` | Capacidad fija; al llenarse pisa el más antiguo. | Pierde lo más antiguo; la línea debe conservar **todo** desde el inicio. | **No sirve.** |
 | `Estructuras/Cola.py` | Cola enlazada FIFO (encolar, desencolar, ver frente). | Sin acceso por posición ni búsqueda por tiempo: ubicar un punto de control sería O(n). | **No sirve.** |
 | `Estructuras/ListaDoble.py` | Lista doblemente enlazada. | Acceso por posición O(n): imposible la búsqueda binaria. | **No sirve.** |
@@ -97,6 +97,9 @@ un arreglo ordenado (R5). Sin `bisect`.
        devuelto (contenido inicial de la sala) como **registro de carga**.
      - `ResolvedorGrabador` envuelve `contexto.resolvedor`: en `ficha(id)` guarda la ficha devuelta.
        Delega todo lo demás al resolvedor real.
+     - **Ambos delegan TODO lo que no es `ficha()` o `asegurar_sala()`** al objeto original, incluidos
+       `rechazo()` y `resolver_contenido()`. Si el objeto original lanza `ErrorDatos`, el error propaga
+       y **no se registra nada**.
   3. *Guardar el catálogo completo en la línea*: tamaño proporcional al catálogo entero. **Descartada.**
 - **Decisión**: (2). Sin solicitudes nuevas, sin tocar Data, sin tocar `ServicioAccionJugador`.
   Los adaptadores se instalan en los dos únicos puntos donde se arma un `ContextoPartida`
@@ -144,16 +147,24 @@ orden y numeraría distinto (rompe FR-419 en el nombre visible).
   - **Acciones vigentes**: arreglo de (tiempo de la decisión, `AccionDTO`). La acción número k es la
     posición k del arreglo: se cuentan **separadas de las líneas de `partida.log`** (que sí incluye
     la lectura del pergamino).
-  - **Marcador de pergamino**: (posición p, id del pergamino descontado). Significa «cuando la
-    partida llevaba p acciones vigentes, se descontó este pergamino». Al re-simular, al llegar a p
-    acciones completadas se quita ese pergamino del inventario (mismo `ubicar` + `soltar_actual` que
-    el motor). **Nunca** se re-ejecuta `retroceder`.
+  - **Marcador de pergamino**: (posición p, `quitados`, `agregados`). `quitados` son los ids de
+    pergaminos que salen del inventario y `agregados` los pergaminos que quedan en el inventario aunque
+    la acción que los trajo se revirtió (regla de P1 §2.11, FR-424). Significa «cuando la partida
+    llevaba p acciones vigentes, estos pergaminos salieron y estos otros quedaron». El descuento del
+    pergamino usado para revertir es un «quitado». Al re-simular, al llegar a p acciones completadas
+    se quitan los `quitados` del inventario (mismo `ubicar` + `soltar_actual` que el motor) y se
+    agregan los `agregados` (con la ficha que la línea ya tiene). **Nunca** se re-ejecuta `retroceder`.
   - **Al usar un pergamino** (el jugador pasa de `c+1` a `c` acciones): se quita la última acción
     (`pop`), se quitan los puntos de control con más de `c` acciones (siempre los últimos del arreglo:
     a lo sumo uno si la acción revertida lo tenía) y los marcadores con posición mayor que `c` se
-    **mueven a la posición `c`** (el pergamino sigue descontado en el estado actual, pero no en los
-    pasados), y se agrega el marcador nuevo en `c`. Todo ocurre en el **final** de los arreglos:
-    O(1 + r), con r los elementos quitados; no recorre la historia (NFR-403).
+    **mueven a la posición `c`** (lo que ya persistía en la partida viva sigue persistiendo en el
+    estado actual, pero no en los pasados). Después se calcula el marcador nuevo: se reconstruye el
+    estado de `c` acciones (a lo sumo K acciones, no la historia) y se comparan sus pergaminos con los
+    del inventario vivo: los que están en el reconstruido y no en el vivo son `quitados` (incluye el
+    pergamino usado) y los que están en el vivo y no en el reconstruido son `agregados`. Si alguna
+    de las dos listas no está vacía, se agrega el marcador en `c`. El recorte ocurre en el **final**
+    de los arreglos: O(1 + r), con r los elementos quitados; no recorre la historia (NFR-403). La
+    reconstrucción de `c` acciones cuesta lo de una consulta (acotada por K), no depende de la historia.
   - Los **registros de carga** y las **fichas** no se recortan (R3).
 - **Detección de que una acción se hizo** (sin tocar `ServicioAccionJugador`): el registrador compara
   `jugador.acciones` antes y después de ejecutar: **+1** → acción nueva (se agrega); **−1** →
@@ -167,15 +178,14 @@ marca como no reversible soltar y recoger un pergamino. Si la acción **revertid
 soltar un pergamino, ese efecto **persiste** en la partida viva aunque la acción deje de existir. Un
 marcador que solo dice «se descontó un pergamino» no lo reproduce.
 
-- **Decisión del integrante 3** (`Inventario` y `HistorialRetroceso` son suyos). El marcador **no**
-  lleva campos nuevos: solo el id del pergamino descontado. El plan implementa únicamente el
-  descuento.
-- **Tarea pendiente** (se numerará en `tasks.md`): decidir qué hace la línea cuando la acción
-  revertida recogió o soltó un pergamino (documentarlo como límite conocido o reproducirlo con otro
-  mecanismo) y dejar la decisión en `DECISIONES.md`.
-- **Prueba pendiente**: escenario con un pergamino recogido en la acción revertida, marcada con `skip`
-  hasta que se decida; cita FR-413 y FR-419.
-- No se agrega ninguna regla a la spec: es fidelidad con FR-413 y FR-419.
+- **Resuelto: es una regla de P1 §2.11**, que la spec fija como FR-424 (escenario H3-5): la reversión
+  no deshace los pergaminos recogidos o soltados durante el intervalo revertido. La línea debe reflejar
+  la cantidad de pergaminos igual que la partida viva (FR-419).
+- **Decisión**: el marcador se generaliza a (posición, `quitados`, `agregados`) y se calcula al usar el
+  pergamino como se describe en R4. No es una decisión pendiente ni un límite conocido.
+- **Prueba**: H3-5 sin `skip` (el jugador recoge un pergamino en la acción 4 y usa otro para
+  revertirla: el inventario del instante actual conserva el recogido y no tiene el consumido). Cita
+  FR-413, FR-419 y FR-424.
 
 ## R5. Ubicar el punto de control más cercano (decisión 5)
 
@@ -273,8 +283,10 @@ DTOs nuevos): sin `copy` ni `deepcopy` (Principio II).
 
 **No se copia**: historial de retroceso (el motor aparte empieza con uno vacío), mensajes (FR-406),
 caché de rutas de los cazadores (se reconstruye sola con el mismo resultado: FR-113), caché del
-catálogo. **Mapa conocido** (spec 002): se copia con un método de copia manual que se pide a esa
-clase; mientras la spec 002 no exista, se omite (Suposiciones).
+catálogo. **Mapa conocido** (spec 002, FR-223): será un campo de `PartidaGuardadaDTO` que actualiza el
+motor, así que entra en la copia con `PartidaGuardada.guardar` y la re-simulación lo reproduce sin
+invertirlo (NFR-203 de la 002 habla de invertirlo; la 004 reconstruye hacia adelante). Mientras ese campo
+no exista, se omite (Suposiciones).
 
 El costo de cada copia es O(S + E + V + I) (todas las salas, enemigos, eventos válidos e
 inventario): es el riesgo R-1 del plan.

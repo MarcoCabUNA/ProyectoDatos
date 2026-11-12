@@ -23,14 +23,16 @@ mismo campo (para comparar JSON contra binario, §4.10).
 |---|---|---|
 | `k` | `int` | ≥ 1 |
 | `acciones` | `list[AccionGuardadaDTO]` | `tiempo: int`, `tipo: str`, `direccion: int \| None`, `objetivo: str \| None`, `objeto: str \| None` |
-| `marcadores` | `list[MarcadorPergaminoDTO]` | `posicion: int`, `id_objeto: str` (solo el pergamino descontado) |
+| `marcadores` | `list[MarcadorPergaminoDTO]` | `posicion: int`, `quitados: list[str]` (ids de pergaminos que salen del inventario; el pergamino usado es uno de ellos), `agregados: list[str]` (ids de pergaminos que quedan aunque la acción que los trajo se revirtió, FR-424) |
 | `puntos` | `list[PuntoControlGuardadoDTO]` | `acciones_completadas: int`, `partida: PartidaGuardadaDTO` (con `linea=None`), `salas: list[SalaGuardadaDTO]` |
 | `cargas` | `list[RegistroCargaGuardadoDTO]` | `ordinal: int`, `sala: SalaDTO` (el contenido inicial) |
 | `fichas` | `list` de fichas | enemigos, trampas y objetos ya existentes como DTO del catálogo, cada uno una vez |
 
 Restricciones que Derek puede validar al leer: `acciones` y `puntos` en orden creciente de
-`tiempo` / `acciones_completadas`; `marcadores` por `posicion` creciente; `k ≥ 1`; el punto de
-`partida.linea` es siempre `None` (no se anida la línea dentro de sí misma).
+`tiempo` / `acciones_completadas`; `marcadores` por `posicion` no decreciente, con `posicion` entre 0 y
+la cantidad de acciones, al menos un id entre `quitados` y `agregados`, ids no vacíos y ningún id en
+las dos listas del mismo marcador; `k ≥ 1`; el punto de `partida.linea` es siempre `None` (no se anida
+la línea dentro de sí misma).
 
 ## 2. Bloque binario (versión 2)
 
@@ -40,7 +42,7 @@ Restricciones que Derek puede validar al leer: `acciones` y `puntos` en orden cr
   índice de salas y los bloques de sala no cambian de formato).
 - El bloque de la línea usa los mismos escritores y lectores primitivos de hoy (`entero`,
   `texto_opcional`, `cantidad`…) y escribe: `k`, la cantidad y las acciones, la cantidad y los
-  marcadores, la cantidad y los puntos (cada uno con su bloque global y sus salas), la cantidad y las
+  marcadores (cada uno con su posición y la cantidad y los ids de `quitados` y de `agregados`), la cantidad y los puntos (cada uno con su bloque global y sus salas), la cantidad y las
   cargas, la cantidad y las fichas.
 - Si `linea` es `None`, el bloque ocupa largo 0.
 - **Archivo de la primera parte (versión 1)**: se rechaza como incompatible con un mensaje que dice la
