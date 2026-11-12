@@ -147,9 +147,9 @@ el después en `DECISIONES.md`.
 | `Logic/Mazmorra.py` · `abrir_puerta()` y `CierrePuerta.activar()` | Al final, si `observador_puertas` no es `None`, avisarle `puerta_cambio(a, b)` | Modificación (2 líneas cada uno) | FR-114 | Son los dos únicos puntos donde cambia una puerta. Sin aviso, la búsqueda guardada podría quedar desactualizada. |
 | `Logic/Comportamientos.py` · `Comportamiento` | Método `decidir_paso()` por defecto (usa `decidir()` y `costo_paso()`) | Extensión | FR-102, FR-104 | `Guardian` y `Rastreador` lo heredan sin cambios. |
 | `Logic/Comportamientos.py` · `Errante` | Método nuevo `decidir_paso()` con el mismo sorteo sobre salidas con costo. `decidir()` no cambia. | Extensión | FR-104 | Con solo un destino no se sabe qué salida se sorteó si hay dos hacia la misma sala. |
-| `Logic/Comportamientos.py` · `COMPORTAMIENTOS` | Agregar `Cazador` | Modificación (1 línea) | FR-106 | La fábrica solo conoce lo que está en la lista. |
+| `Logic/Comportamientos.py` · `COMPORTAMIENTOS` | Agregar `Cazador` | Modificación (1 línea + 1 import) | FR-106 | La fábrica solo conoce lo que está en la lista. |
 | `Logic/Comportamientos.py` · `Cazador` | Clase nueva. En la historia 2 decide con `paso_desde_cero`; en la historia 3 pasa a `motor.rutas.decidir` (una línea de código nuevo, no de P1). | Extensión | FR-106 a FR-115 | — |
-| `Logic/motorJuego.py` · `__init__` | Crear `self.grafo` (historia 2), `self.rutas` y asignar `mazmorra.observador_puertas` (historia 3) | Modificación (3 líneas) | FR-112, FR-114 | Es el dueño del historial y de la mazmorra. |
+| `Logic/motorJuego.py` · `__init__` | Crear `self.grafo` (historia 2), `self.rutas` y asignar `mazmorra.observador_puertas` (historia 3) | Modificación (3 líneas + imports) | FR-112, FR-114 | Es el dueño del historial y de la mazmorra. |
 | `Logic/motorJuego.py` · `mover_jugador()` | `terminar_accion_jugador(salida.costo)` en lugar de `COSTO_MOVER` | Modificación (1 línea) | FR-102 | La regla de costo cambió. |
 | `Logic/motorJuego.py` · `turno_enemigo()` | Usar `decidir_paso()` y programar con su costo (100 si espera o ataca) | Modificación (unas 5 líneas) | FR-102, FR-103, FR-110, FR-121 | Hoy programa 100 fijo después de moverse. |
 | `Logic/Enemigo.py` | Redefinir `a_dto()` para incluir `comportamiento` (hecho: T040) | Extensión | FR-117 | — |
@@ -205,7 +205,7 @@ cuadrículas son sintéticas, con costos por salida sacados de `random.Random(SE
 | `tests/ayudas_terreno.py` | Ayudantes: criptas con costos (en uno o en los dos lados), fichas, motor y una fuente de datos de prueba con un cazador. |
 | `tests/test_mazmorra_costos.py` | Costo en `SalidaViva`, igualación de los dos lados, `salidas_abiertas_con_costo` y `costo_paso` (FR-101, FR-104, FR-119). |
 | `tests/test_monticulo_minimo.py` | El montículo: orden, desempate por valor, entradas repetidas, `vaciar`. |
-| `tests/test_busqueda_costo_minimo.py` | Búsqueda reanudable, corte en el límite, generación, salidas sin vuelta, salidas repetidas (FR-108, FR-111, FR-119). |
+| `tests/test_busqueda_costo_minimo.py` | Búsqueda reanudable, corte en el límite, generación, salidas sin vuelta, salidas repetidas (FR-108, FR-111, FR-119), y `GrafoEsqueleto`: salidas y entradas abiertas en vivo (FR-112, FR-113). |
 | `tests/test_terreno_cazador.py` | Escenarios H1-1 a H1-8, H2-1 a H2-9 y H3-6 (H2-9 con una fuente de prueba que devuelve un error de datos para una sala: T054), y los casos 1, 2, 3, 4, 6 y 7 del Apéndice B. Bordes del cazador, incluido el cierre automático en el mismo instante (FR-108). |
 | `tests/test_rutas_equivalencia.py` | Escenarios H3-1 a H3-5 (H3-1 es el **caso 5** del Apéndice B). FR-114 / SC-102: partidas sintéticas con semilla (puertas, movimientos, muertes, pergaminos), comparando cada decisión con `paso_desde_cero`. Historial. |
 | `tests/test_dto_terreno.py` | `FichaEnemigoDTO.rango` (ida y vuelta, `_CAMPOS`, ausencia). Datos para la vista de H4-1 y H4-2 (costo igualado y `comportamiento`). |

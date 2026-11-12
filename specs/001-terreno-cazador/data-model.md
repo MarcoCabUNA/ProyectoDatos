@@ -56,7 +56,7 @@ costo igualado (FR-101, FR-116).
 |---|---|---|
 | `_igualar_costos()` (privado, nuevo; se llama en `cargar_esqueleto` justo después de `_igualar_caras()`) | Para cada cara: si declara costo, ese; si no, el que declara su cara inversa; si ninguna lo declara, 100. Recorre todas las salas en cada llamada, así que no depende del orden de las páginas. No valida costos distintos: eso es de Data. `_igualar_caras` no cambia. | FR-101 |
 | `salidas_abiertas_con_costo(id_sala) -> list[tuple[int, int]]` | Igual que `salidas_abiertas`, en el **mismo orden**, pero con pares (destino, costo). | FR-102, FR-104 |
-| `costo_paso(origen, destino) -> int` | El menor costo entre las salidas **abiertas** de `origen` hacia `destino`. | FR-119 |
+| `costo_paso(origen, destino) -> int` | El menor costo entre las salidas **abiertas** de `origen` hacia `destino`. Lanza `ValueError` si no hay ninguna. | FR-119 |
 | `observador_puertas` (atributo, `None` por defecto) | Si no es `None`, `abrir_puerta` y `CierrePuerta.activar` le avisan con `puerta_cambio(a, b)` después de cambiar las caras. `a` y `b` son los **destinos** de las caras que cambiaron: con dos caras, los dos extremos; con una, su destino dos veces (ver [contrato](contracts/busqueda-rutas.md)). | FR-114 |
 
 ### `MonticuloMinimo` · `Estructuras/MonticuloMinimo.py` (nuevo, sin dependencias)
@@ -101,7 +101,7 @@ Búsqueda de costo mínimo **reanudable** desde un origen. No conoce cazadores n
 
 | Operación | Qué hace | Costo |
 |---|---|---|
-| `reiniciar(origen)` | Nueva generación, frontera con (0, origen). | O(1), más vaciar la frontera |
+| `reiniciar(origen)` | Nueva generación, frontera con (0, origen). Si `grafo.cantidad_salas()` aumentó, agranda los arrays. | O(1), más vaciar la frontera (y lo que crezcan los arrays) |
 | `distancia_hasta(sala, limite) -> int \| None` | Extiende la búsqueda hasta resolver `sala` o hasta que el mínimo de la frontera pase `limite`. Devuelve d o `None`. | Amortizado: cada sala se resuelve una vez por generación |
 | `esta_resuelta(sala) -> bool`, `distancia_resuelta(sala) -> int` | Consultas O(1). | O(1) |
 | `paso_hacia_origen(u, d) -> tuple[int, int]` | La vecina v de menor id con costo(u, v) + dist(v) = d, y ese costo (la salida abierta más barata hacia v, FR-119). | O(g) |
@@ -109,6 +109,12 @@ Búsqueda de costo mínimo **reanudable** desde un origen. No conoce cazadores n
 Función de referencia: `paso_desde_cero(grafo, origen, u, limite)`. Crea una búsqueda nueva
 y devuelve el mismo resultado que el cazador **sin reutilizar nada**. La usan las pruebas de
 FR-114 y el bench (alternativas A de R2 y R4).
+
+Los arrays se crean una vez y **solo crecen**: `reiniciar` los agranda si el grafo tiene más salas, con
+casillas que no valen en ninguna generación. Así `RutasHaciaJugador` puede crear su búsqueda en
+`Motor.__init__` aunque el esqueleto todavía no esté cargado.
+
+Casos especiales: `paso_desde_cero` devuelve `None` también si `u == origen` (no hay paso que dar); `paso_hacia_origen` lanza `ValueError` si `u` no tiene una vecina en una ruta de costo d (no ocurre si d viene de `distancia_hasta`).
 
 ### `RutasHaciaJugador` · `Logic/RutasHaciaJugador.py` (nuevo)
 

@@ -1033,3 +1033,15 @@ Reglas:
 **Uso de la respuesta:** tercera pasada de análisis de la feature 001, después de implementar las fases 1 a 4. Encontró que faltaban estas tres entradas en `PROMPTS_LLM.md` (Principio XI), que T021 no coincide con la posición real de `rango`, que la tabla de cambios a P1 no menciona dos importaciones nuevas, y detalles sin documentar de la búsqueda (`_asegurar_tamano`, casos que devuelven `None` o lanzan `ValueError`, uso de `Mazmorra._existe`).
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+que recomeindas para corregirlos
+
+Respuesta tras la propuesta de Claude: Sí, aplicalo así en un solo commit, con U3 como lo propusiste (sin existe_sala() público).
+Agregá la entrada en PROMPTS_LLM.md. Corré tests/correr_pruebas.py antes del commit. No hagas push.
+
+**Uso de la respuesta:** se corrigieron los hallazgos menores del tercer `/speckit-analyze` sin tocar código: T021 dice que `rango` es el último campo (I1); `data-model.md` y una nota en T032 explican que los arrays de la búsqueda solo crecen (U1); la tabla de cambios a P1 del plan menciona las importaciones nuevas (I2); la tabla de pruebas incluye `GrafoEsqueleto` (I3); el contrato y `data-model.md` documentan los casos que devuelven `None` o lanzan `ValueError` (U2); T022 justifica el uso de `mazmorra._existe()` (U3).
+
+-----------------------------------------------------------------------------------------------------------------------
