@@ -49,17 +49,16 @@ Data: a un cazador no se le inventa un `rango`.
 | `costo` de los dos lados de una salida | los dos lo declaran y son distintos (se comprueba con el esqueleto completo) | las dos salas, las dos direcciones, los dos valores |
 | `rango` de una ficha con `comportamiento == "cazador"` | falta, es `null`, no es entero (incluido `bool`) o es negativo | id de la ficha, campo (`rango`), valor recibido |
 
-Efecto: un error de formato con contexto, que se pueda distinguir de un error de red (hoy
+Efecto: un error de datos con contexto, que se pueda distinguir de un error de red (hoy
 `FuenteDatos` usa `ErrorRed` para los dos; ver T052). El programa no se cae en ningún caso. Según
 de dónde venga el dato:
 
-- **Esqueleto** (costos) o **ficha que llega antes de iniciar**: la partida no inicia.
-- **Ficha que llega con la precarga** durante la partida: la sala que contiene a ese cazador queda
-  sin contenido cargado y la partida sigue; el cazador no se activa (FR-123). Cuando el jugador
-  intenta entrar a esa sala, el movimiento no se ejecuta ni consume tiempo, no se anexa como acción
-  a `partida.log`, y la partida termina con un error de datos, sin puntaje. `partida.log` termina
-  con una marca de cierre con el movimiento intentado, y `--replay` termina en ese punto con un
-  código distinto de 0. Terminar la partida es de Service (integrante 3, T053).
+- **Esqueleto** (costos) o **ficha de un cazador de la sala inicial**: la partida no inicia.
+- **Ficha de cualquier otra sala**, llegue antes o durante la partida: no se vuelve a pedir (Data
+  recuerda el rechazo por sala) y solo esa sala queda como contenido no disponible; el cazador no se
+  activa (FR-123). Si el jugador intenta entrar, el movimiento se rechaza con ese mensaje, sin
+  consumir tiempo ni registrarse en `partida.log`, y la partida sigue. Mostrar el mensaje es de
+  Service (integrante 3, T053). No cambian el formato de `partida.log` ni el replay.
 
 Lógica no repite la validación: si dos lados declaran costos distintos, supone que Data ya lo
 rechazó.

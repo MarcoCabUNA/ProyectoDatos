@@ -922,3 +922,50 @@ Commit: "plan(001): FR-122 en plan, contrato y tareas tras analyze", incluyendo 
 **Uso de la respuesta:** se usó en `tasks.md` (T002, T014 y T050 corregidas; T001 y T039 marcadas; tareas nuevas T052 y T053 de coordinación con los integrantes 2 y 3, y T054 con la prueba de H2-9), `plan.md` (dos efectos de FR-122, tabla de pruebas con H2-9, dependencias y estado de `ActorDTO`), `contracts/contrato-datos.md` (efectos de FR-122, campo `rango` en el mensaje y sin la fecha límite vieja), `data-model.md` y `research.md` (contrato confirmado).
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-analyze
+
+**Uso de la respuesta:** segunda pasada de análisis de la feature 001. Los hallazgos anteriores quedaron resueltos; encontró que T052 y T053 modificaban código de P1 (Data y Service) sin justificarlo en la tabla de cambios del plan (Principio III), que cambiaban decisiones de P1 sin antes y después en `DECISIONES.md`, y que T052 no definía qué pasa con las otras salas del lote ni cómo se recuerda el rechazo. Llevó a simplificar FR-122.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit.clarify Simplificar FR-122 para fichas de la precarga (Principio III, KISS): si una ficha de
+cazador con rango ausente o inválido llega con la precarga, Data la rechaza con un error de datos que
+indica la ficha y el campo, y no la vuelve a pedir. Esa sala queda como contenido no disponible: si
+el jugador intenta entrar, el movimiento se rechaza con ese mensaje, sin consumir tiempo ni
+registrarse en partida.log, y la partida sigue. Esto reemplaza la regla de detener la partida y la
+marca de cierre en el log. Los costos inválidos del esqueleto siguen impidiendo iniciar.
+Actualizá FR-122, H2-9, el caso borde y Clarificaciones (motivo: evitar cambiar el formato del log y
+el replay de P1). Commit solo de spec.md: "spec(001): FR-122 simplificado para fichas de la precarga".
+Mostrame el cambio antes del commit.
+
+Respuesta a la pregunta de Claude sobre la ficha que llega antes de iniciar: Limitalo: "si la ficha inválida es de un cazador de la sala inicial, la partida no inicia; para
+cualquier otra sala, esa sala queda como contenido no disponible", llegue antes o durante la partida.
+Después hacé el commit solo de spec.md: "spec(001): FR-122 simplificado para fichas de la precarga".
+
+**Uso de la respuesta:** commit `31f8719`. En `specs/001-terreno-cazador/spec.md` se reemplazó la regla de detener la partida y la marca de cierre por la de «contenido no disponible»: entrar a esa sala se rechaza con el error de datos y la partida sigue; solo una ficha inválida de la sala inicial impide iniciar. Se actualizaron FR-122, H2-9, el caso borde y Clarificaciones (las dos respuestas anteriores quedaron marcadas como reemplazadas).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Alinear plan, contrato y tareas con el FR-122 simplificado: quitar la marca de cierre y todo cambio
+a partida.log, ServicioReplay y main.py. Reducir T052 a "Data rechaza la ficha con error de datos
+con contexto (ficha, campo), distinguible del error de red, recuerda el rechazo por sala sin gastar
+otra solicitud, y solo esa sala queda sin contenido". Reducir T053 a "Service muestra ese error de
+datos al rechazar el movimiento, en lugar del mensaje de red". Ajustar T054 a "intentar entrar a esa
+sala se rechaza con el mensaje y la partida sigue". En la tabla de cambios a código P1, una fila
+para Data (T052, integrante 2) y una para Service (T053, integrante 3), ambas con FR-122.
+Ajustar quickstart.md. Commit: "plan(001): FR-122 simplificado en plan, contrato y tareas",
+con PROMPTS_LLM.md.
+
+**Uso de la respuesta:** se usó en `tasks.md` (T002, T050, T052, T053 y T054 con la regla simplificada; la prueba pasa a llamarse `test_h2_9_fr122_ficha_invalida_rechaza_entrar`), `plan.md` (efectos de FR-122, filas de Data y Service en la tabla de cambios a P1, «No se tocan» con `partida.log`, `ServicioReplay` y `main.py`, dependencias), `contracts/contrato-datos.md` (efectos de FR-122) y `quickstart.md` (paso de datos inválidos).
+
+-----------------------------------------------------------------------------------------------------------------------
