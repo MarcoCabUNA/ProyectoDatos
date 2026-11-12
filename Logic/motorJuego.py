@@ -6,6 +6,7 @@ from Logic.ColaEventos import ColaEventos
 from Logic.Efectos import Antorcha, Regeneracion, Velocidad, Veneno
 from Logic.EventoPorg import EventoProgramado
 from Logic.GestorEfectos import GestorEfectos
+from Logic.GrafoEsqueleto import GrafoEsqueleto
 from Logic.HistorialRetroceso import HistorialRetroceso
 from Estructuras.Ordenador import Ordenador
 from Logic.RastroSalas import RastroSalas
@@ -36,6 +37,7 @@ class Motor:
         self.jugador.historial = self.historial
         self.mazmorra = mazmorra
         self.mazmorra.historial = self.historial
+        self.grafo = GrafoEsqueleto(mazmorra)             # rutas del cazador sobre el esqueleto (FR-112)
         self.inventario = inventario
         if inventario is not None:
             inventario.historial = self.historial

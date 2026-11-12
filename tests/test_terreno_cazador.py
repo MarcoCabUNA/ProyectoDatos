@@ -16,10 +16,13 @@ if RAIZ not in sys.path:
 
 from DTO.Direcciones import E, N, O, S  # noqa: E402
 from DTO.ObjetoDTO import ObjetoDTO  # noqa: E402
-from Logic.Comportamientos import Errante  # noqa: E402
+from Logic.BusquedaCostoMinimo import paso_desde_cero  # noqa: E402
+from Logic.Comportamientos import Cazador, Errante, crear_comportamiento  # noqa: E402
+from Logic.Enemigo import Enemigo  # noqa: E402
 from Logic.Inventario import Inventario  # noqa: E402
-from tests.ayudas_terreno import (ficha_errante, ficha_rastreador, mazmorra_con_costos,  # noqa: E402
-                                  motor_con, poner_enemigo, salida)
+from Logic.Mazmorra import CierrePuerta  # noqa: E402
+from tests.ayudas_terreno import (ficha_cazador, ficha_errante, ficha_rastreador,  # noqa: E402
+                                  mazmorra_con_costos, motor_con, poner_enemigo, salida)
 
 
 def turno_del_jugador(motor):
@@ -173,6 +176,200 @@ class TestTerrenoComportamientos(unittest.TestCase):
         motor.turno_enemigo(errante)
         self.assertEqual(errante.Sala_Actual, 2)
         self.assertEqual(siguiente_accion(errante), 500)
+
+
+def cazador_en(motor, sala: int, rango: int | None, velocidad: int = 100, instancia: str = "c-1"):
+    """Coloca y activa un cazador en 'sala'."""
+    return poner_enemigo(motor, sala, ficha_cazador(rango, velocidad), instancia)
+
+
+class TestCazador(unittest.TestCase):
+    """Historia 2: el cazador persigue por la ruta más barata (escenarios H2-1 a H2-8)."""
+
+    def test_h2_1_apendiceB_caso1_fr109_sin_ruta_abierta_espera(self):
+        # Todas las rutas de 1 a 4 pasan por una puerta cerrada.
+        m = mazmorra_con_costos(4, [salida(1, E, 2), salida(2, S, 4, cerrada=True),
+                                    salida(1, S, 3), salida(3, E, 4, cerrada=True)])
+        motor, _ = motor_con(m, 4)
+        cazador = cazador_en(motor, 1, 10000)
+        motor.turno_enemigo(cazador)
+        self.assertEqual(cazador.Sala_Actual, 1)
+        self.assertEqual(siguiente_accion(cazador), 100)
+
+    def test_h2_2_apendiceB_caso2_fr109_d700_mayor_que_rango600_espera(self):
+        motor, _ = motor_con(mazmorra_con_costos(3, [salida(1, E, 2, 400), salida(2, E, 3, 300)]), 3)
+        cazador = cazador_en(motor, 1, 600)
+        motor.turno_enemigo(cazador)
+        self.assertEqual(cazador.Sala_Actual, 1)
+        self.assertEqual(siguiente_accion(cazador), 100)
+
+    def test_h2_3_apendiceB_caso3_fr110_ruta_de_mas_salas_y_menor_costo(self):
+        # 1-4 directa (500) frente a 1-2, 2-3, 3-4 (100 cada una, total 300).
+        m = mazmorra_con_costos(4, [salida(1, O, 4, 500), salida(1, E, 2, 100),
+                                    salida(2, E, 3, 100), salida(3, S, 4, 100)])
+        motor, _ = motor_con(m, 4)
+        cazador = cazador_en(motor, 1, 1000)
+        motor.turno_enemigo(cazador)
+        self.assertEqual(cazador.Sala_Actual, 2)
+        self.assertEqual(siguiente_accion(cazador), 100)
+
+    def test_h2_4_apendiceB_caso4_fr111_desempate_menor_id(self):
+        # Dos rutas de 200: 1-7-5 y 1-4-5. En la sala 1, la salida hacia 7 (N) aparece antes que la de 4 (S).
+        m = mazmorra_con_costos(7, [salida(1, N, 7), salida(1, S, 4), salida(7, E, 5), salida(4, S, 5)])
+        self.assertEqual(m.salidas_abiertas(1), [7, 4])
+        motor, _ = motor_con(m, 5)
+        cazador = cazador_en(motor, 1, 1000)
+        motor.turno_enemigo(cazador)
+        self.assertEqual(cazador.Sala_Actual, 4)
+
+    def test_h2_5_fr107_misma_sala_ataca_y_no_se_mueve(self):
+        motor, _ = motor_con(mazmorra_con_costos(2, [salida(1, E, 2)]), 1)
+        cazador = cazador_en(motor, 1, 1000)
+        vida = motor.jugador.vida
+        motor.turno_enemigo(cazador)
+        self.assertLess(motor.jugador.vida, vida)
+        self.assertEqual(cazador.Sala_Actual, 1)
+        self.assertEqual(siguiente_accion(cazador), 100)
+
+    def test_h2_6_fr110_d_igual_a_rango_se_mueve(self):
+        motor, _ = motor_con(mazmorra_con_costos(3, [salida(1, E, 2, 250), salida(2, E, 3, 350)]), 3)
+        cazador = cazador_en(motor, 1, 600)
+        motor.turno_enemigo(cazador)
+        self.assertEqual(cazador.Sala_Actual, 2)
+        self.assertEqual(siguiente_accion(cazador), 250)
+
+    def test_h2_7_fr102_velocidad_120_costo_250_intervalo_208(self):
+        motor, _ = motor_con(mazmorra_con_costos(3, [salida(1, E, 2, 250), salida(2, E, 3)]), 3)
+        cazador = cazador_en(motor, 1, 1000, velocidad=120)
+        motor.turno_enemigo(cazador)
+        self.assertEqual(cazador.Sala_Actual, 2)
+        self.assertEqual(siguiente_accion(cazador), 208)          # max(1, 250 * 100 // 120)
+
+    def test_h2_8_fr112_ignora_contenido_no_descargado(self):
+        m = mazmorra_con_costos(3, [salida(1, E, 2), salida(2, E, 3)])
+        m.sala(2).contenido_cargado = False                       # la sala intermedia, nunca vista
+        motor, _ = motor_con(m, 3)
+        cazador = cazador_en(motor, 1, 1000)
+        motor.turno_enemigo(cazador)
+        self.assertEqual(cazador.Sala_Actual, 2)
+        self.assertEqual(siguiente_accion(cazador), 100)
+
+
+class TestCazadorBordes(unittest.TestCase):
+    """Casos borde del cazador (FR-106, FR-108, FR-113, FR-115, FR-119 a FR-121, FR-123)."""
+
+    def test_fr113_no_abre_puertas(self):
+        # La única ruta pasa por una puerta con llave; la llave está en la sala del cazador.
+        m = mazmorra_con_costos(2, [salida(1, E, 2, cerrada=True)])
+        m.sala(1).objetos.append("itm_llave")
+        motor, _ = motor_con(m, 2)
+        cazador = cazador_en(motor, 1, 1000)
+        motor.turno_enemigo(cazador)
+        self.assertEqual(cazador.Sala_Actual, 1)
+        self.assertTrue(m.salida(1, E).cerrada)
+        self.assertEqual(siguiente_accion(cazador), 100)
+
+    def test_fr119_dos_salidas_misma_vecina_paga_la_mas_barata(self):
+        motor, _ = motor_con(mazmorra_con_costos(3, [salida(1, N, 2, 300), salida(1, E, 2, 120),
+                                                     salida(2, E, 3)]), 3)
+        cazador = cazador_en(motor, 1, 1000)
+        motor.turno_enemigo(cazador)
+        self.assertEqual(cazador.Sala_Actual, 2)
+        self.assertEqual(siguiente_accion(cazador), 120)
+
+    def test_fr120_otros_actores_no_bloquean(self):
+        motor, _ = motor_con(mazmorra_con_costos(3, [salida(1, E, 2), salida(2, E, 3)]), 3)
+        poner_enemigo(motor, 2, ficha_errante(comportamiento="guardián", id="guardian"), "g-1")
+        poner_enemigo(motor, 2, ficha_cazador(1000), "c-2")
+        cazador = cazador_en(motor, 1, 1000)
+        motor.turno_enemigo(cazador)
+        self.assertEqual(cazador.Sala_Actual, 2)
+
+    def test_fr121_entra_a_la_sala_y_no_ataca_en_ese_turno(self):
+        motor, _ = motor_con(mazmorra_con_costos(2, [salida(1, E, 2)]), 2)
+        cazador = cazador_en(motor, 1, 1000)
+        vida = motor.jugador.vida
+        motor.turno_enemigo(cazador)
+        self.assertEqual(cazador.Sala_Actual, 2)
+        self.assertEqual(motor.jugador.vida, vida)                # moverse fue su acción del turno
+        motor.turno_enemigo(cazador)
+        self.assertLess(motor.jugador.vida, vida)                 # ataca en el siguiente
+
+    def test_fr123_dormido_no_actua_hasta_activarse(self):
+        motor, _ = motor_con(mazmorra_con_costos(3, [salida(1, E, 2), salida(2, E, 3)]), 1)
+        cazador = Enemigo(ficha_cazador(1000), "c-1", None, 1, 3)
+        motor.mazmorra.sala(3).enemigos.append(cazador)          # colocado, sin activar
+        turno_del_jugador(motor)
+        for _ in range(3):
+            motor.esperar()
+            motor.avanzar_hasta_jugador()
+        self.assertFalse(cazador.activo)
+        self.assertEqual(cazador.Sala_Actual, 3)
+        self.assertIsNone(cazador.Evento_pendiente)
+        self.assertEqual(motor.mover_jugador(E), "ok")
+        motor.avanzar_hasta_jugador()
+        self.assertEqual(motor.mover_jugador(E), "ok")            # entra a la sala 3: se activa (P1 §2.4)
+        self.assertTrue(cazador.activo)
+        self.assertEqual(siguiente_accion(cazador), motor.reloj + 100)
+
+    def test_rango_0_solo_ataca_en_la_misma_sala(self):
+        motor, _ = motor_con(mazmorra_con_costos(2, [salida(1, E, 2, 1)]), 2)
+        cazador = cazador_en(motor, 1, 0)
+        motor.turno_enemigo(cazador)
+        self.assertEqual(cazador.Sala_Actual, 1)                  # toda ruta cuesta al menos 1
+        motor.jugador.Sala_Actual = 1
+        vida = motor.jugador.vida
+        motor.turno_enemigo(cazador)
+        self.assertLess(motor.jugador.vida, vida)
+
+    def test_fr115_decidir_no_consume_el_generador(self):
+        # Se mueve:
+        motor, _ = motor_con(mazmorra_con_costos(3, [salida(1, E, 2), salida(2, E, 3)]), 3)
+        cazador = cazador_en(motor, 1, 1000)
+        antes = motor.azar.getstate()
+        motor.turno_enemigo(cazador)
+        self.assertEqual(cazador.Sala_Actual, 2)
+        self.assertEqual(motor.azar.getstate(), antes)
+        # Espera:
+        motor, _ = motor_con(mazmorra_con_costos(3, [salida(1, E, 2), salida(2, E, 3)]), 3)
+        cazador = cazador_en(motor, 1, 100)
+        antes = motor.azar.getstate()
+        motor.turno_enemigo(cazador)
+        self.assertEqual(cazador.Sala_Actual, 1)
+        self.assertEqual(motor.azar.getstate(), antes)
+
+    def test_fr106_crear_comportamiento_cazador(self):
+        self.assertIsInstance(crear_comportamiento("cazador"), Cazador)
+
+    def _cierre_en_el_mismo_instante(self, cierre_primero: bool):
+        # Cazador en 1, jugador en 3; la única ruta es 1-2-3. Un cierre automático de 1-2 en t = 100,
+        # el mismo instante del primer turno del cazador.
+        m = mazmorra_con_costos(3, [salida(1, E, 2), salida(2, E, 3)])
+        motor, _ = motor_con(m, 3)
+        turno_del_jugador(motor)
+        cierre = CierrePuerta([m.salida(1, E), m.salida(2, O)])
+        if cierre_primero:
+            motor.programar_efecto(100, "cierre_puerta", cierre)
+            cazador = cazador_en(motor, 1, 1000)
+        else:
+            cazador = cazador_en(motor, 1, 1000)
+            motor.programar_efecto(100, "cierre_puerta", cierre)
+        esperado_antes = paso_desde_cero(motor.grafo, 3, 1, 1000)
+        motor.esperar()
+        motor.avanzar_hasta_jugador()                            # t = 100: cierre, cazador y jugador
+        return motor, cazador, esperado_antes
+
+    def test_fr108_cierre_automatico_en_el_mismo_instante(self):
+        # El cierre va primero en el orden de eventos de P1 §2.3: al decidir, la puerta ya está cerrada.
+        motor, cazador, _ = self._cierre_en_el_mismo_instante(cierre_primero=True)
+        self.assertEqual(motor.reloj, 100)
+        self.assertEqual(cazador.Sala_Actual, 1)
+        self.assertIsNone(paso_desde_cero(motor.grafo, 3, 1, 1000))
+        # El cierre va después: al decidir, la puerta seguía abierta.
+        motor, cazador, esperado_antes = self._cierre_en_el_mismo_instante(cierre_primero=False)
+        self.assertEqual(esperado_antes, (2, 100))
+        self.assertEqual(cazador.Sala_Actual, 2)
+        self.assertTrue(motor.mazmorra.salida(1, E).cerrada)
 
 
 if __name__ == "__main__":

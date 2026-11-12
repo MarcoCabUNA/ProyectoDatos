@@ -27,7 +27,7 @@ def _enemigo(comportamiento: str) -> Enemigo:
 class TestActorDTOTerreno(unittest.TestCase):
     def test_h4_2_fr117_actor_dto_trae_el_comportamiento(self) -> None:
         """FR-117: el ActorDTO de cada enemigo trae su comportamiento; el del jugador, None."""
-        for comportamiento in ("errante", "guardián", "rastreador"):
+        for comportamiento in ("errante", "guardián", "rastreador", "cazador"):
             with self.subTest(comportamiento=comportamiento):
                 self.assertEqual(_enemigo(comportamiento).a_dto().comportamiento, comportamiento)
         self.assertIsNone(Jugador(_cripta()).a_dto().comportamiento)
