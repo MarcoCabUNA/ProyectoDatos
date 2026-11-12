@@ -1,0 +1,490 @@
+# Especificación: Niebla de guerra, mapa conocido y viaje automático «ir a»
+
+**Feature**: `002-niebla-ir-a`
+
+**Creada**: 2026-11-12
+
+**Estado**: Borrador (parte del integrante 2: mapa conocido y antorcha; la parte de «ir a» está pendiente)
+
+**Fuente**: Cripta - Parte II §3.3, §5.3, §6.1, §6.3 y Apéndice B «Niebla de guerra e «ir a»»; Primer Proyecto (P1) §2.4 (enemigos dormidos), §2.7 (antorcha), §2.11 (pergamino de retroceso) y §4.2 (precarga)
+
+**Constitución**: v1.2.0 · Requisitos con prefijo FR-2xx (Principio IX)
+
+**Reparto de la numeración**: esta spec la comparten dos integrantes. El mapa conocido y la antorcha usan
+FR-201 a FR-249, NFR-201 a NFR-249 y SC-201 a SC-249. El rango 250 a 299 (FR, NFR y SC) queda reservado para
+el viaje automático «ir a» (§3.4), que escribe el integrante 3 en otro commit.
+
+**Fuera de alcance**: el comando «ir a» (FR-250 a FR-299, integrante 3); cómo se dibuja el mapa en la interfaz
+(integrante 3); el costo de las salidas y el cazador (feature `001-terreno-cazador`); la línea de tiempo en sí
+(feature `004-linea-tiempo`, que usa el mapa conocido en su FR-405 y lo conserva al guardar por su FR-420).
+
+**Entrada**: Descripción del usuario: "Niebla de guerra y mapa conocido de Cripta II (parte del integrante 2).
+Tres estados por sala (explorada, avistada, desconocida); memoria de puertas según la última observación;
+antorcha que explora las vecinas sin activar enemigos ni trampas; separación entre el esqueleto descargado y el
+conocimiento del jugador; el conocimiento se guarda, se revierte con el pergamino y forma parte de la línea de
+tiempo; comando para ver el mapa conocido; determinismo con --replay; consultas frecuentes de costo
+independiente del tamaño; --bench. Requisitos FR-201 a FR-249. No nombrar estructuras de datos, clases ni
+módulos."
+
+> Este archivo contiene reglas del juego, historias, escenarios y requisitos. No nombra estructuras
+> de datos, clases ni módulos: eso va en `plan.md` (Principio IX). Se confirma con un commit antes
+> de cualquier código de esta feature.
+
+## Convenciones de los ejemplos
+
+- **Salida**: conexión dirigida de una sala a otra, con un costo (feature 001). Toda salida tiene una puerta,
+  abierta o cerrada (P1); en una salida con vuelta, las dos caras son la misma puerta.
+  Una «salida sin vuelta» es una salida de A a B sin una salida de B a A.
+- **Vecina** de una sala S: sala destino de alguna salida de S, abierta o cerrada.
+- **Puerta**: la de una salida. Una puerta de una salida con vuelta tiene una cara en cada una de las dos salas
+  que conecta y es la misma puerta; una salida sin vuelta solo existe como salida de la sala de la que sale, así
+  que su puerta solo tiene cara en esa sala. Su estado real lo fija P1 (por ejemplo, abierta o cerrada; algunas
+  se cierran solas).
+- **Observar una puerta**: ver su estado real en un momento, desde una sala donde la puerta tiene una cara
+  (FR-207).
+- **Puerta «sin observar»**: puerta de una sala explorada que el jugador nunca ha observado; su estado es
+  desconocido para el jugador (FR-212).
+- **Mapa conocido**: todo lo que el jugador sabe del mapa: el estado de cada sala para el jugador y el estado
+  recordado de cada puerta observada.
+- **Entrar a una sala**: llegar a ella mediante un movimiento del jugador. La sala inicial cuenta como
+  explorada desde el instante 0 sin necesidad de entrar.
+- Los nombres de salas (A, B, C…) y los instantes (t) de los ejemplos son ilustrativos; no corresponden a
+  ninguna cripta concreta (Principio VI).
+
+## Clarificaciones
+
+### Sesión 2026-11-12
+
+- P: Al explorar una vecina con la antorcha, si el jugador nunca estuvo en ella, ¿conoce el estado de sus
+  puertas? → R: No. Las puertas de esa vecina que el jugador nunca observó figuran «sin observar» (estado
+  desconocido) hasta que esté en una sala donde esa puerta tenga una cara; la puerta de la salida por la que es
+  vecina sí se observa, porque el jugador está en la otra sala (FR-207). Una puerta «sin observar» no es una
+  puerta recordada abierta (dato que usará «ir a», FR-25x) (FR-205, FR-212, FR-219).
+- P: Encender la antorcha estando ya en una sala, ¿explora las vecinas de esa sala o solo tiene efecto al
+  entrar a la siguiente? → R: Solo tiene efecto al entrar a una sala (§3.3: «al entrar a una sala»); encenderla
+  estando ya en una sala no cambia el mapa conocido (FR-215).
+- P: Una sala X que no es destino de ninguna salida de una sala explorada, pero tiene una salida sin vuelta
+  hacia una sala explorada A, ¿queda avistada, y el jugador observa la puerta de esa salida desde A? → R: No a
+  ambas: X sigue desconocida. En la primera parte, una puerta con vuelta tiene una cara en cada una de las dos
+  salas que conecta y es la misma puerta; una salida sin vuelta solo existe como salida de la sala de la que
+  sale. El jugador observa las puertas que tienen una cara en la sala donde está: una puerta con vuelta se
+  observa desde cualquiera de sus dos salas (§3.3) y una salida sin vuelta solo desde la sala de la que sale.
+  Si se observara desde la otra sala, el jugador sabría que existe una sala desconocida, lo que contradice
+  FR-206 (FR-204, FR-207).
+- P: ¿Ver el mapa conocido consume tiempo o cuenta como acción? → R: No; es una consulta, como `historia` en la
+  feature 004: no consume tiempo, no es acción, no se registra en `partida.log` y no modifica el historial de
+  retroceso (FR-220).
+- P: Si dos salidas de salas exploradas llevan a la misma sala avistada, ¿sabe el jugador que es la misma sala?
+  → R: No. Cada salida hacia una sala avistada se muestra por separado, como «sala sin explorar detrás de esta
+  salida», sin identificador; que dos salidas llevan a la misma sala solo se sabe al explorarla (FR-204,
+  FR-219).
+
+---
+
+## Escenarios de usuario y pruebas *(obligatorio)*
+
+### Historia 1 — El jugador solo ve lo que ha explorado (Prioridad: P1)
+
+Como jugador, quiero ver solo la parte de la cripta que he recorrido y saber dónde hay salas que todavía no
+he visitado, para que explorar tenga sentido y no conozca de antemano el mapa completo.
+
+**Por qué esta prioridad**: es la regla central de la niebla de guerra; todo lo demás (puertas, antorcha,
+comando de mapa, «ir a») se apoya en los tres estados de una sala.
+
+**Prueba independiente**: iniciar una partida, moverse por unas salas y comprobar, sala por sala, que el
+estado para el jugador (explorada, avistada o desconocida) y lo que se muestra de ella coinciden con las reglas,
+aunque el programa haya descargado o precargado salas que el jugador no conoce.
+
+**Escenarios de aceptación**:
+
+1. **Dada** una partida nueva cuya sala inicial A tiene salidas hacia B y C, **cuando** el reloj está en
+   t = 0, **entonces** A está explorada (el jugador conoce su nombre, sus salidas, el costo de cada salida y el
+   estado de sus puertas), B y C están avistadas (el jugador solo sabe que hay una sala detrás de cada salida)
+   y todas las demás salas de la cripta están desconocidas. *(FR-201, FR-202, FR-204, FR-205, FR-206)*
+2. **Dado** que B está avistada y tiene salidas hacia D y E, que están desconocidas, **cuando** el jugador
+   entra a B, **entonces** B queda explorada y D y E quedan avistadas. *(FR-203)*
+3. **Dado** que el jugador está en A con una salida sin vuelta de A hacia F (F no tiene salida hacia A) y F
+   no está explorada, **cuando** se consulta el estado de F, **entonces** F está avistada, porque es destino
+   de una salida de una sala explorada. *(FR-204)*
+4. **Dada** una sala avistada B, **cuando** la interfaz muestra cualquier información del mapa, **entonces**
+   de B solo indica que existe una sala detrás de esa salida: no muestra su nombre, sus salidas, sus costos,
+   sus puertas ni su contenido. *(FR-204, FR-217)*
+5. **Dado** que el programa ya descargó el esqueleto completo y precargó el contenido de la sala desconocida
+   G, **cuando** el jugador mira la vista o el mapa conocido, **entonces** G sigue desconocida y no aparece
+   ningún dato suyo; y la precarga no cambió el estado de ninguna sala para el jugador. *(FR-217, FR-218)*
+6. **Dado** que el jugador exploró B y luego volvió a A, **cuando** se consulta el estado de B, **entonces**
+   B sigue explorada: una sala explorada no vuelve a avistada ni a desconocida salvo por un pergamino
+   (FR-222). *(FR-203)*
+
+---
+
+### Historia 2 — El mapa recuerda las puertas como las vio por última vez (Prioridad: P1)
+
+Como jugador, quiero que mi mapa recuerde el estado de cada puerta tal como la vi la última vez, aunque haya
+cambiado sin que yo lo viera, para que mi información sea realista y pueda equivocarse.
+
+**Por qué esta prioridad**: el estado recordado de las puertas es la base de las rutas de «ir a» (§3.4) y la
+diferencia entre lo que el jugador cree y la realidad es parte de la regla.
+
+**Prueba independiente**: hacer que una puerta cambie mientras el jugador está lejos y comprobar que el mapa
+conserva el estado viejo hasta que el jugador vuelve a estar en una de las dos salas que conecta.
+
+**Escenarios de aceptación**:
+
+1. *(Apéndice B, caso «puerta recordada abierta», parte del mapa)* **Dado** que el mapa del jugador recuerda
+   abierta la puerta de la salida con vuelta entre B y C y en realidad esa puerta está cerrada, **cuando** el
+   jugador llega a B (o a C), **entonces** observa la puerta y el mapa pasa a recordarla cerrada. *(FR-207, FR-209)*
+   La parte «la ruta se recalcula; si no queda ruta, el viaje se detiene sin consumir tiempo adicional» es de
+   «ir a» (pendiente FR-25x, integrante 3).
+2. **Dado** que el jugador cruza de A a B por una puerta abierta con cierre automático y sigue hacia D, que no
+   está conectada con A ni con B, **cuando** la puerta se cierra sola mientras el jugador está en D,
+   **entonces** el mapa sigue mostrando esa puerta abierta, aunque en realidad está cerrada. *(FR-208)*
+3. **Dado** que el jugador está en B y una puerta de una salida de B está abierta, **cuando** esa puerta se
+   cierra mientras el jugador sigue en B, **entonces** el mapa la recuerda cerrada desde ese momento.
+   *(FR-207)*
+4. **Dada** una salida sin vuelta de A hacia F cuya puerta el mapa recuerda abierta y que en realidad está
+   cerrada, **cuando** el jugador está en A, **entonces** observa esa puerta y el mapa la recuerda cerrada; y
+   **cuando** el jugador está en F, **entonces** no observa esa puerta (no tiene cara en F) y el mapa conserva
+   el último estado observado desde A. Además, **dada** una sala X que no es destino de ninguna salida de una
+   sala explorada y tiene una salida sin vuelta hacia A, **cuando** el jugador está en A, **entonces** X sigue
+   desconocida y la puerta de esa salida no se observa. *(FR-204, FR-207)*
+
+---
+
+### Historia 3 — La antorcha explora las vecinas (Prioridad: P2)
+
+Como jugador, quiero que la antorcha encendida me revele las salas vecinas al entrar a una sala, sin despertar
+lo que haya en ellas, para planificar mejor mi recorrido.
+
+**Por qué esta prioridad**: da efecto a un objeto de la primera parte (P1 §2.7); es la fuente principal de
+cambios grandes en el mapa conocido de una sola vez.
+
+**Prueba independiente**: entrar a la misma sala con la antorcha encendida y apagada, y comparar qué salas
+quedan exploradas y qué ocurrió con los enemigos y trampas de las vecinas.
+
+**Escenarios de aceptación**:
+
+1. *(Apéndice B, caso «antorcha»)* **Dado** que la antorcha está encendida y la sala B tiene salidas hacia C
+   (con un enemigo dormido) y hacia D (con una trampa), **cuando** el jugador entra a B, **entonces** B, C y D
+   quedan exploradas; el enemigo de C sigue dormido; la trampa de D no se activa; el mapa muestra el nombre y
+   las salidas de C y D, pero no su contenido; y la entrada no consume más tiempo que una entrada sin antorcha.
+   *(FR-210, FR-211)*
+2. **Dado** que la antorcha está encendida y la salida de B hacia E tiene una puerta cerrada (incluso con llave
+   que el jugador no tiene), **cuando** el jugador entra a B, **entonces** E queda explorada igual que las
+   vecinas detrás de salidas abiertas. *(FR-210)*
+3. **Dado** que la antorcha está apagada y B tiene salidas hacia C y D, que están desconocidas, **cuando** el
+   jugador entra a B, **entonces** solo B queda explorada; C y D quedan avistadas. *(FR-214)*
+4. **Dado** que la antorcha está encendida y C, vecina de B, tiene salidas hacia H e I, que están
+   desconocidas, **cuando** el jugador entra a B, **entonces** C queda explorada y H e I quedan avistadas (no
+   exploradas). *(FR-213)*
+5. **Dado** que C fue explorada por la antorcha y tiene un enemigo dormido, **cuando** el jugador entra a C,
+   **entonces** se revela su contenido y el enemigo se comporta según P1 §2.4, como en cualquier entrada.
+   *(FR-216)*
+6. **Dado** que la antorcha está encendida, B tiene una salida hacia C y C tiene además una salida hacia J cuya
+   puerta el jugador nunca observó, **cuando** el jugador entra a B, **entonces** el mapa muestra la puerta de
+   la salida de B a C con el estado observado desde B, y la puerta de la salida de C a J como «sin observar»
+   (ni abierta ni cerrada) hasta que el jugador esté en una sala donde esa puerta tenga una cara.
+   *(FR-205, FR-207, FR-212)*
+7. **Dado** que el jugador está en B con la antorcha apagada y C, vecina de B, está avistada, **cuando**
+   enciende la antorcha sin moverse, **entonces** el mapa conocido no cambia y C sigue avistada; y **cuando**
+   después entra a otra sala con la antorcha encendida, **entonces** se exploran las vecinas de esa sala.
+   *(FR-210, FR-215)*
+
+---
+
+### Historia 4 — El mapa se guarda, se revierte y se consulta en la línea de tiempo (Prioridad: P2)
+
+Como jugador, quiero que lo que sé del mapa forme parte de mi partida: que se conserve al guardar, que el
+pergamino lo deshaga y que la historia me muestre lo que sabía en cada momento.
+
+**Por qué esta prioridad**: el conocimiento del jugador es estado del juego (§3.3); si no se guardara o no
+se revirtiera, la partida quedaría inconsistente.
+
+**Prueba independiente**: explorar con y sin antorcha, usar un pergamino, guardar, cargar, consultar
+`historia` y reproducir con `--replay`, comparando el mapa conocido en cada paso.
+
+**Escenarios de aceptación**:
+
+1. *(Apéndice B, caso «pergamino y antorcha»)* **Dado** que, con la antorcha encendida, el jugador entró a B
+   desde A y eso exploró B y sus vecinas C y D (antes, B estaba avistada, C desconocida y D avistada),
+   **cuando** usa un pergamino que revierte esa entrada, **entonces** B vuelve a avistada, C a desconocida y
+   D a avistada, y el resto del mapa conocido queda como estaba antes de esa entrada. *(FR-222)*
+2. **Dado** que el mapa recordaba abierta la puerta de la salida de B a C, el jugador entró a B y la observó
+   cerrada, **cuando** usa un pergamino que revierte esa entrada, **entonces** el mapa vuelve a recordar esa
+   puerta abierta. *(FR-222)*
+3. **Dada** una partida con salas exploradas por entrada y por antorcha y puertas recordadas con un estado
+   distinto al real, **cuando** se guarda y se carga, **entonces** el mapa conocido es idéntico al guardado:
+   mismos estados de sala y mismo estado recordado de cada puerta. *(FR-221)*
+4. **Dado** que en la acción 4 el jugador estaba en A con B avistada y en la acción 6 exploró B, **cuando**
+   consulta `historia #4`, **entonces** el resumen muestra el mapa conocido de ese momento, con B avistada.
+   *(FR-223)*
+5. **Dada** la misma cripta, la misma semilla y el mismo `partida.log`, **cuando** se reproduce con
+   `--replay` (y con `--replay … --hasta t`), **entonces** el mapa conocido resultante es idéntico al de la
+   partida original en ese instante. *(FR-224)*
+
+---
+
+### Historia 5 — El jugador consulta su mapa con un comando (Prioridad: P3)
+
+Como jugador, quiero un comando que me muestre mi mapa conocido, para orientarme y decidir hacia dónde ir.
+
+**Por qué esta prioridad**: lo exige §3.3, pero depende de que las historias 1 a 3 ya definan qué se sabe;
+cómo se dibuja es de la interfaz (integrante 3).
+
+**Prueba independiente**: después de explorar una parte de la cripta, ejecutar el comando y comparar lo que
+lista con los estados de sala y puertas esperados.
+
+**Escenarios de aceptación**:
+
+1. **Dado** que el jugador exploró A y B y avistó C, D y E, **cuando** ejecuta el comando de ver el mapa,
+   **entonces** se muestran A y B con sus salidas, el costo de cada salida y el estado recordado de cada
+   puerta, y C, D y E como salas avistadas detrás de sus salidas; ninguna sala desconocida aparece.
+   *(FR-219)*
+2. **Dada** una puerta recordada abierta que en realidad está cerrada, **cuando** el jugador ejecuta el
+   comando, **entonces** la puerta figura abierta (el estado recordado, no el real). *(FR-208, FR-219)*
+3. **Dada** una sala explorada solo por la antorcha, **cuando** el jugador ejecuta el comando, **entonces**
+   aparece con su nombre y sus salidas, sin su contenido, y sus puertas nunca observadas figuran «sin observar».
+   *(FR-211, FR-212, FR-219)*
+4. **Dada** una partida con el reloj en t = 300, **cuando** el jugador ejecuta el comando de ver el mapa,
+   **entonces** el reloj sigue en 300, no cuenta como acción, no se registra en `partida.log` y no cambia el
+   historial de retroceso. *(FR-220)*
+5. **Dado** que A y B están exploradas y cada una tiene una salida hacia la misma sala C, que está avistada,
+   **cuando** el jugador ejecuta el comando de ver el mapa, **entonces** se muestran dos salidas hacia «sala
+   sin explorar», cada una por separado y sin identificador, sin indicar que llevan a la misma sala; y
+   **cuando** el jugador entra a C, **entonces** el mapa muestra que ambas salidas llevan a C. *(FR-204,
+   FR-219)*
+
+---
+
+### Casos borde
+
+- **Vecina ya explorada**: con la antorcha encendida, una vecina que ya estaba explorada no cambia; revertir la
+  entrada no la vuelve avistada (FR-222: el mapa vuelve exactamente al estado anterior).
+- **Sala vecina de sí misma o vecina por varias salidas**: se explora una sola vez; la exploración no se
+  duplica.
+- **Sala de la que se viene**: con la antorcha, la sala de origen ya está explorada y no cambia.
+- **La antorcha se apaga en el mismo instante en que el jugador entra**: el resultado lo fija el orden
+  determinista de eventos de P1 (Principio IV); la spec no lo cambia.
+- **Salida sin vuelta hacia una sala explorada**: la sala de la que sale sigue desconocida si no es destino de
+  ninguna salida de una sala explorada (FR-204, escenario H2-4).
+- **Varias salidas hacia la misma sala avistada**: el jugador no sabe que es la misma sala hasta explorarla
+  (FR-204, escenario H5-5).
+- **Puerta en una salida sin vuelta**: solo tiene cara en la sala de la que sale, así que solo se observa desde
+  esa sala, no desde la sala destino (FR-207, escenario H2-4).
+- **Pergamino que revierte una acción en la que no cambió el mapa**: el mapa conocido queda igual.
+- **Pergaminos seguidos**: cada uno devuelve el mapa al estado anterior a la acción que revierte (P1 §2.11).
+- **Archivo de partida de la primera parte**: no trae mapa conocido; se trata según FR-421 de la feature 004
+  (incompatible o migrado con aviso; nunca se carga en silencio).
+- **Partida terminada**: el comando de ver el mapa sigue disponible y muestra el mapa del final.
+- **Cazador en una sala desconocida**: el cazador conoce el esqueleto completo (feature 001), pero su recorrido
+  no cambia el mapa conocido del jugador (FR-218).
+
+---
+
+## Requisitos *(obligatorio)*
+
+### Requisitos funcionales
+
+**Estados de una sala para el jugador**
+
+- **FR-201**: En todo momento, cada sala de la cripta DEBE estar, para el jugador, en exactamente uno de tres
+  estados: explorada, avistada o desconocida.
+- **FR-202**: La sala inicial DEBE estar explorada desde el instante 0, y los destinos de sus salidas DEBEN
+  estar avistados desde ese instante (salvo que sean la misma sala inicial).
+- **FR-203**: Al entrar a una sala, esta DEBE quedar explorada, y los destinos de sus salidas que no estén
+  explorados DEBEN quedar avistados. Una sala explorada NO DEBE volver a avistada ni a desconocida, salvo al
+  revertir con un pergamino la acción que la exploró (FR-222).
+- **FR-204**: Una sala DEBE estar avistada si no está explorada y es destino de al menos una salida de una
+  sala explorada, aunque esa salida no tenga vuelta. De una sala avistada el jugador solo conoce que existe una
+  sala detrás de esa salida: NO su nombre, sus salidas, sus costos, sus puertas, su contenido ni su identidad.
+  Si varias salidas llevan a la misma sala avistada, el jugador NO DEBE poder saber que es la misma sala hasta
+  explorarla. Una sala que
+  no es destino de ninguna salida de una sala explorada DEBE seguir desconocida aunque tenga una salida sin
+  vuelta hacia una sala explorada; la puerta de esa salida no se observa desde la sala explorada (FR-207).
+- **FR-205**: De una sala explorada el jugador DEBE conocer su nombre, sus salidas, el costo de cada salida y
+  el estado de cada una de sus puertas según la última observación (FR-208), o «sin observar» si nunca se
+  observó (FR-212).
+- **FR-206**: De una sala desconocida el jugador NO DEBE conocer nada, ni siquiera que existe.
+
+**Memoria de puertas**
+
+- **FR-207**: El jugador DEBE observar las puertas que tienen una cara en la sala donde está: al llegar a la
+  sala y cada vez que una de esas puertas cambia mientras él sigue allí. Así, la puerta de una salida con
+  vuelta se observa desde cualquiera de las dos salas que conecta (§3.3), y la de una salida sin vuelta solo
+  desde la sala de la que sale. Observar una puerta DEBE dejar en el mapa su estado real en ese momento.
+- **FR-208**: El mapa DEBE recordar el estado de cada puerta tal como estaba en su última observación, aunque
+  después haya cambiado. Todo lo que el jugador ve del estado de una puerta DEBE ser el estado recordado, no el
+  real.
+- **FR-209**: Al volver a observar una puerta, el mapa DEBE actualizarse con su estado real de ese momento.
+
+**Antorcha**
+
+- **FR-210**: Mientras la antorcha esté encendida, al entrar a una sala también DEBEN quedar exploradas todas
+  sus vecinas, a través de cualquier salida, abierta o cerrada.
+- **FR-211**: Explorar una vecina con la antorcha DEBE revelar su nombre, sus salidas y el costo de cada
+  salida, y NO DEBE revelar su contenido (enemigos, objetos, trampas). NO DEBE activar sus enemigos ni sus
+  trampas, NO DEBE consumir tiempo virtual adicional y NO DEBE contar como una acción aparte de la entrada.
+- **FR-212**: Para una vecina explorada con la antorcha, la puerta de la salida por la que es vecina se observa
+  según FR-207, porque el jugador está en la otra sala, donde esa puerta tiene una cara. Las demás puertas de
+  esa vecina que el jugador nunca observó DEBEN figurar «sin observar» (estado desconocido) hasta que el
+  jugador esté en una sala donde esa puerta tenga una cara. Una puerta «sin observar» NO es una puerta
+  recordada abierta (dato que usará «ir a», FR-25x).
+- **FR-213**: Los destinos de las salidas de una vecina explorada con la antorcha que no estén explorados
+  DEBEN quedar avistados; la antorcha NO DEBE explorar más allá de las vecinas de la sala a la que se entra.
+- **FR-214**: Con la antorcha apagada, entrar a una sala NO DEBE explorar sus vecinas (solo las deja avistadas según
+  FR-203).
+- **FR-215**: La antorcha DEBE tener efecto solo al entrar a una sala (§3.3: «al entrar a una sala»).
+  Encenderla estando ya en una sala NO DEBE cambiar el mapa conocido.
+- **FR-216**: Entrar más tarde a una sala que fue explorada con la antorcha DEBE revelar su contenido y aplicar
+  sus enemigos y trampas como en cualquier entrada (P1).
+
+**Separación entre el mapa descargado y el conocimiento del jugador**
+
+- **FR-217**: Todo lo que la interfaz muestre sobre el mapa (la vista de la partida, el comando de ver el mapa
+  y el mapa del resumen de `historia`) y todo lo que use «ir a» DEBE derivarse exclusivamente del mapa conocido
+  del jugador. NO DEBE mostrarse ningún dato de una sala desconocida ni más que la existencia de una sala
+  avistada.
+- **FR-218**: El programa PUEDE seguir descargando el esqueleto completo, y la precarga (P1 §4.2) y el cazador
+  (feature 001) PUEDEN usarlo, pero descargar, precargar o cualquier cálculo del cazador NO DEBE cambiar el
+  estado de ninguna sala para el jugador ni el estado recordado de ninguna puerta.
+
+**Comando para ver el mapa conocido**
+
+- **FR-219**: La interfaz DEBE ofrecer un comando para ver el mapa conocido que muestre las salas exploradas
+  (con su nombre, sus salidas, el costo de cada salida y el estado recordado de sus puertas, o «sin observar»
+  para las puertas que nunca se observaron, mostradas como tales) y las salas
+  avistadas (cada salida hacia una sala avistada por separado, como «sala sin explorar detrás de esta salida»,
+  sin identificador). NUNCA DEBE mostrar salas desconocidas ni información
+  que el jugador no conoce, como el contenido de una sala explorada con la antorcha o el estado real de una
+  puerta distinto del recordado.
+- **FR-220**: Ver el mapa conocido NO DEBE consumir tiempo virtual, NO DEBE contar como acción del jugador,
+  NO DEBE registrarse en `partida.log` y NO DEBE modificar el historial de retroceso ni ningún estado del juego.
+
+**El conocimiento del jugador es estado del juego**
+
+- **FR-221**: Guardar la partida DEBE incluir el mapa conocido; al cargar, el mapa conocido DEBE ser idéntico
+  al guardado (estado de cada sala y estado recordado de cada puerta).
+- **FR-222**: Al revertir una acción con un pergamino, el mapa conocido DEBE volver exactamente al estado que
+  tenía antes de esa acción, incluidas las salas exploradas o avistadas por la antorcha y las puertas observadas
+  durante la acción revertida.
+- **FR-223**: El mapa conocido DEBE formar parte de la línea de tiempo (feature 004): el resumen de cualquier
+  instante DEBE mostrar el mapa conocido que el jugador tenía en ese instante, y NO DEBE mostrar conocimiento
+  obtenido en acciones revertidas.
+- **FR-224**: La misma partida (misma cripta, misma semilla y mismas acciones) DEBE producir el mismo mapa
+  conocido en cada instante, también al reproducirla con `--replay` y con `--replay … --hasta`
+  (Principio IV).
+
+### Viaje automático «ir a» (§3.4) — FR-250 a FR-299: pendiente, la escribe el integrante 3
+
+Esta sección, con sus requisitos, historias y escenarios (incluidos los casos del Apéndice B marcados
+«pendiente FR-25x»), la escribe el integrante 3 en otro commit. Los rangos FR-250 a FR-299, NFR-250 a
+NFR-299 y SC-250 a SC-299 quedan reservados para ella.
+
+### Requisitos de rendimiento y de recursos
+
+- **NFR-201**: Consultar si una sala está explorada, avistada o desconocida, y consultar el estado recordado
+  de una puerta, son operaciones frecuentes (en cada vista, en cada paso de «ir a» y en cada actualización por
+  antorcha): su costo NO DEBE depender del tamaño del mapa conocido ni del tamaño de la cripta (§5.3).
+- **NFR-202**: Explorar nuevas salas (al entrar o con la antorcha) DEBE costar proporcionalmente a lo que se
+  revela (las salas que cambian de estado y sus salidas), no al tamaño del mapa conocido (§5.3).
+- **NFR-203**: Registrar un cambio del mapa conocido e invertirlo (para el pergamino y para la línea de tiempo)
+  DEBE costar proporcionalmente a lo que cambió, no al tamaño del mapa conocido (§5.3).
+- **NFR-204**: `--bench` DEBE medir las consultas al mapa conocido y la exploración con antorcha en criptas
+  sintéticas deterministas por semilla de al menos tres tamaños, y las decisiones que se tomen con esas
+  mediciones DEBEN documentarse en `DECISIONES.md` (§6.3, Principio VIII).
+- **NFR-205**: Las actualizaciones del mapa conocido NO DEBEN hacer que el ciclo de eventos entre dos
+  decisiones del jugador supere el límite de 20 ms (P1 §5.2, §6.1).
+
+### Entidades clave
+
+- **Mapa conocido**: lo que el jugador sabe de la cripta en un instante; forma parte del estado de la partida.
+- **Estado de una sala para el jugador**: explorada, avistada o desconocida (FR-201).
+- **Estado recordado de una puerta**: el estado real que tenía la puerta en su última observación (FR-208), o
+  «sin observar» si el jugador nunca la observó (FR-212).
+- **Observación**: momento en que el jugador ve el estado real de una puerta (FR-207).
+- **Antorcha**: objeto de P1 §2.7; mientras está encendida, cada entrada explora también las vecinas
+  (FR-210).
+- **Esqueleto de la cripta**: todas las salas y salidas descargadas por el programa; es infraestructura y no
+  es conocimiento del jugador (FR-218).
+
+---
+
+## Trazabilidad del Apéndice B «Niebla de guerra e «ir a»» (Principio X)
+
+| # | Caso del Apéndice B | Escenario | Requisitos | Prueba |
+|---|---|---|---|---|
+| 1 | `ir a` hacia una sala no explorada: se rechaza y no consume tiempo | — | pendiente FR-25x, integrante 3 | — |
+| 2 | El mapa recuerda abierta una puerta que en realidad está cerrada: al observarla, el mapa se actualiza… | H2-1 (parte del mapa) | FR-207, FR-209 | Se define en `tasks.md` |
+| 2 | …y la ruta se recalcula; si no queda ruta, el viaje se detiene sin consumir tiempo adicional | — | pendiente FR-25x, integrante 3 | — |
+| 3 | `ir a` entra a una sala con enemigos dormidos: se activan según P1 §2.4 y el viaje se detiene | — | pendiente FR-25x, integrante 3 | — |
+| 4 | Con la antorcha encendida, entrar a una sala explora sus vecinas sin activar sus enemigos ni sus trampas | H3-1 | FR-210, FR-211 | Se define en `tasks.md` |
+| 5 | Un pergamino revierte una entrada con antorcha encendida: las salas exploradas por la antorcha vuelven a su estado anterior | H4-1 | FR-222 | Se define en `tasks.md` |
+| 6 | Un pergamino durante un viaje: revierte solo el último paso y el viaje no continúa | — | pendiente FR-25x, integrante 3 | — |
+
+Escenarios adicionales (no provienen del Apéndice B):
+
+| # | Comportamiento | Escenario | Requisitos | Prueba |
+|---|---|---|---|---|
+| 7 | Sala inicial explorada en el instante 0 y sus vecinas avistadas | H1-1 | FR-201, FR-202, FR-204, FR-205, FR-206 | Se define en `tasks.md` |
+| 8 | Entrar a una sala la explora y deja avistados los destinos de sus salidas | H1-2, H1-6 | FR-203 | Se define en `tasks.md` |
+| 9 | Precarga y esqueleto no cambian el conocimiento | H1-5 | FR-217, FR-218 | Se define en `tasks.md` |
+| 10 | Puerta con cierre automático figura abierta y está cerrada | H2-2 | FR-208 | Se define en `tasks.md` |
+| 11 | La antorcha explora a través de una salida cerrada | H3-2 | FR-210 | Se define en `tasks.md` |
+| 12 | Con la antorcha apagada no se exploran las vecinas | H3-3 | FR-214 | Se define en `tasks.md` |
+| 13 | Guardar y cargar conserva el mapa | H4-3 | FR-221 | Se define en `tasks.md` |
+| 14 | El pergamino revierte la observación de una puerta | H4-2 | FR-222 | Se define en `tasks.md` |
+| 15 | `historia` muestra el mapa conocido de ese instante | H4-4 | FR-223 | Se define en `tasks.md` |
+| 16 | `--replay` produce el mismo mapa | H4-5 | FR-224 | Se define en `tasks.md` |
+| 17 | El comando de ver el mapa no muestra salas desconocidas | H5-1 | FR-219 | Se define en `tasks.md` |
+| 18 | Ver el mapa no altera la partida | H5-4 | FR-220 | Se define en `tasks.md` |
+| 19 | Una salida sin vuelta que sale de una sala explorada deja avistado su destino | H1-3 | FR-204 | Se define en `tasks.md` |
+| 20 | Una sala avistada solo muestra su existencia | H1-4 | FR-204, FR-217 | Se define en `tasks.md` |
+| 21 | Una puerta que cambia mientras el jugador está en su sala se observa en ese momento | H2-3 | FR-207 | Se define en `tasks.md` |
+| 22 | La puerta de una salida sin vuelta se observa solo desde la sala de la que sale; la sala de origen de una salida sin vuelta hacia una sala explorada sigue desconocida | H2-4 | FR-204, FR-207 | Se define en `tasks.md` |
+| 23 | La antorcha deja avistados, sin explorarlos, los destinos de las salidas de las vecinas | H3-4 | FR-213 | Se define en `tasks.md` |
+| 24 | Entrar después a una sala explorada con la antorcha revela su contenido y aplica P1 | H3-5 | FR-216 | Se define en `tasks.md` |
+| 25 | Las puertas nunca observadas de una vecina explorada con la antorcha figuran «sin observar» | H3-6 | FR-205, FR-207, FR-212 | Se define en `tasks.md` |
+| 26 | Encender la antorcha estando ya en una sala no cambia el mapa | H3-7 | FR-210, FR-215 | Se define en `tasks.md` |
+| 27 | El comando de ver el mapa muestra el estado recordado, no el real | H5-2 | FR-208, FR-219 | Se define en `tasks.md` |
+| 28 | El comando muestra una sala explorada con la antorcha sin contenido y con sus puertas «sin observar» | H5-3 | FR-211, FR-212, FR-219 | Se define en `tasks.md` |
+| 29 | Dos salidas hacia la misma sala avistada se muestran por separado, sin identificador, hasta explorarla | H5-5 | FR-204, FR-219 | Se define en `tasks.md` |
+
+Cada prueba citará el identificador del requisito que verifica (Principio X).
+
+---
+
+## Criterios de éxito *(obligatorio)*
+
+### Resultados medibles
+
+- **SC-201**: Los casos del Apéndice B que son de esta parte (antorcha, pergamino con antorcha y la parte del
+  mapa de la puerta recordada abierta) pasan como pruebas automatizadas, y cada una cita su requisito.
+- **SC-202**: En una partida de prueba de al menos 200 acciones, con y sin antorcha, el 100 % de las salidas
+  de la interfaz sobre el mapa (vista, comando de ver el mapa y resumen de `historia`) contienen cero datos de
+  salas desconocidas y cero datos de salas avistadas más allá de su existencia.
+- **SC-203**: Con `--bench`, el tiempo medio de una consulta de estado de sala o de puerta recordada varía
+  menos de un factor 2 entre la cripta sintética más pequeña y la más grande, siendo la más grande al menos
+  10 veces mayor.
+- **SC-204**: Con `--bench`, explorar con la antorcha la misma cantidad de vecinas cuesta un tiempo que varía
+  menos de un factor 2 entre un mapa conocido pequeño y uno al menos 10 veces mayor.
+- **SC-205**: En el 100 % de los casos probados, guardar y cargar, revertir con un pergamino y reproducir con
+  `--replay` dejan el mapa conocido idéntico al esperado (estado de cada sala y de cada puerta recordada).
+- **SC-206**: El ciclo de eventos entre dos decisiones del jugador se mantiene por debajo de 20 ms,
+  medido con `--bench` en una cripta sintética determinista con decenas de enemigos
+  activos y la antorcha encendida (la cripta de referencia de §6.1 todavía no está publicada).
+
+---
+
+## Suposiciones
+
+- Las puertas y sus estados son los de P1; esta feature no agrega estados de puerta, solo los recuerda.
+- «Mientras está en una sala» (FR-207) se interpreta literalmente: un cambio de una puerta que tiene una cara
+  en la sala actual se observa en el momento en que ocurre.
+- Las vecinas de una sala son los destinos de sus salidas; una sala que solo tiene una salida hacia la sala
+  actual no es vecina de ella (y sigue desconocida si no es destino de ninguna salida de una sala explorada,
+  FR-204).
+- El nombre del comando para ver el mapa y la forma en que se dibuja los define la interfaz (integrante 3);
+  esta spec solo fija qué información muestra y qué no.
+- El estado inicial de la antorcha y su duración no cambian respecto de P1 §2.7.
+- Leer un pergamino no es una acción del jugador (P1 §2.11); revertir no genera conocimiento nuevo.
+- Un archivo de partida de la primera parte no contiene mapa conocido y se trata con FR-421 de la feature 004.

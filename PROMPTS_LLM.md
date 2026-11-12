@@ -1045,3 +1045,91 @@ Agregá la entrada en PROMPTS_LLM.md. Corré tests/correr_pruebas.py antes del c
 **Uso de la respuesta:** se corrigieron los hallazgos menores del tercer `/speckit-analyze` sin tocar código: T021 dice que `rango` es el último campo (I1); `data-model.md` y una nota en T032 explican que los arrays de la búsqueda solo crecen (U1); la tabla de cambios a P1 del plan menciona las importaciones nuevas (I2); la tabla de pruebas incluye `GrafoEsqueleto` (I3); el contrato y `data-model.md` documentan los casos que devuelven `None` o lanzan `ValueError` (U2); T022 justifica el uso de `mazmorra._existe()` (U3).
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude
+
+Le pedí a Claude revisar las ramas de Marco y Kristel (pruebas, cambios y si las podía jalar), el Estado_001 de Marco y el plan y el contrato de la línea de tiempo de Kristel, y redactar las respuestas para cada uno. También le pedí preparar el prompt de /speckit-specify de mi parte de la spec 002 (mapa conocido y antorcha) y revisar el resultado contra el enunciado (§3.3, §5.3, §6.1 y Apéndice B), la constitución y el código de la primera parte (puertas de dos caras en Mazmorra) antes de cada paso.
+
+**Uso de la respuesta:** se usó para jalar las ramas de Marco y Kristel a derek, para los mensajes de coordinación (contrato de datos, T052, contrato de la línea de tiempo y reparto de FR-2xx) y para definir el prompt, las correcciones y la respuesta de clarify de `specs/002-niebla-ir-a/spec.md`.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-specify SPECIFY_FEATURE_DIRECTORY=specs/002-niebla-ir-a
+
+Niebla de guerra y mapa conocido de Cripta II (parte del integrante 2). Usa exactamente el directorio specs/002-niebla-ir-a. Puedes crear o actualizar .specify/feature.json (es local y está en el .gitignore); fuera de eso, no crees archivos fuera de specs/002-niebla-ir-a ni escribas código.
+
+Numeración: esta spec la comparten dos integrantes. Esta parte (mapa conocido y antorcha) usa FR-201 a FR-249, NFR-201 a NFR-249 y SC-201 a SC-249. El rango FR-250 a FR-299 (y NFR/SC 250 a 299) queda reservado para «ir a», que escribe el integrante 3 en otro commit: deja una sección «Viaje automático «ir a» (§3.4) — FR-250 a FR-299: pendiente, la escribe el integrante 3» sin inventar requisitos. No empieces en 001.
+
+Antes de escribir, lee .specify/memory/constitution.md (sobre todo los principios IX y X), specs/004-linea-tiempo/spec.md (FR-405 y FR-420, que usan el mapa conocido) y, del enunciado de la Parte II (Proyecto II parte.pdf): §3.3, §5.3, §6.1, §6.3 y el Apéndice B (sección «Niebla de guerra e «ir a»»). Escribe SOLO el QUÉ: reglas, historias de usuario, escenarios de aceptación y requisitos numerados. No nombres estructuras de datos, clases, módulos ni algoritmos.
+
+Reglas (§3.3):
+- Para el jugador, cada sala está en uno de tres estados. Explorada: el jugador entró a ella al menos una vez; la sala inicial está explorada desde el instante 0; el jugador conoce su nombre, sus salidas, el costo de cada salida y el estado de sus puertas según la última observación. Avistada: no está explorada, pero es destino de una salida de una sala explorada; el jugador solo sabe que existe una sala detrás de esa salida. Desconocida: ninguna de las anteriores; el jugador no sabe nada.
+- Memoria de puertas: el jugador observa una puerta cuando está en cualquiera de las dos salas que conecta. El mapa recuerda el estado de cada puerta tal como estaba en su última observación, aunque haya cambiado después (por ejemplo, una puerta con cierre automático puede figurar abierta en el mapa y estar cerrada en realidad). Al volver a observarla, el mapa se actualiza.
+- Antorcha (P1 §2.7): mientras esté encendida, al entrar a una sala también quedan exploradas todas sus vecinas, a través de cualquier salida, abierta o cerrada. Explorar una vecina de esta forma revela su nombre y sus salidas, no su contenido, y no activa sus enemigos ni sus trampas.
+- Separación entre mapa y conocimiento: el programa sigue descargando el esqueleto completo, y la precarga y el cazador pueden usarlo (es infraestructura). Todo lo que la vista muestra y todo lo que usa «ir a» se deriva exclusivamente del conocimiento del jugador.
+- El conocimiento del jugador es estado del juego: se guarda en el archivo de partida (al cargar, el mapa es idéntico al guardado), se revierte con el pergamino de retroceso (incluidas las salas exploradas por la antorcha y las puertas observadas en la acción revertida) y forma parte de la línea de tiempo (el resumen de historia de la spec 004 muestra el mapa conocido de ese instante).
+- La interfaz ofrece un comando para ver el mapa conocido: salas exploradas (con sus salidas, costos y el estado recordado de sus puertas) y salas avistadas. Nunca muestra salas desconocidas ni información que el jugador no conoce.
+- La misma partida (misma cripta, semilla y acciones) produce el mismo mapa conocido, también con --replay.
+
+Rendimiento (§5.3, §6.1, §6.3):
+- Consultar si una sala está explorada, avistada o desconocida, y consultar el estado recordado de una puerta, son operaciones frecuentes (en cada vista, en cada paso de «ir a» y en cada actualización por antorcha): su costo no debe depender del tamaño del mapa conocido ni de la cripta.
+- Explorar nuevas salas cuesta proporcionalmente a las salas reveladas, no al tamaño del mapa conocido.
+- Registrar e invertir un cambio del mapa (para el pergamino y la línea de tiempo) cuesta proporcionalmente a lo que cambió.
+- --bench mide las consultas al mapa conocido y la exploración con antorcha, en criptas sintéticas deterministas por semilla de al menos tres tamaños (Principio VIII).
+
+Historias de usuario (con prioridad): el jugador solo ve lo que ha explorado; recuerda las puertas como las vio por última vez; la antorcha explora las vecinas; el mapa se guarda, se revierte y se consulta en la línea de tiempo; el jugador consulta su mapa con un comando.
+
+Escenarios de aceptación: incluye, en formato Dado/Cuando/Entonces y con su FR-2xx, estos casos del Apéndice B:
+1. Con la antorcha encendida, entrar a una sala explora sus vecinas sin activar sus enemigos ni sus trampas.
+2. Un pergamino revierte una entrada con la antorcha encendida: las salas exploradas por la antorcha vuelven a su estado anterior.
+3. El mapa recuerda abierta una puerta que en realidad está cerrada: al observarla, el mapa se actualiza (la parte de «la ruta se recalcula y el viaje se detiene» es de «ir a», FR-25x).
+Agrega además escenarios para: la sala inicial explorada en el instante 0 y sus vecinas avistadas; una puerta con cierre automático que figura abierta en el mapa y está cerrada en realidad; la antorcha apagada no explora vecinas; la antorcha explora a través de una salida cerrada; guardar y cargar conserva el mapa; el pergamino revierte la observación de una puerta; el comando de ver el mapa no muestra salas desconocidas; --replay produce el mismo mapa. Cada requisito funcional debe tener al menos un escenario.
+
+Incluye una tabla «Trazabilidad del Apéndice B «Niebla de guerra e «ir a»»» con los 6 casos: los 2 de la antorcha y el pergamino (con sus escenarios), el de la puerta recordada abierta (la parte del mapa aquí; la de la ruta, «pendiente FR-25x, integrante 3») y los otros 3 («ir a» a una sala no explorada, «ir a» que entra a una sala con enemigos dormidos, un pergamino durante un viaje) marcados «pendiente FR-25x, integrante 3».
+
+Si algo no está definido en el enunciado, márcalo con [NEEDS CLARIFICATION] en lugar de inventarlo. En particular: (a) al explorar una vecina con la antorcha, ¿el jugador conoce el estado de las puertas de esa vecina, si nunca estuvo en ella?; (b) encender la antorcha estando ya en una sala, ¿explora las vecinas de esa sala o solo al entrar a la siguiente?; (c) una sala que solo es destino de una salida sin vuelta, ¿queda avistada?
+
+Fuera de alcance: «ir a» (FR-250 a FR-299, integrante 3); cómo se dibuja el mapa en la interfaz (integrante 3); el costo de las salidas y el cazador (spec 001); la línea de tiempo en sí (spec 004).
+
+**Uso de la respuesta:** se usó para crear `specs/002-niebla-ir-a/spec.md` y `specs/002-niebla-ir-a/checklists/requirements.md` con mi parte (FR-201 a FR-224, NFR-201 a NFR-205, SC-201 a SC-206) y la sección de «ir a» reservada para el integrante 3. Dejó 3 marcadores [NEEDS CLARIFICATION] (FR-204, FR-212 y FR-215).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Respuestas y correcciones para specs/002-niebla-ir-a/spec.md. Edita SOLO ese archivo y su checklist; sin código ni nombres de estructuras, clases o módulos. Registra las respuestas en una sección «Clarificaciones» → «Sesión 2026-11-12», con el formato «P: … → R: …», como en las specs 001, 003 y 004, y quita los tres [NEEDS CLARIFICATION]. Todo lo que escribas en la spec, en español.
+
+1. FR-212 (Q1 → A): las puertas de una vecina explorada con la antorcha que el jugador nunca observó figuran «sin observar» (estado desconocido) hasta que esté en una sala que tenga una cara de esa puerta; la puerta de la salida por la que es vecina sí se observa, porque el jugador está en la otra sala (FR-207). Una puerta «sin observar» no es una puerta recordada abierta (dato que usará «ir a», FR-25x). Ajusta FR-205 (el estado de cada puerta según la última observación, o «sin observar» si nunca se observó), FR-219 (el comando muestra las puertas sin observar como tales) y el escenario H3-6.
+
+2. FR-215 (Q2 → A): la antorcha solo tiene efecto al entrar a una sala (§3.3: «al entrar a una sala»); encenderla estando ya en una sala no cambia el mapa conocido. Ajusta H3-7.
+
+3. FR-204 (Q3 → C): X sigue desconocida. En la primera parte, una puerta con vuelta tiene una cara en cada una de las dos salas que conecta y es la misma puerta; una salida sin vuelta solo existe como salida de la sala de la que sale. Regla: el jugador observa las puertas que tienen una cara en la sala donde está; así, una puerta con vuelta se observa desde cualquiera de sus dos salas (§3.3) y una salida sin vuelta solo desde la sala de la que sale. Si se observara desde la otra sala, el jugador sabría que existe una sala desconocida (contradice FR-206). Ajusta FR-204, FR-207, el escenario H2-4 (la puerta de la salida sin vuelta de A hacia F se observa desde A, no desde F) y el caso borde «Puerta en una salida sin vuelta».
+
+4. En «Convenciones de los ejemplos», cambia «Puede tener puerta o no» por: «Toda salida tiene una puerta, abierta o cerrada (P1); en una salida con vuelta, las dos caras son la misma puerta».
+
+5. FR-220: confírmalo como requisito y regístralo en Clarificaciones (P: ¿ver el mapa conocido consume tiempo o cuenta como acción? → R: No; es una consulta, como historia en la feature 004: no consume tiempo, no es acción, no se registra en partida.log y no modifica el historial de retroceso). Quita esa suposición de «Suposiciones».
+
+6. SC-206: la cripta de referencia todavía no está publicada (§6.1). Cámbialo a «medido con --bench en una cripta sintética determinista con decenas de enemigos activos y la antorcha encendida». NFR-205 se mantiene.
+
+7. Actualiza la tabla de cobertura, las tablas de trazabilidad y el checklist. Al final dime exactamente qué cambiaste y confirma que no queda ningún [NEEDS CLARIFICATION], que no hay ningún FR-0xx y que todos los FR, del FR-201 al FR-224, tienen al menos un escenario.
+
+**Uso de la respuesta:** se usó en `specs/002-niebla-ir-a/spec.md` para responder las 3 aclaraciones (puertas «sin observar» de una vecina explorada con la antorcha, la antorcha solo al entrar y la regla de las caras para las salidas sin vuelta), confirmar FR-220 y corregir las convenciones y SC-206.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-clarify
+
+Respuesta a la única pregunta:
+1. Si dos salidas de salas exploradas llevan a la misma sala avistada, ¿sabe el jugador que es la misma sala? → «A» (no: cada salida hacia una sala avistada se muestra por separado, sin identificador, hasta que se explora).
+
+**Uso de la respuesta:** se usó en `specs/002-niebla-ir-a/spec.md`: una aclaración nueva en «Sesión 2026-11-12», cambios en FR-204 y FR-219, el escenario nuevo H5-5 y un caso borde.
+
+-----------------------------------------------------------------------------------------------------------------------
