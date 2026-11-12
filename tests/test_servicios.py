@@ -19,6 +19,7 @@ from Data.BitacoraReplayIO import BitacoraReplayIO
 from Data.ClienteHttp import ErrorRed
 from Data.FuenteOffline import FuenteOffline
 from Data.FuenteRed import FuenteRed
+from Data.ValidacionDatos import ErrorDatos
 from DTO.AccionDTO import AccionDTO
 from DTO.ConfiguracionDTO import ConfiguracionDTO
 from DTO.ObjetoDTO import ObjetoDTO
@@ -308,6 +309,19 @@ def probar_si_falla_la_red_el_juego_queda_intacto(carpeta):
     estado = acciones.ejecutar(ctx, AccionDTO("mover", direccion=NORTE))
     assert estado.resultado.startswith("Sin conexión") and estado.sala.id == antes.sala.id
     assert estado.reloj == antes.reloj and ctx.bitacora.acciones_escritas() == 0
+
+
+def probar_si_llegan_datos_invalidos_se_muestra_su_error_fr122_h2_9(carpeta):
+    partida, acciones, ctx = _crear(carpeta)
+    antes = partida.estado(ctx)
+
+    def datos_invalidos(*_):
+        raise ErrorDatos("ficha 'x'", "campo 'ataque' fuera de rango", id_ficha="x")
+    ctx.contenido.asegurar_sala = datos_invalidos
+    estado = acciones.ejecutar(ctx, AccionDTO("mover", direccion=NORTE))
+    assert "campo 'ataque' fuera de rango" in estado.resultado and "Sin conexión" not in estado.resultado
+    assert estado.sala.id == antes.sala.id and estado.reloj == antes.reloj
+    assert ctx.bitacora.acciones_escritas() == 0
 
 
 def probar_marcas_de_uso(carpeta):

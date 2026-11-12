@@ -21,6 +21,7 @@ Reglas que impone este servicio:
 Los objetos se identifican por su id (ver Inventario.ubicar), igual en una partida en vivo que en un replay.
 """
 from Data.ClienteHttp import ErrorRed
+from Data.ValidacionDatos import ErrorDatos
 from DTO.AccionDTO import AccionDTO
 from DTO.EstadoJuegoDTO import EstadoJuegoDTO
 from Service.ArmadorEstado import ArmadorEstado
@@ -63,6 +64,8 @@ class ServicioAccionJugador:
         es_lectura_de_pergamino = self._es_lectura_de_pergamino(contexto, accion)
         try:
             codigo = self._ejecutar_en_el_motor(contexto, accion)
+        except ErrorDatos as error:                                 # datos inválidos (FR-122): su propio mensaje
+            return self._armador.armar_estado(contexto, str(error))
         except ErrorRed as error:                                   # falló la red antes de cambiar nada
             return self._armador.armar_estado(contexto, f"Sin conexión con el servicio: {error}")
         if codigo != "ok":
