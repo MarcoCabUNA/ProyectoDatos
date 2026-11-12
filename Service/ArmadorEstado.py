@@ -69,7 +69,9 @@ class ArmadorEstado:
         salidas = list(base.salidas)
         for direccion in range(len(salidas)):
             if salidas[direccion] is not None and viva.salidas[direccion] is not None:
-                salidas[direccion] = replace(salidas[direccion], cerrada=viva.salidas[direccion].cerrada)
+                # el esqueleto trae el costo DECLARADO (puede ser None en un lado); la vista muestra el igualado (FR-116)
+                salidas[direccion] = replace(salidas[direccion], cerrada=viva.salidas[direccion].cerrada,
+                                             costo=viva.salidas[direccion].costo)
         # enemigos y trampas quedan VACÍOS a propósito: el SalaDTO del esqueleto puede traer el contenido INICIAL
         # (ratas con toda su vida, trampas armadas...), que ya no es cierto. Los enemigos vivos van aparte, en
         # EstadoJuegoDTO.enemigos, y las trampas no se muestran.
