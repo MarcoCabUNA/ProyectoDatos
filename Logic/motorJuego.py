@@ -125,7 +125,7 @@ class Motor:
             self.terminado = True
             self.victoria = True
             self.mensaje("Has escapado de la cripta")
-        self.terminar_accion_jugador(self.COSTO_MOVER)
+        self.terminar_accion_jugador(salida.costo)
         return "ok"
 
     # COORDINAR (Integrante 3): fn_tiene_objeto(id) la provee el Inventario
