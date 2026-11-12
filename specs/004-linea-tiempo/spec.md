@@ -38,6 +38,16 @@
   determinista), de modo que `historia <t>` e `historia #k` coinciden para ese instante. Si en t no hay
   decisión del jugador, se muestra el estado después de todos los eventos con tiempo ≤ t (FR-402).
 
+### Sesión 2026-11-12
+
+- P: ¿Qué cuenta como «eventos con tiempo ≤ t» en FR-402? → R: Solo los eventos válidos: los eventos
+  cancelados no cuentan, porque nunca se ejecutan (FR-402).
+- P: ¿Qué estado se muestra en t si la partida terminó en ese instante (por ejemplo, la muerte del jugador por
+  veneno)? → R: El estado del momento en que terminó la partida; los demás eventos con tiempo t no se
+  ejecutan y por tanto no cuentan (FR-402).
+- P: ¿Pueden aparecer eventos nuevos en el mismo instante t al ejecutar los de t? → R: No: se asume que
+  ningún efecto se programa con retraso 0 (ver Suposiciones).
+
 ---
 
 ## Escenarios de usuario y pruebas *(obligatorio)*
@@ -81,6 +91,17 @@ resumen coincide con lo vivido y que la partida sigue exactamente igual después
    instante según FR-402. *(FR-409)*
 8. **Dada** la misma consulta repetida dos veces seguidas, **cuando** se comparan los dos resúmenes,
    **entonces** son idénticos. *(FR-419)*
+9. **Dado** que en t = 300 un enemigo ataca y luego le toca al jugador su acción #4, **cuando** el jugador
+   escribe `historia 300`, **entonces** el resumen muestra el estado justo antes de esa decisión, incluye el
+   ataque del enemigo y coincide con el resumen de `historia #4`. *(FR-402)*
+10. **Dada** una partida con elementos seleccionados en el cursor del inventario y mensajes del juego ya
+    mostrados, **cuando** el jugador consulta cualquier `historia <t>` o `historia #k`, **entonces** el resumen
+    no muestra el cursor del inventario ni los mensajes. *(FR-406)*
+11. **Dada** la interfaz de la partida, **cuando** el jugador escribe `historia <t>` o `historia #k`,
+    **entonces** la interfaz acepta ambos comandos y muestra el resumen. *(FR-423)*
+12. **Dado** que en t = 400 el veneno mata al jugador y en ese mismo instante había otros eventos válidos
+    todavía por ejecutarse, **cuando** el jugador escribe `historia 400`, **entonces** el resumen muestra el
+    estado del momento de la muerte y esos otros eventos de t = 400 no aparecen. *(FR-402)*
 
 ---
 
@@ -103,12 +124,14 @@ resumen con el esperado, sin interfaz gráfica.
 2. *(Apéndice B, caso 5)* **Dado** un `partida.log` cuya partida terminó en t = 900, **cuando** se ejecuta
    `--replay partida.log --hasta 1500`, **entonces** se imprime el resumen del estado final e indica de forma
    explícita que la partida terminó antes de t = 1500. *(FR-412)*
-3. **Dado** un `partida.log` y `--hasta` con un valor no entero, negativo o ausente, **cuando** se ejecuta
-   el comando, **entonces** se informa el error de uso y no se reproduce nada. *(FR-410)*
+3. `--hasta` sin valor o no entero o negativo, o `--hasta` sin `--replay` → error de uso (código 2); no se
+   reproduce nada. *(FR-410)*
 4. **Dado** un `partida.log` inexistente o ilegible, **cuando** se ejecuta el comando, **entonces** se informa
-   con contexto y el programa termina sin caerse. *(FR-410)*
+   con contexto, el programa termina sin caerse y con código de salida 1. *(FR-410)*
 5. **Dado** un `partida.log` y `--hasta 0`, **cuando** se ejecuta el comando, **entonces** se imprime el
    resumen del estado inicial de la partida. *(FR-402, FR-410)*
+6. `--replay partida.log` sin `--hasta` reproduce la partida completa igual que en la primera parte.
+   *(FR-410)*
 
 ---
 
@@ -215,12 +238,14 @@ que ninguna consulta exige procesar más de K acciones.
 
 - **FR-401**: El programa DEBE permitir consultar el estado de la partida en cualquier instante pasado desde
   el inicio, sin modificar la partida.
-- **FR-402**: El estado en el instante t DEBE ser el estado después de ejecutar todos los eventos con tiempo
-  menor o igual que t. Si a t le corresponde una decisión del jugador, DEBE ser el estado justo antes de
-  tomarla, incluyendo los eventos con tiempo t que ya se habían ejecutado antes de pedírsela al jugador (el
-  orden de eventos con el mismo tiempo es determinista); así `historia <t>` e `historia #k` coinciden para ese
-  instante. Si en t no hay decisión del jugador, DEBE ser el estado después de todos los eventos con tiempo
-  menor o igual que t.
+- **FR-402**: El estado en el instante t DEBE ser el estado después de ejecutar todos los eventos válidos
+  con tiempo menor o igual que t; los eventos cancelados no cuentan, porque nunca se ejecutan. Si a t le
+  corresponde una decisión del jugador, DEBE ser el estado justo antes de tomarla, incluyendo los eventos con
+  tiempo t que ya se habían ejecutado antes de pedírsela al jugador (el orden de eventos con el mismo tiempo
+  es determinista); así `historia <t>` e `historia #k` coinciden para ese instante. Si en t no hay decisión
+  del jugador, DEBE ser el estado después de todos los eventos válidos con tiempo menor o igual que t. Si la
+  partida terminó en t (por ejemplo, por la muerte del jugador), DEBE ser el estado del momento en que
+  terminó: los demás eventos con tiempo t no se ejecutan y no cuentan.
 - **FR-403**: El comando `historia <t>` DEBE mostrar el resumen del estado en el instante t, con t un entero ≥ 0.
 - **FR-404**: El comando `historia #k` DEBE mostrar el resumen del estado justo antes de la acción número k
   del jugador, con k entre 1 y el número de acciones del jugador realizadas.
@@ -246,8 +271,12 @@ que ninguna consulta exige procesar más de K acciones.
 **Consulta sin interacción**
 
 - **FR-410**: El programa DEBE aceptar `--replay partida.log --hasta <t>`, reproducir la partida hasta el
-  instante t e imprimir el resumen. Si `--hasta` falta, no es un entero ≥ 0, o el archivo no existe o no se
-  puede leer, DEBE informar el error con contexto y terminar sin caerse.
+  instante t e imprimir el resumen. Si `--hasta` se indica sin valor o con un valor que no es un entero ≥ 0,
+  DEBE informar el error de uso. `--replay partida.log` sin `--hasta` DEBE reproducir la partida completa,
+  como en la primera parte. `--hasta` sin `--replay` DEBE rechazarse como error de uso. Si el archivo no
+  existe o no se puede leer, DEBE informar el error con contexto y terminar sin caerse. Códigos de salida,
+  como en el resto del programa: 0 éxito, 1 error de operación (archivo inexistente o ilegible), 2 argumentos
+  inválidos.
 - **FR-411**: El resumen de `--replay … --hasta` DEBE ser el mismo que mostraría `historia <t>` en esa
   partida, y el modo DEBE ejecutarse sin instanciar la interfaz gráfica (Principio V).
 - **FR-412**: Si t es posterior al final de la partida, `--replay … --hasta` DEBE mostrar el resumen del
@@ -269,8 +298,6 @@ que ninguna consulta exige procesar más de K acciones.
 - **FR-416**: El programa NO DEBE guardar copias completas del estado con una frecuencia mayor a una cada K
   acciones del jugador, y NINGUNA consulta DEBE requerir aplicar o deshacer cambios de más de K acciones del
   jugador.
-- **FR-417**: Fuera de las copias completas, el programa SOLO DEBE almacenar la información necesaria para
-  reconstruir los cambios del estado.
 - **FR-418**: El resultado de una consulta NO DEBE depender del valor de K.
 
 **Guardar y cargar**
@@ -288,9 +315,10 @@ que ninguna consulta exige procesar más de K acciones.
   reconstrucción) DEBEN respaldarse con mediciones de `--bench` que cubran al menos tres valores de K
   y la alternativa sin puntos de control, DEBEN justificar el valor por defecto de K y DEBEN documentarse en
   `DECISIONES.md` (§3.6, §5.5, §6.3, Principio VIII).
-- **NFR-402**: La memoria total de la línea de tiempo DEBE crecer con la cantidad de cambios ocurridos más
-  una copia completa cada K acciones del jugador, y NO con el producto de las acciones por el tamaño del
-  estado (§5.5).
+- **NFR-402**: Fuera de las copias completas, el programa SOLO DEBE almacenar la información necesaria para
+  reconstruir los cambios del estado. La memoria total de la línea de tiempo DEBE crecer con la cantidad de
+  cambios ocurridos más una copia completa cada K acciones del jugador, y NO con el producto de las acciones
+  por el tamaño del estado (§5.5); esto se verifica midiendo la memoria con partidas de distinta duración.
 - **NFR-403**: Al usar un pergamino, la línea de tiempo DEBE recortarse sin recorrer toda la historia
   (§5.5).
 
@@ -317,6 +345,18 @@ que ninguna consulta exige procesar más de K acciones.
 | 4 | `historia` no consume tiempo virtual, no se registra en `partida.log` y no modifica el historial de retroceso | H1-3 | FR-407, FR-408 | Se define en `tasks.md` |
 | 5 | `--replay … --hasta t` con t posterior al final: muestra el estado final e indica que la partida terminó antes | H2-2 | FR-412 | Se define en `tasks.md` |
 | 6 | Se carga un archivo de la primera parte: incompatibilidad reportada o migración explícita; nunca en silencio | H4-3 | FR-421 | Se define en `tasks.md` |
+
+Escenarios adicionales (no provienen del Apéndice B):
+
+| # | Comportamiento | Escenario | Requisitos | Prueba |
+|---|---|---|---|---|
+| 7 | `historia <t>` con decisión del jugador en t: estado justo antes de la decisión, igual a `historia #k` | H1-9 | FR-402 | Se define en `tasks.md` |
+| 8 | El resumen no muestra el cursor del inventario ni los mensajes | H1-10 | FR-406 | Se define en `tasks.md` |
+| 9 | La interfaz ofrece `historia <t>` e `historia #k` y muestra el resumen | H1-11 | FR-423 | Se define en `tasks.md` |
+| 13 | Partida terminada en t: el estado es el del momento en que terminó; los demás eventos de t no cuentan | H1-12 | FR-402 | Se define en `tasks.md` |
+| 10 | `--hasta` inválido o sin `--replay`: error de uso (código 2) | H2-3 | FR-410 | Se define en `tasks.md` |
+| 11 | Archivo inexistente o ilegible: error con contexto, código 1 | H2-4 | FR-410 | Se define en `tasks.md` |
+| 12 | `--replay` sin `--hasta` reproduce la partida completa | H2-6 | FR-410 | Se define en `tasks.md` |
 
 Cada prueba citará el identificador del requisito que verifica (Principio X).
 
@@ -346,6 +386,8 @@ Cada prueba citará el identificador del requisito que verifica (Principio X).
 - Los instantes son enteros del reloj virtual; no hay instantes fraccionarios.
 - Los eventos con igual tiempo se ordenan de forma determinista (Principio IV), de modo que el estado en un
   instante está bien definido (FR-402).
+- Ningún efecto se programa con retraso 0, así que al ejecutar los eventos de un instante t no aparecen
+  eventos nuevos en ese mismo t. Hoy se cumple (FR-402).
 - El pergamino de retroceso (P1 §2.11) y su límite de 5 acciones no cambian.
 - `partida.log` ya existe como registro de las acciones de la partida; esta feature solo exige que permita
   reproducirla hasta un instante.

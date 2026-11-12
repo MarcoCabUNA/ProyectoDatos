@@ -31,4 +31,8 @@
 
 ## Notas
 
+- FR-417 se eliminó como requisito independiente y se integró en NFR-402 (medible); no quedan referencias a FR-417.
+- Se agregaron los escenarios H1-9 (FR-402 con decisión del jugador), H1-10 (FR-406), H1-11 (FR-423) y H2-6
+  (FR-410 sin `--hasta`); todos tienen fila en la tabla de trazabilidad. Los 6 casos del Apéndice B conservan
+  su escenario.
 - La marca de FR-402 se resolvió con `/speckit-clarify`; la spec está lista para `/speckit-plan`.
