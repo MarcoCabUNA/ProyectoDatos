@@ -502,10 +502,12 @@ class TestDatosInvalidos(unittest.TestCase):
 class TestModosSinVista(unittest.TestCase):
     """FR-118, escenarios H3-7 y H3-8: las reglas de terreno y del cazador en los modos sin vista."""
 
-    def test_h3_7_fr118_verificar_aplica_las_mismas_reglas(self):
+    def test_h3_7_fr118_fr122_verificar_no_depende_de_costos_ni_cazadores(self):
         """
-        Escenario H3-7 (FR-118): `--verificar` sobre una cripta con costos y un cazador usa los mismos costos de
-        salida y las mismas reglas del cazador que una partida con vista, sin instanciar la vista.
+        Escenario H3-7 (FR-118, FR-122; 003 FR-302 y FR-314): `--verificar` carga un esqueleto con costos válidos
+        sin error, y su veredicto y su orden de llaves no dependen de los costos ni de los cazadores. Con un error
+        de datos de FR-122 (costo inválido o distinto entre caras), la verificación no concluye y el programa
+        termina con código 1, sin caerse ni instanciar la vista.
         """
         self.skipTest("pendiente de la spec 003-resolubilidad: `--verificar` todavía no existe")
 

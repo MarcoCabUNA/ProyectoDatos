@@ -1084,3 +1084,25 @@ Cherry-pick solo 888d763.
 **Uso de la respuesta:** se trajo T038 con un cherry-pick de `888d763` (commit de Kris, `89efa22` en Marco). Commit `fa52f5a` (spec): escenarios H1-9 a H1-11, H2-10 a H2-19, H3-7 y H3-8 con su tabla de trazabilidad; FR-116 y FR-117 observables; regla de FR-108 tomada del motor (dos eventos con el mismo tiempo se atienden en el orden en que se programaron, por la secuencia de `ColaEventos`); fuera de alcance, decisiones del grupo, FR-114 con el pergamino y correcciones de formato; checklist desmarcado donde falta cobertura. Commit de pruebas: docstrings con el escenario en las pruebas que ya cubrían H1-10, H1-11, H2-10 a H2-14 y H2-16; pruebas nuevas para H1-9, H2-14 (ataque), H2-15 y T036; H2-17 a H2-19 con `skip` hasta T002, y H3-7 y H3-8 con `skip` hasta la spec 003 y la fase 7.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Revisión cruzada, SOLO LECTURA (no modifiques nada, no hagas commit): specs 002 y 003 del integrante 2,
+en origin/derek (git fetch; leelas con git show origin/derek:specs/<carpeta>/spec.md).
+Revisá contra la constitución v1.2.0 y el enunciado: Principio IX; Principio X (FR sin escenario y
+Apéndice B); requisitos no verificables; clarificaciones contradictorias o reemplazadas; fuera de alcance
+y dependencias con 001, 004 y entre 002 y 003; coherencia con la 001 (grafo de busqueda-rutas.md y
+FR-122); cifras que son decisión del grupo; formato. Salida por spec con prioridad ALTA/MEDIA/BAJA,
+archivo y línea, y una propuesta concreta por punto.
+
+Corregí H3-7 de la 001 según tu propuesta, en dos commits:
+1. spec(001): H3-7 alineado con 003 FR-302: --verificar no depende de costos ni cazadores;
+   los errores de FR-122 hacen que no concluya (código 1). Actualizá la trazabilidad.
+2. test(001): renombrá test_h3_7_fr118_verificar_aplica_las_mismas_reglas según el nuevo escenario
+   (sigue con skip mientras no exista la 003).
+Suite en verde con uv run, entrada en PROMPTS_LLM.md, no hagas push.
+
+**Uso de la respuesta:** la revisión de las specs 002 y 003 (sin cambios en esas specs) encontró, entre otros puntos, que H3-7 de la 001 contradecía 003 FR-302. Commit `99bb5ff` (spec): H3-7, FR-118 y «Fuera de alcance» dicen que `--verificar` no depende de los costos ni de los cazadores y que los errores de FR-122 hacen que no concluya, con código 1; la trazabilidad de H3-7 cita FR-118 y FR-122. Commit de pruebas: la prueba pasa a llamarse `test_h3_7_fr118_fr122_verificar_no_depende_de_costos_ni_cazadores` y sigue con `skip` hasta que exista la 003.
+
+-----------------------------------------------------------------------------------------------------------------------
