@@ -32,7 +32,6 @@ hace I/O ni conoce `Data`.
 |---|---|---|
 | `posicion` | `int ≥ 0` | Acciones vigentes completadas cuando se descontó el pergamino. |
 | `id_objeto` | `str` | Id del pergamino descontado. |
-| `efecto_externo` | opcional | **Reservado** (H-2): lo que la acción revertida hizo con un pergamino fuera del historial. No se implementa hasta que Marco confirme. |
 
 Regla de recorte: al pasar de `c+1` a `c` acciones, los marcadores con posición mayor que `c` se
 mueven a `c` y se agrega el nuevo en `c`.
@@ -75,7 +74,7 @@ Vista de solo lectura del estado en un instante (FR-405). Solo transporta datos.
 
 | Campo | Descripción |
 |---|---|
-| `reloj` | El reloj del resumen (ver H-3) |
+| `reloj` | El reloj del resumen, según FR-405 de la spec |
 | `sala` | Nombre e id de la sala del jugador |
 | `jugador` | Vida, vida máxima, ataque, defensa y velocidad |
 | `inventario` | Objetos en orden real, arma y armadura equipadas. **Sin cursor** (FR-406) |

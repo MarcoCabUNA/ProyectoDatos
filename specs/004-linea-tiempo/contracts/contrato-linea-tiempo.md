@@ -23,7 +23,7 @@ mismo campo (para comparar JSON contra binario, §4.10).
 |---|---|---|
 | `k` | `int` | ≥ 1 |
 | `acciones` | `list[AccionGuardadaDTO]` | `tiempo: int`, `tipo: str`, `direccion: int \| None`, `objetivo: str \| None`, `objeto: str \| None` |
-| `marcadores` | `list[MarcadorPergaminoDTO]` | `posicion: int`, `id_objeto: str`, `efecto_externo` reservado (H-2) |
+| `marcadores` | `list[MarcadorPergaminoDTO]` | `posicion: int`, `id_objeto: str` (solo el pergamino descontado) |
 | `puntos` | `list[PuntoControlGuardadoDTO]` | `acciones_completadas: int`, `partida: PartidaGuardadaDTO` (con `linea=None`), `salas: list[SalaGuardadaDTO]` |
 | `cargas` | `list[RegistroCargaGuardadoDTO]` | `ordinal: int`, `sala: SalaDTO` (el contenido inicial) |
 | `fichas` | `list` de fichas | enemigos, trampas y objetos ya existentes como DTO del catálogo, cada uno una vez |
@@ -90,4 +90,6 @@ historial de retroceso (FR-407, FR-408).
 | `--checkpoint-cada` con 0, negativo o no entero | Error de uso; no inicia con ese valor (FR-415) | 2 |
 
 Sin `--checkpoint-cada` se usa el valor por defecto **provisional** del plan (K = 20), que se confirma
-con `--bench`. Al **cargar** una partida guardada, el K de la línea guardada se conserva (R7).
+con `--bench`. Al **cargar** una partida guardada se conserva el K con el que se guardó su línea de
+tiempo, aunque se indique otro `--checkpoint-cada` (Suposiciones de la spec); el K guardado viaja en
+`LineaTiempoGuardadaDTO.k`.
