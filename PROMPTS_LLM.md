@@ -1045,3 +1045,42 @@ Agregá la entrada en PROMPTS_LLM.md. Corré tests/correr_pruebas.py antes del c
 **Uso de la respuesta:** se corrigieron los hallazgos menores del tercer `/speckit-analyze` sin tocar código: T021 dice que `rango` es el último campo (I1); `data-model.md` y una nota en T032 explican que los arrays de la búsqueda solo crecen (U1); la tabla de cambios a P1 del plan menciona las importaciones nuevas (I2); la tabla de pruebas incluye `GrafoEsqueleto` (I3); el contrato y `data-model.md` documentan los casos que devuelven `None` o lanzan `ValueError` (U2); T022 justifica el uso de `mazmorra._existe()` (U3).
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Revisión cruzada de la spec 001 hecha por la integrante 3. Aplicá las correcciones en dos commits:
+
+Commit 1, spec(001): correcciones tras revisión cruzada
+- Escenarios nuevos para FR-119, FR-120, FR-121, FR-123, FR-122 (costo inválido o distinto entre caras;
+  ficha inválida en la sala inicial), FR-118 (--verificar y --bench), FR-104 (rastreador y guardián),
+  FR-108 (puertas con llave y cierre automático), FR-103 (todas las acciones que no son mover) y FR-115.
+  Cada uno en la tabla de trazabilidad.
+- FR-117 observable: junto al nombre de cada enemigo se muestra su comportamiento en texto, y el cazador
+  lleva un marcador visual propio. FR-116: el costo se muestra junto a cada salida, también si está cerrada.
+- Fuera de alcance: FR-118 depende de la spec 004 (--replay --hasta) y de la 003 (--verificar); la 002
+  reutiliza la búsqueda de rutas.
+- Quitar las respuestas "Reemplazada" de Clarificaciones.
+- FR-114: mencionar que el pergamino de retroceso puede deshacer movimientos o puertas.
+- Marcar como "decisión del grupo": igualar el costo de las dos caras, rango pequeño 200, SC-105,
+  1000 salas y 30 cazadores, y la regla del rastreador con salidas repetidas.
+- FR-108: escribir qué pasa si una puerta se cierra en el mismo instante que el turno del cazador,
+  según el orden que el motor YA aplica (revisá el código; no inventes la regla).
+- Formato: línea 194 "escenario 2.1" pasa a H2-1; caso 6 cita FR-102; frase cortada en "Datos inválidos";
+  orden FR-116..FR-123; citar P1 §2.6 en Fuente; desmarcar el checklist hasta que esté cubierto.
+
+Commit 2, test(001): pruebas de los escenarios nuevos
+- Para cada escenario nuevo: si ya existe una prueba que lo cubre, solo agregá el ID del escenario al
+  docstring. Escribí pruebas nuevas solo para las que falten.
+- FR-118 --verificar/--bench: dejalas con skipTest y el motivo (spec 003 / fase 7).
+- También T036 (test_h4_1_fr116...) sin skip, porque T038 ya está integrada; marcá T038 en tasks.md.
+
+Antes de cada commit, suite en verde. Entrada en PROMPTS_LLM.md. No hagas push.
+Al final: tabla escenario → prueba y la lista de lo que quedó con skip.
+
+Respuesta a la pregunta de Claude (T038 no estaba en la rama Marco, solo en origin/kris y origin/derek):
+Cherry-pick solo 888d763.
+
+**Uso de la respuesta:** se trajo T038 con un cherry-pick de `888d763` (commit de Kris, `89efa22` en Marco). Commit `fa52f5a` (spec): escenarios H1-9 a H1-11, H2-10 a H2-19, H3-7 y H3-8 con su tabla de trazabilidad; FR-116 y FR-117 observables; regla de FR-108 tomada del motor (dos eventos con el mismo tiempo se atienden en el orden en que se programaron, por la secuencia de `ColaEventos`); fuera de alcance, decisiones del grupo, FR-114 con el pergamino y correcciones de formato; checklist desmarcado donde falta cobertura. Commit de pruebas: docstrings con el escenario en las pruebas que ya cubrían H1-10, H1-11, H2-10 a H2-14 y H2-16; pruebas nuevas para H1-9, H2-14 (ataque), H2-15 y T036; H2-17 a H2-19 con `skip` hasta T002, y H3-7 y H3-8 con `skip` hasta la spec 003 y la fase 7.
+
+-----------------------------------------------------------------------------------------------------------------------
