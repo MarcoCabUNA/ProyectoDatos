@@ -35,4 +35,6 @@
 - Se agregaron los escenarios H1-9 (FR-402 con decisión del jugador), H1-10 (FR-406), H1-11 (FR-423) y H2-6
   (FR-410 sin `--hasta`); todos tienen fila en la tabla de trazabilidad. Los 6 casos del Apéndice B conservan
   su escenario.
+- FR-422 se eliminó y su número queda sin usar. Se agregó FR-424 (pergaminos recogidos o soltados en acciones
+  revertidas, P1 §2.11) con el escenario H3-5 y su fila de trazabilidad.
 - La marca de FR-402 se resolvió con `/speckit-clarify`; la spec está lista para `/speckit-plan`.

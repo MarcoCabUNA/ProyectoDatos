@@ -163,6 +163,10 @@ acciones; ninguna consulta debe mostrar lo revertido.
    según FR-409 (el límite es el reloj actual). *(FR-409, FR-413)*
 4. **Dado** que se usaron pergaminos varias veces seguidas, **cuando** se consultan instantes de cualquier
    parte de la partida, **entonces** ningún resumen incluye eventos de acciones revertidas. *(FR-413)*
+5. **Dado** que el jugador recoge un pergamino de retroceso en la acción 4 y luego usa otro pergamino para
+   revertir esa acción, **cuando** consulta el instante actual, **entonces** el inventario del resumen conserva
+   el pergamino recogido y no tiene el pergamino consumido, igual que la partida viva. *(FR-413, FR-419,
+   FR-424)*
 
 ---
 
@@ -236,6 +240,9 @@ que ninguna consulta exige procesar más de K acciones.
 
 ### Requisitos funcionales
 
+> Numeración: FR-417 se integró en NFR-402 y FR-422 se eliminó; ambos números quedan sin usar para que los
+> identificadores ya citados no cambien.
+
 **Estado en un instante**
 
 - **FR-401**: El programa DEBE permitir consultar el estado de la partida en cualquier instante pasado desde
@@ -293,6 +300,8 @@ que ninguna consulta exige procesar más de K acciones.
   partida tal como quedó.
 - **FR-414**: La línea de tiempo DEBE ser independiente del límite de 5 acciones del pergamino: puede
   consultarse cualquier instante desde el inicio, aunque la acción ya no se pueda revertir.
+- **FR-424**: Los pergaminos de retroceso recogidos o soltados dentro de acciones revertidas conservan ese
+  cambio: la línea de tiempo refleja la cantidad de pergaminos igual que la partida viva (P1 §2.11).
 
 **Puntos de control**
 
@@ -361,6 +370,7 @@ Escenarios adicionales (no provienen del Apéndice B):
 | 10 | `--hasta` inválido o sin `--replay`: error de uso (código 2) | H2-3 | FR-410 | Se define en `tasks.md` |
 | 11 | Archivo inexistente o ilegible: error con contexto, código 1 | H2-4 | FR-410 | Se define en `tasks.md` |
 | 12 | `--replay` sin `--hasta` reproduce la partida completa | H2-6 | FR-410 | Se define en `tasks.md` |
+| 14 | Un pergamino recogido en una acción revertida se conserva y el consumido no aparece | H3-5 | FR-413, FR-419, FR-424 | Se define en `tasks.md` |
 
 Cada prueba citará el identificador del requisito que verifica (Principio X).
 
