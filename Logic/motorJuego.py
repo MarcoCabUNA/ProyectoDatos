@@ -209,16 +209,18 @@ class Motor:
     def turno_enemigo(self, enemigo):
         if not enemigo.Vivo():
             return
+        costo = 100                                     # atacar o esperar (FR-103)
         if enemigo.Sala_Actual == self.jugador.Sala_Actual:
             self.atacar(enemigo, self.jugador)
         else:
-            destino = enemigo.estrategia.decidir(enemigo, self)
-            if destino is not None:
+            paso = enemigo.estrategia.decidir_paso(enemigo, self)
+            if paso is not None:
+                destino, costo = paso                   # moverse cuesta lo que cuesta la salida (FR-102)
                 self.mazmorra.mover_enemigo(enemigo, destino)
                 if destino == self.jugador.Sala_Actual:
                     self.mensaje(f"{enemigo.nombre_visible()} entra a la sala")
         if not self.terminado:
-            self.programar_accion(enemigo, 100)
+            self.programar_accion(enemigo, costo)
 
     def atacar(self, atacante, defensor):
         dano = max(1, atacante.ataque_efectivo() + self.azar.randint(0, 4) - defensor.defensa_efectiva())
