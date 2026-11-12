@@ -846,3 +846,12 @@ Ajuste final en specs/003-resolubilidad/spec.md (edita SOLO ese archivo y su che
 **Uso de la respuesta:** se usó en `specs/003-resolubilidad/spec.md` para limitar el error de datos de las dos caras a llaves distintas, alinear la regla de una sola cara de FR-302 con la de la primera parte (`_igualar_caras`) y reservar el código de salida 2 para argumentos inválidos (FR-314).
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+En specs/001-terreno-cazador/contracts/contrato-datos.md quitá la marca "Propuesto — pendiente de confirmar con integrante 2": Dereck lo confirmó tal como está el 11 nov. Anotalo en el plan si lo menciona. Commit: "plan(001): contrato de datos confirmado con integrante 2", con PROMPTS_LLM.md.
+
+**Uso de la respuesta:** se usó en `specs/001-terreno-cazador/contracts/contrato-datos.md` y `specs/001-terreno-cazador/plan.md` para marcar el contrato de datos como confirmado con el integrante 2 el 11 de noviembre; la parte de `ActorDTO` y `ArmadorEstado` sigue pendiente con el integrante 3.
+
+-----------------------------------------------------------------------------------------------------------------------

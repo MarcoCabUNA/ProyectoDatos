@@ -91,7 +91,7 @@ el bench. Decenas de cazadores activos (pruebas del enunciado), hasta 100 en el 
 
 ## Contrato de datos
 
-**Propuesto — pendiente de confirmar con integrante 2.** Detalle en
+**Confirmado con el integrante 2 el 11 de noviembre, tal como está.** Detalle en
 [contracts/contrato-datos.md](contracts/contrato-datos.md).
 
 | DTO | Campo | Propuesta | Dueño |
@@ -214,7 +214,7 @@ specs/001-terreno-cazador/
 ├── data-model.md        # fase 1
 ├── quickstart.md        # fase 1
 ├── contracts/
-│   ├── contrato-datos.md     # DTO (propuesto, pendiente de confirmar con integrante 2)
+│   ├── contrato-datos.md     # DTO (confirmado con integrante 2 el 11 nov)
 │   └── busqueda-rutas.md     # búsqueda compartida con «ir a»
 ├── checklists/requirements.md
 └── tasks.md             # fase 2 (/speckit.tasks)

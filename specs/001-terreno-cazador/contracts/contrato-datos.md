@@ -1,7 +1,7 @@
 # Contrato de datos de la feature 001
 
-> **Propuesto — pendiente de confirmar con integrante 2** (y con el integrante 3 en la parte de
-> `ActorDTO` y `ArmadorEstado`).
+> **Confirmado con el integrante 2 el 11 de noviembre, tal como está.** Pendiente de confirmar con
+> el integrante 3 la parte de `ActorDTO` y `ArmadorEstado`.
 > Fecha límite acordada en el plan de trabajo: 9 de noviembre.
 > Este plan **no** incluye código de la capa Data. La validación es del integrante 2.
 
