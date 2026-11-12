@@ -4,6 +4,16 @@ class Comportamiento:
     def decidir(self, enemigo, motor):
         raise NotImplementedError
 
+    def decidir_paso(self, enemigo, motor) -> tuple[int, int] | None:
+        """
+        (destino, costo) del paso que da el enemigo, o None si no se mueve (FR-102, FR-104).
+        Usa decidir() y paga la salida abierta más barata hacia ese destino.
+        """
+        destino = self.decidir(enemigo, motor)
+        if destino is None:
+            return None
+        return destino, motor.mazmorra.costo_paso(enemigo.Sala_Actual, destino)
+
 
 class Guardian(Comportamiento):
     NOMBRE = "guardián"
