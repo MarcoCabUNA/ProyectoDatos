@@ -100,6 +100,27 @@ class Mazmorra:
                 destinos.append(salida.destino)
         return destinos
 
+    def salidas_abiertas_con_costo(self, id_sala: int) -> list[tuple[int, int]]:
+        """
+        Pares (destino, costo) de las salidas abiertas de la sala, en el mismo orden y con los mismos filtros
+        que salidas_abiertas(): una salida es una opción aunque dos lleven a la misma vecina (FR-104).
+        """
+        opciones = []
+        for salida in self.salas[id_sala].salidas:
+            if salida is not None and not salida.cerrada and self._existe(salida.destino):
+                opciones.append((salida.destino, salida.costo))
+        return opciones
+
+    def costo_paso(self, origen: int, destino: int) -> int:
+        """El menor costo entre las salidas abiertas de 'origen' hacia 'destino' (FR-119). Debe haber al menos una."""
+        menor = None
+        for vecina, costo in self.salidas_abiertas_con_costo(origen):
+            if vecina == destino and (menor is None or costo < menor):
+                menor = costo
+        if menor is None:
+            raise ValueError(f"No hay una salida abierta de la sala {origen} hacia la sala {destino}")
+        return menor
+
     def enemigos_vivos(self, id_sala):
         vivos = []
         for enemigo in self.salas[id_sala].enemigos:
