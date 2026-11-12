@@ -73,29 +73,53 @@ cuadrículas sintéticas de hasta 10 000 salas (para ver el costo de cada copia)
 | VI. Sin datos de una cripta concreta | Nada de ids ni números de salas en el código; el bench usa criptas sintéticas deterministas por semilla. | ✅ | ✅ |
 | VII. Red y presupuesto | Reconstruir y consultar **no** piden nada a Data: contenido y fichas salen de la línea. Los adaptadores solo registran lo que la partida viva ya pidió (R3). | ✅ | ✅ |
 | VIII. Rendimiento con evidencia | Cada decisión (R1 a R9) tiene alternativas, complejidad y medición prevista (M1 a M6). El valor de K es **provisional** hasta medir. | ✅ | ✅ |
-| IX. Spec antes del código | Este plan no agrega reglas. Las observaciones están como hallazgos H-1 a H-4. | ✅ | ✅ |
+| IX. Spec antes del código | Este plan no agrega reglas. Las observaciones están como hallazgos H-1, H-2 y H-4. | ✅ | ✅ |
 | X. Trazabilidad | Hay una prueba por escenario y por caso del Apéndice B, y cada una cita su FR. | ✅ | ✅ |
 | XI. Bitácora de LLM | Este prompt se registra en `PROMPTS_LLM.md`. | ✅ | ✅ |
 
-**Resultado**: pasa. Los hallazgos no bloquean el plan, pero H-2 debe confirmarse con Marco antes de
-la tarea del pergamino y H-3 se puede resolver en la spec con un cambio de una línea.
+**Resultado**: pasa. Los hallazgos no bloquean el plan, pero H-2 lo decide el integrante 3 antes de
+cerrar la tarea del pergamino.
 
 ### Hallazgos
+
+Abiertos: H-1 (resuelto en el diseño, con prueba), H-2 (decisión pendiente) y H-4 (dependencia). El
+reloj que muestra el resumen ya no es un hallazgo: lo fija FR-405 de la spec (el instante pedido; para
+`historia #k`, el instante de la decisión k; si la partida terminó antes, el reloj del final).
 
 - **H-1** (FR-419): cargar una sala no se deshace con el pergamino y numera a los enemigos por tipo.
   Re-simular solo las acciones vigentes cambiaría la numeración. Solución sin reglas nuevas:
   registros de carga con ordinal, guardados en el orden real y aplicados como prefijo
   ([research.md, R3](research.md#hallazgo-h-1--el-orden-de-carga-de-salas-cambia-la-numeración-de-enemigos)).
-- **H-2** (FR-413, FR-419): recoger o soltar un **pergamino** dentro de una acción revertida persiste
-  en la partida viva, porque el pergamino está fuera del historial. El marcador reserva un campo
-  opcional; se implementa solo el descuento hasta que Marco confirme
-  ([research.md, R4](research.md#hallazgo-h-2--recoger-o-soltar-un-pergamino-dentro-de-la-acción-revertida)).
-- **H-3** (FR-405): la spec dice «el reloj» sin precisar si es el instante pedido o el del último
-  evento ([research.md, R6](research.md#hallazgo-h-3--qué-reloj-muestra-el-resumen-observación-para-la-spec)).
-  Propuesta: el instante pedido, salvo partida terminada antes.
+- **H-2** (FR-413, FR-419) — **decisión del integrante 3** (`Inventario` y `HistorialRetroceso` son
+  suyos): recoger o soltar un **pergamino** dentro de una acción revertida persiste en la partida
+  viva, porque el pergamino está fuera del historial. El marcador de pergamino **no** lleva campos
+  nuevos: solo dice «se descontó este pergamino». El plan implementa solo ese descuento.
+  - *Tarea pendiente* (se numerará en `tasks.md`): decidir qué hace la línea cuando la acción
+    revertida recogió o soltó un pergamino (documentarlo como límite conocido o reproducirlo con otro
+    mecanismo), y dejar la decisión en `DECISIONES.md`.
+  - *Prueba pendiente*: escenario con un pergamino recogido en la acción revertida, marcada con
+    `skip` hasta que se decida; cita FR-413 y FR-419.
+  - Detalle en [research.md, R4](research.md#hallazgo-h-2--recoger-o-soltar-un-pergamino-dentro-de-la-acción-revertida).
 - **H-4** (dependencia): la spec 002 todavía no existe en el repositorio. El mapa conocido se copia
   con un método de copia manual **que se pide a esa clase**; hasta entonces el resumen omite esa
   sección (Suposiciones de la spec).
+
+## Revisión de estructuras existentes (Principio II)
+
+Resultado de la revisión de limitaciones contra la Parte II §3.6 y §5.5. Detalle en
+[research.md, R0](research.md#r0-revisión-de-las-estructuras-ya-implementadas-principio-ii).
+
+| Estructura | Limitación frente a la Parte II | Decisión |
+|---|---|---|
+| `HistorialRetroceso` | Tope de 5 (correcto para el pergamino); guarda funciones que no se pueden escribir en disco ni llevan tiempo; el pergamino queda fuera de él | No se toca ni sirve como línea. Esta feature no registra nada nuevo en él |
+| `BufferCircular` | Pisa lo más antiguo; la línea debe conservar todo desde el inicio | No sirve |
+| `Cola` | Sin acceso por posición ni por tiempo: ubicar un punto de control sería O(n) | No sirve |
+| `ListaDoble` | Acceso por posición O(n): impide la búsqueda binaria | No sirve |
+| `Ordenador` | La línea nace ordenada por tiempo (se agrega al final); no hay nada que ordenar | No se usa |
+| `MonticuloMinimo` | Da el mínimo, no ubica por tiempo | No se usa |
+| `PartidaGuardada` | Guarda y restaura el azar, la cola, los efectos y todas las salas, pero cada copia recorre todo el estado (O(S + E + V + I)); no guarda historial, mensajes, caché de rutas ni mapa conocido | Se reutiliza tal cual como punto de control y para reconstruir. Su costo es el riesgo R-1 |
+
+Lo único nuevo en `Estructuras/` es una búsqueda binaria propia sobre un arreglo (sin `bisect`).
 
 ## Estructura del proyecto
 
@@ -104,7 +128,7 @@ la tarea del pergamino y H-3 se puede resolver en la spec con un cambio de una l
 ```text
 specs/004-linea-tiempo/
 ├── plan.md                              # este archivo
-├── research.md                          # fase 0: R0 a R10 y hallazgos H-1 a H-3
+├── research.md                          # fase 0: R0 a R10 y hallazgos H-1 y H-2
 ├── data-model.md                        # fase 1: entidades de la línea
 ├── quickstart.md                        # fase 1: cómo validar de punta a punta
 ├── contracts/
@@ -192,7 +216,8 @@ Derek: `PartidaGuardadaDTO.linea` (valor por defecto `None`) con un `LineaTiempo
 que contiene K, las acciones vigentes con su tiempo, los marcadores de pergamino, los puntos de
 control (cada uno con su `PartidaGuardadaDTO` y su lista de `SalaGuardadaDTO`), los registros de carga
 de sala (con ordinal) y las fichas vistas. En el binario es un **bloque propio** con su offset y largo
-en la cabecera, y `VERSION_FORMATO` pasa a 2.
+en la cabecera, y `VERSION_FORMATO` pasa a 2. Al cargar se conserva el K guardado en la línea, aunque se
+indique otro `--checkpoint-cada` (Suposiciones de la spec).
 
 ## Mediciones previstas (`--bench`, §6.3)
 
@@ -221,11 +246,10 @@ después en `DECISIONES.md`.
 | R-2 | **Duplicación del despacho** de acciones respecto de `ServicioAccionJugador`. | Una prueba compara el estado del despacho propio contra el del servicio para todas las acciones; una firma cambiada del motor la rompe. |
 | R-3 | **El motor no es perfectamente reproducible** si alguien introduce estado nuevo que `PartidaGuardada` no guarda. | La prueba de SC-402 (200+ acciones, 100 % de coincidencias) es la red de seguridad; cualquier estado nuevo del motor debe entrar en `PartidaGuardada` (aviso al equipo). |
 | R-4 | **Orden de carga de salas** (H-1). | Registros con ordinal, sin recorte, aplicados como prefijo; prueba específica. |
-| R-5 | **Pergamino recogido o soltado en la acción revertida** (H-2). | Campo opcional reservado; decisión de Marco; prueba pendiente. |
+| R-5 | **Pergamino recogido o soltado en la acción revertida** (H-2). | Decisión del integrante 3; mientras tanto solo se implementa el descuento; prueba pendiente con `skip`. |
 | R-6 | **Memoria con K = 1**: una copia por acción. | Es la medición M3; el bench muestra el costo y justifica el valor por defecto. |
 | R-7 | **Archivo grande** al guardar (copias + registros). | Se mide el tamaño (M3); formato binario con tamaños fijos y contadores. |
 | R-8 | **Mapa conocido ausente** (spec 002). | Se omite en el resumen y en las copias hasta que exista el método de copia manual. |
-| R-9 | **Diferencias de reloj** entre el instante pedido y el último evento (H-3). | Se resuelve en la spec; la implementación centraliza la decisión en `ArmadorResumen`. |
 
 ## Mapa de requisitos a componentes
 
@@ -233,7 +257,7 @@ después en `DECISIONES.md`.
 |---|---|
 | FR-401, FR-403, FR-404 | `ServicioLineaTiempo.consultar_por_instante` / `consultar_por_accion` → `ReconstructorEstado` |
 | FR-402 | `Motor.avanzar_hasta(t)` y la elección de la acción en `ReconstructorEstado` |
-| FR-405, FR-406 | `ArmadorResumen` y `ResumenHistoriaDTO` (sin cursor del inventario ni mensajes) |
+| FR-405, FR-406 | `ArmadorResumen` y `ResumenHistoriaDTO`: el reloj es el instante pedido (para `historia #k`, el de la decisión k; el del final si la partida terminó antes); sin cursor del inventario ni mensajes |
 | FR-407, FR-408 | La consulta solo usa el motor aparte; no toca `contexto.motor`, la bitácora ni el historial |
 | FR-409 | Validación en `ServicioLineaTiempo` (instante ≤ reloj actual, k entre 1 y acciones) y de estructura en el controlador |
 | FR-410 a FR-412 | `LectorArgumentos`, `main.py`, `ServicioReplayHasta` |

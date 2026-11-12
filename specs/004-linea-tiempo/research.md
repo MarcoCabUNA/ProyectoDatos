@@ -167,12 +167,14 @@ marca como no reversible soltar y recoger un pergamino. Si la acción **revertid
 soltar un pergamino, ese efecto **persiste** en la partida viva aunque la acción deje de existir. Un
 marcador que solo dice «se descontó un pergamino» no lo reproduce.
 
-- **Propuesta (para decidir con Marco, que conoce esa regla)**: el marcador puede llevar un campo
-  opcional «efecto fuera del historial de la acción revertida» (recogido/soltado, id del objeto,
-  sala). El reconstructor lo reaplica con las mismas llamadas del motor. El formato lo reserva desde
-  la versión 2 para no cambiarlo después. **Hasta que Marco confirme, el plan implementa solo el
-  descuento** y deja una prueba marcada como pendiente (escenario con pergamino recogido en la
-  acción revertida).
+- **Decisión del integrante 3** (`Inventario` y `HistorialRetroceso` son suyos). El marcador **no**
+  lleva campos nuevos: solo el id del pergamino descontado. El plan implementa únicamente el
+  descuento.
+- **Tarea pendiente** (se numerará en `tasks.md`): decidir qué hace la línea cuando la acción
+  revertida recogió o soltó un pergamino (documentarlo como límite conocido o reproducirlo con otro
+  mecanismo) y dejar la decisión en `DECISIONES.md`.
+- **Prueba pendiente**: escenario con un pergamino recogido en la acción revertida, marcada con `skip`
+  hasta que se decida; cita FR-413 y FR-419.
 - No se agrega ninguna regla a la spec: es fidelidad con FR-413 y FR-419.
 
 ## R5. Ubicar el punto de control más cercano (decisión 5)
@@ -204,18 +206,13 @@ marcador que solo dice «se descontó un pergamino» no lo reproduce.
   t, se detiene en cuanto `terminado` es verdadero: los demás eventos de t no se ejecutan (FR-402
   clarificado). Los eventos cancelados no cuentan: la cola los descarta al mirar.
 - **FR que atiende**: FR-401, FR-402, FR-411, FR-412. **Revisión**: Marco (propietario del motor).
-- **Qué reloj queda**: ver H-3.
+- **Qué reloj muestra el resumen**: lo fija FR-405 de la spec: el instante pedido; para `historia #k`,
+  el instante de la decisión k; si la partida terminó antes de ese instante, el reloj del final de la
+  partida. El reloj interno del motor aparte puede quedar en el último evento ≤ t; `ArmadorResumen`
+  muestra el valor de FR-405 y no el interno.
 - **Complejidad**: O(e log n), con e los eventos con tiempo ≤ t desde la última decisión.
 - **Prueba prevista**: los escenarios H1-2, H1-9 y H1-12 de la spec, y la coincidencia entre
   `historia <t>` e `historia #k`.
-
-### Hallazgo H-3 — qué reloj muestra el resumen (observación para la spec)
-
-FR-405 pide «el reloj» pero no dice si es el instante consultado t o el del último evento. Cuando en t
-no hay decisión del jugador, el motor aparte se queda con el tiempo del último evento ≤ t.
-**Propuesta**: mostrar t (el instante pedido) salvo que la partida haya terminado antes, en cuyo caso
-se muestra el momento en que terminó, y para `historia #k` el tiempo de la decisión de esa acción. Es
-un detalle de presentación que confirmar en la spec; no cambia ningún estado.
 
 ## R7. Contenido de la línea en el archivo de partida (decisión 7)
 
@@ -234,9 +231,9 @@ un detalle de presentación que confirmar en la spec; no cambia ningún estado.
 - **Tamaño previsto**: acciones (pocos bytes cada una) + A/K copias completas + registros de carga +
   fichas. Se mide en M3 (bytes del archivo).
 - **Límite**: guardar con K = 1 en una partida larga produce un archivo grande; es el costo medido.
-- **K al cargar**: el K de la línea guardada **se conserva**. Si se pasa `--checkpoint-cada` distinto
-  al cargar, se informa que se usa el de la partida (así no se rompe FR-416 con puntos de control
-  ya guardados). Detalle de comportamiento a confirmar con Derek.
+- **K al cargar**: se conserva el K con el que se guardó la línea, aunque se indique otro
+  `--checkpoint-cada` (Suposiciones de la spec). Así no se rompe FR-416 con puntos de control ya
+  guardados.
 
 ## R8. Valor por defecto de K (decisión 8)
 
