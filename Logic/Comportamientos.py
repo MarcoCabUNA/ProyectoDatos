@@ -31,6 +31,16 @@ class Errante(Comportamiento):
             return None
         return destinos[motor.azar.randint(0, len(destinos) - 1)]
 
+    def decidir_paso(self, enemigo, motor) -> tuple[int, int] | None:
+        """
+        Mismo sorteo que decidir(), pero sobre las salidas con su costo: cada salida es una opción y el errante
+        paga la que le toca (FR-104). Hace la misma llamada a randint que P1 (Principio IV).
+        """
+        opciones = motor.mazmorra.salidas_abiertas_con_costo(enemigo.Sala_Actual)
+        if not opciones:
+            return None
+        return opciones[motor.azar.randint(0, len(opciones) - 1)]
+
 
 class Rastreador(Comportamiento):
     NOMBRE = "rastreador"
