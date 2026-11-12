@@ -66,6 +66,7 @@ class Mazmorra:
                 self.salas.append(None)
             self.salas[sala_dto.id] = SalaViva(sala_dto)
         self._igualar_caras()
+        self._igualar_costos()
 
     # COORDINAR (Integrante 2): enemigos con .instancia, .tipo y .vida; trampas con .instancia y .tipo; objetos como ids
     # COORDINAR (Integrante 2): fn_ficha(tipo) la provee la caché del catálogo y nunca devuelve None
@@ -218,6 +219,28 @@ class Mazmorra:
                 inversa.cerrada = salida.cerrada
                 if inversa.cierre_automatico is None:
                     inversa.cierre_automatico = salida.cierre_automatico
+
+    def _igualar_costos(self) -> None:
+        """
+        FR-101: el costo de una salida es el mismo en los dos sentidos. Cada cara usa su costo declarado;
+        si no lo declara, el de la cara inversa; si ninguna lo declara, 100. Se recalcula desde lo declarado
+        en todas las salas cada vez, así que no importa en qué orden llegan las páginas del esqueleto.
+        Dos lados con costos distintos son un error de datos que rechaza Data (FR-122): aquí no se valida.
+        """
+        for sala in self.salas:
+            if sala is None:
+                continue
+            for salida in sala.salidas:
+                if salida is None:
+                    continue
+                if salida.costo_declarado is not None:
+                    salida.costo = salida.costo_declarado
+                    continue
+                inversa = self._salida_inversa(sala.id, salida.destino)
+                if inversa is not None and inversa.costo_declarado is not None:
+                    salida.costo = inversa.costo_declarado
+                else:
+                    salida.costo = 100
 
     def _existe(self, id_sala):
         return id_sala < len(self.salas) and self.salas[id_sala] is not None
