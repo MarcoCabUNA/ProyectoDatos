@@ -372,5 +372,24 @@ class TestCazadorBordes(unittest.TestCase):
         self.assertTrue(motor.mazmorra.salida(1, E).cerrada)
 
 
+class TestDatosInvalidos(unittest.TestCase):
+    """FR-122, escenario H2-9: una ficha de cazador inválida deja su sala como contenido no disponible."""
+
+    def test_h2_9_fr122_ficha_invalida_rechaza_entrar(self):
+        """
+        Con una fuente de prueba que devuelve el error de datos de T052 para una sala cuyo cazador no trae
+        `rango`, y ServicioPartida(..., fuente=esa_fuente):
+          1. la precarga llega y la partida sigue: el jugador actúa en otras salas y el cazador no se activa;
+          2. intentar entrar a esa sala se rechaza con un mensaje que nombra la ficha y el campo `rango`,
+             el jugador sigue en su sala y el reloj no avanza;
+          3. la partida sigue: el jugador puede hacer otra acción;
+          4. ese `mover` no queda en partida.log;
+          5. un segundo intento da el mismo mensaje sin una solicitud nueva.
+        """
+        self.skipTest("pendiente de T052 (integrante 2): Data todavía no tiene un error de datos distinguible "
+                      "del error de red ni recuerda el rechazo por sala; y de T053 (integrante 3): Service "
+                      "todavía muestra «Sin conexión». La fuente de prueba se escribe con la clase de error de T052.")
+
+
 if __name__ == "__main__":
     unittest.main()
