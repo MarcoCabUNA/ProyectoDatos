@@ -32,11 +32,20 @@ Cómo lo usa el resto del programa (lo llama Servicios; Lógica no conoce la cap
                           o en el suelo de la sala actual, trampa de la sala actual).
   sincronizar_usos(ids) -> tras un retroceso (§4.6): la caché no se revierte (no es estado del juego),
                           así que las marcas de uso se rehacen a partir del estado restaurado.
+  rechazo(id)          -> FR-122 (T052): el ErrorDatos de una ficha rechazada, o None. Lo usa GestorContenido
+                          para dejar sin contenido solo las salas que la mencionan.
+
+Fichas inválidas (FR-122, T052): cada ficha que llega se revisa con ValidacionDatos.error_de_ficha. Una ficha
+inválida NO se guarda (ni en memoria ni en disco) y su error queda en el array '_rechazadas'. Las demás
+fichas del mismo lote se guardan normalmente. Un id rechazado no se vuelve a pedir: ficha(id) lanza otra
+vez el mismo error sin ir a la red, y resolver() lo salta. '_rechazadas' se recorre con búsqueda lineal:
+casi siempre está vacío y, si no, tiene muy pocas fichas.
 """
 from Data.AlmacenCatalogo import CARPETA_POR_DEFECTO, AlmacenCatalogo
 from Data.CacheCatalogo import TOPE_POR_DEFECTO, CacheCatalogo, Ficha
 from Data.ClienteHttp import ErrorRed
 from Data.FuenteDatos import FuenteDatos
+from Data.ValidacionDatos import ErrorDatos, error_de_ficha
 from DTO.FichaEnemigoDTO import FichaEnemigoDTO
 from Estructuras.Cola import Cola
 from Security.ValidadorAcceso import es_nombre_seguro
@@ -52,6 +61,8 @@ class ResolvedorCatalogo:
         # Contadores para el reporte final y --bench.
         self._solicitudes_catalogo = 0
         self._fichas_descargadas = 0
+        # FR-122 (T052): errores de las fichas rechazadas, en el orden en que llegaron. Nunca se vacía.
+        self._rechazadas: list[ErrorDatos] = []
 
     @classmethod
     def crear(cls, fuente: FuenteDatos, tope: int = TOPE_POR_DEFECTO,
@@ -90,6 +101,7 @@ class ResolvedorCatalogo:
         Deja disponibles (en memoria o en disco) las fichas de esos ids y de lo que sueltan los
         enemigos descargados. Pide a la red solo las que faltan, en lotes de hasta 10.
         Devuelve cuántas descargó. Si la red falla, lo ya descargado queda guardado y el error sigue.
+        Una ficha inválida no lanza nada aquí: queda rechazada y se consulta con rechazo(id) (FR-122).
         """
         pendientes = Cola()
         vistos: list[str] = []
@@ -104,16 +116,22 @@ class ResolvedorCatalogo:
           1. memoria: acierto de caché, O(log n);
           2. disco: fallo de caché + una lectura de disco; queda en memoria;
           3. red: fallo de caché + una solicitud (con lo que suelte, si es enemigo).
-        Si la red tampoco puede darla, lanza ErrorRed.
+        Si la red tampoco puede darla, lanza ErrorRed. Si la ficha fue rechazada (FR-122), lanza su
+        ErrorDatos sin ir a la red, cada vez que se pida.
         contar_acierto=False: para Servicios cuando arma el estado de la Vista (objetos del suelo en
         cada turno). Así esas consultas repetidas no inflan los aciertos del reporte; si la ficha no
         está en memoria, el fallo sí cuenta porque implica trabajo real (disco o red).
         """
+        self._lanzar_si_rechazada(id_ficha)                 # FR-122: sin contar fallo, sin disco y sin red
         en_memoria = self._cache.obtener(id_ficha, contar_acierto)
         if en_memoria is not None:
             return en_memoria
         en_disco = self._almacen.leer(id_ficha)
         if en_disco is not None:
+            error = error_de_ficha(en_disco)                # disco editado a mano o de otra versión del juego
+            if error is not None:
+                self._rechazadas.append(error)
+                raise error
             self._cache.insertar(en_disco)
             return en_disco
         pendientes = Cola()
@@ -122,6 +140,7 @@ class ResolvedorCatalogo:
         for descargada in self._descargar(pendientes, vistos, ya_contada=id_ficha):
             if descargada.id == id_ficha:
                 return descargada
+        self._lanzar_si_rechazada(id_ficha)                 # llegó, pero inválida
         # obtener_catalogo ya valida que la respuesta traiga todos los ids pedidos.
         raise ErrorRed(f"ficha {id_ficha}", "el catálogo no devolvió la ficha pedida")
 
@@ -177,6 +196,20 @@ class ResolvedorCatalogo:
     def version_catalogo(self) -> str:
         return self._almacen.version()
 
+    # ------------------------------------------------------------ fichas rechazadas (FR-122, T052)
+    def rechazo(self, id_ficha: str) -> ErrorDatos | None:
+        """El ErrorDatos de esa ficha si fue rechazada; None si no. O(r), r = fichas rechazadas."""
+        for error in self._rechazadas:
+            if error.id_ficha == id_ficha:
+                return error
+        return None
+
+    def _lanzar_si_rechazada(self, id_ficha: str) -> None:
+        error = self.rechazo(id_ficha)
+        if error is not None:
+            # with_traceback(None): se lanza el mismo error (mismo mensaje) sin acumular la traza anterior.
+            raise error.with_traceback(None)
+
     # ------------------------------------------------------------ auxiliares
     def _encolar_si_falta(self, id_ficha: str, pendientes: Cola, vistos: list[str]) -> None:
         """Encola el id si no se vio ya en esta resolución y no está en memoria ni en disco."""
@@ -188,6 +221,8 @@ class ResolvedorCatalogo:
         vistos.append(id_ficha)
         if self._cache.contiene(id_ficha) or self._almacen.contiene(id_ficha):
             return
+        if self.rechazo(id_ficha) is not None:
+            return                                          # FR-122: una ficha rechazada no se vuelve a pedir
         pendientes.encolar(id_ficha)
 
     def _descargar(self, pendientes: Cola, vistos: list[str], ya_contada: str | None = None) -> list[Ficha]:
@@ -196,6 +231,8 @@ class ResolvedorCatalogo:
         disco (persistente) y en memoria; si es un enemigo, lo que suelta se agrega a la cola.
         Cada ficha descargada cuenta como un fallo de caché: no estaba ni en memoria ni en disco (§5.1).
         ya_contada: el id que ficha() ya contó como fallo en CacheCatalogo.obtener(); no se cuenta otra vez.
+        Una ficha inválida (FR-122) no se guarda ni se cuenta como descargada: solo queda su error en
+        '_rechazadas'. La solicitud sí cuenta, porque se hizo.
         """
         descargadas: list[Ficha] = []
         while not pendientes.esta_vacia():
@@ -205,6 +242,10 @@ class ResolvedorCatalogo:
             fichas = self._fuente.obtener_catalogo(lote)    # ErrorRed sale de aquí tal cual
             self._solicitudes_catalogo += 1
             for ficha in fichas:
+                error = error_de_ficha(ficha)
+                if error is not None:
+                    self._rechazadas.append(error)
+                    continue
                 self._almacen.guardar(ficha)
                 self._cache.insertar(ficha)
                 self._fichas_descargadas += 1

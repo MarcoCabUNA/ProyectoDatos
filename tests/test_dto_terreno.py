@@ -4,10 +4,16 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from types import SimpleNamespace  # noqa: E402
+
 from DTO.CriptaDTO import CriptaDTO  # noqa: E402
+from DTO.Direcciones import E, N, O, S  # noqa: E402
 from DTO.FichaEnemigoDTO import FichaEnemigoDTO  # noqa: E402
 from Logic.Enemigo import Enemigo  # noqa: E402
 from Logic.jugador import Jugador  # noqa: E402
+from Logic.Mazmorra import Mazmorra  # noqa: E402
+from Service.ArmadorEstado import ArmadorEstado  # noqa: E402
+from tests.ayudas_terreno import salida, salidas_con_costos  # noqa: E402
 
 
 def _cripta() -> CriptaDTO:
@@ -22,6 +28,27 @@ def _cripta() -> CriptaDTO:
 def _enemigo(comportamiento: str) -> Enemigo:
     ficha = FichaEnemigoDTO("ene_prueba", "Prueba", 10, 3, 1, 100, comportamiento, [])
     return Enemigo(ficha, "e-1", None, 1, 3)
+
+
+class TestSalidaDTOTerreno(unittest.TestCase):
+    def test_h4_1_fr116_el_costo_llega_a_la_vista(self) -> None:
+        """
+        Escenario H4-1 (FR-101, FR-116, T036): la sala que ArmadorEstado entrega a la vista trae en cada
+        SalidaDTO el costo ya igualado por Lógica, no el declarado, también en una salida cerrada.
+        Se llama a _sala_con_estado_actual porque armar_estado pide un contexto de partida completo
+        (motor, inventario, resolvedor...) que no aporta nada a lo que se comprueba aquí.
+        """
+        # Sala 1: N -> 2 (100), S -> 3 (250), E -> 4 (sin costo), O -> 5 (solo el lado de la sala 5 declara 300; cerrada).
+        esqueleto = salidas_con_costos(5, [salida(1, N, 2, 100), salida(1, S, 3, 250), salida(1, E, 4),
+                                           (1, O, 5, None, 300, True)])
+        mazmorra = Mazmorra(sala_salida=5, llave_salida="llave_final")
+        mazmorra.cargar_esqueleto(esqueleto)
+        contexto = SimpleNamespace(esqueleto=SimpleNamespace(obtener_sala=lambda i: esqueleto[i - 1]),
+                                   mazmorra=mazmorra)
+        sala = ArmadorEstado()._sala_con_estado_actual(contexto, 1)
+        self.assertIsNone(esqueleto[0].salidas[O].costo)          # el esqueleto trae lo declarado
+        self.assertEqual([sala.salidas[d].costo for d in (N, S, E, O)], [100, 250, 100, 300])
+        self.assertTrue(sala.salidas[O].cerrada)
 
 
 class TestActorDTOTerreno(unittest.TestCase):

@@ -18,8 +18,10 @@ Datos). Las reglas del juego (puertas, llaves, movimiento) son de la Lógica.
 """
 from Data.ClienteHttp import ErrorRed
 from Data.FuenteDatos import FuenteDatos
+from Data.ValidacionDatos import ErrorDatos, es_costo_valido
 from DTO.CriptaDTO import CriptaDTO
-from DTO.SalaDTO import SalaDTO
+from DTO.Direcciones import DIRECCIONES
+from DTO.SalaDTO import SalaDTO, SalidaDTO
 
 
 class GestorEsqueleto:
@@ -34,7 +36,8 @@ class GestorEsqueleto:
     def cargar(self, cripta: CriptaDTO) -> None:
         """
         Descarga todas las páginas del esqueleto (una solicitud por página) y arma el grafo.
-        Si los datos son incoherentes lanza ErrorRed y el gestor queda sin cargar.
+        Si los datos son incoherentes lanza ErrorRed y el gestor queda sin cargar. Si un costo es
+        inválido (FR-122) lanza ErrorDatos, que también es un ErrorRed: la partida no inicia.
         """
         if cripta.paginas < 1:
             raise ErrorRed(self._op(cripta), f"la cripta declara {cripta.paginas} páginas")
@@ -48,6 +51,7 @@ class GestorEsqueleto:
         # 2) Ubicar cada sala en el array según su id y 3) validar el grafo.
         salas = self._indexar(cripta, recibidas)
         self._validar(cripta, salas, len(recibidas))
+        self._validar_costos(cripta, salas)
 
         # Solo se reemplaza el estado cuando todo es válido.
         self._cripta = cripta
@@ -144,6 +148,53 @@ class GestorEsqueleto:
                     raise ErrorRed(op, f"la sala {sala.id} tiene una salida hacia sí misma")
                 if not (0 <= destino < len(salas)) or salas[destino] is None:
                     raise ErrorRed(op, f"la sala {sala.id} tiene una salida a la sala {destino}, que no existe")
+
+    @staticmethod
+    def _validar_costos(cripta: CriptaDTO, salas: list[SalaDTO | None]) -> None:
+        """
+        FR-122 (T002), con el esqueleto completo y antes de iniciar la partida. Dos pasadas, para que el
+        mensaje sea siempre el del primer problema real:
+          1. cada costo declarado es un entero >= 1;
+          2. si los dos lados de una salida declaran costo, es el mismo (FR-101).
+        El otro lado se busca igual que en Lógica (Mazmorra._salida_inversa): la primera salida de la sala
+        destino, en orden N, S, E, O, que vuelve a la sala de origen. O(salas): a lo sumo 4 salidas por sala.
+        """
+        op = GestorEsqueleto._op(cripta)
+        for sala in salas:
+            if sala is None:
+                continue
+            for direccion in range(len(sala.salidas)):
+                salida = sala.salidas[direccion]
+                if salida is not None and salida.costo is not None and not es_costo_valido(salida.costo):
+                    raise ErrorDatos(op, f"la salida {DIRECCIONES[direccion]} de la sala {sala.id} declara "
+                                         f"costo {salida.costo!r}: debe ser un entero >= 1")
+        for sala in salas:
+            if sala is None:
+                continue
+            for direccion in range(len(sala.salidas)):
+                salida = sala.salidas[direccion]
+                if salida is None or salida.costo is None:
+                    continue
+                destino = salas[salida.sala_destino]
+                assert destino is not None   # _validar ya comprobó que existe
+                direccion_inversa = GestorEsqueleto._direccion_de_vuelta(destino, sala.id)
+                if direccion_inversa is None:
+                    continue   # salida de un solo sentido: su costo es el que declara
+                inversa = destino.salidas[direccion_inversa]
+                assert inversa is not None
+                if inversa.costo is not None and inversa.costo != salida.costo:
+                    raise ErrorDatos(op, f"la salida {DIRECCIONES[direccion]} de la sala {sala.id} declara costo "
+                                         f"{salida.costo} y la salida {DIRECCIONES[direccion_inversa]} de la sala "
+                                         f"{destino.id} declara costo {inversa.costo}: deben ser iguales")
+
+    @staticmethod
+    def _direccion_de_vuelta(sala: SalaDTO, origen: int) -> int | None:
+        """Índice de la primera salida de 'sala' (N, S, E, O) que lleva a 'origen', o None."""
+        for direccion in range(len(sala.salidas)):
+            salida: SalidaDTO | None = sala.salidas[direccion]
+            if salida is not None and salida.sala_destino == origen:
+                return direccion
+        return None
 
     def _sala_existente(self, id_sala: int) -> SalaDTO:
         sala = self.obtener_sala(id_sala)
