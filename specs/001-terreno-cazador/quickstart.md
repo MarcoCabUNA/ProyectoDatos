@@ -36,6 +36,17 @@ Los casos 1, 2, 3, 4, 6 y 7 están en `test_terreno_cazador`, y el caso 5 en `te
 | 6 | Velocidad 300 por una salida de costo 1: el intervalo es 1. |
 | 7 | Velocidad 100 → 200 en t = 100 durante una salida de costo 400: la siguiente acción pasa a t = 250. |
 
+### Datos inválidos (FR-122, escenario H2-9)
+
+```bash
+python -m unittest tests.test_terreno_cazador.TestDatosInvalidos -v
+```
+
+Esperado: con una ficha de cazador sin `rango` en una sala que no es la inicial, intentar entrar a esa
+sala se rechaza con un mensaje que nombra la ficha y el campo, el reloj no avanza, ese movimiento no
+queda en `partida.log` y la partida sigue. Mientras T052 (integrante 2) y T053 (integrante 3) no
+estén hechas, la prueba aparece como omitida (`skip`).
+
 ## 3. Equivalencia con un cálculo desde cero (FR-114, SC-102)
 
 ```bash

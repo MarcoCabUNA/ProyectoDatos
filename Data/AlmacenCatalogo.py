@@ -24,7 +24,7 @@ unos cientos de bytes, sin cargar el catálogo entero ni mantener un índice en 
 Seguridad e integridad (Datos solo valida formato, nunca reglas del juego):
   - El id se usa como nombre de archivo solo si es_nombre_seguro() (MSI) lo acepta.
   - Se escribe a un .tmp y luego se reemplaza: un cierre a mitad de escritura no deja un
-    archivo a medias
+    archivo a medias.
   - Un archivo dañado (JSON inválido o ficha incompleta) se borra y se trata como si no
     estuviera: la ficha se volverá a pedir. Nunca detiene el juego.
   - Solo se borran carpetas de versiones viejas que tengan la marca VERSION de este almacén,

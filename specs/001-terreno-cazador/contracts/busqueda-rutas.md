@@ -58,6 +58,8 @@ paso_desde_cero(grafo, origen, u, limite) -> (destino, costo) | None   # referen
 costo es el de la salida utilizable más barata hacia esa vecina (FR-119). Si `limite` es `None`,
 la búsqueda no tiene tope.
 
+Casos especiales: `paso_desde_cero` devuelve `None` también si `u == origen` (no hay paso que dar); `paso_hacia_origen` lanza `ValueError` si `u` no tiene una vecina en una ruta de costo d (no ocurre si d viene de `distancia_hasta`).
+
 ## Uso esperado
 
 - **Cazador**: `origen` = la sala del jugador, `u` = la sala del cazador, `limite` = `rango`.

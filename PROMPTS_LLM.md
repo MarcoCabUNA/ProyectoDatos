@@ -665,6 +665,15 @@ incluyendo PROMPTS_LLM.md.
 **Uso de la respuesta:** en `specs/001-terreno-cazador/tasks.md`, T037 describe la prueba como quedó: errante, guardián y rastreador traen su comportamiento y el jugador `None`, sin `skip`; el caso del cazador remite a la nota de T024.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 10 y miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude
+
+Le pedí a Claude revisar las ramas de Marco y Kristel junto con la constitución v1.2.0 y la spec 001, confirmar el contrato de datos (specs/001-terreno-cazador/contracts/contrato-datos.md) y hacer la tarea T001: agregar costo a SalidaDTO como último campo, de tipo int | None con None por defecto, leerlo en desde_diccionario y escribirlo en a_diccionario solo si no es None, con pruebas que citen FR-101.
+
+**Uso de la respuesta:** se usó en `DTO/SalaDTO.py` y `tests/TestDtos.py` (T001, FR-101). Revisé el cambio y corrí las pruebas: 355 OK y 31/31.
+
+-----------------------------------------------------------------------------------------------------------------------
 **Fecha:** Martes 10 de noviembre 2026
 
 **Herramienta:** Claude (Claude Code, modelo Claude Sonnet 5.5)
@@ -717,5 +726,322 @@ Edita SOLO specs/004-linea-tiempo/spec.md (y checklists/requirements.md si algo 
 8. Al final verifica que no queden referencias a FR-422 y que ninguna cifra de rendimiento contradiga la tabla de §6.3 del enunciado. Dime qué cambiaste.
 
 **Uso de la respuesta:** se usó en `specs/004-linea-tiempo/spec.md`para corregir la spec 004: cifra de rendimiento según §6.3, escenario de pergamino incoherente, requisitos de memoria y recorte (NFR-402/403) y se eliminó FR-422
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude
+
+Le pedí a Claude revisar la spec 004 de Kristel (revisión cruzada: el integrante 2 revisa la del 3) contra el enunciado de la Parte II (§3.6, §5.5, §6.1 y Apéndice B «Línea de tiempo») y la constitución (principios IX y X), y redactar las observaciones. También le pedí preparar el prompt de /speckit-specify de mi spec 003 y revisar el resultado contra el enunciado, la constitución y el código de la primera parte (SalidaDTO, Mazmorra._igualar_caras y los códigos de salida de main.py) antes de cada paso.
+
+**Uso de la respuesta:** se usó para las observaciones de la revisión cruzada de `specs/004-linea-tiempo/spec.md` y para definir el prompt, las correcciones y las respuestas de clarify de `specs/003-resolubilidad/spec.md`.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-specify SPECIFY_FEATURE_DIRECTORY=specs/003-resolubilidad
+
+Verificación de resolubilidad de Cripta II. Usa exactamente el directorio specs/003-resolubilidad. Numera los requisitos funcionales FR-301, FR-302, …; los de rendimiento NFR-301, …; y los criterios de éxito SC-301, …. No empieces en 001.
+
+Antes de escribir, lee .specify/memory/constitution.md (sobre todo los principios IX y X) y, del enunciado de la Parte II (Proyecto II parte.pdf): §3.5, §4.2, §4.3, §5.4, §6.1 y el Apéndice B (sección «Resolubilidad»). Escribe SOLO el QUÉ: reglas, historias de usuario, escenarios de aceptación y requisitos numerados. No nombres estructuras de datos, clases, módulos ni algoritmos; eso va en el plan.
+
+Reglas (§3.5):
+- Antes de iniciar una partida, el programa determina si la cripta puede ganarse usando el esqueleto y la ubicación de las llaves.
+- Supuestos de la verificación: el jugador puede atravesar cualquier salida abierta y cualquier salida cerrada cuya llave ya obtuvo; las llaves no se consumen; todo enemigo puede ser derrotado; una llave que suelta un enemigo se considera obtenible en la sala donde ese enemigo inicia; las trampas y los cierres automáticos no bloquean, porque una puerta puede volver a abrirse con la misma llave. El costo de las salidas no afecta la verificación.
+- Resoluble: partiendo de la sala inicial y bajo esos supuestos, el jugador puede obtener llave_salida y llegar a sala_salida a través de una puerta que la requiere.
+- Si es resoluble, el resultado es un orden de obtención de llaves en el que cada llave aparece después de todas las llaves necesarias para alcanzarla. Si hay varios órdenes válidos, el resultado es determinista: la misma cripta produce siempre el mismo orden.
+- Si no es resoluble, el reporte incluye: las llaves que no pueden obtenerse; las puertas de la frontera bloqueada (las puertas cerradas adyacentes a la región alcanzable) con la llave que requiere cada una; dónde se encuentra cada una de esas llaves; y, si una llave está ubicada detrás de puertas que solo ella abre, directamente o mediante una cadena de llaves, el ciclo concreto. La detección del ciclo es determinista.
+- Si la cripta no es resoluble, la partida no inicia y se muestra el reporte, salvo que se use --forzar.
+- --verificar <cripta> ejecuta únicamente la verificación y muestra el reporte, sin instanciar la vista. Funciona también con --offline.
+
+Datos (§4.2, §4.3):
+- La ubicación de cada llave trae su id, la sala y, opcionalmente, la instancia de enemigo que la suelta; en ese caso la sala es donde ese enemigo inicia.
+- La consulta de ubicación de llaves cuenta dentro de presupuesto_solicitudes. Su respuesta es válida mientras coincida la versión de la cripta y puede persistirse con el resto de los datos de la cripta. En --offline se lee del paquete local.
+- Lo persistido por la primera parte se invalida con la validación de versión que ya existe, no borrando archivos a mano.
+
+Rendimiento (§5.4, §6.1):
+- La verificación tarda menos de 200 ms con la cripta publicada más grande.
+- El costo total crece aproximadamente de forma lineal con salas, salidas y llaves: obtener una llave no puede implicar repetir el recorrido completo de la cripta.
+- El reporte de una cripta no resoluble (frontera y dependencias entre llaves) sale del mismo recorrido, no de recorridos adicionales por cada llave.
+- --bench compara contra la alternativa de repetir el recorrido por cada llave, en criptas sintéticas deterministas por semilla con muchas llaves encadenadas.
+
+Historias de usuario (con prioridad): saber antes de jugar si la cripta es resoluble y en qué orden obtener las llaves; entender por qué una cripta no es resoluble; verificar una cripta sin jugar con --verificar; jugar de todas formas con --forzar.
+
+Escenarios de aceptación: incluye estos cuatro casos del Apéndice B, cada uno en formato Dado/Cuando/Entonces y con su FR-3xx, y una tabla «Trazabilidad del Apéndice B «Resolubilidad»» como la de la spec 001:
+1. llave_salida está detrás de la única puerta que ella misma abre: no resoluble; el reporte señala el ciclo.
+2. Una llave está en el campo suelta de un enemigo errante: la verificación la ubica en la sala inicial del enemigo.
+3. Existen varios órdenes válidos de obtención de llaves: dos ejecuciones producen el mismo orden.
+4. Cripta no resoluble sin --forzar: la partida no inicia y se muestra el reporte.
+Agrega además escenarios para: una cripta sin puertas cerradas; un ciclo formado por una cadena de dos llaves; --forzar con una cripta no resoluble; --verificar con una cripta resoluble y con una no resoluble. Cada requisito funcional debe tener al menos un escenario.
+
+Si algo no está definido en el enunciado (por ejemplo, una ubicación de llave con una sala o un enemigo que no existen, o llave_salida ausente de la lista de llaves), márcalo con [NEEDS CLARIFICATION] en lugar de inventarlo.
+
+Fuera de alcance: cómo se dibuja el reporte en la interfaz gráfica (integrante 3); el costo de las salidas y el cazador (spec 001); el mapa conocido y «ir a» (spec 002); la línea de tiempo (spec 004).
+
+No escribas código ni crees archivos fuera de specs/003-resolubilidad.
+
+**Uso de la respuesta:** se usó para crear `specs/003-resolubilidad/spec.md` y `specs/003-resolubilidad/checklists/requirements.md` (FR-301 a FR-322, NFR-301 a NFR-304, SC-301 a SC-308). Dejó 3 marcadores [NEEDS CLARIFICATION] (FR-305, FR-321 y FR-322). Claude Code borró `.specify/feature.json` por la última instrucción del prompt; lo volví a crear a mano (es local y está en el .gitignore).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Respuestas y correcciones para specs/003-resolubilidad/spec.md. Edita SOLO ese archivo y checklists/requirements.md. No escribas código ni nombres estructuras, clases, módulos ni algoritmos. Registra las tres respuestas en una sección «Clarificaciones» → «Sesión 2026-11-11», con el formato «P: … → R: …», como en las specs 001 y 004, y quita los tres [NEEDS CLARIFICATION].
+
+1. FR-305 (P1 → A): el orden incluye todas las llaves obtenibles de la cripta, no solo las necesarias para ganar. Ajusta el caso borde «Una llave obtenible pero innecesaria para ganar».
+
+2. FR-321 (P2):
+   - Una llave que requiere alguna puerta (incluida llave_salida) y que no aparece en la lista de ubicaciones es no obtenible: aparece en el reporte con la indicación «sin ubicación». No es un error de datos, porque el servicio publica criptas no resolubles (§4.3).
+   - Una ubicación cuya sala no existe en el esqueleto es un error de datos: se informa con contexto (qué llave y qué sala), la verificación no concluye y tiene el mismo efecto que FR-320 (la partida no inicia salvo con --forzar). El programa no se cae.
+   - La instancia de enemigo de una ubicación no se valida en la verificación, porque comprobarla exigiría descargar el contenido de salas (FR-301); se usa la sala que trae la ubicación.
+   Ajusta el escenario H2-6 para que cubra los tres casos por separado.
+
+3. FR-322 (P3 → A): si ninguna puerta hacia sala_salida requiere llave_salida, la cripta no es resoluble. Motivo: en la primera parte (P1 §2.12) la victoria exige entrar a sala_salida después de abrir con la llave correspondiente la puerta que da acceso a ella, así que esa cripta no se puede ganar. El reporte DEBE indicar ese motivo de forma explícita. Ajusta H1-2 (cripta sin ninguna puerta cerrada → no resoluble, con ese motivo) y el caso borde correspondiente.
+
+4. Puertas de dos caras: agrega a FR-302 que una puerta es una sola para las dos salas que une: si solo una de sus caras declara que está cerrada o qué llave requiere, eso vale para las dos, igual que en la primera parte. Corrige el supuesto «Una salida cerrada que no declara llave…» para que diga «que no declara llave en ninguna de sus caras». Agrega en la Historia 1 un escenario donde la llave de una puerta está declarada solo en una cara.
+
+5. FR-308: define la frontera bloqueada como las salidas cerradas que van desde una sala de la región alcanzable hacia una sala fuera de ella. Una salida sin vuelta que solo va de afuera hacia adentro no es frontera. Ajusta también la entidad «Frontera bloqueada».
+
+6. FR-310: en lugar de «señalar al menos uno», exige que cada llave no obtenible que forma parte de un ciclo aparezca en al menos un ciclo señalado, sin repetir ciclos y en un orden determinista. Las llaves que solo dependen de un ciclo (H2-4) se listan junto con el ciclo del que dependen.
+
+7. En Supuestos, cambia «se trata como una cripta no resoluble para efectos de iniciar la partida» por «el programa informa que la verificación no concluyó (no que la cripta sea no resoluble); para iniciar la partida, solo --forzar permite jugar (FR-320)».
+
+8. Actualiza la tabla de cobertura y el checklist. Al final dime qué cambiaste y confirma que no queda ningún [NEEDS CLARIFICATION] ni ningún FR-0xx.
+
+**Uso de la respuesta:** se usó en `specs/003-resolubilidad/spec.md` para responder las 3 aclaraciones (FR-305, FR-321, FR-322), agregar los escenarios H1-10, H2-7 y H2-8, y corregir FR-302 (dos caras), FR-308 (frontera), FR-309, FR-310 (ciclos) y los supuestos.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-clarify
+
+Respuestas a las 4 preguntas:
+1. Si las dos caras de una misma puerta se contradicen (llaves distintas, o una cerrada y la otra abierta), ¿qué hace la verificación? → «A, solo llaves distintas»
+2. Si la lista de ubicaciones trae la misma llave más de una vez, con salas distintas, ¿cómo se trata? → «A, una vez en orden»
+3. ¿--verificar devuelve un código de salida distinto según el resultado? → «0 resoluble, 3 no, 1 error»
+4. ¿La verificación se ejecuta también al cargar una partida guardada o con --replay? → «A»
+
+**Uso de la respuesta:** se usó en `specs/003-resolubilidad/spec.md`: 4 aclaraciones nuevas en «Sesión 2026-11-11», los escenarios H1-11, H1-12, H2-9 y H4-4, y cambios en FR-301, FR-302, FR-305, FR-309, FR-314, FR-316 y SC-308.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Ajuste final en specs/003-resolubilidad/spec.md (edita SOLO ese archivo y su checklist; sin código ni nombres de clases):
+
+1. Mi respuesta a la pregunta de las dos caras fue «A, solo llaves distintas», y quedó registrada con más alcance. Corrige la aclaración, FR-302 y el caso borde «Las dos caras de una puerta se contradicen»: solo es error de datos cuando las dos caras declaran llaves distintas. El caso «una cara cerrada y la otra explícitamente abierta» no existe en los datos: como en la primera parte, «cerrada» ausente, null o false significan lo mismo (la cara no declara cierre). Quítalo de esos tres lugares.
+
+2. En FR-302, reemplaza la regla de una sola cara por la de la primera parte: si una cara declara la llave que requiere y la otra no declara ninguna llave, la llave, el estado cerrado y el cierre automático de la primera valen para las dos. Si ninguna de las dos caras declara llave, cada cara se rige por lo que declara: una cara cerrada sin llave no puede atravesarse en ese sentido. Ajusta igual el caso borde «Una puerta declara cierre o llave solo en una de sus caras» y el supuesto «Una salida cerrada que no declara llave…». El escenario H1-10 no cambia.
+
+3. En la aclaración de los códigos de salida y en FR-314, agrega que el código 2 sigue reservado para los argumentos inválidos, como en la primera parte, así que --verificar no lo usa para ningún veredicto.
+
+4. Actualiza la tabla de cobertura si cambia algo y dime exactamente qué líneas modificaste. Confirma que no queda ningún [NEEDS CLARIFICATION] ni ningún FR-0xx.
+
+**Uso de la respuesta:** se usó en `specs/003-resolubilidad/spec.md` para limitar el error de datos de las dos caras a llaves distintas, alinear la regla de una sola cara de FR-302 con la de la primera parte (`_igualar_caras`) y reservar el código de salida 2 para argumentos inválidos (FR-314).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+En specs/001-terreno-cazador/contracts/contrato-datos.md quitá la marca "Propuesto — pendiente de confirmar con integrante 2": Dereck lo confirmó tal como está el 11 nov. Anotalo en el plan si lo menciona. Commit: "plan(001): contrato de datos confirmado con integrante 2", con PROMPTS_LLM.md.
+
+**Uso de la respuesta:** se usó en `specs/001-terreno-cazador/contracts/contrato-datos.md` y `specs/001-terreno-cazador/plan.md` para marcar el contrato de datos como confirmado con el integrante 2 el 11 de noviembre; la parte de `ActorDTO` y `ArmadorEstado` sigue pendiente con el integrante 3.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+En spec.md, ampliá FR-122: los costos inválidos o distintos entre las dos caras se detectan con el
+esqueleto, antes de iniciar, y la partida no inicia. Una ficha de cazador con rango ausente o
+inválido puede llegar durante la partida con la precarga: si llega antes de iniciar, la partida no
+inicia; si llega durante la partida, la partida se detiene con un error de datos que indica la ficha
+y el campo, sin que el programa se caiga. Registralo en Clarificaciones (pregunta de Dereck, 11 nov).
+Agregá el escenario de aceptación correspondiente. Commit solo de spec.md:
+"spec(001): FR-122 para fichas inválidas que llegan durante la partida".
+
+**Uso de la respuesta:** commit `f0640c4`. Se amplió FR-122 en `specs/001-terreno-cazador/spec.md` (detección de costos con el esqueleto y fichas de la precarga), se agregó la sesión 2026-11-11 de Clarificaciones con la pregunta de Dereck, el escenario H2-9 y se ajustó el caso borde «Datos inválidos».
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-analyze
+
+**Uso de la respuesta:** análisis de solo lectura de `spec.md`, `plan.md` y `tasks.md` de la feature 001. Encontró que H2-9 no tenía prueba (Principio X), que nadie se encargaba de detener la partida ante una ficha inválida de la precarga (hoy `precargar_alrededor` atrapa `ErrorRed` y sigue), que T002, T050, el contrato y el plan seguían diciendo «la partida no inicia» en todos los casos, dos ambigüedades (qué significa «se detiene» y en qué momento) y marcas de estado desactualizadas (T001, T039, «Propuesto»).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit.clarify Resolver A1 y A2 de FR-122 con esta regla:
+Si una ficha de cazador con rango ausente o inválido llega con la precarga, Data la rechaza como
+error de formato (distinto del error de red) y esa sala queda sin contenido cargado. La partida se
+detiene en el momento determinista en que el jugador intenta entrar a esa sala: el movimiento no se
+ejecuta, no consume tiempo, no se registra en partida.log, y la partida termina con un error de
+datos que indica la ficha y el campo, sin puntaje y sin que el programa se caiga. --replay termina
+en ese mismo punto con un código de salida distinto de 0; --verificar no se ve afectado.
+Mientras el jugador no entre a esa sala, la partida sigue: el cazador no se activa (FR-123).
+Actualizá FR-122, H2-9 y el caso borde. Agregá "(ampliada en la sesión 2026-11-11)" a la respuesta
+de la pregunta 4 de la sesión 11-09 (I5).
+Commit solo de spec.md: "spec(001): FR-122 determinista para fichas inválidas de la precarga".
+Mostrame el cambio antes del commit.
+
+Respuesta a la pregunta de Claude (el movimiento fallido no se registra, así que --replay no llegaría al error): «Marca de cierre en el log».
+
+**Uso de la respuesta:** commit `f60ec7a`. En `specs/001-terreno-cazador/spec.md` se agregó la aclaración del momento determinista y de `--replay` / `--verificar`, y se actualizaron FR-122, H2-9 y el caso borde. Para que `--replay` llegue al error sin registrar el movimiento como acción, `partida.log` termina con una marca de cierre con el movimiento intentado.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Aplicá los hallazgos del último analyze, sin tocar spec.md:
+- I1: separar en T002, T050, contrato-datos.md (Validación) y plan.md los dos efectos de FR-122:
+  esqueleto → la partida no inicia; ficha de la precarga → se detiene al intentar entrar a esa sala.
+- C1: agregar la tarea de prueba test_h2_9_fr122_ficha_invalida_detiene_al_entrar, a mi cargo, usando
+  una fuente de prueba que devuelva un error de formato para esa sala.
+- E1: agregar tareas de coordinación: integrante 2 (Data distingue error de formato de error de red)
+  e integrante 3 (Service termina la partida ante ese error). Anotarlo en la tabla de dependencias.
+- I2: agregar H2-9 a la tabla de pruebas del plan.
+- I3: quitar "Propuesto" en data-model.md y research.md.
+- I4: marcar T001 y T039; actualizar la fila de ActorDTO (solo queda T038 pendiente).
+- I6: agregar "campo (rango)" al contexto mínimo del mensaje. I7: quitar la fecha límite vieja.
+- E2: en T014, indicar que equipar, recoger, soltar y abrir quedan cubiertos por las pruebas de P1.
+Commit: "plan(001): FR-122 en plan, contrato y tareas tras analyze", incluyendo PROMPTS_LLM.md.
+
+**Uso de la respuesta:** se usó en `tasks.md` (T002, T014 y T050 corregidas; T001 y T039 marcadas; tareas nuevas T052 y T053 de coordinación con los integrantes 2 y 3, y T054 con la prueba de H2-9), `plan.md` (dos efectos de FR-122, tabla de pruebas con H2-9, dependencias y estado de `ActorDTO`), `contracts/contrato-datos.md` (efectos de FR-122, campo `rango` en el mensaje y sin la fecha límite vieja), `data-model.md` y `research.md` (contrato confirmado).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-analyze
+
+**Uso de la respuesta:** segunda pasada de análisis de la feature 001. Los hallazgos anteriores quedaron resueltos; encontró que T052 y T053 modificaban código de P1 (Data y Service) sin justificarlo en la tabla de cambios del plan (Principio III), que cambiaban decisiones de P1 sin antes y después en `DECISIONES.md`, y que T052 no definía qué pasa con las otras salas del lote ni cómo se recuerda el rechazo. Llevó a simplificar FR-122.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit.clarify Simplificar FR-122 para fichas de la precarga (Principio III, KISS): si una ficha de
+cazador con rango ausente o inválido llega con la precarga, Data la rechaza con un error de datos que
+indica la ficha y el campo, y no la vuelve a pedir. Esa sala queda como contenido no disponible: si
+el jugador intenta entrar, el movimiento se rechaza con ese mensaje, sin consumir tiempo ni
+registrarse en partida.log, y la partida sigue. Esto reemplaza la regla de detener la partida y la
+marca de cierre en el log. Los costos inválidos del esqueleto siguen impidiendo iniciar.
+Actualizá FR-122, H2-9, el caso borde y Clarificaciones (motivo: evitar cambiar el formato del log y
+el replay de P1). Commit solo de spec.md: "spec(001): FR-122 simplificado para fichas de la precarga".
+Mostrame el cambio antes del commit.
+
+Respuesta a la pregunta de Claude sobre la ficha que llega antes de iniciar: Limitalo: "si la ficha inválida es de un cazador de la sala inicial, la partida no inicia; para
+cualquier otra sala, esa sala queda como contenido no disponible", llegue antes o durante la partida.
+Después hacé el commit solo de spec.md: "spec(001): FR-122 simplificado para fichas de la precarga".
+
+**Uso de la respuesta:** commit `31f8719`. En `specs/001-terreno-cazador/spec.md` se reemplazó la regla de detener la partida y la marca de cierre por la de «contenido no disponible»: entrar a esa sala se rechaza con el error de datos y la partida sigue; solo una ficha inválida de la sala inicial impide iniciar. Se actualizaron FR-122, H2-9, el caso borde y Clarificaciones (las dos respuestas anteriores quedaron marcadas como reemplazadas).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Alinear plan, contrato y tareas con el FR-122 simplificado: quitar la marca de cierre y todo cambio
+a partida.log, ServicioReplay y main.py. Reducir T052 a "Data rechaza la ficha con error de datos
+con contexto (ficha, campo), distinguible del error de red, recuerda el rechazo por sala sin gastar
+otra solicitud, y solo esa sala queda sin contenido". Reducir T053 a "Service muestra ese error de
+datos al rechazar el movimiento, en lugar del mensaje de red". Ajustar T054 a "intentar entrar a esa
+sala se rechaza con el mensaje y la partida sigue". En la tabla de cambios a código P1, una fila
+para Data (T052, integrante 2) y una para Service (T053, integrante 3), ambas con FR-122.
+Ajustar quickstart.md. Commit: "plan(001): FR-122 simplificado en plan, contrato y tareas",
+con PROMPTS_LLM.md.
+
+**Uso de la respuesta:** se usó en `tasks.md` (T002, T050, T052, T053 y T054 con la regla simplificada; la prueba pasa a llamarse `test_h2_9_fr122_ficha_invalida_rechaza_entrar`), `plan.md` (efectos de FR-122, filas de Data y Service en la tabla de cambios a P1, «No se tocan» con `partida.log`, `ServicioReplay` y `main.py`, dependencias), `contracts/contrato-datos.md` (efectos de FR-122) y `quickstart.md` (paso de datos inválidos).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit.implement Implementar T003 y la fase 2 (hasta su punto de control), en el orden de tasks.md.
+Saltar T002, que es del integrante 2. Pruebas antes del código cuando la tarea lo indique.
+Un commit por tarea: "feat(001): T0xx descripción [FR-…]", incluyendo PROMPTS_LLM.md en el primero.
+Después de cada tarea, correr tests/correr_pruebas.py; si algo queda en rojo, detenerse y mostrarme
+el error. En el punto de control de la fase 2, detenerse y mostrarme un resumen. No hacer push.
+
+**Uso de la respuesta:** se implementaron T003 (`tests/ayudas_terreno.py`) y la fase 2 de `specs/001-terreno-cazador/tasks.md`: la prueba `tests/test_mazmorra_costos.py` (T004) y el costo por salida en `Logic/Mazmorra.py` (T005 a T007), un commit por tarea.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit.implement Implementar la fase 3 (Historia 1, T008 a T014), en el orden de tasks.md.
+Pruebas antes del código. El rojo esperado de TDD está bien; detenete solo si falla una prueba que
+ya existía antes de esta fase. Un commit por tarea: "feat(001): T0xx descripción [FR-…]".
+Cada cambio a código de la primera entrega debe coincidir con su fila en la tabla de cambios a P1
+del plan; si necesitás tocar algo que no está en esa tabla, detenete y avisame antes.
+Al terminar la fase, correr tests/correr_pruebas.py y mostrarme un resumen. No hacer push.
+
+**Uso de la respuesta:** commits `554cbf7` a `8bb7c08`. Pruebas de los escenarios H1-1 a H1-8 y de errante, rastreador y guardián con costos (T008, T009) en `tests/test_terreno_cazador.py`; `mover_jugador` paga el costo de la salida (T010); `Comportamiento.decidir_paso` y `Errante.decidir_paso` con el mismo sorteo de P1 (T011, T012); `turno_enemigo` programa con el costo de la salida (T013); verificación sin regresiones de P1 (T014).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit.implement Fase 4 de specs/001-terreno-cazador/tasks.md (T015–T026 y T054).
+
+Orden dentro de la fase, si las dependencias de tasks.md lo permiten:
+1. Primero T021 (FichaEnemigoDTO.rango: int | None = None, último campo).
+2. Después la cola de prioridad y la búsqueda de ruta según contracts/busqueda-rutas.md
+   (recibe el grafo como parámetro, solo salidas abiertas, costo ya igualado,
+   desempate por menor id).
+3. Al final la clase Cazador en COMPORTAMIENTOS, y agregá el caso del cazador
+   a test_h4_2_fr117_actor_dto_trae_el_comportamiento (nota de T024).
+4. T054 queda con skipTest hasta que exista T052 (integrante 2); dejá el motivo en el skip.
+
+Reglas:
+- Constitución v1.2.0: sin dict, set, heapq, bisect, collections ni copy en código del juego;
+  sin sorted()/list.sort() en ordenamientos evaluados. Type hints y docstring breve.
+- No toques código de la primera entrega fuera de lo que justifica la tabla
+  "Cambios a código de la primera entrega" de plan.md. Si hace falta algo más, pará y avisame.
+- Un commit por tarea o grupo pequeño, con el ID y los FR en el mensaje.
+- tests/correr_pruebas.py en verde antes de cada commit; las 383 pruebas actuales no se modifican.
+- No hagas push.
+- Al terminar: lista de commits, total de pruebas y cualquier desvío del plan.
+
+**Uso de la respuesta:** commits `6e147e8` a `f000aa2`. `FichaEnemigoDTO.rango` como último campo (T016, T021); `Estructuras/MonticuloMinimo.py` (T015, T020); `Logic/GrafoEsqueleto.py` y `Logic/BusquedaCostoMinimo.py` con `paso_desde_cero` (T017, T022, T023); la clase `Cazador`, `self.grafo` en `Motor.__init__` y el caso del cazador en `test_h4_2` (T018, T019, T024, T025); la prueba de H2-9 con `skipTest` hasta T052 y T053 (T054); verificación (T026). Quedaron 431 pruebas en verde y 1 omitida.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-analyze
+
+**Uso de la respuesta:** tercera pasada de análisis de la feature 001, después de implementar las fases 1 a 4. Encontró que faltaban estas tres entradas en `PROMPTS_LLM.md` (Principio XI), que T021 no coincide con la posición real de `rango`, que la tabla de cambios a P1 no menciona dos importaciones nuevas, y detalles sin documentar de la búsqueda (`_asegurar_tamano`, casos que devuelven `None` o lanzan `ValueError`, uso de `Mazmorra._existe`).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+que recomeindas para corregirlos
+
+Respuesta tras la propuesta de Claude: Sí, aplicalo así en un solo commit, con U3 como lo propusiste (sin existe_sala() público).
+Agregá la entrada en PROMPTS_LLM.md. Corré tests/correr_pruebas.py antes del commit. No hagas push.
+
+**Uso de la respuesta:** se corrigieron los hallazgos menores del tercer `/speckit-analyze` sin tocar código: T021 dice que `rango` es el último campo (I1); `data-model.md` y una nota en T032 explican que los arrays de la búsqueda solo crecen (U1); la tabla de cambios a P1 del plan menciona las importaciones nuevas (I2); la tabla de pruebas incluye `GrafoEsqueleto` (I3); el contrato y `data-model.md` documentan los casos que devuelven `None` o lanzan `ValueError` (U2); T022 justifica el uso de `mazmorra._existe()` (U3).
 
 -----------------------------------------------------------------------------------------------------------------------

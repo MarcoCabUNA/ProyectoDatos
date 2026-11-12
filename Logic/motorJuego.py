@@ -6,6 +6,7 @@ from Logic.ColaEventos import ColaEventos
 from Logic.Efectos import Antorcha, Regeneracion, Velocidad, Veneno
 from Logic.EventoPorg import EventoProgramado
 from Logic.GestorEfectos import GestorEfectos
+from Logic.GrafoEsqueleto import GrafoEsqueleto
 from Logic.HistorialRetroceso import HistorialRetroceso
 from Estructuras.Ordenador import Ordenador
 from Logic.RastroSalas import RastroSalas
@@ -36,6 +37,7 @@ class Motor:
         self.jugador.historial = self.historial
         self.mazmorra = mazmorra
         self.mazmorra.historial = self.historial
+        self.grafo = GrafoEsqueleto(mazmorra)             # rutas del cazador sobre el esqueleto (FR-112)
         self.inventario = inventario
         if inventario is not None:
             inventario.historial = self.historial
@@ -125,7 +127,7 @@ class Motor:
             self.terminado = True
             self.victoria = True
             self.mensaje("Has escapado de la cripta")
-        self.terminar_accion_jugador(self.COSTO_MOVER)
+        self.terminar_accion_jugador(salida.costo)
         return "ok"
 
     # COORDINAR (Integrante 3): fn_tiene_objeto(id) la provee el Inventario
@@ -209,16 +211,18 @@ class Motor:
     def turno_enemigo(self, enemigo):
         if not enemigo.Vivo():
             return
+        costo = 100                                     # atacar o esperar (FR-103)
         if enemigo.Sala_Actual == self.jugador.Sala_Actual:
             self.atacar(enemigo, self.jugador)
         else:
-            destino = enemigo.estrategia.decidir(enemigo, self)
-            if destino is not None:
+            paso = enemigo.estrategia.decidir_paso(enemigo, self)
+            if paso is not None:
+                destino, costo = paso                   # moverse cuesta lo que cuesta la salida (FR-102)
                 self.mazmorra.mover_enemigo(enemigo, destino)
                 if destino == self.jugador.Sala_Actual:
                     self.mensaje(f"{enemigo.nombre_visible()} entra a la sala")
         if not self.terminado:
-            self.programar_accion(enemigo, 100)
+            self.programar_accion(enemigo, costo)
 
     def atacar(self, atacante, defensor):
         dano = max(1, atacante.ataque_efectivo() + self.azar.randint(0, 4) - defensor.defensa_efectiva())

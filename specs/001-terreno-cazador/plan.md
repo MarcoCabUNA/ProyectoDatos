@@ -58,7 +58,7 @@ el bench. Decenas de cazadores activos (pruebas del enunciado), hasta 100 en el 
 
 | Principio | Cómo lo cumple este plan | Antes | Después |
 |---|---|---|---|
-| I. MVC en n capas | Búsqueda, cazador y caché en Lógica. Montículo en Estructuras (sin dependencias). Campos nuevos en DTO. Validación de FR-122 en Data (integrante 2, fuera de este plan). La vista recibe todo por DTO. Lógica no importa Data ni Servicios. | ✅ | ✅ |
+| I. MVC en n capas | Búsqueda, cazador y caché en Lógica. Montículo en Estructuras (sin dependencias). Campos nuevos en DTO. Validación de FR-122 en Data (integrante 2, fuera de este plan); Service solo muestra el error (integrante 3). La vista recibe todo por DTO. Lógica no importa Data ni Servicios. | ✅ | ✅ |
 | II. Bibliotecas y estructuras | Montículo propio y arrays como almacenamiento contiguo. Sin `heapq`, `dict`, `set` ni `copy`. Revisión de estructuras existentes: R0 de [research.md](research.md). | ✅ | ✅ |
 | III. KISS, YAGNI, Abierto/Cerrado | Comportamiento nuevo como clase nueva. Cada cambio a P1 está en la tabla de abajo con su FR. El código nuevo lleva type hints y docstring. No hay refactor de P1. | ✅ | ✅ |
 | IV. Determinismo | La búsqueda y el desempate no usan azar. `Errante.decidir_paso` repite la misma llamada a `randint`, así que la secuencia de azar de P1 no cambia. Sin `costo`, los replays de P1 dan la misma partida. | ✅ | ✅ |
@@ -91,19 +91,27 @@ el bench. Decenas de cazadores activos (pruebas del enunciado), hasta 100 en el 
 
 ## Contrato de datos
 
-**Propuesto — pendiente de confirmar con integrante 2.** Detalle en
+**Confirmado con el integrante 2 el 11 de noviembre, tal como está.** Detalle en
 [contracts/contrato-datos.md](contracts/contrato-datos.md).
 
 | DTO | Campo | Propuesta | Dueño |
 |---|---|---|---|
 | `SalidaDTO` | `costo` | `int \| None = None`, el costo **declarado** en ese lado | Integrante 2 |
 | `FichaEnemigoDTO` | `rango` | `int \| None = None`; a un cazador no se le inventa valor | Integrante 1 |
-| `ActorDTO` | `comportamiento` | `str \| None = None`, para que la vista distinga cazadores | Por acordar con el integrante 3 |
+| `ActorDTO` | `comportamiento` | `str \| None = None`, para que la vista distinga cazadores | Integrante 3 (hecho: T039) |
 | (`Service/ArmadorEstado.py`) | — | Copiar también `costo` (el igualado) al armar la sala para la vista | Por acordar con el integrante 3 |
 
 La validación de FR-122 (costo entero ≥ 1, los dos lados de una salida sin costos distintos,
 `rango` entero ≥ 0 en cazadores) va en **Data** y es
 del integrante 2. **Este plan no incluye código de Data.** Lógica no repite la validación.
+FR-122 tiene dos efectos, según de dónde venga el dato:
+
+- **Esqueleto** (costos) o **ficha de un cazador de la sala inicial**: la partida no inicia (T002).
+- **Ficha de cualquier otra sala**, llegue antes o durante la partida: Data la rechaza con un error
+  de datos con contexto, distinto del error de red, la recuerda por sala sin gastar otra solicitud,
+  y solo esa sala queda sin contenido (T052). Intentar entrar se rechaza con ese mensaje, sin
+  consumir tiempo ni registrarse en `partida.log`, y la partida sigue (T053, del integrante 3). Lo
+  prueba T054 (escenario H2-9). No cambian `partida.log`, `ServicioReplay` ni `main.py`.
 
 `rango` tiene que llevar valor por defecto en Python: es un `dataclass` inmutable cuyos campos
 finales ya tienen valor por defecto, y los enemigos que no son cazadores no lo traen. «Sin valor
@@ -139,20 +147,23 @@ el después en `DECISIONES.md`.
 | `Logic/Mazmorra.py` · `abrir_puerta()` y `CierrePuerta.activar()` | Al final, si `observador_puertas` no es `None`, avisarle `puerta_cambio(a, b)` | Modificación (2 líneas cada uno) | FR-114 | Son los dos únicos puntos donde cambia una puerta. Sin aviso, la búsqueda guardada podría quedar desactualizada. |
 | `Logic/Comportamientos.py` · `Comportamiento` | Método `decidir_paso()` por defecto (usa `decidir()` y `costo_paso()`) | Extensión | FR-102, FR-104 | `Guardian` y `Rastreador` lo heredan sin cambios. |
 | `Logic/Comportamientos.py` · `Errante` | Método nuevo `decidir_paso()` con el mismo sorteo sobre salidas con costo. `decidir()` no cambia. | Extensión | FR-104 | Con solo un destino no se sabe qué salida se sorteó si hay dos hacia la misma sala. |
-| `Logic/Comportamientos.py` · `COMPORTAMIENTOS` | Agregar `Cazador` | Modificación (1 línea) | FR-106 | La fábrica solo conoce lo que está en la lista. |
+| `Logic/Comportamientos.py` · `COMPORTAMIENTOS` | Agregar `Cazador` | Modificación (1 línea + 1 import) | FR-106 | La fábrica solo conoce lo que está en la lista. |
 | `Logic/Comportamientos.py` · `Cazador` | Clase nueva. En la historia 2 decide con `paso_desde_cero`; en la historia 3 pasa a `motor.rutas.decidir` (una línea de código nuevo, no de P1). | Extensión | FR-106 a FR-115 | — |
-| `Logic/motorJuego.py` · `__init__` | Crear `self.grafo` (historia 2), `self.rutas` y asignar `mazmorra.observador_puertas` (historia 3) | Modificación (3 líneas) | FR-112, FR-114 | Es el dueño del historial y de la mazmorra. |
+| `Logic/motorJuego.py` · `__init__` | Crear `self.grafo` (historia 2), `self.rutas` y asignar `mazmorra.observador_puertas` (historia 3) | Modificación (3 líneas + imports) | FR-112, FR-114 | Es el dueño del historial y de la mazmorra. |
 | `Logic/motorJuego.py` · `mover_jugador()` | `terminar_accion_jugador(salida.costo)` en lugar de `COSTO_MOVER` | Modificación (1 línea) | FR-102 | La regla de costo cambió. |
 | `Logic/motorJuego.py` · `turno_enemigo()` | Usar `decidir_paso()` y programar con su costo (100 si espera o ataca) | Modificación (unas 5 líneas) | FR-102, FR-103, FR-110, FR-121 | Hoy programa 100 fijo después de moverse. |
-| `Logic/Enemigo.py` | Redefinir `a_dto()` para incluir `comportamiento` (si se confirma con el integrante 3) | Extensión | FR-117 | — |
+| `Logic/Enemigo.py` | Redefinir `a_dto()` para incluir `comportamiento` (hecho: T040) | Extensión | FR-117 | — |
 | `Logic/BenchLogica.py` · `medir()` | Agregar `BenchRutas.medir()` a lo que devuelve | Modificación (1 línea) | NFR-103 | `ServicioBench` (del integrante 2) ya llama a `BenchLogica.medir`. Así no se edita su archivo. |
 | `DTO/FichaEnemigoDTO.py` | Campo `rango`, `"rango"` en `_CAMPOS`, lectura y escritura | Extensión del DTO | FR-106 | Contrato de datos. Es del integrante 1. |
 | `DTO/SalaDTO.py` · `SalidaDTO` | Campo `costo` (declarado) | Extensión del DTO | FR-101 | Contrato de datos. **Lo hace el integrante 2.** |
 | `Service/ArmadorEstado.py` · `_sala_con_estado_actual` | Copiar `costo=viva.salidas[d].costo` junto a `cerrada` | Modificación (1 palabra) | FR-101, FR-116 | La vista debe ver el costo igualado, no el declarado. **Por acordar con el integrante 3.** |
-| `DTO/ActorDTO.py` | Campo `comportamiento` | Extensión del DTO | FR-117 | **Por acordar con el integrante 3.** |
+| `DTO/ActorDTO.py` | Campo `comportamiento` | Extensión del DTO | FR-117 | Hecho (T039). |
+| `Data/FuenteDatos.py`, `Data/GestorContenido.py` | Error de datos (ficha y campo) distinguible del error de red; recordar el rechazo por sala sin otra solicitud; solo esa sala queda sin contenido | Modificación (T052, **integrante 2**) | FR-122 | Hoy el formato y la red usan el mismo `ErrorRed`, la precarga los trata igual y `resolver_pendientes` marca el lote como cargado antes de resolver el catálogo. |
+| `Service/ServicioAccionJugador.py` · `ejecutar` | Mostrar el error de datos al rechazar el movimiento, en lugar de «Sin conexión con el servicio» | Modificación (T053, **integrante 3**) | FR-122 | Hoy todo `ErrorRed` se muestra como falta de red. |
 
 No se tocan: `ColaEventos`, `HistorialRetroceso`, `cambiar_velocidad`, `Rastreador.decidir`,
-`Errante.decidir`, `Mazmorra._igualar_caras`, la capa Data ni la Vista.
+`Errante.decidir`, `Mazmorra._igualar_caras`, `partida.log` (`BitacoraReplayIO`), `ServicioReplay`,
+`main.py` ni la Vista. De la capa Data solo cambia lo de T052.
 
 ## Decisiones de diseño (resumen de [research.md](research.md))
 
@@ -194,8 +205,8 @@ cuadrículas son sintéticas, con costos por salida sacados de `random.Random(SE
 | `tests/ayudas_terreno.py` | Ayudantes: criptas con costos (en uno o en los dos lados), fichas, motor y una fuente de datos de prueba con un cazador. |
 | `tests/test_mazmorra_costos.py` | Costo en `SalidaViva`, igualación de los dos lados, `salidas_abiertas_con_costo` y `costo_paso` (FR-101, FR-104, FR-119). |
 | `tests/test_monticulo_minimo.py` | El montículo: orden, desempate por valor, entradas repetidas, `vaciar`. |
-| `tests/test_busqueda_costo_minimo.py` | Búsqueda reanudable, corte en el límite, generación, salidas sin vuelta, salidas repetidas (FR-108, FR-111, FR-119). |
-| `tests/test_terreno_cazador.py` | Escenarios H1-1 a H1-8, H2-1 a H2-8 y H3-6, y los casos 1, 2, 3, 4, 6 y 7 del Apéndice B. Bordes del cazador, incluido el cierre automático en el mismo instante (FR-108). |
+| `tests/test_busqueda_costo_minimo.py` | Búsqueda reanudable, corte en el límite, generación, salidas sin vuelta, salidas repetidas (FR-108, FR-111, FR-119), y `GrafoEsqueleto`: salidas y entradas abiertas en vivo (FR-112, FR-113). |
+| `tests/test_terreno_cazador.py` | Escenarios H1-1 a H1-8, H2-1 a H2-9 y H3-6 (H2-9 con una fuente de prueba que devuelve un error de datos para una sala: T054), y los casos 1, 2, 3, 4, 6 y 7 del Apéndice B. Bordes del cazador, incluido el cierre automático en el mismo instante (FR-108). |
 | `tests/test_rutas_equivalencia.py` | Escenarios H3-1 a H3-5 (H3-1 es el **caso 5** del Apéndice B). FR-114 / SC-102: partidas sintéticas con semilla (puertas, movimientos, muertes, pergaminos), comparando cada decisión con `paso_desde_cero`. Historial. |
 | `tests/test_dto_terreno.py` | `FichaEnemigoDTO.rango` (ida y vuelta, `_CAMPOS`, ausencia). Datos para la vista de H4-1 y H4-2 (costo igualado y `comportamiento`). |
 | `tests/test_modos_sin_vista_terreno.py` | FR-118: `--replay`, `--replay … --hasta` y `--verificar` con una cripta de prueba con costos y un cazador, sin vista. |
@@ -214,7 +225,7 @@ specs/001-terreno-cazador/
 ├── data-model.md        # fase 1
 ├── quickstart.md        # fase 1
 ├── contracts/
-│   ├── contrato-datos.md     # DTO (propuesto, pendiente de confirmar con integrante 2)
+│   ├── contrato-datos.md     # DTO (confirmado con integrante 2 el 11 nov)
 │   └── busqueda-rutas.md     # búsqueda compartida con «ir a»
 ├── checklists/requirements.md
 └── tasks.md             # fase 2 (/speckit.tasks)
@@ -225,8 +236,8 @@ specs/001-terreno-cazador/
 ```text
 DTO/
 ├── FichaEnemigoDTO.py        # + rango                     (integrante 1)
-├── SalaDTO.py                # + SalidaDTO.costo           (integrante 2, fuera de este plan)
-└── ActorDTO.py               # + comportamiento            (por acordar con el integrante 3)
+├── SalaDTO.py                # + SalidaDTO.costo           (integrante 2, hecho: T001)
+└── ActorDTO.py               # + comportamiento            (hecho: T039)
 Estructuras/
 └── MonticuloMinimo.py        # NUEVO: cola de prioridad propia
 Logic/
@@ -263,8 +274,10 @@ ninguna carpeta nueva.
 |---|---|---|---|
 | `SalidaDTO.costo` (declarado) | Integrante 2 | Integrante 1 | Todo desde la fase 2 de `tasks.md` (T001). |
 | La validación de FR-122 en Data, incluidos los dos lados con costos distintos | Integrante 2 | Integrante 1 | Las pruebas de FR-122 (T002, T050). No bloquea a Lógica. |
+| Error de datos distinguible del error de red, recordado por sala sin otra solicitud; solo esa sala queda sin contenido | Integrante 2 | Integrante 3 | T053 y quitar el `skip` de T054 (T052, FR-122). |
+| Service muestra ese error de datos al rechazar el movimiento, en lugar del mensaje de red | Integrante 3 | Integrante 1 | Quitar el `skip` de T054 (T053, FR-122, escenario H2-9). |
 | `FichaEnemigoDTO.rango` | Integrante 1 | Integrante 2 | La validación de Data. |
-| `ActorDTO.comportamiento` y su uso en la vista | Integrante 3 | — | FR-116 y FR-117 (la interfaz es del integrante 3, §7.3). |
+| `ActorDTO.comportamiento` (hecho: T039) y su uso en la vista | Integrante 3 | — | FR-116 y FR-117 (la interfaz es del integrante 3, §7.3). |
 | `ArmadorEstado` copia el costo igualado, y pruebas de la vista para H4 | Integrante 3 | — | FR-116, SC-106 y el Principio X para H4-1 y H4-2 (T038, T041). |
 | El grafo del mapa conocido | Integrante 2 | Integrante 3 («ir a») | Nada de esta feature. |
 
