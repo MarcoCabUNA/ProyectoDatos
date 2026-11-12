@@ -27,17 +27,25 @@ virtual (vive en Lógica), así que el tiempo real de red nunca lo altera.
 Catálogo (§4.3): si se le pasa un ResolvedorCatalogo, cada lote de contenido que llega se le
 entrega enseguida, para que las fichas de sus enemigos, trampas y objetos queden disponibles
 antes de que el jugador entre (en lotes de hasta 10 ids, sin repetir lo que ya está).
+
+Fichas inválidas (FR-122, T052): si el resolvedor rechaza la ficha de un enemigo, SOLO la sala que lo
+tiene queda RECHAZADA (contenido no disponible); las demás salas del lote se cargan normalmente. El
+error se guarda en el array '_errores' (índice = id de sala). Una sala RECHAZADA no se vuelve a pedir
+y asegurar_sala() lanza otra vez ese mismo error sin hacer ninguna solicitud. La precarga no se
+interrumpe: la partida sigue mientras el jugador no intente entrar a esa sala.
 """
 from Data.ClienteHttp import ErrorRed
 from Data.FuenteDatos import FuenteDatos
 from Data.GestorEsqueleto import GestorEsqueleto
 from Data.ResolvedorCatalogo import ResolvedorCatalogo
+from Data.ValidacionDatos import ErrorDatos
 from DTO.SalaDTO import SalaDTO
 from Estructuras.Cola import Cola
 
 NO_PEDIDA = 0
 PENDIENTE = 1
 CARGADA = 2
+RECHAZADA = 3   # FR-122: llegó, pero menciona una ficha inválida; no se vuelve a pedir
 
 
 class GestorContenido:
@@ -63,6 +71,7 @@ class GestorContenido:
         self._radio = radio
         self._tamano = self._mayor_id() + 1
         self._estado: list[int] = [NO_PEDIDA] * self._tamano
+        self._errores: list[ErrorDatos | None] = [None] * self._tamano   # solo en las salas RECHAZADA
         self._pendientes = Cola()
         self._resolvedor = resolvedor
         # Contadores para el reporte y --bench.
@@ -106,6 +115,8 @@ class GestorContenido:
         pedir más adelante) y el error se propaga. Si falla el catálogo de un lote, ese lote
         ya quedó cargado (sus fichas faltantes se pedirán cuando se usen) y lo demás vuelve
         a NO_PEDIDA.
+        FR-122: una sala que menciona una ficha rechazada queda RECHAZADA y no se integra al
+        esqueleto; eso no es un fallo, así que aquí no se lanza nada por ella.
         """
         while not self._pendientes.esta_vacia():
             lote: list[int] = []
@@ -118,19 +129,27 @@ class GestorContenido:
                 raise
             self._lotes += 1
             self._salas_pedidas += len(lote)
-            # Se integran en el orden pedido (FuenteDatos ya los devuelve así).
+            # §4.3: resolver ya las fichas que mencionan estas salas, antes de mostrarlas o simularlas.
+            # Primero el catálogo y después la integración, para saber qué salas rechazar (FR-122).
+            error_catalogo: ErrorRed | None = None
+            if self._resolvedor is not None:
+                try:
+                    self._resolvedor.resolver_contenido(recibidos)
+                except ErrorRed as error:
+                    error_catalogo = error
+            # Se integran en el orden pedido (FuenteDatos ya los devuelve así), aunque el catálogo haya fallado.
             for contenido in recibidos:
+                rechazo = self._rechazo_de(contenido)
+                if rechazo is not None:
+                    self._rechazar(contenido.sala, rechazo)
+                    continue
                 sala = self._esqueleto.obtener_sala(contenido.sala)
                 assert sala is not None
                 self._esqueleto.actualizar_sala(sala.con_contenido(contenido))
                 self._estado[contenido.sala] = CARGADA
-            # §4.3: resolver ya las fichas que mencionan estas salas, antes de mostrarlas o simularlas.
-            if self._resolvedor is not None:
-                try:
-                    self._resolvedor.resolver_contenido(recibidos)
-                except ErrorRed:
-                    self._descartar_pendientes([])
-                    raise
+            if error_catalogo is not None:
+                self._descartar_pendientes([])
+                raise error_catalogo
 
     def precargar_alrededor(self, id_sala: int) -> int:
         """
@@ -158,11 +177,27 @@ class GestorContenido:
         cuyo contenido no se conoce). Si ya está cargada, no pide nada. Si no, hace UNA
         solicitud con esa sala primero y la completa con las más cercanas que falten.
         Aquí un error de red SÍ se propaga: Servicios decide qué hacer (no mover al jugador).
+
+        FR-122 (T052): si la sala quedó RECHAZADA, lanza su ErrorDatos (es un ErrorRed) sin hacer
+        ninguna solicitud, cada vez que se intente. Si ya estaba cargada, antes de devolverla se
+        resuelven sus fichas (sin red si ya están en memoria o en disco): así una ficha que no llegó
+        por un fallo de red anterior se pide aquí, y si resulta inválida la sala se rechaza antes de
+        que Lógica la cargue.
         """
         self._validar_sala(id_sala)
-        if self._estado[id_sala] != CARGADA:
+        if self._estado[id_sala] == NO_PEDIDA or self._estado[id_sala] == PENDIENTE:
             self._marcar_mas_cercanas(id_sala, FuenteDatos.MAX_SALAS_POR_CONTENIDO)
             self.resolver_pendientes()
+        elif self._estado[id_sala] == CARGADA and self._resolvedor is not None:
+            sala = self._esqueleto.obtener_sala(id_sala)
+            assert sala is not None
+            self._resolvedor.resolver_contenido([sala])
+            rechazo = self._rechazo_de(sala)
+            if rechazo is not None:
+                self._rechazar(id_sala, rechazo)
+        error = self._errores[id_sala]
+        if error is not None:
+            raise error.with_traceback(None)   # el mismo error, sin acumular la traza del intento anterior
         sala = self.obtener_contenido(id_sala)
         assert sala is not None
         return sala
@@ -214,6 +249,24 @@ class GestorContenido:
             self._estado[id_sala] = NO_PEDIDA
         while not self._pendientes.esta_vacia():
             self._estado[self._pendientes.desencolar()] = NO_PEDIDA
+
+    def _rechazo_de(self, contenido) -> ErrorDatos | None:
+        """
+        FR-122: el error de la primera ficha rechazada que menciona la sala (enemigos en el orden recibido),
+        o None. 'contenido' es un ContenidoSalaDTO o un SalaDTO. O(enemigos x fichas rechazadas).
+        """
+        if self._resolvedor is None:
+            return None
+        for enemigo in contenido.enemigos:
+            rechazo = self._resolvedor.rechazo(enemigo.tipo)
+            if rechazo is not None:
+                return rechazo
+        return None
+
+    def _rechazar(self, id_sala: int, error: ErrorDatos) -> None:
+        """La sala queda sin contenido disponible y recuerda por qué. No vuelve a NO_PEDIDA."""
+        self._estado[id_sala] = RECHAZADA
+        self._errores[id_sala] = error
 
     def _mayor_id(self) -> int:
         mayor = 0

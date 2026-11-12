@@ -1193,3 +1193,12 @@ Suite en verde con uv run, entrada en PROMPTS_LLM.md, no hagas push.
 **Uso de la respuesta:** la revisión de las specs 002 y 003 (sin cambios en esas specs) encontró, entre otros puntos, que H3-7 de la 001 contradecía 003 FR-302. Commit `99bb5ff` (spec): H3-7, FR-118 y «Fuera de alcance» dicen que `--verificar` no depende de los costos ni de los cazadores y que los errores de FR-122 hacen que no concluya, con código 1; la trazabilidad de H3-7 cita FR-118 y FR-122. Commit de pruebas: la prueba pasa a llamarse `test_h3_7_fr118_fr122_verificar_no_depende_de_costos_ni_cazadores` y sigue con `skip` hasta que exista la 003.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude
+
+Le pedí a Claude que me guiara con T002 y T052 de specs/001-terreno-cazador/tasks.md (FR-122 en Data, según contracts/contrato-datos.md): validar con el esqueleto completo los costos de las salidas (entero >= 1, sin aceptar bool, y los dos lados con el mismo costo si los dos lo declaran); rechazar la ficha de un cazador con rango ausente, null, no entero o negativo con un error de datos que se distinga del error de red; recordar el rechazo por sala sin gastar otra solicitud; y que solo esa sala quede sin contenido. Con pruebas que citen FR-122 y los casos de T050, sin tocar archivos de Marco ni de Kristel. Después le pedí analizar la rama de Marco (escenarios H2-17 a H2-19 con skip y su revisión de las specs 002 y 003) y decirme qué hacer primero.
+
+**Uso de la respuesta:** se usó en `Data/ValidacionDatos.py` (nuevo: `ErrorDatos`, subclase de `ErrorRed`, y las reglas de FR-122), `Data/GestorEsqueleto.py` (`_validar_costos`: la partida no inicia), `Data/ResolvedorCatalogo.py` (una ficha inválida no se guarda ni se vuelve a pedir; `rechazo(id)`), `Data/GestorContenido.py` (estado `RECHAZADA` por sala: `asegurar_sala` vuelve a lanzar el mismo error sin otra solicitud y las demás salas del lote se cargan) y `tests/TestValidacionDatos.py` (20 pruebas). Revisé el cambio y corrí las pruebas: 460 OK (skipped=6) y 31/31 con la rama de Marco ya jalada; el replay de ejemplo sigue terminando en victoria con reloj 3625. También se usó para jalar la rama de Marco a derek (con PROMPTS_LLM.md resuelto a mano), para proponerle el cuerpo de las pruebas H2-17 a H2-19 y para las respuestas a su revisión.
+
+-----------------------------------------------------------------------------------------------------------------------
