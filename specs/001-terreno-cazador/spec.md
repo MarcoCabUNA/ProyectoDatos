@@ -41,6 +41,10 @@
 - P: ¿Con qué cripta y cuántos cazadores se miden el ciclo de eventos y el crecimiento del tiempo de decisión? → R: Con una cripta sintética de 1 000 salas en cuadrícula y 30 cazadores activos. Al multiplicar por 10 el tamaño de la cripta, la decisión de un cazador con `rango` pequeño no tarda más del doble (NFR-101, SC-104, SC-105).
 - P: ¿Qué valor es un `rango` pequeño en NFR-102 y SC-105? → R: `rango` = 200, el costo de dos salidas de costo por defecto (NFR-102, SC-105).
 
+### Sesión 2026-11-11
+
+- P (pregunta de Dereck, integrante 2): La ficha de un cazador puede llegar con la precarga cuando la partida ya empezó. Si su `rango` falta o es inválido, ¿qué pasa? → R: Los costos inválidos o distintos entre las dos caras se detectan con el esqueleto, antes de iniciar, y la partida no inicia. Una ficha de cazador con `rango` ausente o inválido que llega antes de iniciar impide iniciar la partida. Si llega durante la partida, la partida se detiene con un error de datos que indica la ficha y el campo, y el programa no se cae (FR-122, escenario H2-9).
+
 ---
 
 ## Escenarios de usuario y pruebas *(obligatorio)*
@@ -118,6 +122,9 @@ cada turno del cazador qué acción toma, a qué sala va y cuánto cuesta esa ac
 8. **Dado** un cazador cuya única ruta hacia el jugador cruza una sala cuyo contenido aún no se ha
    descargado y que el jugador nunca ha visto, **cuando** le toca actuar, **entonces** decide igual que si
    el contenido estuviera descargado y la sala explorada.
+9. **Dada** una partida ya iniciada, **cuando** llega con la precarga la ficha de un cazador sin `rango`,
+   **entonces** la partida se detiene con un error de datos que indica esa ficha y el campo `rango`, y el
+   programa no se cae.
 
 ---
 
@@ -195,9 +202,10 @@ que muestra la interfaz.
 - **Costo de salida mayor que 100 y velocidad baja**: el intervalo crece en proporción (por ejemplo, costo
   250 con velocidad 50 da 500).
 - **Solo un lado de la salida declara costo**: ese costo vale en ambos sentidos (FR-101, escenario H1-8).
-- **Datos inválidos**: una salida con costo menor que 1 o no entero, una salida cuyos dos lados declaran
-  costos distintos, o una ficha de cazador sin `rango` entero ≥ 0, impide iniciar la partida. Se informa
-  con contexto y el programa no se cae (FR-122).
+- **Datos inválidos**: una salida con costo menor que 1 o no entero, o una salida cuyos dos lados
+  declaran costos distintos, se detecta con el esqueleto e impide iniciar la partida. Una ficha de cazador
+  sin `rango` entero ≥ 0 impide iniciar si llega antes; si llega con la precarga durante la partida, la
+  detiene (escenario H2-9). En todos los casos se informa con contexto y el programa no se cae (FR-122).
 
 ---
 
@@ -268,8 +276,12 @@ que muestra la interfaz.
 - **FR-122**: Una ficha de cazador sin `rango`, o con un `rango` que no sea un entero ≥ 0, una salida
   que declare un costo menor que 1 o no entero, y una salida cuyos dos lados declaren costos distintos,
   DEBEN tratarse como datos inválidos, sin valor por defecto. El programa DEBE informar el error con
-  contexto (qué ficha o qué salida y qué campo), NO DEBE iniciar la partida con esos datos y NO DEBE
-  caerse.
+  contexto (qué ficha o qué salida y qué campo) y NO DEBE caerse. Además:
+  - Los costos inválidos o distintos entre las dos caras DEBEN detectarse con el esqueleto, antes de
+    iniciar, y la partida NO DEBE iniciar.
+  - Una ficha de cazador con `rango` ausente o inválido puede llegar durante la partida con la precarga.
+    Si llega antes de iniciar, la partida NO DEBE iniciar. Si llega durante la partida, la partida DEBE
+    detenerse con un error de datos que indique la ficha y el campo (escenario H2-9).
 - **FR-123**: El cazador DEBE activarse y programar su primera acción igual que los demás enemigos
   (P1 §2.4). Mientras está dormido no actúa.
 
