@@ -71,7 +71,7 @@ resumen coincide con lo vivido y que la partida sigue exactamente igual después
 2. *(Apéndice B, caso 3)* **Dado** que en t = 300 ocurren varios eventos (por ejemplo, un enemigo ataca, una
    puerta se cierra sola y expira un efecto) y a t = 300 no le corresponde ninguna decisión del jugador,
    **cuando** el jugador escribe `historia 300`, **entonces** el resumen muestra el estado después de
-   ejecutar todos esos eventos. *(FR-402)*
+   ejecutar todos esos eventos, con el reloj en 300. *(FR-402, FR-405)*
 3. *(Apéndice B, caso 4)* **Dada** una partida con el reloj en t = 500 y 5 acciones realizadas, todas
    revertibles, **cuando** el jugador escribe `historia 200` o `historia #3`, **entonces** el reloj
    sigue en 500, no se programa ni se ejecuta ningún evento, el archivo `partida.log` no gana ninguna línea
@@ -79,8 +79,8 @@ resumen coincide con lo vivido y que la partida sigue exactamente igual después
    revertibles. *(FR-407, FR-408)*
 4. **Dado** que el jugador ya realizó 6 acciones, **cuando** escribe `historia #4`, **entonces** el resumen
    describe el estado justo antes de que el jugador tomara su cuarta acción: su sala, vida, estadísticas,
-   inventario, efectos activos, los enemigos de esa sala con su vida y el mapa conocido en ese momento.
-   *(FR-404, FR-405)*
+   inventario, efectos activos, los enemigos de esa sala con su vida y el mapa conocido en ese momento, con el
+   reloj en el instante de la decisión de esa cuarta acción. *(FR-404, FR-405)*
 5. **Dado** que el jugador realizó 6 acciones, **cuando** escribe `historia #9` o `historia #0`, **entonces**
    la consulta se rechaza indicando el rango válido de acciones, sin cambiar la partida. *(FR-409)*
 6. **Dada** una partida donde el jugador lleva 20 acciones y el pergamino solo permite revertir las últimas 5,
@@ -101,7 +101,8 @@ resumen coincide con lo vivido y que la partida sigue exactamente igual después
     **entonces** la interfaz acepta ambos comandos y muestra el resumen. *(FR-423)*
 12. **Dado** que en t = 400 el veneno mata al jugador y en ese mismo instante había otros eventos válidos
     todavía por ejecutarse, **cuando** el jugador escribe `historia 400`, **entonces** el resumen muestra el
-    estado del momento de la muerte y esos otros eventos de t = 400 no aparecen. *(FR-402)*
+    estado del momento de la muerte, con el reloj en 400, y esos otros eventos de t = 400 no aparecen.
+    *(FR-402, FR-405)*
 
 ---
 
@@ -122,8 +123,9 @@ resumen con el esperado, sin interfaz gráfica.
    `--replay partida.log --hasta t` con t dentro de la partida, **entonces** se imprime el mismo resumen que
    mostraría `historia t` en esa partida, sin crear ninguna ventana. *(FR-410, FR-411)*
 2. *(Apéndice B, caso 5)* **Dado** un `partida.log` cuya partida terminó en t = 900, **cuando** se ejecuta
-   `--replay partida.log --hasta 1500`, **entonces** se imprime el resumen del estado final e indica de forma
-   explícita que la partida terminó antes de t = 1500. *(FR-412)*
+   `--replay partida.log --hasta 1500`, **entonces** se imprime el resumen del estado final, con el reloj en 900
+   (el del final de la partida, no 1500), e indica de forma explícita que la partida terminó antes de
+   t = 1500. *(FR-405, FR-412)*
 3. `--hasta` sin valor o no entero o negativo, o `--hasta` sin `--replay` → error de uso (código 2); no se
    reproduce nada. *(FR-410)*
 4. **Dado** un `partida.log` inexistente o ilegible, **cuando** se ejecuta el comando, **entonces** se informa
@@ -251,7 +253,9 @@ que ninguna consulta exige procesar más de K acciones.
   del jugador, con k entre 1 y el número de acciones del jugador realizadas.
 - **FR-405**: Cada resumen DEBE mostrar como mínimo: el reloj, la sala del jugador, su vida y estadísticas, su
   inventario, sus efectos activos, los enemigos de esa sala con su vida, y el mapa conocido en ese momento
-  (cuando la feature 002 esté disponible).
+  (cuando la feature 002 esté disponible). El reloj que muestra es el instante pedido; para `historia #k`,
+  el instante de la decisión k. Si la partida terminó antes de ese instante, es el reloj del final de la
+  partida.
 - **FR-406**: El cursor del inventario y los mensajes del juego NO forman parte del estado consultable y NO
   DEBEN aparecer en el resumen.
 - **FR-419**: El resumen de un instante DEBE ser exactamente el estado que la partida tuvo al vivirlo,
@@ -341,9 +345,9 @@ que ninguna consulta exige procesar más de K acciones.
 |---|---|---|---|---|
 | 1 | `historia <t>` con t mayor que el reloj actual: se rechaza | H1-1 | FR-409 | Se define en `tasks.md` |
 | 2 | `historia` después de usar un pergamino: no muestra las acciones revertidas | H3-1 | FR-404, FR-409, FR-413 | Se define en `tasks.md` |
-| 3 | Varios eventos en el mismo instante t: `historia <t>` muestra el estado después de todos ellos | H1-2 | FR-402 | Se define en `tasks.md` |
+| 3 | Varios eventos en el mismo instante t: `historia <t>` muestra el estado después de todos ellos | H1-2 | FR-402, FR-405 | Se define en `tasks.md` |
 | 4 | `historia` no consume tiempo virtual, no se registra en `partida.log` y no modifica el historial de retroceso | H1-3 | FR-407, FR-408 | Se define en `tasks.md` |
-| 5 | `--replay … --hasta t` con t posterior al final: muestra el estado final e indica que la partida terminó antes | H2-2 | FR-412 | Se define en `tasks.md` |
+| 5 | `--replay … --hasta t` con t posterior al final: muestra el estado final e indica que la partida terminó antes | H2-2 | FR-405, FR-412 | Se define en `tasks.md` |
 | 6 | Se carga un archivo de la primera parte: incompatibilidad reportada o migración explícita; nunca en silencio | H4-3 | FR-421 | Se define en `tasks.md` |
 
 Escenarios adicionales (no provienen del Apéndice B):
@@ -353,7 +357,7 @@ Escenarios adicionales (no provienen del Apéndice B):
 | 7 | `historia <t>` con decisión del jugador en t: estado justo antes de la decisión, igual a `historia #k` | H1-9 | FR-402 | Se define en `tasks.md` |
 | 8 | El resumen no muestra el cursor del inventario ni los mensajes | H1-10 | FR-406 | Se define en `tasks.md` |
 | 9 | La interfaz ofrece `historia <t>` e `historia #k` y muestra el resumen | H1-11 | FR-423 | Se define en `tasks.md` |
-| 13 | Partida terminada en t: el estado es el del momento en que terminó; los demás eventos de t no cuentan | H1-12 | FR-402 | Se define en `tasks.md` |
+| 13 | Partida terminada en t: el estado es el del momento en que terminó; los demás eventos de t no cuentan | H1-12 | FR-402, FR-405 | Se define en `tasks.md` |
 | 10 | `--hasta` inválido o sin `--replay`: error de uso (código 2) | H2-3 | FR-410 | Se define en `tasks.md` |
 | 11 | Archivo inexistente o ilegible: error con contexto, código 1 | H2-4 | FR-410 | Se define en `tasks.md` |
 | 12 | `--replay` sin `--hasta` reproduce la partida completa | H2-6 | FR-410 | Se define en `tasks.md` |
@@ -393,6 +397,8 @@ Cada prueba citará el identificador del requisito que verifica (Principio X).
   reproducirla hasta un instante.
 - El mapa conocido es el de la feature 002; mientras no exista, el resumen omite esa sección.
 - El valor por defecto de K se define en `plan.md` con mediciones, no aquí.
+- Al cargar una partida guardada se conserva el valor de K con el que se guardó su línea de tiempo, aunque se
+  indique otro `--checkpoint-cada`.
 - Se asume que cada paso de «ir a» es una acción ordinaria del jugador; se confirmará en la spec 002.
 - Leer un pergamino no cuenta como acción del jugador (P1 §2.11): no recibe número de acción, y por eso las
   acciones revertidas dejan de existir en la línea (FR-413).
