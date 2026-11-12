@@ -43,8 +43,9 @@
 
 ### Sesión 2026-11-11
 
-- P (pregunta de Dereck, integrante 2): La ficha de un cazador puede llegar con la precarga cuando la partida ya empezó. Si su `rango` falta o es inválido, ¿qué pasa? → R: Los costos inválidos o distintos entre las dos caras se detectan con el esqueleto, antes de iniciar, y la partida no inicia. Una ficha de cazador con `rango` ausente o inválido que llega antes de iniciar impide iniciar la partida. Si llega durante la partida, la partida se detiene con un error de datos que indica la ficha y el campo, y el programa no se cae (FR-122, escenario H2-9).
-- P: ¿En qué momento exacto se detiene la partida cuando una ficha de cazador inválida llega con la precarga, y qué pasa en `--replay` y `--verificar`? → R: La ficha se rechaza como error de formato, distinto de un error de red, y la sala que contiene a ese cazador queda sin contenido cargado. Mientras el jugador no entre a esa sala, la partida sigue y el cazador no se activa (FR-123). La partida se detiene en el momento determinista en que el jugador intenta entrar a esa sala: el movimiento no se ejecuta, no consume tiempo ni se registra como acción en `partida.log`, y la partida termina con un error de datos que indica la ficha y el campo, sin puntaje y sin que el programa se caiga. `partida.log` termina con una marca de cierre que indica el movimiento intentado: `--replay` reproduce las acciones, llega a esa marca, repite el intento, encuentra el mismo error y termina con un código de salida distinto de 0. `--verificar` no se ve afectado (FR-118, FR-122, escenario H2-9).
+- P (pregunta de Dereck, integrante 2): La ficha de un cazador puede llegar con la precarga cuando la partida ya empezó. Si su `rango` falta o es inválido, ¿qué pasa? → R: Los costos inválidos o distintos entre las dos caras se detectan con el esqueleto, antes de iniciar, y la partida no inicia. Una ficha de cazador con `rango` ausente o inválido que llega antes de iniciar impide iniciar la partida. Si llega durante la partida, la partida se detiene con un error de datos que indica la ficha y el campo, y el programa no se cae (FR-122, escenario H2-9). (Reemplazada por la última pregunta de esta sesión.)
+- P: ¿En qué momento exacto se detiene la partida cuando una ficha de cazador inválida llega con la precarga, y qué pasa en `--replay` y `--verificar`? → R: La ficha se rechaza como error de formato, distinto de un error de red, y la sala que contiene a ese cazador queda sin contenido cargado. Mientras el jugador no entre a esa sala, la partida sigue y el cazador no se activa (FR-123). La partida se detiene en el momento determinista en que el jugador intenta entrar a esa sala: el movimiento no se ejecuta, no consume tiempo ni se registra como acción en `partida.log`, y la partida termina con un error de datos que indica la ficha y el campo, sin puntaje y sin que el programa se caiga. `partida.log` termina con una marca de cierre que indica el movimiento intentado: `--replay` reproduce las acciones, llega a esa marca, repite el intento, encuentra el mismo error y termina con un código de salida distinto de 0. `--verificar` no se ve afectado (FR-118, FR-122, escenario H2-9). (Reemplazada por la pregunta siguiente.)
+- P: ¿Se puede simplificar la regla de las fichas de cazador inválidas que llegan con la precarga, para no cambiar el formato de `partida.log` ni el replay de la primera parte (Principio III, KISS)? → R: Sí. La ficha se rechaza con un error de datos que indica la ficha y el campo, y no se vuelve a pedir. La sala que contiene a ese cazador queda como contenido no disponible. Si el jugador intenta entrar, el movimiento se rechaza con ese mensaje, sin consumir tiempo ni registrarse en `partida.log`, y la partida sigue. Esto reemplaza la regla de detener la partida y la marca de cierre en el log. Si la ficha inválida es de un cazador de la sala inicial, la partida no inicia; para cualquier otra sala, llegue antes o durante la partida, esa sala queda como contenido no disponible. Los costos inválidos del esqueleto siguen impidiendo iniciar (FR-122, escenario H2-9).
 
 ---
 
@@ -124,9 +125,9 @@ cada turno del cazador qué acción toma, a qué sala va y cuánto cuesta esa ac
    descargado y que el jugador nunca ha visto, **cuando** le toca actuar, **entonces** decide igual que si
    el contenido estuviera descargado y la sala explorada.
 9. **Dada** una partida ya iniciada en la que llegó con la precarga la ficha de un cazador sin `rango`,
-   **cuando** el jugador intenta entrar a la sala de ese cazador, **entonces** el movimiento no se ejecuta
-   ni consume tiempo, y la partida termina sin puntaje con un error de datos que indica esa ficha y el
-   campo `rango`, sin que el programa se caiga. Mientras no intente entrar a esa sala, la partida sigue.
+   **cuando** el jugador intenta entrar a la sala de ese cazador, **entonces** el movimiento se rechaza
+   con un error de datos que indica esa ficha y el campo `rango`, no consume tiempo, no se registra en
+   `partida.log` y la partida sigue, sin que el programa se caiga.
 
 ---
 
@@ -206,10 +207,11 @@ que muestra la interfaz.
 - **Solo un lado de la salida declara costo**: ese costo vale en ambos sentidos (FR-101, escenario H1-8).
 - **Datos inválidos**: una salida con costo menor que 1 o no entero, o una salida cuyos dos lados
   declaran costos distintos, se detecta con el esqueleto e impide iniciar la partida. Una ficha de cazador
-  sin `rango` entero ≥ 0 impide iniciar si llega antes. Si llega con la precarga durante la partida, su
-  sala queda sin contenido y la partida sigue hasta que el jugador intenta entrar a ella: ahí termina con
-  un error de datos, sin ejecutar el movimiento (escenario H2-9). En todos los casos se informa con
-  contexto y el programa no se cae (FR-122).
+  sin `rango` entero ≥ 0 impide iniciar si el cazador está en la sala inicial. En cualquier otra sala,
+  llegue antes o durante la partida, la ficha no se vuelve a pedir y su sala queda como contenido no
+  disponible: cada intento de entrar se rechaza con el error de datos, sin consumir tiempo, y la partida
+  sigue (escenario H2-9). En todos los casos se
+  informa con contexto y el programa no se cae (FR-122).
 
 ---
 
@@ -284,15 +286,11 @@ que muestra la interfaz.
   - Los costos inválidos o distintos entre las dos caras DEBEN detectarse con el esqueleto, antes de
     iniciar, y la partida NO DEBE iniciar.
   - Una ficha de cazador con `rango` ausente o inválido puede llegar con la precarga. DEBE rechazarse
-    como error de formato, distinto de un error de red. Si llega antes de iniciar, la partida NO DEBE
-    iniciar. Si llega durante la partida, la sala que contiene a ese cazador DEBE quedar sin contenido
-    cargado y la partida DEBE seguir mientras el jugador no entre a ella; el cazador no se activa
-    (FR-123). Cuando el jugador intenta entrar a esa sala, el movimiento NO DEBE ejecutarse, consumir
-    tiempo ni registrarse como acción en `partida.log`, y la partida DEBE terminar con un error de datos
-    que indique la ficha y el campo, sin puntaje (escenario H2-9).
-  - En ese caso, `partida.log` DEBE terminar con una marca de cierre que indique el movimiento
-    intentado. `--replay` DEBE reproducir las acciones hasta esa marca, repetir el intento, encontrar el
-    mismo error y terminar con un código de salida distinto de 0. `--verificar` no se ve afectado.
+    con un error de datos que indique la ficha y el campo, y NO DEBE volver a pedirse. Si es de un
+    cazador de la sala inicial, la partida NO DEBE iniciar. Para cualquier otra sala, llegue antes o
+    durante la partida, la sala que contiene a ese cazador DEBE quedar como contenido no disponible y
+    la partida DEBE iniciar o seguir con normalidad; el cazador no se activa (FR-123). Si el jugador intenta entrar a esa sala, el movimiento DEBE rechazarse con ese mensaje,
+    sin consumir tiempo ni registrarse en `partida.log` (escenario H2-9).
 - **FR-123**: El cazador DEBE activarse y programar su primera acción igual que los demás enemigos
   (P1 §2.4). Mientras está dormido no actúa.
 
