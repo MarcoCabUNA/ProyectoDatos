@@ -10,7 +10,7 @@ cuando su distancia ya es definitiva.
 
 ## DTO (transversal)
 
-### `SalidaDTO` · `DTO/SalaDTO.py` · integrante 2 · **Propuesto — pendiente de confirmar con integrante 2**
+### `SalidaDTO` · `DTO/SalaDTO.py` · integrante 2 · **Confirmado con el integrante 2 el 11 de noviembre** (hecho: T001)
 
 | Campo | Tipo | Regla | Requisito |
 |---|---|---|---|
@@ -19,7 +19,7 @@ cuando su distancia ya es definitiva.
 Data valida que sea un entero ≥ 1 y que los dos lados de una salida no declaren costos distintos
 (FR-122). Si no se cumple, informa con contexto y la partida no inicia.
 
-### `FichaEnemigoDTO` · `DTO/FichaEnemigoDTO.py` · integrante 1 · **Propuesto — pendiente de confirmar con integrante 2**
+### `FichaEnemigoDTO` · `DTO/FichaEnemigoDTO.py` · integrante 1 · **Confirmado con el integrante 2 el 11 de noviembre**
 
 | Campo | Tipo | Regla | Requisito |
 |---|---|---|---|
@@ -29,7 +29,7 @@ Data valida que sea un entero ≥ 1 y que los dos lados de una salida no declare
 `None` solo es válido si el enemigo no es un cazador. Data rechaza un cazador con `rango` `None`,
 negativo o que no sea entero (FR-122). Lógica no repite esa validación.
 
-### `ActorDTO` · `DTO/ActorDTO.py` · **Propuesto — pendiente de confirmar con integrante 3**
+### `ActorDTO` · `DTO/ActorDTO.py` · **Hecho (T039)**
 
 | Campo | Tipo | Regla | Requisito |
 |---|---|---|---|

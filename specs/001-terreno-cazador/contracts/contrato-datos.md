@@ -1,8 +1,7 @@
 # Contrato de datos de la feature 001
 
-> **Confirmado con el integrante 2 el 11 de noviembre, tal como está.** Pendiente de confirmar con
-> el integrante 3 la parte de `ActorDTO` y `ArmadorEstado`.
-> Fecha límite acordada en el plan de trabajo: 9 de noviembre.
+> **Confirmado con el integrante 2 el 11 de noviembre, tal como está.** `ActorDTO` ya está hecho
+> (T039). Pendiente de confirmar con el integrante 3 la parte de `ArmadorEstado`.
 > Este plan **no** incluye código de la capa Data. La validación es del integrante 2.
 
 ## Entrada desde el API o el paquete (Apéndice A)
@@ -28,7 +27,7 @@ Catálogo (`GET /catalogo?ids=...`), ficha de un cazador:
 | `SalidaDTO` | `costo` | `int \| None` | `None`: este lado no declara costo. Va como **último** campo. | Integrante 2 | FR-101 |
 | `FichaEnemigoDTO` | `rango` | `int \| None` | `None`. Solo es válido si `comportamiento != "cazador"`. | Integrante 1 | FR-106, FR-122 |
 | `FichaEnemigoDTO` | `comportamiento` | `str` | (obligatorio, como en P1). Acepta `"cazador"`. | Integrante 1 | FR-106 |
-| `ActorDTO` | `comportamiento` | `str \| None` | `None` (jugador) | Por acordar con el integrante 3 | FR-117 |
+| `ActorDTO` | `comportamiento` | `str \| None` | `None` (jugador) | Integrante 3 (hecho: T039) | FR-117 |
 
 `SalidaDTO.costo` guarda lo **declarado**, no el costo final. Así Lógica distingue «no declarado» de
 «declarado 100». Lógica iguala el costo de los dos lados al cargar el esqueleto
@@ -48,11 +47,22 @@ Data: a un cazador no se le inventa un `rango`.
 |---|---|---|
 | `costo` de una salida | no es entero (incluido `bool`), o es menor que 1 | sala, dirección, valor recibido |
 | `costo` de los dos lados de una salida | los dos lo declaran y son distintos (se comprueba con el esqueleto completo) | las dos salas, las dos direcciones, los dos valores |
-| `rango` de una ficha con `comportamiento == "cazador"` | falta, es `null`, no es entero (incluido `bool`) o es negativo | id de la ficha, valor recibido |
+| `rango` de una ficha con `comportamiento == "cazador"` | falta, es `null`, no es entero (incluido `bool`) o es negativo | id de la ficha, campo (`rango`), valor recibido |
 
-Efecto: un error de formato con contexto (como los `ErrorRed` de formato que ya existen). La
-partida no inicia y el programa no se cae. Lógica no repite la validación: si dos lados declaran
-costos distintos, supone que Data ya lo rechazó.
+Efecto: un error de formato con contexto, que se pueda distinguir de un error de red (hoy
+`FuenteDatos` usa `ErrorRed` para los dos; ver T052). El programa no se cae en ningún caso. Según
+de dónde venga el dato:
+
+- **Esqueleto** (costos) o **ficha que llega antes de iniciar**: la partida no inicia.
+- **Ficha que llega con la precarga** durante la partida: la sala que contiene a ese cazador queda
+  sin contenido cargado y la partida sigue; el cazador no se activa (FR-123). Cuando el jugador
+  intenta entrar a esa sala, el movimiento no se ejecuta ni consume tiempo, no se anexa como acción
+  a `partida.log`, y la partida termina con un error de datos, sin puntaje. `partida.log` termina
+  con una marca de cierre con el movimiento intentado, y `--replay` termina en ese punto con un
+  código distinto de 0. Terminar la partida es de Service (integrante 3, T053).
+
+Lógica no repite la validación: si dos lados declaran costos distintos, supone que Data ya lo
+rechazó.
 
 ## Hacia la vista (integrante 3)
 

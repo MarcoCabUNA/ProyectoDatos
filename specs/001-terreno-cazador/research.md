@@ -220,7 +220,7 @@ sobre el grafo del integrante 2. Ver el [contrato](contracts/busqueda-rutas.md).
 
 ## R7. Contrato de datos
 
-**Propuesto — pendiente de confirmar con integrante 2.** Ver
+**Confirmado con el integrante 2 el 11 de noviembre, tal como está.** Ver
 [contracts/contrato-datos.md](contracts/contrato-datos.md).
 
 - `SalidaDTO.costo: int | None = None`: el costo **declarado** en ese lado, o `None` (FR-101). Es

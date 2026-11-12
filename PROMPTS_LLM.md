@@ -855,3 +855,70 @@ En specs/001-terreno-cazador/contracts/contrato-datos.md quitá la marca "Propue
 **Uso de la respuesta:** se usó en `specs/001-terreno-cazador/contracts/contrato-datos.md` y `specs/001-terreno-cazador/plan.md` para marcar el contrato de datos como confirmado con el integrante 2 el 11 de noviembre; la parte de `ActorDTO` y `ArmadorEstado` sigue pendiente con el integrante 3.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+En spec.md, ampliá FR-122: los costos inválidos o distintos entre las dos caras se detectan con el
+esqueleto, antes de iniciar, y la partida no inicia. Una ficha de cazador con rango ausente o
+inválido puede llegar durante la partida con la precarga: si llega antes de iniciar, la partida no
+inicia; si llega durante la partida, la partida se detiene con un error de datos que indica la ficha
+y el campo, sin que el programa se caiga. Registralo en Clarificaciones (pregunta de Dereck, 11 nov).
+Agregá el escenario de aceptación correspondiente. Commit solo de spec.md:
+"spec(001): FR-122 para fichas inválidas que llegan durante la partida".
+
+**Uso de la respuesta:** commit `f0640c4`. Se amplió FR-122 en `specs/001-terreno-cazador/spec.md` (detección de costos con el esqueleto y fichas de la precarga), se agregó la sesión 2026-11-11 de Clarificaciones con la pregunta de Dereck, el escenario H2-9 y se ajustó el caso borde «Datos inválidos».
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-analyze
+
+**Uso de la respuesta:** análisis de solo lectura de `spec.md`, `plan.md` y `tasks.md` de la feature 001. Encontró que H2-9 no tenía prueba (Principio X), que nadie se encargaba de detener la partida ante una ficha inválida de la precarga (hoy `precargar_alrededor` atrapa `ErrorRed` y sigue), que T002, T050, el contrato y el plan seguían diciendo «la partida no inicia» en todos los casos, dos ambigüedades (qué significa «se detiene» y en qué momento) y marcas de estado desactualizadas (T001, T039, «Propuesto»).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit.clarify Resolver A1 y A2 de FR-122 con esta regla:
+Si una ficha de cazador con rango ausente o inválido llega con la precarga, Data la rechaza como
+error de formato (distinto del error de red) y esa sala queda sin contenido cargado. La partida se
+detiene en el momento determinista en que el jugador intenta entrar a esa sala: el movimiento no se
+ejecuta, no consume tiempo, no se registra en partida.log, y la partida termina con un error de
+datos que indica la ficha y el campo, sin puntaje y sin que el programa se caiga. --replay termina
+en ese mismo punto con un código de salida distinto de 0; --verificar no se ve afectado.
+Mientras el jugador no entre a esa sala, la partida sigue: el cazador no se activa (FR-123).
+Actualizá FR-122, H2-9 y el caso borde. Agregá "(ampliada en la sesión 2026-11-11)" a la respuesta
+de la pregunta 4 de la sesión 11-09 (I5).
+Commit solo de spec.md: "spec(001): FR-122 determinista para fichas inválidas de la precarga".
+Mostrame el cambio antes del commit.
+
+Respuesta a la pregunta de Claude (el movimiento fallido no se registra, así que --replay no llegaría al error): «Marca de cierre en el log».
+
+**Uso de la respuesta:** commit `f60ec7a`. En `specs/001-terreno-cazador/spec.md` se agregó la aclaración del momento determinista y de `--replay` / `--verificar`, y se actualizaron FR-122, H2-9 y el caso borde. Para que `--replay` llegue al error sin registrar el movimiento como acción, `partida.log` termina con una marca de cierre con el movimiento intentado.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Aplicá los hallazgos del último analyze, sin tocar spec.md:
+- I1: separar en T002, T050, contrato-datos.md (Validación) y plan.md los dos efectos de FR-122:
+  esqueleto → la partida no inicia; ficha de la precarga → se detiene al intentar entrar a esa sala.
+- C1: agregar la tarea de prueba test_h2_9_fr122_ficha_invalida_detiene_al_entrar, a mi cargo, usando
+  una fuente de prueba que devuelva un error de formato para esa sala.
+- E1: agregar tareas de coordinación: integrante 2 (Data distingue error de formato de error de red)
+  e integrante 3 (Service termina la partida ante ese error). Anotarlo en la tabla de dependencias.
+- I2: agregar H2-9 a la tabla de pruebas del plan.
+- I3: quitar "Propuesto" en data-model.md y research.md.
+- I4: marcar T001 y T039; actualizar la fila de ActorDTO (solo queda T038 pendiente).
+- I6: agregar "campo (rango)" al contexto mínimo del mensaje. I7: quitar la fecha límite vieja.
+- E2: en T014, indicar que equipar, recoger, soltar y abrir quedan cubiertos por las pruebas de P1.
+Commit: "plan(001): FR-122 en plan, contrato y tareas tras analyze", incluyendo PROMPTS_LLM.md.
+
+**Uso de la respuesta:** se usó en `tasks.md` (T002, T014 y T050 corregidas; T001 y T039 marcadas; tareas nuevas T052 y T053 de coordinación con los integrantes 2 y 3, y T054 con la prueba de H2-9), `plan.md` (dos efectos de FR-122, tabla de pruebas con H2-9, dependencias y estado de `ActorDTO`), `contracts/contrato-datos.md` (efectos de FR-122, campo `rango` en el mensaje y sin la fecha límite vieja), `data-model.md` y `research.md` (contrato confirmado).
+
+-----------------------------------------------------------------------------------------------------------------------
