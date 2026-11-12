@@ -969,3 +969,16 @@ con PROMPTS_LLM.md.
 **Uso de la respuesta:** se usó en `tasks.md` (T002, T050, T052, T053 y T054 con la regla simplificada; la prueba pasa a llamarse `test_h2_9_fr122_ficha_invalida_rechaza_entrar`), `plan.md` (efectos de FR-122, filas de Data y Service en la tabla de cambios a P1, «No se tocan» con `partida.log`, `ServicioReplay` y `main.py`, dependencias), `contracts/contrato-datos.md` (efectos de FR-122) y `quickstart.md` (paso de datos inválidos).
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit.implement Implementar T003 y la fase 2 (hasta su punto de control), en el orden de tasks.md.
+Saltar T002, que es del integrante 2. Pruebas antes del código cuando la tarea lo indique.
+Un commit por tarea: "feat(001): T0xx descripción [FR-…]", incluyendo PROMPTS_LLM.md en el primero.
+Después de cada tarea, correr tests/correr_pruebas.py; si algo queda en rojo, detenerse y mostrarme
+el error. En el punto de control de la fase 2, detenerse y mostrarme un resumen. No hacer push.
+
+**Uso de la respuesta:** se implementaron T003 (`tests/ayudas_terreno.py`) y la fase 2 de `specs/001-terreno-cazador/tasks.md`: la prueba `tests/test_mazmorra_costos.py` (T004) y el costo por salida en `Logic/Mazmorra.py` (T005 a T007), un commit por tarea.
+
+-----------------------------------------------------------------------------------------------------------------------
