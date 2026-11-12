@@ -17,7 +17,9 @@
   niebla (FR-112).
 - FR-118 depende de otras features para dos de sus modos: `--replay … --hasta` lo define la
   `004-linea-tiempo` y `--verificar` lo define la `003-resolubilidad`. Esta spec solo exige que, cuando
-  esos modos existan, apliquen las reglas de terreno y del cazador igual que una partida con vista.
+  esos modos existan, `--replay … --hasta` aplique las reglas de terreno y del cazador igual que una
+  partida con vista, y que `--verificar` rechace los datos inválidos de FR-122 (su veredicto no depende
+  de los costos ni de los cazadores: 003 FR-302).
 
 **Entrada**: Descripción del usuario: "Feature 001-terreno-cazador. Terreno con costo por salida y un nuevo enemigo "cazador". Cada salida puede declarar un costo entero >= 1 (100 si no lo declara), igual en ambos sentidos. Moverse por una salida cuesta su costo para todos los actores, con intervalo = max(1, costo*100 // velocidad); atacar, esperar y demás acciones no cambian. Errantes y rastreadores conservan su comportamiento. El cazador tiene un "rango" en unidades de costo. En su turno: si comparte sala con el jugador, ataca; si no, calcula el costo mínimo d hasta la sala del jugador usando solo salidas abiertas en ese instante; si no hay ruta o d > rango, espera (costo 100); si hay, avanza un paso cuyo costo es el de la salida. Desempate: entre las vecinas v con costo(u,v) + dist(v,jugador) = d, va a la de menor id. Conoce el esqueleto completo y el estado actual de las puertas, no lo afecta la niebla, no abre puertas. Su decisión debe ser idéntica a calcularla desde cero en ese instante, aunque se reutilicen cálculos. Incluir como escenarios de aceptación los 7 casos del Apéndice B "Terreno y cazador", con una tabla de trazabilidad. Requisitos FR-101 en adelante. No nombrar estructuras de datos, clases ni módulos."
 
@@ -213,9 +215,12 @@ cada turno del cazador su decisión con la de un cálculo desde cero en ese mism
 6. **Dada** la misma cripta, la misma semilla y la misma secuencia de acciones del jugador, **cuando**
    se juega dos veces (o se reproduce con `--replay`), **entonces** todos los cazadores toman las mismas
    decisiones en los mismos instantes.
-7. **Dada** una cripta con costos de salida y un cazador, **cuando** se ejecuta `--verificar` sobre ella
-   (feature `003-resolubilidad`), **entonces** el análisis usa los mismos costos de salida y las mismas
-   reglas del cazador que una partida con vista, sin instanciar la vista (FR-118).
+7. **Dada** una cripta con costos de salida válidos y un cazador, **cuando** se ejecuta `--verificar`
+   sobre ella (feature `003-resolubilidad`), **entonces** el esqueleto con costos se carga sin error y el
+   veredicto y el orden de llaves no dependen de los costos ni de los cazadores (003 FR-302), sin
+   instanciar la vista. **Dado** un esqueleto con un error de datos de FR-122 (costo inválido o distinto
+   entre caras), **cuando** se ejecuta `--verificar`, **entonces** la verificación no concluye y el
+   programa termina con código de salida 1 (003 FR-314), sin caerse (FR-118, FR-122).
 8. **Dada** una cripta sintética con costos de salida y cazadores, **cuando** se ejecuta `--bench`,
    **entonces** los cazadores deciden con las mismas reglas que en una partida (cada decisión coincide con
    un cálculo desde cero) y la medición corre sin vista (FR-118).
@@ -346,8 +351,10 @@ que muestra la interfaz.
   («errante», «guardián», «rastreador» o «cazador»). Además, el cazador DEBE llevar un marcador visual
   propio que no tiene ningún otro enemigo (escenario H4-2).
 - **FR-118**: Las reglas de FR-101 a FR-115 y de FR-119 a FR-123 DEBEN funcionar igual en los modos sin
-  vista (`--replay`, `--replay … --hasta`, `--verificar` y `--bench`). `--replay … --hasta` y
-  `--verificar` los definen las features 004 y 003 (ver «Fuera de alcance»).
+  vista `--replay`, `--replay … --hasta` y `--bench`. En `--verificar`, que solo usa el esqueleto, los
+  costos y los cazadores NO DEBEN afectar el veredicto (003 FR-302), y los datos inválidos de FR-122
+  DEBEN hacer que la verificación no concluya, con código de salida 1 (003 FR-314; escenario H3-7).
+  `--replay … --hasta` y `--verificar` los definen las features 004 y 003 (ver «Fuera de alcance»).
 
 **Cazador: casos borde y datos**
 
@@ -433,7 +440,7 @@ Cada prueba citará el identificador del requisito que verifica (Principio X).
 | H2-17 | FR-122 | `test_h2_17_fr122_costo_invalido_no_inicia` |
 | H2-18 | FR-101, FR-122 | `test_h2_18_fr122_costos_distintos_entre_caras_no_inicia` |
 | H2-19 | FR-122 | `test_h2_19_fr122_ficha_invalida_en_la_sala_inicial_no_inicia` |
-| H3-7 | FR-118 | `test_h3_7_fr118_verificar_aplica_las_mismas_reglas` |
+| H3-7 | FR-118, FR-122 | `test_h3_7_fr118_fr122_verificar_no_depende_de_costos_ni_cazadores` |
 | H3-8 | FR-118 | `test_h3_8_fr118_bench_aplica_las_mismas_reglas` |
 | H4-1 | FR-116 | `test_h4_1_fr116_el_costo_llega_a_la_vista` (datos); lo que se dibuja, en T041 |
 | H4-2 | FR-117 | `test_h4_2_fr117_actor_dto_trae_el_comportamiento` (datos); lo que se dibuja, en T041 |
