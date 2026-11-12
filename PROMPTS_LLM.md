@@ -982,3 +982,54 @@ el error. En el punto de control de la fase 2, detenerse y mostrarme un resumen.
 **Uso de la respuesta:** se implementaron T003 (`tests/ayudas_terreno.py`) y la fase 2 de `specs/001-terreno-cazador/tasks.md`: la prueba `tests/test_mazmorra_costos.py` (T004) y el costo por salida en `Logic/Mazmorra.py` (T005 a T007), un commit por tarea.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit.implement Implementar la fase 3 (Historia 1, T008 a T014), en el orden de tasks.md.
+Pruebas antes del código. El rojo esperado de TDD está bien; detenete solo si falla una prueba que
+ya existía antes de esta fase. Un commit por tarea: "feat(001): T0xx descripción [FR-…]".
+Cada cambio a código de la primera entrega debe coincidir con su fila en la tabla de cambios a P1
+del plan; si necesitás tocar algo que no está en esa tabla, detenete y avisame antes.
+Al terminar la fase, correr tests/correr_pruebas.py y mostrarme un resumen. No hacer push.
+
+**Uso de la respuesta:** commits `554cbf7` a `8bb7c08`. Pruebas de los escenarios H1-1 a H1-8 y de errante, rastreador y guardián con costos (T008, T009) en `tests/test_terreno_cazador.py`; `mover_jugador` paga el costo de la salida (T010); `Comportamiento.decidir_paso` y `Errante.decidir_paso` con el mismo sorteo de P1 (T011, T012); `turno_enemigo` programa con el costo de la salida (T013); verificación sin regresiones de P1 (T014).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit.implement Fase 4 de specs/001-terreno-cazador/tasks.md (T015–T026 y T054).
+
+Orden dentro de la fase, si las dependencias de tasks.md lo permiten:
+1. Primero T021 (FichaEnemigoDTO.rango: int | None = None, último campo).
+2. Después la cola de prioridad y la búsqueda de ruta según contracts/busqueda-rutas.md
+   (recibe el grafo como parámetro, solo salidas abiertas, costo ya igualado,
+   desempate por menor id).
+3. Al final la clase Cazador en COMPORTAMIENTOS, y agregá el caso del cazador
+   a test_h4_2_fr117_actor_dto_trae_el_comportamiento (nota de T024).
+4. T054 queda con skipTest hasta que exista T052 (integrante 2); dejá el motivo en el skip.
+
+Reglas:
+- Constitución v1.2.0: sin dict, set, heapq, bisect, collections ni copy en código del juego;
+  sin sorted()/list.sort() en ordenamientos evaluados. Type hints y docstring breve.
+- No toques código de la primera entrega fuera de lo que justifica la tabla
+  "Cambios a código de la primera entrega" de plan.md. Si hace falta algo más, pará y avisame.
+- Un commit por tarea o grupo pequeño, con el ID y los FR en el mensaje.
+- tests/correr_pruebas.py en verde antes de cada commit; las 383 pruebas actuales no se modifican.
+- No hagas push.
+- Al terminar: lista de commits, total de pruebas y cualquier desvío del plan.
+
+**Uso de la respuesta:** commits `6e147e8` a `f000aa2`. `FichaEnemigoDTO.rango` como último campo (T016, T021); `Estructuras/MonticuloMinimo.py` (T015, T020); `Logic/GrafoEsqueleto.py` y `Logic/BusquedaCostoMinimo.py` con `paso_desde_cero` (T017, T022, T023); la clase `Cazador`, `self.grafo` en `Motor.__init__` y el caso del cazador en `test_h4_2` (T018, T019, T024, T025); la prueba de H2-9 con `skipTest` hasta T052 y T053 (T054); verificación (T026). Quedaron 431 pruebas en verde y 1 omitida.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-analyze
+
+**Uso de la respuesta:** tercera pasada de análisis de la feature 001, después de implementar las fases 1 a 4. Encontró que faltaban estas tres entradas en `PROMPTS_LLM.md` (Principio XI), que T021 no coincide con la posición real de `rango`, que la tabla de cambios a P1 no menciona dos importaciones nuevas, y detalles sin documentar de la búsqueda (`_asegurar_tamano`, casos que devuelven `None` o lanzan `ValueError`, uso de `Mazmorra._existe`).
+
+-----------------------------------------------------------------------------------------------------------------------
