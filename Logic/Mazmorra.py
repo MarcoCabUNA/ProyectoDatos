@@ -8,6 +8,8 @@ class SalidaViva:
         self.cerrada = salida_dto.cerrada
         self.llave = salida_dto.llave
         self.cierre_automatico = salida_dto.cierre_automatico
+        self.costo_declarado = salida_dto.costo
+        self.costo = salida_dto.costo if salida_dto.costo is not None else 100
 
 
 class TrampaViva:
