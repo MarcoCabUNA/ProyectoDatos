@@ -1202,6 +1202,71 @@ Le pedí a Claude que me guiara con T002 y T052 de specs/001-terreno-cazador/tas
 **Uso de la respuesta:** se usó en `Data/ValidacionDatos.py` (nuevo: `ErrorDatos`, subclase de `ErrorRed`, y las reglas de FR-122), `Data/GestorEsqueleto.py` (`_validar_costos`: la partida no inicia), `Data/ResolvedorCatalogo.py` (una ficha inválida no se guarda ni se vuelve a pedir; `rechazo(id)`), `Data/GestorContenido.py` (estado `RECHAZADA` por sala: `asegurar_sala` vuelve a lanzar el mismo error sin otra solicitud y las demás salas del lote se cargan) y `tests/TestValidacionDatos.py` (20 pruebas). Revisé el cambio y corrí las pruebas: 460 OK (skipped=6) y 31/31 con la rama de Marco ya jalada; el replay de ejemplo sigue terminando en victoria con reloj 3625. También se usó para jalar la rama de Marco a derek (con PROMPTS_LLM.md resuelto a mano), para proponerle el cuerpo de las pruebas H2-17 a H2-19 y para las respuestas a su revisión.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+Lee .specify/memory/constitution.md y, en specs/001-terreno-cazador/tasks.md, T052 y T053. Implementa SOLO T053. En Service/ServicioAccionJugador.py, método ejecutar: agrega from Data.ValidacionDatos import ErrorDatos y, ANTES del except ErrorRed, agrega except ErrorDatos as error: que devuelva self._armador.armar_estado(contexto, str(error)) (ErrorDatos es subclase de ErrorRed, por eso va antes). El mensaje es el del propio error, sin el prefijo «Sin conexión con el servicio:». No cambies nada más de ese archivo. Justificación (Principio III): cambio indispensable para FR-122, escenario H2-9. Agrega una prueba corta en tests/test_servicios.py, siguiendo el estilo del archivo: con un contenido de prueba cuyo asegurar_sala lanza ErrorDatos, mover hacia esa sala devuelve un estado cuyo mensaje contiene el texto del error y no dice «Sin conexión», el jugador sigue en su sala, el reloj no avanza y la acción no queda en partida.log. Cita FR-122 y H2-9. NO toques tests/test_terreno_cazador.py ni quites el skip de T054 (la escribe el integrante 1), y no modifiques tasks.md. Corre python tests/correr_pruebas.py y reporta. Un solo commit: «feat(service): ServicioAccionJugador muestra el error de datos (T053, FR-122)».
+
+**Uso de la respuesta:** ServicioAccionJugador muestra el error de datos (T053, FR-122) con su prueba.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+Edita SOLO specs/004-linea-tiempo/spec.md y su checklist si aplica. Sin estructuras, clases ni módulos.
+
+1. P1 §2.11 dice que la reversión del pergamino no deshace los pergaminos recogidos o soltados durante el intervalo revertido. Agrégalo como requisito FR-424: «Los pergaminos de retroceso recogidos o soltados dentro de acciones revertidas conservan ese cambio: la línea de tiempo refleja la cantidad de pergaminos igual que la partida viva (P1 §2.11).» Agrega el escenario H3-5 (el jugador recoge un pergamino en la acción 4 y usa otro pergamino para revertirla; al consultar el instante actual, el inventario conserva el pergamino recogido y no tiene el consumido), con su fila de trazabilidad, citando FR-413, FR-419 y FR-424.
+2. Si en FR-419 o Suposiciones hay alguna nota que trate ese caso como excepción o límite, elimínala.
+3. Anota que FR-417 se integró en NFR-402 y que FR-422 se eliminó.
+4. Verifica que no queden referencias rotas y dime qué cambiaste.
+
+**Uso de la respuesta:** Se agregó FR-424 y el escenario H3-5 (pergaminos recogidos o soltados en acciones revertidas, P1 §2.11).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+Edita SOLO specs/004-linea-tiempo/plan.md, research.md, data-model.md, contracts/contrato-linea-tiempo.md y tasks.md. No escribas código ni cambies spec.md. Plan y modelo:
+
+1. H-2 ya no es una decisión pendiente: es regla de P1 §2.11 (FR-424). El marcador de pergamino se generaliza: posición + quitados (ids de pergaminos que salen del inventario) + agregados (pergaminos que quedan en el inventario aunque la acción que los trajo se revirtió). El descuento del pergamino usado es un «quitado». Actualiza data-model.md, el contrato (MarcadorPergaminoDTO, con su validación al leer) y R-.. de research.md.
+2. D1: la validación de rango (t entero ≥ 0 y no posterior al reloj; 1 ≤ k ≤ acciones del jugador) es regla de negocio: va en Logic/LineaTiempo, con métodos que lanzan ValueError con el motivo y el rango válido. ServicioLineaTiempo solo propaga (la constitución dice que Service no valida).
+3. I1: en «Cambios a código de la primera entrega», el dueño de ConfiguracionDTO.py y LectorArgumentos.py es «Integrante 3 (con visto bueno del integrante 2)».
+4. C2: agrega la fila de Service/BenchInventario.py (T061): cambio indispensable para exponer el bench nuevo sin tocar ServicioBench (del integrante 2); NFR-401.
+5. Nota: la 004 no toca Service/ServicioAccionJugador.py; el único cambio es T053 de la feature 001 (un except ErrorDatos, FR-122), que no afecta a la línea. Logic/PartidaGuardada.py y DTO/PartidaGuardadaDTO.py los extiende Derek para el mapa conocido (spec 002, FR-223); la 004 solo agrega linea.
+6. Los grabadores (resolvedor y contenido envueltos) delegan TODO lo que no es ficha() o asegurar_sala() al objeto original, incluidos rechazo() y resolver_contenido() (los usa GestorContenido, FR-122); un ErrorDatos propaga sin registrar nada.
+7. El mapa conocido (spec 002) será un campo de PartidaGuardadaDTO que actualiza el motor, así los puntos de control y la re-simulación lo reproducen. La línea no lo invierte: NFR-203 de la 002 habla de invertirlo; aclara en el plan que la 004 reconstruye hacia adelante. Tareas:
+8. I2: agrega T069 en la Fase 2, justo después de T010: crear CHECKPOINT_POR_DEFECTO = 20 y el campo checkpoint_cada en DTO/ConfiguracionDTO.py, con su prueba. T018 depende de T069; T050 queda con la bandera y el cableado.
+9. I3: T021 aplica los registros de carga básicos; T032 solo agrega la regla del prefijo por ordinal.
+10. H-2: T033 se escribe SIN skip (H3-5, FR-413, FR-424, FR-419). T034 pasa a ser tarea de implementación del marcador con quitados/agregados; ajusta T028, T030 y T031. Quita las menciones de «decisión pendiente» o de límite conocido en DECISIONES.
+11. D1: T007 y T008 incluyen la validación de rango en LineaTiempo; T025 solo propaga el error.
+12. C3: agrega «(FR-xxx)» a las tareas de 004 que no lo tienen (T001, T014, T018, T019, T021, T023, T028, T044, T053, T054, T056...). Ojo: el T053 de la 004 es de la interfaz, distinto del T053 de la 001.
+13. P1: T066 se hace en un commit spec(004) aparte.
+14. T004: la spec 002 ya existe; ajusta T004 a «coordinar con FR-223: el mapa conocido es campo de PartidaGuardadaDTO y se copia con PartidaGuardada.guardar, sin copy». Muestra los cambios.
+
+**Uso de la respuesta:** Se ajustaron el plan, el modelo y las tareas de la 004 tras el analyze (validación en Lógica, T069, dueños de archivos).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+Edita SOLO specs/002-niebla-ir-a/spec.md, en la sección reservada para «ir a» (FR-250 a FR-299, NFR-250 a NFR-299, SC-250 a SC-299). No modifiques los FR-201 a FR-249 de Derek. Lee antes la constitución, la spec completa, y de Proyecto II parte.pdf §3.4, §6.1, §7.3 y el Apéndice B «Niebla de guerra e ir a». Solo el QUÉ: sin estructuras, clases, módulos ni algoritmos. Reglas (§3.4): «ir a <sala>» lleva al jugador a una sala explorada mediante movimientos ordinarios. La ruta usa solo salas exploradas y solo salidas que el mapa recuerda abiertas (una puerta «sin observar» no cuenta como recordada abierta); minimiza la suma de costos y desempata igual que el cazador (primer paso hacia la vecina de menor id). Cada paso es una acción completa del jugador que consume tiempo según §3.1, y entre pasos ocurren los eventos del reloj. La ruta se recalcula antes de cada paso con el conocimiento vigente. El viaje se detiene si llega al destino, entra a una sala con enemigos (activos o dormidos), recibe daño o deja de haber ruta conocida; la interfaz muestra el motivo. No abre puertas aunque el jugador tenga la llave. Un destino no explorado se rechaza sin consumir tiempo. En partida.log cada paso es un movimiento y la orden se registra además como comentario. El pergamino revierte solo el último paso y el viaje no continúa. Cada paso cuenta como acción del jugador en la línea de tiempo (spec 004). Rendimiento: el cálculo de un paso tarda menos de 5 ms con el mapa conocido completo (§6.1). Escenarios: los casos del Apéndice B de «ir a»: (1) destino no explorado, (2) puerta recordada abierta que en realidad está cerrada: la ruta se recalcula y, si no queda ruta, el viaje se detiene sin consumir tiempo adicional (la parte de que el mapa se actualiza ya es de la historia 1 de Derek), (3) enemigos dormidos: se activan según P1 §2.4 y el viaje se detiene, (4) pergamino durante un viaje. Usa historias H5 y H6. Cada escenario con su FR en la tabla de trazabilidad. Reemplaza únicamente los marcadores «pendiente FR-25x» por los FR concretos. Verifica que no queden referencias rotas y dime qué cambiaste.
+
+**Uso de la respuesta:** Se escribieron FR-250 a FR-264 y las historias 6 y 7 de «ir a» en la spec 002, con los casos del Apéndice B.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+/speckit-analyze Enfócate en: (1) que cada FR y NFR tenga al menos una tarea; (2) que cada escenario de aceptación y cada caso del Apéndice B tenga una prueba que cite su FR; (3) que ninguna tarea ni el plan contradiga la constitución; (4) que ninguna tarea modifique código de otros integrantes sin marcarlo como «Coordinar»; (5) inconsistencias entre spec, plan y tasks.
+
+**Uso de la respuesta:** Segundo informe, sin hallazgos críticos; dejó ajustes de texto y la mejora del diseño del pergamino.
+
+-----------------------------------------------------------------------------------------------------------------------
 **Fecha:** Viernes 13 de noviembre 2026
 
 **Herramienta:** Claude Code
