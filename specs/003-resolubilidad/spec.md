@@ -61,12 +61,6 @@ nombrar estructuras de datos, clases, módulos ni algoritmos."
   cerradas), ¿la cripta es resoluble? → R: No. En la primera parte (P1 §2.12) la victoria exige entrar a
   `sala_salida` después de abrir con la llave correspondiente la puerta que da acceso a ella, así que esa
   cripta no se puede ganar. El reporte indica ese motivo de forma explícita (FR-322).
-- P: Si las dos caras de una misma puerta declaran llaves distintas (una requiere la llave A y la otra la
-  llave B), ¿qué hace la verificación? → R: Es un error de datos: se informa con contexto (qué puerta y qué
-  campo), la verificación no concluye y tiene el mismo efecto que FR-320 (la partida no inicia salvo con
-  `--forzar`), sin que el programa se caiga. Solo las llaves distintas son error: como en la primera parte,
-  «cerrada» ausente, null o false significan lo mismo (la cara no declara cierre), así que no existe el caso
-  de una cara cerrada y la otra explícitamente abierta (FR-302).
 - P: Si la lista de ubicaciones trae la misma llave más de una vez, con salas distintas, ¿cómo se trata?
   → R: Cada ubicación es una copia válida de la llave. La llave es obtenible si alguna de sus salas es
   alcanzable, y el reporte muestra todas sus ubicaciones en un orden determinista (FR-316).
@@ -76,6 +70,28 @@ nombrar estructuras de datos, clases, módulos ni algoritmos."
   que `--verificar` no lo usa para ningún veredicto (FR-314).
 - P: ¿La verificación se ejecuta también al cargar una partida guardada o con `--replay`? → R: No. Solo
   al iniciar una partida nueva; cargar una partida y `--replay` no verifican ni bloquean (FR-301).
+
+### Sesión 2026-11-12
+
+Las dos preguntas de esta sesión surgen de la revisión cruzada del integrante 1.
+
+- P: Si las dos caras de una misma puerta declaran llaves distintas (una requiere la llave A y la otra la
+  llave B), ¿qué hace la verificación? → R: No es un error de datos. Igual que en la primera parte, cada
+  cara se rige por lo que declara (su llave, su estado cerrado y su cierre automático): para atravesar la
+  puerta desde una sala hace falta la llave que declara la cara de esa sala. Una cara cerrada sin llave
+  sigue sin poder atravesarse en ese sentido. Motivo: en la primera parte, una cara que declara su propia
+  llave no se iguala con la otra, así que el juego ya permite esa puerta, y el enunciado no dice que sea
+  inválida. Los costos distintos entre caras sí son un error de datos (001 FR-122) porque §3.1 dice que el
+  costo es el mismo en ambos sentidos; para las llaves no existe esa regla. Como en la primera parte,
+  «cerrada» ausente, null o false significan lo mismo: la cara no declara cierre (FR-302, FR-308,
+  escenario H2-9).
+- P: ¿Qué hace la verificación con un esqueleto que tiene un error de datos de 001 FR-122 (una salida con
+  un costo no entero o menor que 1, o con costos distintos en sus dos caras)? → R: La verificación no
+  concluye: `--verificar` termina con el código de salida 1, muestra el error con contexto y no se cae. La
+  partida no inicia, ni siquiera con `--forzar`, porque 001 FR-122 exige que con esos datos la partida no
+  inicie y el juego supone datos válidos; a diferencia de FR-320, donde `--forzar` sí permite jugar. El
+  costo sigue sin afectar el veredicto (FR-302). Concuerda con el escenario H3-7 de la feature 001
+  (FR-323, escenarios H3-8 y H4-5).
 
 ---
 
@@ -195,10 +211,12 @@ comparar cada parte del reporte (llaves no obtenibles, frontera, ubicaciones, ci
    instancia e-9999 no está en el contenido de esa sala, **cuando** se verifica, **entonces** la instancia
    no se valida, no se descarga el contenido de ninguna sala y B se considera obtenible en la sala 12
    (FR-321, FR-301, FR-303).
-9. **Dada** la puerta 2–6, cuya cara de la sala 2 requiere la llave A y cuya cara de la sala 6 requiere la
-   llave B, **cuando** se verifica, **entonces** se informa un error de datos con contexto (la puerta 2–6 y
-   el campo de llave), la verificación no concluye, la partida no inicia salvo con `--forzar` y el programa
-   no se cae (FR-302, FR-320).
+9. **Dada** la puerta 2–6, cuya cara de la sala 2 está cerrada y requiere la llave A y cuya cara de la
+   sala 6 está cerrada y requiere la llave B, con la sala 2 alcanzable, A obtenible, B no obtenible y la
+   sala 6 sin otro acceso, **cuando** se verifica, **entonces** la sala 6 es alcanzable entrando por la
+   cara de la sala 2 con A, la verificación concluye y no se informa ningún error de datos. **Si en
+   cambio** A no es obtenible, la sala 6 queda fuera de la región alcanzable y la puerta 2–6 aparece en la
+   frontera bloqueada con la llave A, la de la cara de la sala alcanzable (FR-302, FR-308).
 
 ---
 
@@ -237,6 +255,10 @@ feature (Principio V), pero las historias 1 y 2 aportan valor sin ella.
    llaves, o un paquete local sin ubicación de llaves en `--offline`, **cuando** se verifica, **entonces**
    se muestra un mensaje con contexto que indica que la verificación no pudo concluir, el programa no se
    cae y, con `--verificar`, el código de salida es 1 (FR-320, FR-314).
+8. **Dado** un esqueleto con una salida que declara costo 0, **cuando** se ejecuta `--verificar <cripta>`,
+   **entonces** se muestra el error de datos con contexto (qué salida y qué campo), la verificación no
+   concluye, no se muestra ningún veredicto (ni resoluble ni no resoluble), el programa no se cae y el
+   código de salida es 1. Concuerda con el escenario H3-7 de la feature 001 (FR-323, FR-314; 001 FR-122).
 
 ---
 
@@ -265,6 +287,10 @@ comprobar si la partida inicia y si se muestra el reporte.
    `partida.log`, **cuando** el jugador la carga sin `--forzar` o la reproduce con `--replay`, **entonces**
    no se ejecuta la verificación, no se muestra el reporte y la partida se carga o se reproduce
    normalmente (FR-301).
+5. **Dada** una cripta cuya salida 3–4 declara costo 150 en la cara de la sala 3 y costo 200 en la cara de
+   la sala 4, **cuando** el jugador intenta iniciar una partida con `--forzar`, **entonces** se muestra el
+   error de datos con contexto (qué salida y qué campo), la partida no inicia, no se consume tiempo virtual
+   ni se crea estado de partida, y el programa no se cae (FR-323; 001 FR-122).
 
 ---
 
@@ -287,8 +313,13 @@ comprobar si la partida inicia y si se muestra el reporte.
 - **Una puerta declara llave solo en una de sus caras**: la llave, el estado cerrado y el cierre automático
   de esa cara valen para las dos salas que une (FR-302, escenario H1-10). Si ninguna cara declara llave,
   cada cara se rige por lo que declara: una cara cerrada sin llave no se atraviesa en ese sentido.
-- **Las dos caras de una puerta declaran llaves distintas**: error de datos; la verificación no concluye
-  (FR-302, escenario H2-9).
+- **Las dos caras de una puerta declaran llaves distintas**: no es un error de datos. Cada cara se rige
+  por lo que declara; para atravesar la puerta desde una sala hace falta la llave de la cara de esa sala,
+  y en la frontera bloqueada la puerta aparece con la llave de la cara de la sala alcanzable (FR-302,
+  FR-308, escenario H2-9).
+- **Esqueleto con un error de datos de 001 FR-122** (costo no entero o menor que 1, o costos distintos
+  entre las dos caras de una salida): la verificación no concluye; `--verificar` termina con código 1 y la
+  partida no inicia, ni siquiera con `--forzar` (FR-323, escenarios H3-8 y H4-5).
 - **La misma llave aparece en varias ubicaciones**: cada una es una copia válida; basta con que una sea
   alcanzable, y el reporte muestra todas en un orden determinista (FR-316, escenarios H1-11 y H1-12).
 - **Una salida sin vuelta que solo va de una sala de afuera hacia la región alcanzable**: no es parte de la
@@ -310,7 +341,7 @@ comprobar si la partida inicia y si se muestra el reporte.
 - **`--verificar` junto con `--forzar`**: `--verificar` no inicia partida, así que `--forzar` no tiene
   efecto (FR-314).
 - **Código de salida de `--verificar`**: 0 resoluble, 3 no resoluble, 1 verificación no concluida
-  (incluidos los errores de datos de FR-302 y FR-321) (FR-314).
+  (incluidos los errores de datos de FR-321 y FR-323) (FR-314).
 - **No se pudo obtener la ubicación de llaves**: la verificación no concluye; ver FR-320.
 
 ---
@@ -335,9 +366,10 @@ comprobar si la partida inicia y si se muestra el reporte.
   y la otra no declara ninguna llave, la llave, el estado cerrado y el cierre automático de la primera
   DEBEN valer para las dos. Si ninguna de las dos caras declara llave, cada cara DEBE regirse por lo que
   declara: una cara cerrada sin llave no puede atravesarse en ese sentido. «Cerrada» ausente, null o false
-  significan lo mismo: la cara no declara cierre. Si las dos caras declaran llaves distintas, DEBE tratarse
-  como error de datos: el programa DEBE informarlo con contexto (qué puerta y qué campo), la verificación
-  no concluye y el efecto DEBE ser el mismo que en FR-320. El programa NO DEBE caerse.
+  significan lo mismo: la cara no declara cierre. Si las dos caras declaran llave, cada cara DEBE regirse
+  por lo que declara (su llave, su estado cerrado y su cierre automático): para atravesar la puerta desde
+  una sala hace falta la llave que declara la cara de esa sala. Que las dos caras declaren llaves
+  distintas NO DEBE tratarse como error de datos.
 - **FR-303**: Una llave cuya ubicación indica un enemigo DEBE considerarse obtenible en la sala indicada en
   su ubicación, que es la sala donde ese enemigo inicia, independientemente del comportamiento del enemigo
   y de hacia dónde pueda moverse durante la partida.
@@ -361,7 +393,9 @@ comprobar si la partida inicia y si se muestra el reporte.
 - **FR-308**: El reporte DEBE listar las puertas de la frontera bloqueada, es decir, las salidas cerradas
   que van desde una sala de la región alcanzable hacia una sala fuera de ella, indicando para cada una las
   dos salas que une y la llave que requiere. Una salida sin vuelta que solo va de una sala de afuera hacia
-  la región alcanzable NO DEBE considerarse frontera. Cada puerta DEBE aparecer una sola vez.
+  la región alcanzable NO DEBE considerarse frontera. Cada puerta DEBE aparecer una sola vez. Si las caras
+  de la puerta declaran llaves distintas, la llave indicada DEBE ser la de la cara de la sala alcanzable
+  (FR-302).
 - **FR-309**: El reporte DEBE indicar dónde se encuentra cada llave que aparece en él (las no obtenibles y
   las que requieren las puertas de la frontera): su sala y, si la suelta un enemigo, la instancia de ese
   enemigo. Si la llave tiene varias ubicaciones, DEBE indicarlas todas en un orden determinista (FR-306).
@@ -379,14 +413,15 @@ comprobar si la partida inicia y si se muestra el reporte.
 - **FR-311**: Si la cripta no es resoluble y no se usa `--forzar`, la partida NO DEBE iniciar y DEBE
   mostrarse el reporte de no resolubilidad.
 - **FR-312**: Con `--forzar`, la partida DEBE iniciar aunque la cripta no sea resoluble, y el reporte DEBE
-  mostrarse igual. Con una cripta resoluble, `--forzar` NO DEBE cambiar nada.
+  mostrarse igual. Con una cripta resoluble, `--forzar` NO DEBE cambiar nada. `--forzar` NO permite
+  iniciar con un esqueleto que tiene un error de datos de 001 FR-122 (FR-323).
 - **FR-313**: Al iniciar una partida, el resultado de la verificación (resoluble con su orden de llaves,
   o el reporte de no resolubilidad) DEBE quedar disponible para que la interfaz lo muestre (§7.3). Cómo se
   dibuja queda fuera de alcance.
 - **FR-314**: `--verificar <cripta>` DEBE ejecutar únicamente la verificación y mostrar su resultado, sin
   instanciar la vista y sin iniciar una partida. DEBE funcionar también con `--offline`. Al terminar, el
   programa DEBE devolver el código de salida 0 si la cripta es resoluble, 3 si no es resoluble y 1 si la
-  verificación no concluyó (FR-302, FR-320, FR-321). El código 2 sigue reservado para los argumentos
+  verificación no concluyó (FR-320, FR-321, FR-323). El código 2 sigue reservado para los argumentos
   inválidos, como en la primera parte, y `--verificar` NO DEBE usarlo para ningún veredicto.
 - **FR-315**: El resultado de `--verificar` DEBE ser idéntico al de la verificación que se hace al iniciar
   una partida con la misma cripta.
@@ -422,6 +457,14 @@ comprobar si la partida inicia y si se muestra el reporte.
   puertas cerradas), la cripta DEBE considerarse no resoluble, porque la victoria de P1 §2.12 exige entrar a
   `sala_salida` después de abrir con la llave correspondiente la puerta que da acceso a ella. El reporte
   DEBE indicar ese motivo de forma explícita.
+- **FR-323**: Si el esqueleto tiene un error de datos de los que define 001 FR-122 (una salida con un costo
+  no entero o menor que 1, o con costos distintos entre sus dos caras), la verificación NO DEBE concluir:
+  NO DEBE mostrarse ningún veredicto, el programa DEBE mostrar el error con contexto (qué salida y qué
+  campo) y NO DEBE caerse. `--verificar` DEBE terminar con el código de salida 1 (FR-314). La partida NO
+  DEBE iniciar, ni siquiera con `--forzar`, porque 001 FR-122 exige que con esos datos la partida no inicie
+  y el juego supone datos válidos (a diferencia de FR-320, donde `--forzar` sí permite jugar). Con costos
+  válidos, el costo sigue sin afectar el veredicto (FR-302). Concuerda con el escenario H3-7 de la feature
+  001.
 
 ### Requisitos de rendimiento
 
@@ -478,21 +521,22 @@ Cada prueba citará el identificador del requisito que verifica (Principio X).
 | FR-305 | H1-1, H1-3, H1-5, H1-10, H1-11 |
 | FR-306 | H1-5, H1-12, H2-3, H3-3 |
 | FR-307 | H2-1, H2-2, H2-4, H2-5, H2-6 |
-| FR-308 | H2-1, H2-5, H2-6 |
+| FR-308 | H2-1, H2-5, H2-6, H2-9 |
 | FR-309 | H1-12, H2-1, H2-4, H2-6 |
 | FR-310 | H2-1, H2-2, H2-3, H2-4 |
 | FR-311 | H4-1 |
 | FR-312 | H4-2, H4-3 |
 | FR-313 | H1-9, H4-2 |
-| FR-314 | H3-1, H3-2, H3-3, H3-7 |
+| FR-314 | H3-1, H3-2, H3-3, H3-7, H3-8 |
 | FR-315 | H3-1, H3-2 |
 | FR-316 | H1-4, H1-11, H1-12 |
 | FR-317 | H3-4, H3-5 |
 | FR-318 | H3-3 |
 | FR-319 | H3-6 |
-| FR-320 | H3-7, H2-7, H2-9 |
+| FR-320 | H2-7, H3-7 |
 | FR-321 | H2-6, H2-7, H2-8 |
 | FR-322 | H1-2 |
+| FR-323 | H3-8, H4-5 |
 
 ---
 
@@ -524,7 +568,10 @@ Cada prueba citará el identificador del requisito que verifica (Principio X).
 ## Supuestos
 
 - Si ninguna cara de una puerta declara llave, cada cara se rige por lo que declara: una cara cerrada sin
-  llave no puede abrirse y nunca se atraviesa en ese sentido en la verificación (FR-302).
+  llave no puede abrirse y nunca se atraviesa en ese sentido en la verificación (FR-302). Si las dos caras
+  declaran llave, aunque sean distintas, también se rige cada una por lo que declara (FR-302).
+- Los costos del esqueleto son válidos según 001 FR-122 para que la verificación concluya y la partida
+  inicie; si no lo son, ni `--forzar` permite jugar (FR-323).
 - La sala que trae la ubicación de una llave soltada por un enemigo es confiable como sala inicial de ese
   enemigo (§4.2); la verificación no la contrasta con el contenido de las salas, que no descarga (FR-301,
   FR-321).
