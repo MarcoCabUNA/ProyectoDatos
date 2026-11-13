@@ -171,11 +171,33 @@ tamaño de la cripta (NFR-102). Con 100 salas la región es más chica porque mu
 jugador están cerca de un borde. Con `rango` 5 000 la región es casi toda la cripta y el tiempo crece
 con ella, como se esperaba.
 
-**¿Cambió respecto al plan?** La decisión no. La medición sí: en la primera corrida el jugador
-estaba siempre en el centro de cada cuadrícula, y con 10 000 salas dio 2,78 veces («NO cumple»).
-No era la búsqueda: con el mismo `rango`, alrededor del centro de la cuadrícula grande había
-salidas más baratas y se resolvían 12 salas en lugar de 4. Ahora se promedian 400 posiciones del
-jugador.
+**¿Cambió respecto al plan?** La decisión no. El método de la medición sí cambió, y estas son
+las dos mediciones con `rango` 200.
+
+| Método | 100 salas | 1 024 salas | 10 000 salas | Razones | SC-105 |
+|---|---|---|---|---|---|
+| Primera corrida (`dfe4608`): el jugador alterna entre dos salas del centro, 200 decisiones | 20,2 µs (5 salas) | 15,4 µs (4) | 42,7 µs (12) | 0,76 y 2,78 | no cumple |
+| Ahora (`5d01509`): el jugador en 400 salas sorteadas | 19,6 µs (5,4) | 32,9 µs (8,2) | 35,9 µs (8,2) | 1,68 y 1,09 | cumple |
+
+*Causa.* Cada cuadrícula sortea sus costos con la misma semilla, pero tiene otro tamaño, así que las
+salidas alrededor de su centro son otras. Con `rango` 200, en el centro de la de 10 000 salas había
+salidas más baratas y la búsqueda resolvía 12 salas; en la de 1 024 resolvía 4. La razón 2,78 sale
+de esas 12 salas contra 4, no del tamaño de la cripta.
+
+*Evidencia.* El tiempo por sala resuelta es casi el mismo con los dos métodos y en los tres tamaños:
+4,0, 3,9 y 3,6 µs en la primera corrida, y 3,6, 4,0 y 4,4 µs ahora. Con el método anterior, la
+decisión en la cripta de 10 000 salas tardó más porque resolvió 3 veces más salas, no porque la
+cripta fuera más grande: por sala resuelta tardó menos (3,6 µs frente a 3,9). Las salas resueltas se
+cuentan en el bench y son reproducibles con la semilla.
+
+*Por qué la versión nueva mide mejor lo que pide SC-105.* SC-105 compara la misma decisión, con
+`rango` 200, en criptas de distinto tamaño. Una sola posición del jugador compara tres terrenos
+distintos, y la razón mezcla el tamaño con los costos de ese lugar: en la primera corrida, con la
+misma búsqueda, una razón dio 0,76 y la otra 2,78. Promediando 400 posiciones, la región dentro del
+`rango` es la típica de cada cuadrícula: 8,2 salas en la de 1 024 y 8,2 en la de 10 000. El método
+nuevo no favorece el resultado. La razón de 100 a 1 024 salas empeora (de 0,76 a 1,68) porque en la
+cuadrícula de 10 × 10 muchas posiciones están junto a un borde y su región es más chica (5,4 salas).
+El método nuevo deja eso a la vista.
 
 ---
 
@@ -308,8 +330,35 @@ sobre el grafo del integrante 2. Ver el [contrato](contracts/busqueda-rutas.md).
   | 10 000 | 0,81 / 1 241 µs | 5,4 / 0,13 µs |
 
   Programar y sacar suman 6,2 µs en el montículo y 1 241 µs en el array con 10 000 eventos: unas
-  200 veces menos, contra unas 120 en la primera entrega. Con costos variables, el evento nuevo
-  casi siempre va después de los pendientes, y el array tiene que correrlos casi todos.
+  200 veces menos, contra unas 120 en la primera entrega. Con esta carga, cada evento nuevo va
+  después del 69 % de los pendientes en promedio, y el array tiene que correrlos.
+
+  *Cambio de método de esta medición.* La primera corrida (`dfe4608`) usaba otra carga: los n
+  eventos en un instante al azar entre 0 y 10·n más un intervalo, y el lote entre 0 y 1 000 (10·100)
+  más un intervalo. Las dos mediciones:
+
+  | Eventos | Carga anterior: programar, montículo / array | Carga nueva: programar, montículo / array |
+  |---|---|---|
+  | 100 | 0,97 / 12,5 µs | 0,76 / 15,2 µs |
+  | 1 000 | 1,41 / 16,5 µs | 0,85 / 128 µs |
+  | 10 000 | 1,59 / 14,0 µs | 0,81 / 1 241 µs |
+
+  Sacar no cambia (en el montículo, 2,1 a 5,5 µs con las dos cargas; en el array, 0,12 a 0,14 µs).
+  *Causa*: con la carga anterior, el lote caía casi siempre antes que la agenda, porque sus instantes
+  llegaban hasta unos 1 500 y los de la agenda hasta 100 000. *Evidencia* (conteo exacto con la
+  misma semilla): con 10 000 eventos, cada evento del lote dejaba detrás, en promedio, a 46
+  pendientes (0,5 %), y el array solo corría esos 46. Por eso su costo no crecía con n (12,5, 16,5 y
+  14,0 µs), aunque la primera entrega había medido el mismo array creciendo en forma lineal (9,5,
+  78 y 782 µs). Con la carga nueva, cada evento del lote deja detrás a 77 de 100, 726 de 1 000 y
+  6 926 de 10 000 (del 69 % al 77 %).
+
+  *Por qué la carga nueva mide mejor lo que pasa en el juego*: los eventos pendientes de una agenda
+  real están entre el reloj y el reloj más un intervalo, y el actor que acaba de actuar programa su
+  siguiente acción en el reloj más un intervalo completo, así que queda detrás de la mayoría. La
+  carga anterior medía un caso que el juego no produce. El cambio no decide nada: con la carga
+  anterior el montículo también sumaba menos (7,1 µs entre programar y sacar, contra 14,1 µs del
+  array con 10 000 eventos). Las filas de cancelaciones usan la misma carga de la agenda y apenas se
+  movieron (90 % cancelado, 10 000 eventos: 53,1 µs por evento válido antes y 60,6 µs ahora).
 - **Muchos eventos con el mismo tiempo** (10 000): el montículo programa en 0,69 µs y saca en
   5,5 µs, igual que con tiempos distintos. El array tarda 1 821 µs en programar: con un solo
   tiempo, el desempate por secuencia pone cada evento nuevo detrás de todos los demás.
