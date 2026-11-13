@@ -59,7 +59,7 @@ módulos."
   puertas? → R: No. Las puertas de esa vecina que el jugador nunca observó figuran «sin observar» (estado
   desconocido) hasta que esté en una sala donde esa puerta tenga una cara; la puerta de la salida por la que es
   vecina sí se observa, porque el jugador está en la otra sala (FR-207). Una puerta «sin observar» no es una
-  puerta recordada abierta (dato que usará «ir a», FR-25x) (FR-205, FR-212, FR-219).
+  puerta recordada abierta (dato que usará «ir a», FR-252) (FR-205, FR-212, FR-219).
 - P: Encender la antorcha estando ya en una sala, ¿explora las vecinas de esa sala o solo tiene efecto al
   entrar a la siguiente? → R: Solo tiene efecto al entrar a una sala (§3.3: «al entrar a una sala»); encenderla
   estando ya en una sala no cambia el mapa conocido (FR-215).
@@ -135,7 +135,7 @@ conserva el estado viejo hasta que el jugador vuelve a estar en una de las dos s
    abierta la puerta de la salida con vuelta entre B y C y en realidad esa puerta está cerrada, **cuando** el
    jugador llega a B (o a C), **entonces** observa la puerta y el mapa pasa a recordarla cerrada. *(FR-207, FR-209)*
    La parte «la ruta se recalcula; si no queda ruta, el viaje se detiene sin consumir tiempo adicional» es de
-   «ir a» (pendiente FR-25x, integrante 3).
+   «ir a» (escenarios H7-1 y H7-2; FR-255, FR-256, FR-259).
 2. **Dado** que el jugador cruza de A a B por una puerta abierta con cierre automático y sigue hacia D, que no
    está conectada con A ni con B, **cuando** la puerta se cierra sola mientras el jugador está en D,
    **entonces** el mapa sigue mostrando esa puerta abierta, aunque en realidad está cerrada. *(FR-208)*
@@ -256,6 +256,102 @@ lista con los estados de sala y puertas esperados.
 
 ---
 
+### Historia 6 — Viajar a una sala explorada con «ir a» (Prioridad: P2)
+
+Como jugador, quiero indicar a qué sala que ya exploré quiero ir y que el viaje se haga solo, paso a paso,
+para no repetir a mano un recorrido que ya conozco.
+
+**Por qué esta prioridad**: se apoya en el mapa conocido (historias 1 y 2) y en las puertas recordadas; sin
+ella el jugador igual puede moverse a mano, pero deja sin uso lo que el mapa recuerda (§3.4).
+
+**Prueba independiente**: explorar varias salas, ejecutar «ir a» hacia una de ellas y comprobar la ruta que se
+sigue, el tiempo que consume cada paso y que nunca se usan salas no exploradas ni puertas que el mapa no
+recuerda abiertas.
+
+**Escenarios de aceptación**:
+
+1. *(Apéndice B, caso «ir a hacia una sala no explorada»)* **Dado** que el jugador está en A, que B está
+   avistada y que G está desconocida, **cuando** ejecuta «ir a» hacia B, hacia G o hacia un nombre que no
+   corresponde a ninguna sala que conoce, **entonces** las tres órdenes se rechazan con el mismo mensaje, que no
+   revela si la sala existe ni nada de ella; el reloj no avanza, no se da ningún paso, no se cuenta ninguna
+   acción, no se escribe nada en `partida.log` y el mapa conocido no cambia. *(FR-251)*
+2. **Dado** que A, B, C y D están exploradas, que el jugador está en A, que las salidas de A a B y de B a D
+   están recordadas abiertas y cuestan 100 cada una, y que las salidas de A a C y de C a D también están
+   recordadas abiertas y cuestan 100 y 300, **cuando** ejecuta «ir a» hacia D, **entonces** el viaje pasa por B
+   (costo total 200 frente a 400), da dos pasos y cada uno consume el tiempo de su salida según §3.1.
+   *(FR-253, FR-254)*
+3. **Dado** que desde A hay dos rutas de igual costo mínimo hacia D, una por B y otra por C, y que B tiene menor
+   identificador que C, **cuando** ejecuta «ir a» hacia D, **entonces** el primer paso va hacia B. *(FR-253)*
+4. **Dado** que la ruta más corta hacia D pasa por una puerta que el mapa recuerda cerrada y que el jugador
+   tiene la llave de esa puerta, **cuando** ejecuta «ir a» hacia D, **entonces** el viaje no abre la puerta: toma
+   otra ruta con puertas recordadas abiertas, aunque sea más larga; y si no hay otra, no se da ningún paso, se
+   informa que no hay ruta conocida y el reloj no avanza. *(FR-252, FR-257, FR-259)*
+5. **Dado** que una sala explorada solo por la antorcha tiene una puerta «sin observar» en la única ruta hacia el
+   destino, **cuando** el jugador ejecuta «ir a», **entonces** esa puerta no cuenta como recordada abierta y el
+   viaje no la usa. *(FR-212, FR-252)*
+6. **Dado** que la ruta más corta imaginable hacia D atraviesa una sala avistada o desconocida, **cuando** el
+   jugador ejecuta «ir a» hacia D, **entonces** el viaje no la usa: solo recorre salas exploradas, aunque el
+   esqueleto de la cripta ya esté descargado. *(FR-217, FR-252)*
+7. **Dado** que durante un viaje de varios pasos una puerta de otra parte de la cripta se cierra sola en un
+   instante que cae entre dos pasos, **cuando** el viaje continúa, **entonces** ese evento ocurre en su instante,
+   como en cualquier otro momento de la partida, y el viaje no lo omite ni lo adelanta. *(FR-254)*
+8. **Dado** que el jugador está en A, **cuando** ejecuta «ir a» hacia A, **entonces** se informa que ya está allí,
+   no se da ningún paso y el reloj no avanza. *(FR-251)*
+9. **Dado** que la antorcha está encendida, **cuando** un paso del viaje entra a una sala, **entonces** se aplican
+   todas las reglas de una entrada ordinaria: la sala y sus vecinas se exploran según FR-203 y FR-210, y los
+   enemigos y trampas se comportan según P1. *(FR-264)*
+10. **Dado** el mapa conocido completo de la cripta de referencia, **cuando** se calcula un paso de «ir a»,
+    **entonces** el cálculo tarda menos de 5 ms (medido con `--bench`). *(NFR-250)*
+
+---
+
+### Historia 7 — El viaje se detiene, se recalcula y se puede deshacer (Prioridad: P2)
+
+Como jugador, quiero que el viaje automático se detenga cuando algo cambia o me amenaza, que corrija su ruta
+con lo que voy viendo y que el pergamino pueda deshacer un paso, para no perder el control de la partida.
+
+**Por qué esta prioridad**: sin estas paradas el viaje automático sería peligroso; son la otra mitad de la regla
+de §3.4.
+
+**Prueba independiente**: provocar cada causa de detención (llegada, enemigos, daño, falta de ruta), comprobar
+el motivo que muestra la interfaz y usar un pergamino en mitad de un viaje.
+
+**Escenarios de aceptación**:
+
+1. *(Apéndice B, caso «puerta recordada abierta», parte de «ir a»)* **Dado** que el mapa recuerda abierta la
+   puerta de la salida entre B y C, que en realidad está cerrada, y que la ruta hacia el destino pasa por ella
+   y existe otra ruta recordada abierta, **cuando** el jugador llega a B durante el viaje, **entonces** observa
+   la puerta cerrada, el mapa se actualiza (H2-1), la ruta se recalcula evitándola y el viaje continúa por la
+   otra ruta. *(FR-255, FR-256)*
+2. *(Apéndice B, caso «puerta recordada abierta», parte de «ir a»)* **Dado** el mismo caso pero sin otra ruta
+   recordada abierta, **cuando** el jugador llega a B, **entonces** el viaje se detiene porque ya no hay ruta
+   conocida; la interfaz muestra ese motivo; el reloj queda en el instante en que el jugador llegó a B, sin
+   tiempo adicional, y el jugador sigue en B. *(FR-256, FR-259, FR-260)*
+3. *(Apéndice B, caso «enemigos dormidos»)* **Dado** que una sala de la ruta contiene un enemigo dormido,
+   **cuando** el jugador entra a ella durante el viaje, **entonces** el enemigo se activa según P1 §2.4, como en
+   cualquier entrada, y el viaje se detiene; la interfaz muestra que se detuvo por enemigos. *(FR-258, FR-260)*
+4. **Dado** que una sala de la ruta contiene un enemigo ya activo, **cuando** el jugador entra a ella durante el
+   viaje, **entonces** el viaje se detiene por enemigos; y si esa sala es el destino, la interfaz muestra los dos
+   motivos: llegada y enemigos. *(FR-258, FR-260)*
+5. **Dado** que durante un viaje el jugador recibe daño (por un enemigo, una trampa o un efecto sostenido como
+   el veneno), **cuando** ocurre el daño, **entonces** el viaje se detiene antes de dar el siguiente paso y la
+   interfaz muestra que se detuvo por daño. *(FR-258, FR-260)*
+6. **Dado** que el jugador llega al destino, **cuando** termina el último paso, **entonces** el viaje se detiene y
+   la interfaz indica que llegó. *(FR-258, FR-260)*
+7. *(Apéndice B, caso «pergamino durante un viaje»)* **Dado** un viaje de cuatro pasos y que el jugador tiene un
+   pergamino, **cuando** lo lee después del tercer paso, **entonces** se revierte únicamente el tercer paso (la
+   posición, el reloj y el mapa conocido vuelven a como estaban antes de ese paso), los pasos primero y segundo
+   permanecen, y el viaje no continúa. *(FR-222, FR-262)*
+8. **Dado** un viaje de tres pasos, **cuando** se revisa `partida.log`, **entonces** contiene tres movimientos
+   individuales, iguales a los de movimientos hechos a mano, y la orden «ir a» como comentario; y **cuando** se
+   reproduce con `--replay`, **entonces** la partida llega al mismo estado y al mismo mapa conocido, sin que el
+   comentario cambie nada. *(FR-261)*
+9. **Dado** un viaje de tres pasos, **cuando** el jugador consulta la línea de tiempo (feature 004), **entonces**
+   hay tres acciones consecutivas del jugador, `historia #k` de cada una describe el estado justo antes de ese
+   paso, y la orden «ir a» en sí no cuenta como una acción ni recibe número. *(FR-263)*
+
+---
+
 ### Casos borde
 
 - **Vecina ya explorada**: con la antorcha encendida, una vecina que ya estaba explorada no cambia; revertir la
@@ -278,6 +374,16 @@ lista con los estados de sala y puertas esperados.
 - **Partida terminada**: el comando de ver el mapa sigue disponible y muestra el mapa del final.
 - **Cazador en una sala desconocida**: el cazador conoce el esqueleto completo (feature 001), pero su recorrido
   no cambia el mapa conocido del jugador (FR-218).
+- **«ir a» con el destino en la sala actual**: se informa que ya está allí; sin pasos y sin tiempo (FR-251).
+- **«ir a» con un nombre que designa más de una sala explorada**: se rechaza por ambiguo, sin tiempo (FR-251).
+- **Destino sin ruta conocida desde el inicio**: no se da ningún paso, se informa el motivo y el reloj no avanza
+  (FR-259).
+- **Varios motivos de detención a la vez** (por ejemplo, llegar a un destino con enemigos): la interfaz los muestra
+  todos (FR-260).
+- **Pergamino sin que haya viaje en curso**: se comporta como siempre (P1 §2.11); FR-262 solo añade que, si hay un
+  viaje en curso, este no continúa.
+- **Partida terminada durante un viaje** (por ejemplo, el jugador muere): el viaje se detiene por daño y no hay
+  más pasos (FR-258).
 
 ---
 
@@ -328,7 +434,7 @@ lista con los estados de sala y puertas esperados.
   según FR-207, porque el jugador está en la otra sala, donde esa puerta tiene una cara. Las demás puertas de
   esa vecina que el jugador nunca observó DEBEN figurar «sin observar» (estado desconocido) hasta que el
   jugador esté en una sala donde esa puerta tenga una cara. Una puerta «sin observar» NO es una puerta
-  recordada abierta (dato que usará «ir a», FR-25x).
+  recordada abierta (dato que usará «ir a», FR-252).
 - **FR-213**: Los destinos de las salidas de una vecina explorada con la antorcha que no estén explorados
   DEBEN quedar avistados; la antorcha NO DEBE explorar más allá de las vecinas de la sala a la que se entra.
 - **FR-214**: Con la antorcha apagada, entrar a una sala NO DEBE explorar sus vecinas (solo las deja avistadas según
@@ -374,11 +480,71 @@ lista con los estados de sala y puertas esperados.
   conocido en cada instante, también al reproducirla con `--replay` y con `--replay … --hasta`
   (Principio IV).
 
-### Viaje automático «ir a» (§3.4) — FR-250 a FR-299: pendiente, la escribe el integrante 3
+### Viaje automático «ir a» (§3.4) — FR-250 a FR-299 (integrante 3)
 
-Esta sección, con sus requisitos, historias y escenarios (incluidos los casos del Apéndice B marcados
-«pendiente FR-25x»), la escribe el integrante 3 en otro commit. Los rangos FR-250 a FR-299, NFR-250 a
-NFR-299 y SC-250 a SC-299 quedan reservados para ella.
+Esta sección usa los rangos FR-250 a FR-299, NFR-250 a NFR-299 y SC-250 a SC-299. Sus historias son la 6 y
+la 7. Cuando se dice «el mapa» se entiende el mapa conocido del jugador (FR-217).
+
+**El comando y su destino**
+
+- **FR-250**: El programa DEBE ofrecer el comando «ir a <sala>», que lleva al jugador a una sala explorada
+  mediante una secuencia de movimientos ordinarios del jugador. «ir a» NO DEBE mover al jugador de ninguna otra
+  forma.
+- **FR-251**: El destino DEBE ser una sala explorada. Una orden cuyo destino no sea una sala explorada
+  (avistada, desconocida o inexistente) o cuyo nombre designe más de una sala explorada DEBE rechazarse con un
+  mensaje, sin dar ningún paso, sin consumir tiempo virtual, sin contar como acción, sin registrarse en
+  `partida.log` y sin cambiar la partida. El mensaje NO DEBE revelar si la sala existe ni nada de ella (FR-206,
+  FR-217). Si el destino es la sala donde está el jugador, DEBE informar que ya está allí, sin pasos y sin
+  consumir tiempo.
+
+**La ruta**
+
+- **FR-252**: La ruta DEBE calcularse solo con el conocimiento del jugador: únicamente por salas exploradas y
+  únicamente por salidas cuya puerta el mapa recuerda abierta. Una salida cuya puerta se recuerda cerrada, o
+  figura «sin observar» (FR-212), NO DEBE usarse. NO DEBE usar salas avistadas ni desconocidas, ni el estado real
+  de las puertas, ni nada del esqueleto de la cripta que el jugador no conozca (FR-217).
+- **FR-253**: Entre las rutas permitidas, la ruta DEBE minimizar la suma de los costos de las salidas (§3.1). Si
+  hay varias de igual costo mínimo, el primer paso DEBE ir hacia la vecina de menor identificador entre las que
+  están en alguna ruta de costo mínimo, igual que el cazador (§3.2). El identificador es interno: el jugador no
+  necesita verlo.
+- **FR-254**: Cada paso DEBE ser un movimiento ordinario del jugador y una acción completa: DEBE consumir el
+  tiempo que le corresponde según §3.1 (el costo de la salida y la velocidad del jugador) y, entre un paso y el
+  siguiente, los eventos del reloj (enemigos, puertas que se cierran solas, efectos) DEBEN ocurrir con
+  normalidad. El viaje NO DEBE detener, adelantar ni omitir eventos.
+- **FR-255**: La ruta DEBE recalcularse antes de cada paso con el conocimiento vigente en ese momento. La
+  decisión de cada paso DEBE ser idéntica a la que se obtendría calculando la ruta desde cero con ese
+  conocimiento, y la misma partida (misma cripta, misma semilla y mismas acciones) DEBE producir siempre el mismo
+  viaje (Principio IV).
+- **FR-256**: Si al llegar a una sala el jugador observa que una puerta de su ruta está cerrada (FR-207, FR-209),
+  el cálculo siguiente DEBE evitarla. Recalcular la ruta NO DEBE consumir tiempo virtual.
+- **FR-257**: El viaje NO DEBE abrir puertas, aunque el jugador tenga la llave.
+
+**Cuándo se detiene el viaje**
+
+- **FR-258**: El viaje DEBE detenerse cuando ocurra cualquiera de estos casos: (a) el jugador llega al destino;
+  (b) el jugador entra a una sala que contiene enemigos, activos o dormidos (los dormidos se activan según P1
+  §2.4, como en cualquier entrada); (c) el jugador recibe daño, de cualquier origen, y en ese caso el viaje NO
+  DEBE dar el paso siguiente; (d) deja de existir una ruta conocida hasta el destino.
+- **FR-259**: Si no existe una ruta conocida, ya sea al ejecutar la orden o tras recalcular, el viaje DEBE
+  detenerse sin dar ningún paso adicional y sin consumir tiempo virtual adicional.
+- **FR-260**: La interfaz DEBE mostrar el motivo por el que se detuvo el viaje o se rechazó la orden (§7.3): llegó
+  al destino, entró a una sala con enemigos, recibió daño, no hay ruta conocida o el destino no es válido. Si
+  coinciden varios motivos, DEBE mostrarlos todos.
+
+**Registro, pergamino y línea de tiempo**
+
+- **FR-261**: En `partida.log`, cada paso DEBE registrarse como un movimiento individual, igual que un movimiento
+  hecho a mano, y la orden «ir a» DEBE registrarse además como comentario para fines de depuración. Reproducir con
+  `--replay` DEBE repetir los pasos, y el comentario NO DEBE cambiar el resultado. Una orden rechazada o que no da
+  ningún paso NO DEBE registrarse.
+- **FR-262**: Si el jugador lee un pergamino durante un viaje, el pergamino DEBE revertir únicamente el último
+  paso (P1 §2.11; el mapa conocido vuelve al estado anterior a ese paso, FR-222) y el viaje NO DEBE continuar. Los
+  pasos anteriores NO DEBEN revertirse.
+- **FR-263**: En la línea de tiempo (feature 004), cada paso DEBE contar como una acción del jugador, con su
+  número de acción. La orden «ir a» en sí NO DEBE contar como acción ni recibir número, y una orden rechazada no
+  agrega ninguna.
+- **FR-264**: Cada paso DEBE aplicar todas las reglas de una entrada ordinaria a la sala a la que llega:
+  exploración (FR-203), antorcha (FR-210 a FR-215), enemigos y trampas (P1).
 
 ### Requisitos de rendimiento y de recursos
 
@@ -394,6 +560,11 @@ NFR-299 y SC-250 a SC-299 quedan reservados para ella.
   mediciones DEBEN documentarse en `DECISIONES.md` (§6.3, Principio VIII).
 - **NFR-205**: Las actualizaciones del mapa conocido NO DEBEN hacer que el ciclo de eventos entre dos
   decisiones del jugador supere el límite de 20 ms (P1 §5.2, §6.1).
+- **NFR-250**: El cálculo de un paso de «ir a» DEBE tardar menos de 5 ms con el mapa conocido completo de la
+  cripta de referencia, medido en el equipo local, sin red ni renderizado (§6.1).
+- **NFR-251**: `--bench` DEBE medir el cálculo de un paso de «ir a» en criptas sintéticas deterministas por
+  semilla de al menos tres tamaños, incluido el mapa conocido completo, y las decisiones que se tomen con esas
+  mediciones DEBEN documentarse en `DECISIONES.md` (§6.3, Principio VIII).
 
 ### Entidades clave
 
@@ -406,6 +577,9 @@ NFR-299 y SC-250 a SC-299 quedan reservados para ella.
   (FR-210).
 - **Esqueleto de la cripta**: todas las salas y salidas descargadas por el programa; es infraestructura y no
   es conocimiento del jugador (FR-218).
+- **Viaje («ir a»)**: secuencia de pasos que lleva al jugador a una sala explorada (FR-250).
+- **Paso**: un movimiento ordinario del viaje; es una acción completa del jugador (FR-254, FR-263).
+- **Motivo de detención**: la causa por la que termina un viaje o se rechaza la orden (FR-258, FR-260).
 
 ---
 
@@ -413,13 +587,13 @@ NFR-299 y SC-250 a SC-299 quedan reservados para ella.
 
 | # | Caso del Apéndice B | Escenario | Requisitos | Prueba |
 |---|---|---|---|---|
-| 1 | `ir a` hacia una sala no explorada: se rechaza y no consume tiempo | — | pendiente FR-25x, integrante 3 | — |
+| 1 | `ir a` hacia una sala no explorada: se rechaza y no consume tiempo | H6-1 | FR-251 | Se define en `tasks.md` |
 | 2 | El mapa recuerda abierta una puerta que en realidad está cerrada: al observarla, el mapa se actualiza… | H2-1 (parte del mapa) | FR-207, FR-209 | Se define en `tasks.md` |
-| 2 | …y la ruta se recalcula; si no queda ruta, el viaje se detiene sin consumir tiempo adicional | — | pendiente FR-25x, integrante 3 | — |
-| 3 | `ir a` entra a una sala con enemigos dormidos: se activan según P1 §2.4 y el viaje se detiene | — | pendiente FR-25x, integrante 3 | — |
+| 2 | …y la ruta se recalcula; si no queda ruta, el viaje se detiene sin consumir tiempo adicional | H7-1, H7-2 | FR-255, FR-256, FR-259, FR-260 | Se define en `tasks.md` |
+| 3 | `ir a` entra a una sala con enemigos dormidos: se activan según P1 §2.4 y el viaje se detiene | H7-3 | FR-258, FR-260 | Se define en `tasks.md` |
 | 4 | Con la antorcha encendida, entrar a una sala explora sus vecinas sin activar sus enemigos ni sus trampas | H3-1 | FR-210, FR-211 | Se define en `tasks.md` |
 | 5 | Un pergamino revierte una entrada con antorcha encendida: las salas exploradas por la antorcha vuelven a su estado anterior | H4-1 | FR-222 | Se define en `tasks.md` |
-| 6 | Un pergamino durante un viaje: revierte solo el último paso y el viaje no continúa | — | pendiente FR-25x, integrante 3 | — |
+| 6 | Un pergamino durante un viaje: revierte solo el último paso y el viaje no continúa | H7-7 | FR-222, FR-262 | Se define en `tasks.md` |
 
 Escenarios adicionales (no provienen del Apéndice B):
 
@@ -448,6 +622,20 @@ Escenarios adicionales (no provienen del Apéndice B):
 | 27 | El comando de ver el mapa muestra el estado recordado, no el real | H5-2 | FR-208, FR-219 | Se define en `tasks.md` |
 | 28 | El comando muestra una sala explorada con la antorcha sin contenido y con sus puertas «sin observar» | H5-3 | FR-211, FR-212, FR-219 | Se define en `tasks.md` |
 | 29 | Dos salidas hacia la misma sala avistada se muestran por separado, sin identificador, hasta explorarla | H5-5 | FR-204, FR-219 | Se define en `tasks.md` |
+| 30 | El viaje toma la ruta de menor costo y cada paso consume el tiempo de su salida | H6-2 | FR-253, FR-254 | Se define en `tasks.md` |
+| 31 | Con rutas de igual costo, el primer paso va a la vecina de menor identificador | H6-3 | FR-253 | Se define en `tasks.md` |
+| 32 | El viaje no abre puertas aunque el jugador tenga la llave | H6-4 | FR-252, FR-257, FR-259 | Se define en `tasks.md` |
+| 33 | Una puerta «sin observar» no cuenta como recordada abierta | H6-5 | FR-212, FR-252 | Se define en `tasks.md` |
+| 34 | El viaje solo usa salas exploradas | H6-6 | FR-217, FR-252 | Se define en `tasks.md` |
+| 35 | Entre los pasos ocurren los eventos del reloj | H6-7 | FR-254 | Se define en `tasks.md` |
+| 36 | Destino en la sala actual: sin pasos y sin tiempo | H6-8 | FR-251 | Se define en `tasks.md` |
+| 37 | Cada paso aplica las reglas de una entrada ordinaria (antorcha, enemigos, trampas) | H6-9 | FR-264 | Se define en `tasks.md` |
+| 38 | El cálculo de un paso tarda menos de 5 ms | H6-10 | NFR-250, NFR-251 | Se define en `tasks.md` |
+| 39 | El viaje se detiene si entra a una sala con enemigos activos | H7-4 | FR-258, FR-260 | Se define en `tasks.md` |
+| 40 | El viaje se detiene al recibir daño | H7-5 | FR-258, FR-260 | Se define en `tasks.md` |
+| 41 | El viaje se detiene al llegar y la interfaz lo indica | H7-6 | FR-258, FR-260 | Se define en `tasks.md` |
+| 42 | `partida.log` registra cada paso como movimiento y la orden como comentario; `--replay` da el mismo resultado | H7-8 | FR-261 | Se define en `tasks.md` |
+| 43 | Cada paso cuenta como acción en la línea de tiempo; la orden no | H7-9 | FR-263 | Se define en `tasks.md` |
 
 Cada prueba citará el identificador del requisito que verifica (Principio X).
 
@@ -472,6 +660,16 @@ Cada prueba citará el identificador del requisito que verifica (Principio X).
 - **SC-206**: El ciclo de eventos entre dos decisiones del jugador se mantiene por debajo de 20 ms,
   medido con `--bench` en una cripta sintética determinista con decenas de enemigos
   activos y la antorcha encendida (la cripta de referencia de §6.1 todavía no está publicada).
+- **SC-250**: Los 4 casos del Apéndice B de «ir a» (destino no explorado, puerta recordada abierta que está
+  cerrada, enemigos dormidos y pergamino durante un viaje) pasan como pruebas automatizadas, y cada una cita su
+  requisito.
+- **SC-251**: En el 100 % de los viajes probados, la ruta usa solo salas exploradas y salidas recordadas abiertas,
+  no abre ninguna puerta, y cada paso coincide con el que resulta de calcular la ruta desde cero con el
+  conocimiento de ese momento, con el desempate por menor identificador.
+- **SC-252**: Con `--bench`, el cálculo de un paso de «ir a» con el mapa conocido completo de la cripta de
+  referencia (o de una sintética de tamaño equivalente) tarda menos de 5 ms.
+- **SC-253**: En el 100 % de los viajes probados, reproducir `partida.log` con `--replay` deja la partida y el
+  mapa conocido idénticos a los originales, y la línea de tiempo cuenta exactamente un paso por acción.
 
 ---
 
