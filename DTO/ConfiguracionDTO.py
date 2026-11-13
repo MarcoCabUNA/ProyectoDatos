@@ -8,6 +8,8 @@ Servicios lo recibe y decide con él, sin leer sys.argv:
     replay      ruta del log a reproducir (--replay partida.log), o None
     bench       True -> correr las mediciones de --bench
     ayuda       True -> mostrar cómo se usa el programa y terminar
+    checkpoint_cada   cada cuántas acciones del jugador la línea de tiempo toma un punto de control
+                      (feature 004, FR-415; la bandera --checkpoint-cada la agrega T050)
 
 Regla de los DTOs: solo transportan datos.
 """
@@ -17,6 +19,9 @@ from dataclasses import dataclass
 # con el de Data/CacheCatalogo.py (este DTO no importa la capa de Datos).
 CACHE_SIZE_POR_DEFECTO = 25
 
+# Valor por defecto de --checkpoint-cada (feature 004, FR-415). PROVISIONAL: se confirma con --bench (T062).
+CHECKPOINT_POR_DEFECTO = 20
+
 
 @dataclass(frozen=True)
 class ConfiguracionDTO:
@@ -25,3 +30,4 @@ class ConfiguracionDTO:
     replay: str | None = None
     bench: bool = False
     ayuda: bool = False
+    checkpoint_cada: int = CHECKPOINT_POR_DEFECTO   # feature 004: al final y con valor por defecto
