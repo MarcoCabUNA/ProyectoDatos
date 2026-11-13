@@ -1469,3 +1469,22 @@ Al terminar: tabla de mediciones (con la máquina y la semilla), qué decisiones
 **Uso de la respuesta:** se creó `Logic/BenchRutas.py` con siete mediciones (cola de prioridad, un cazador frente a muchos, `rango`, invalidación con puertas estables e inestables, ciclo con 10, 30 y 100 cazadores en 1 024 salas, agenda con la carga nueva incluidos sus dos límites, e historial) y `BenchLogica.medir()` las incluye (T043, T044). Las mediciones con cazadores comparan cada decisión con `paso_desde_cero`, y H3-8 corre sin `skip` (T042). Dos mediciones se corrigieron después de la primera corrida. En la de `rango`, el jugador siempre en el centro daba «NO cumple» en SC-105 por los costos alrededor del centro, no por la búsqueda; ahora se promedian 400 posiciones. La agenda con costos ponía los eventos nuevos antes que los pendientes, lo que favorecía al array; ahora la carga es como la del juego. Tabla de `--bench` en `specs/001-terreno-cazador/bench-2026-11-13.txt` (Ryzen 5 3600X, `SEMILLA = 2026`). Con 30 cazadores en 1 024 salas, el peor ciclo es de 5,4 a 7,9 ms; SC-105 da 1,68 y 1,09 veces. Ninguna decisión del plan cambió; solo dos mediciones. Se completaron `research.md` (T046), `DECISIONES.md` §5.1, §5.2 y §5.6 (T046), la tabla del Apéndice B (T047) y el checklist (solo «X»). T048 quedó parcial (`--replay`; faltan `--hasta` y `--verificar` de las specs 004 y 003). T049: sin coincidencias nuevas. Suite: 482 OK (skipped=1, H3-7) y 32/32 scripts. Sin push.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Antes del push:
+1. research.md (R3 y la agenda): que muestren las dos mediciones de cada cambio de método (SC-105:
+   jugador en el centro 2,78× y promedio de 400 posiciones 1,09×; agenda: la carga anterior y la nueva),
+   con la causa y su evidencia (12 salas resueltas contra 4) y por qué la versión nueva mide mejor lo que
+   pide SC-105. Que no parezca que se ajustó la medición para que pase.
+2. La fila de P1 con 500 enemigos: medila en el último commit anterior a la feature 001 (usá un git
+   worktree aparte, sin tocar la rama). Compará con la medición actual en la misma máquina. Si la 001 la
+   empeoró, decime cuánto y por qué antes de cambiar nada. Si ya fallaba, anotalo así en DECISIONES.md.
+3. plan.md: la fila de BenchLogica.medir() con 2 líneas y el motivo del import dentro de la función.
+Commits aparte, suite en verde con uv run, PROMPTS_LLM.md, no hagas push.
+
+**Uso de la respuesta:** (1) En `research.md`, R3 y R6 muestran las dos mediciones de cada cambio de método, con la causa y la evidencia. En R3, el tiempo por sala resuelta es de 3,6 a 4,4 µs con los dos métodos, así que el 2,78× venía de las 12 salas resueltas contra 4. El método nuevo empeora la razón de 100 a 1 024 salas (de 0,76 a 1,68) por los bordes de la cuadrícula chica. En la agenda, con la carga anterior y 10 000 eventos, el array solo corría el 0,5 % de los pendientes (46) por evento; con la nueva corre el 69 % (6 926). Con las dos cargas gana el montículo. (2) La fila de 500 enemigos se midió en `83d15c5` (último commit anterior a la 001) con un `git worktree` aparte, ya borrado. Sola da lo mismo en los dos árboles (peor 11,7 a 16,2 ms antes y 12,3 a 17,0 ms ahora). En el `--bench` completo, antes dio 17,4, 20,7 y 16,5 ms y ahora 24,3, 25,0 y 24,0 ms. Con el mismo `BenchDatos` antes, el `Logic` de antes y el de ahora dan lo mismo, así que la diferencia no viene de la 001. El peor ciclo es un ciclo normal más una pasada de generación 2 del recolector de basura (10 a 20 ms); sin el recolector baja a 7 a 12 ms. Ya fallaba antes de la 001, y quedó anotado así en `DECISIONES.md` §5.6. (3) La fila de `BenchLogica.medir()` del `plan.md` ahora dice 2 líneas y explica el import circular. Suite: 482 OK (skipped=1) y 32/32 scripts. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
