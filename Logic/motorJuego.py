@@ -103,6 +103,26 @@ class Motor:
             evento.dueno.activar(self, evento)
         return False
 
+    # Feature 004 (línea de tiempo, FR-401, FR-402; contrato §3). Método NUEVO: avanzar_hasta_jugador no se toca.
+    def avanzar_hasta(self, t: int) -> bool:
+        """Ejecuta los eventos válidos con tiempo <= t, en el orden de la cola.
+
+        Devuelve True si se detuvo justo antes de una decisión del jugador (su evento sale de la cola y el
+        reloj queda en ese tiempo) y False en otro caso. Si la partida termina, se detiene en cuanto
+        `terminado` es verdadero: los demás eventos de ese instante no se ejecutan. No registra nada en el
+        historial por su cuenta (se usa en un Motor aparte)."""
+        while not self.terminado:
+            evento = self.cola.ver_siguiente()                 # los cancelados se descartan al mirar
+            if evento is None or evento.tiempo > t:
+                return False
+            self.cola.obtener_siguiente()
+            self.reloj = evento.tiempo
+            if evento.dueno is self.jugador:
+                self.jugador.Evento_pendiente = None           # le toca decidir: se detiene antes de tomar la decisión
+                return True
+            evento.dueno.activar(self, evento)
+        return False
+
     # COORDINAR (Integrante 3): PuntajeDTO usa jugador.acciones, enemigos_derrotados, reloj y victoria
     def terminar_accion_jugador(self, costo):
         self.historial.registrar_atributo(self.jugador, "acciones", self.jugador.acciones)
