@@ -8,6 +8,7 @@ Una prueba por escenario de aceptación de spec.md, con el escenario y el FR en 
 import os
 import random
 import sys
+import tempfile
 import unittest
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -16,11 +17,16 @@ if RAIZ not in sys.path:
 
 from DTO.Direcciones import E, N, O, S  # noqa: E402
 from DTO.ObjetoDTO import ObjetoDTO  # noqa: E402
+from Data.ValidacionDatos import ErrorDatos  # noqa: E402
+from DTO.ConfiguracionDTO import ConfiguracionDTO  # noqa: E402
 from Logic.BusquedaCostoMinimo import paso_desde_cero  # noqa: E402
 from Logic.Comportamientos import Cazador, Errante, crear_comportamiento  # noqa: E402
 from Logic.Enemigo import Enemigo  # noqa: E402
 from Logic.Inventario import Inventario  # noqa: E402
 from Logic.Mazmorra import CierrePuerta  # noqa: E402
+from Service.ServicioPartida import ServicioPartida  # noqa: E402
+from tests.TestValidacionDatos import CAZADOR, SIN_RANGO, api_con_cazador, api_con_costos  # noqa: E402
+from tests.Utilidades import ID_CRIPTA, fuente_red  # noqa: E402
 from tests.ayudas_terreno import (ficha_cazador, ficha_errante, ficha_rastreador,  # noqa: E402
                                   mazmorra_con_costos, motor_con, poner_enemigo, salida)
 
@@ -455,10 +461,6 @@ class TestCazadorBordes(unittest.TestCase):
         self.assertTrue(motor.mazmorra.salida(1, E).cerrada)
 
 
-PENDIENTE_T002 = ("pendiente de T002 (integrante 2): Data todavía no valida los costos de las salidas ni el "
-                  "`rango` de las fichas de cazador (FR-122); se comprueba en T050")
-
-
 class TestDatosInvalidos(unittest.TestCase):
     """FR-122, escenarios H2-9 y H2-17 a H2-19: datos inválidos de terreno y de cazador."""
 
@@ -482,21 +484,44 @@ class TestDatosInvalidos(unittest.TestCase):
         Escenario H2-17 (FR-122): un esqueleto con una salida de costo 0, "250" o true no deja iniciar la partida;
         el error indica la sala, la dirección y el campo `costo`, y el programa no se cae.
         """
-        self.skipTest(PENDIENTE_T002)
+        for costo in (0, "250", True):
+            with self.subTest(costo=costo):
+                error = _no_inicia(self, api_con_costos([(2, "N", costo)]))
+                for texto in ("sala 2", "salida N", "costo", repr(costo)):
+                    self.assertIn(texto, error)
 
     def test_h2_18_fr122_costos_distintos_entre_caras_no_inicia(self):
         """
         Escenario H2-18 (FR-101, FR-122): la salida 1-2 con 100 del lado de la sala 1 y 250 del lado de la sala 2
         no deja iniciar la partida; el error indica esa salida y el campo `costo`.
         """
-        self.skipTest(PENDIENTE_T002)
+        # En cripta-01, la salida N de la sala 1 y la S de la sala 2 son las dos caras de la misma puerta.
+        error = _no_inicia(self, api_con_costos([(1, "N", 100), (2, "S", 250)]))
+        for texto in ("sala 1", "salida N", "100", "sala 2", "salida S", "250", "costo"):
+            self.assertIn(texto, error)
 
     def test_h2_19_fr122_ficha_invalida_en_la_sala_inicial_no_inicia(self):
         """
         Escenario H2-19 (FR-122): la ficha de un cazador de la sala inicial sin `rango` o con `rango` -1 no deja
         iniciar la partida; el error indica esa ficha y el campo `rango`.
         """
-        self.skipTest(PENDIENTE_T002)
+        for rango in (SIN_RANGO, -1):
+            with self.subTest(rango=rango):
+                error = _no_inicia(self, api_con_cazador(1, rango))    # la sala 1 es la inicial de cripta-01
+                self.assertIn(CAZADOR, error)
+                self.assertIn("rango", error)
+
+
+def _no_inicia(prueba: unittest.TestCase, api) -> str:
+    """Intenta iniciar cripta-01 con esa ApiFalsa; comprueba que no inicia con ErrorDatos y devuelve el mensaje."""
+    with tempfile.TemporaryDirectory() as carpeta:
+        partida = ServicioPartida(ConfiguracionDTO(), fuente=fuente_red(api),
+                                  carpeta_cache=os.path.join(carpeta, "cache"),
+                                  carpeta_logs=os.path.join(carpeta, "logs"))
+        with prueba.assertRaises(ErrorDatos) as ctx:
+            partida.iniciar_partida(ID_CRIPTA, "Ana", semilla=1)
+        prueba.assertFalse(os.path.isdir(os.path.join(carpeta, "logs")))    # no se creó ningún partida.log
+    return str(ctx.exception)
 
 
 class TestModosSinVista(unittest.TestCase):
