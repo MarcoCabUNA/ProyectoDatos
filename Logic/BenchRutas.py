@@ -106,7 +106,7 @@ def _peor(tiempos: list[float]) -> float:
 
 # ====================================================================== 1. cola de prioridad (R1)
 def medir_cola_prioridad(tamanos=(100, 1000, 10000), repeticiones: int = 7,
-                         tamano_max_array: int = 1000) -> list[ResultadoBenchDTO]:
+                         tamano_max_array: int = 1024) -> list[ResultadoBenchDTO]:
     """
     Búsqueda desde la esquina 1 hasta resolver la esquina opuesta, sin límite: montículo con borrado perezoso
     (R1-C, la elegida) frente a buscar el mínimo recorriendo un array de salas (R1-A). Las dos deben dar la
@@ -529,8 +529,10 @@ def medir_agenda_con_costos(tamanos=(100, 1000, 10000), lote: int = 100,
                             repeticiones: int = 15) -> list[ResultadoBenchDTO]:
     """
     La comparación de BenchLogica.medir_agenda (montículo frente a array ordenado), con cargas de la feature 001:
-      - costos variables: cada tiempo es un instante al azar más el intervalo de una salida de costo 1 a 300
-        recorrida a una velocidad de VELOCIDADES (max(1, costo · 100 // velocidad), P1 §2.3);
+      - costos variables: una agenda como la del juego, con reloj = 0. Cada uno de los n eventos es la acción
+        pendiente de un actor, en un instante al azar de su intervalo (cruzar una salida de costo 1 a 300 a una
+        velocidad de VELOCIDADES: max(1, costo · 100 // velocidad), P1 §2.3); el lote es la siguiente acción de
+        actores que acaban de actuar, reloj + su intervalo completo, así que casi siempre va después de los demás;
       - mismo tiempo: los n eventos y el lote en un solo tiempo, y repartidos en 10 tiempos (decide la secuencia);
       - cancelaciones: el 50 % y el 90 % de los n eventos cancelados antes de sacar el lote; la nota dice cuántas
         entradas canceladas se descartaron y el tamaño del arreglo antes y después.
@@ -539,7 +541,7 @@ def medir_agenda_con_costos(tamanos=(100, 1000, 10000), lote: int = 100,
     for n in tamanos:
         azar = random.Random(SEMILLA + n)
         resultados += _comparar_agendas("agenda de eventos (costos variables)", n, lote, repeticiones,
-                                        _tiempos_con_costos(azar, n), _tiempos_con_costos(azar, lote))
+                                        _tiempos_pendientes(azar, n), _tiempos_nuevos(azar, lote))
         for cantidad in (1, 10):
             tiempos_base = [1000 + 100 * azar.randrange(cantidad) for _ in range(n)]
             tiempos_lote = [1000 + 100 * azar.randrange(cantidad) for _ in range(lote)]
@@ -551,12 +553,26 @@ def medir_agenda_con_costos(tamanos=(100, 1000, 10000), lote: int = 100,
     return resultados
 
 
-def _tiempos_con_costos(azar: random.Random, cantidad: int) -> list[int]:
+def _intervalo_al_azar(azar: random.Random) -> int:
+    """El intervalo de cruzar una salida de costo 1 a 300 a una velocidad de VELOCIDADES (P1 §2.3, FR-102)."""
+    costo = azar.randint(1, 300)
+    velocidad = VELOCIDADES[azar.randrange(len(VELOCIDADES))]
+    return max(1, costo * 100 // velocidad)
+
+
+def _tiempos_pendientes(azar: random.Random, cantidad: int) -> list[int]:
+    """Con reloj = 0, la acción pendiente de cada actor: un instante al azar dentro de su intervalo."""
     tiempos = []
     for _ in range(cantidad):
-        costo = azar.randint(1, 300)
-        velocidad = VELOCIDADES[azar.randrange(len(VELOCIDADES))]
-        tiempos.append(azar.randrange(10 * cantidad) + max(1, costo * 100 // velocidad))
+        tiempos.append(azar.randint(1, _intervalo_al_azar(azar)))
+    return tiempos
+
+
+def _tiempos_nuevos(azar: random.Random, cantidad: int) -> list[int]:
+    """Con reloj = 0, la siguiente acción de un actor que acaba de actuar: reloj + su intervalo completo."""
+    tiempos = []
+    for _ in range(cantidad):
+        tiempos.append(_intervalo_al_azar(azar))
     return tiempos
 
 
@@ -611,7 +627,7 @@ def _comparar_agendas(subsistema: str, n: int, lote: int, repeticiones: int, tie
 
 def _medir_cancelaciones(azar: random.Random, n: int, lote: int, porcentaje: int,
                          repeticiones: int) -> list[ResultadoBenchDTO]:
-    cola_base, heap_lleno, array_lleno = _agendas_llenas(_tiempos_con_costos(azar, n))
+    cola_base, heap_lleno, array_lleno = _agendas_llenas(_tiempos_pendientes(azar, n))
     for evento in cola_base.eventos:                      # los mismos objetos están en las dos agendas
         if azar.randrange(100) < porcentaje:
             evento.cancelar()
