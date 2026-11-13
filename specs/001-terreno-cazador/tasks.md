@@ -191,7 +191,7 @@ actual y el comportamiento de cada enemigo.
   Estado (13 nov): hecho para `--replay` (6 partidas, cada estado intermedio igual). `--replay … --hasta` (spec 004) y `--verificar` (spec 003) todavía no existen en esta rama: el script lo avisa con una línea `PENDIENTE` y la casilla queda abierta hasta agregarlos.
 - [X] T049 Revisión de restricciones (Principio II), como en [quickstart.md](quickstart.md) §8: `grep -rnE "heapq|bisect|collections|import copy|networkx|\bdict\(|\bset\(|sorted\(|\.sort\(" Logic Estructuras DTO` no debe mostrar coincidencias nuevas en el código de esta feature; y `grep -rnE "^(from|import) (Data|Service)" Logic Estructuras` no debe mostrar nada nuevo.
 - [X] T050 Cuando el integrante 2 entregue T002, comprobar que hay pruebas de FR-122 (en sus pruebas de Data o en `tests/test_dto_terreno.py`): costo 0, `"250"`, `true`; los dos lados de una salida con 100 y 250; cazador sin `rango`, con `rango` `null`, `-1` y `true`. Si el dato viene en el esqueleto o la ficha es de un cazador de la sala inicial, la partida no inicia; si es de cualquier otra sala, esa sala queda como contenido no disponible y entrar se rechaza (eso lo prueba T054). En todos los casos el mensaje dice qué sala y dirección o qué ficha y qué campo, y el programa no se cae.
-- [ ] T051 Seguir [quickstart.md](quickstart.md) de punta a punta (pruebas, 7 casos, equivalencia, determinismo, bench, modos sin vista) y registrar en `PROMPTS_LLM.md` cada prompt usado durante la implementación (Principio XI).
+- [X] T051 Seguir [quickstart.md](quickstart.md) de punta a punta (pruebas, 7 casos, equivalencia, determinismo, bench, modos sin vista) y registrar en `PROMPTS_LLM.md` cada prompt usado durante la implementación (Principio XI).
 
 ---
 

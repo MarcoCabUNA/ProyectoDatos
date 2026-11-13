@@ -1435,3 +1435,37 @@ Salida: lo que esta bien y lo que hay que cambiar, con propuesta minima.
 **Uso de la respuesta:** consulta `1a1d6e7281b` (15:54), respuesta en `.claude-bridge/outbox/1a1d6e7281b.txt`. No se pudo revisar el método: a esa hora `origin/kris` (`d743186`) no tenía `avanzar_hasta` ni `tests/test_linea_tiempo_motor.py`, y T011 y T012 de la integrante 3 seguían sin marcar. Revisó el código del que va a depender: `ver_siguiente` descarta los cancelados igual que `obtener_siguiente`, así que el caso de la pregunta 1 no puede pasar (igual propone usar lo que devuelve `obtener_siguiente`); el método nuevo debe hacer lo mismo que `avanzar_hasta_jugador` al llegar el turno del jugador, incluido `_cerrar_intervalo()`; el historial del motor nunca es `None` (`RutasHaciaJugador` y el aviso de puertas lo comprueban, pero el rearme de trampas y el cierre de puertas de `Logic/Mazmorra.py` no, así que el motor aparte no debe ponerlo en `None`); el desempate por secuencia se respeta si los eventos se sacan uno por uno. Sobre FR-402 señaló que la suposición «no hay eventos con retraso 0» no se cumple del todo: `SalidaDTO.cierre_automatico` y `ObjetoDTO.duracion` no se validan como mayores que 0. Dejó una propuesta mínima de `avanzar_hasta` y una prueba más (cancelado en la raíz con tiempo ≤ `t` seguido de uno válido con tiempo > `t`). Se le pasa a la integrante 3 para comparar cuando suba el código; lo de la validación de retrasos, al integrante 2 (Data). No modificó nada (3 acciones bloqueadas por permisos).
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit.implement Fase 7 de specs/001-terreno-cazador/tasks.md (T042 a T051).
+
+Primero registrá en PROMPTS_LLM.md la consulta del puente 1a1d6e7281b (revisión de avanzar_hasta de la
+integrante 3; respuesta en C:\Users\Eli\.claude-bridge\outbox\1a1d6e7281b.txt).
+
+Bench (Logic/BenchRutas.py, corre sin vista, Principio V):
+- Las mediciones planificadas en plan.md y research.md: un cazador frente a muchos, rango pequeño (200)
+  frente a grande, búsqueda compartida frente a individual, reutilizar frente a recalcular con puertas
+  estables e inestables, cuadrícula de 1000 salas con 30 cazadores (NFR-101, SC-104), SC-105 (10× la
+  cripta no más que duplica el tiempo de decisión) y la agenda de eventos con la carga nueva (§5.6).
+- Usá _cuadricula_con_costos(lado, azar) y semillas fijas: los resultados deben ser reproducibles.
+- Quitá el skip de H3-8 cuando --bench exista.
+
+Documentación:
+- research.md: cada decisión con su medición y si cambió respecto al plan. En R4 va la evidencia de
+  FR-114 anotada en T046 (12 partidas, ~11 000 decisiones, reutilización > 90 %, pruebas de mutación).
+- DECISIONES.md: completá §5.1, §5.2 y §5.6 con el antes (Documento de Decisiones de P1) y el después,
+  con las cifras del bench. No toques la entrada de la diferencia verificación/motor ni las secciones
+  de los integrantes 2 y 3.
+- Tabla de trazabilidad del Apéndice B (T047) y el checklist de la spec: marcá solo lo que quede cubierto.
+  H3-7 sigue con skip hasta que exista la 003.
+
+Reglas: constitución v1.2.0, sin cambios a código de P1 fuera de la tabla del plan, un commit por tarea,
+suite en verde con uv run, PROMPTS_LLM.md, no hagas push.
+Al terminar: tabla de mediciones (con la máquina y la semilla), qué decisiones cambiaron y qué quedó abierto.
+
+**Uso de la respuesta:** se creó `Logic/BenchRutas.py` con siete mediciones (cola de prioridad, un cazador frente a muchos, `rango`, invalidación con puertas estables e inestables, ciclo con 10, 30 y 100 cazadores en 1 024 salas, agenda con la carga nueva incluidos sus dos límites, e historial) y `BenchLogica.medir()` las incluye (T043, T044). Las mediciones con cazadores comparan cada decisión con `paso_desde_cero`, y H3-8 corre sin `skip` (T042). Dos mediciones se corrigieron después de la primera corrida. En la de `rango`, el jugador siempre en el centro daba «NO cumple» en SC-105 por los costos alrededor del centro, no por la búsqueda; ahora se promedian 400 posiciones. La agenda con costos ponía los eventos nuevos antes que los pendientes, lo que favorecía al array; ahora la carga es como la del juego. Tabla de `--bench` en `specs/001-terreno-cazador/bench-2026-11-13.txt` (Ryzen 5 3600X, `SEMILLA = 2026`). Con 30 cazadores en 1 024 salas, el peor ciclo es de 5,4 a 7,9 ms; SC-105 da 1,68 y 1,09 veces. Ninguna decisión del plan cambió; solo dos mediciones. Se completaron `research.md` (T046), `DECISIONES.md` §5.1, §5.2 y §5.6 (T046), la tabla del Apéndice B (T047) y el checklist (solo «X»). T048 quedó parcial (`--replay`; faltan `--hasta` y `--verificar` de las specs 004 y 003). T049: sin coincidencias nuevas. Suite: 482 OK (skipped=1, H3-7) y 32/32 scripts. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
