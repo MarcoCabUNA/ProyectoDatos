@@ -4,6 +4,7 @@ Ayudantes de prueba de la feature 001 (terreno con costo por salida y cazador). 
 - Criptas pequeñas con costos declarados en uno, en los dos o en ningún lado de cada salida (FR-101).
 - Una cuadrícula de n x n salas con costos al azar, iguales en los dos lados (para pruebas de equivalencia).
 - Fichas de cazador, errante y rastreador, y un motor listo para usar.
+- FuenteConFichaInvalida: una fuente de prueba cuya sala trae un cazador con la ficha sin `rango` (FR-122, T054).
 
 Una salida se describe con una tupla (sala_a, direccion_a, sala_b, costo_a, costo_b, cerrada[, con_vuelta]):
 costo_a es lo que declara el lado de sala_a y costo_b lo que declara el lado de sala_b (None = no lo declara).
@@ -21,13 +22,13 @@ if RAIZ not in sys.path:
 from DTO.CriptaDTO import CriptaDTO  # noqa: E402
 from DTO.Direcciones import E, N, O, S  # noqa: E402
 from DTO.FichaEnemigoDTO import FichaEnemigoDTO  # noqa: E402
-from DTO.SalaDTO import SalaDTO, SalidaDTO  # noqa: E402
+from DTO.SalaDTO import EnemigoEnSalaDTO, SalaDTO, SalidaDTO  # noqa: E402
 from Logic.Enemigo import Enemigo  # noqa: E402
 from Logic.jugador import Jugador  # noqa: E402
 from Logic.Mazmorra import Mazmorra  # noqa: E402
 from Logic.motorJuego import Motor  # noqa: E402
 
-from tests.Utilidades import salas_cuadricula  # noqa: E402
+from tests.Utilidades import FuenteCuadricula, salas_cuadricula  # noqa: E402
 
 # Dirección opuesta de cada índice N, S, E, O.
 OPUESTA = [S, N, O, E]
@@ -143,3 +144,31 @@ def poner_enemigo(motor: Motor, sala: int, ficha: FichaEnemigoDTO, instancia: st
     motor.mazmorra.sala(sala).enemigos.append(enemigo)
     motor.activar_enemigos([enemigo])
     return enemigo
+
+
+ID_CAZADOR_SIN_RANGO = "ent_cazador_sin_rango"
+
+
+class FuenteConFichaInvalida(FuenteCuadricula):
+    """
+    FR-122 (T054): la sala 'sala_cazador' trae un cazador cuya ficha llega sin 'rango'.
+
+    La fuente NO lanza el error: devuelve el dato inválido, como lo haría el API, y Data lo rechaza con ErrorDatos
+    y recuerda la sala. Si la fuente lanzara el error, Data lo trataría como un fallo de red de todo el lote.
+    """
+
+    def __init__(self, n: int, sala_cazador: int):
+        super().__init__(n)
+        self.sala_cazador = sala_cazador
+        self.catalogos: list[list[str]] = []     # cada lote pedido a /catalogo, para contar solicitudes
+
+    def obtener_contenido(self, id_cripta, ids_salas):
+        contenidos = super().obtener_contenido(id_cripta, ids_salas)
+        for c in contenidos:
+            if c.sala == self.sala_cazador:
+                c.enemigos.append(EnemigoEnSalaDTO("e-1", ID_CAZADOR_SIN_RANGO, 10))
+        return contenidos
+
+    def obtener_catalogo(self, ids):
+        self.catalogos.append(list(ids))
+        return [ficha_cazador(None, id=ID_CAZADOR_SIN_RANGO) for i in ids if i == ID_CAZADOR_SIN_RANGO]

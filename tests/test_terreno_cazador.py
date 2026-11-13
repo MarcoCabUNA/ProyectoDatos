@@ -18,17 +18,20 @@ if RAIZ not in sys.path:
 from DTO.Direcciones import E, N, O, S  # noqa: E402
 from DTO.ObjetoDTO import ObjetoDTO  # noqa: E402
 from Data.ValidacionDatos import ErrorDatos  # noqa: E402
+from DTO.AccionDTO import AccionDTO  # noqa: E402
 from DTO.ConfiguracionDTO import ConfiguracionDTO  # noqa: E402
 from Logic.BusquedaCostoMinimo import paso_desde_cero  # noqa: E402
 from Logic.Comportamientos import Cazador, Errante, crear_comportamiento  # noqa: E402
 from Logic.Enemigo import Enemigo  # noqa: E402
 from Logic.Inventario import Inventario  # noqa: E402
 from Logic.Mazmorra import CierrePuerta  # noqa: E402
+from Service.ServicioAccionJugador import ServicioAccionJugador  # noqa: E402
 from Service.ServicioPartida import ServicioPartida  # noqa: E402
 from tests.TestValidacionDatos import CAZADOR, SIN_RANGO, api_con_cazador, api_con_costos  # noqa: E402
 from tests.Utilidades import ID_CRIPTA, fuente_red  # noqa: E402
-from tests.ayudas_terreno import (ficha_cazador, ficha_errante, ficha_rastreador,  # noqa: E402
-                                  mazmorra_con_costos, motor_con, poner_enemigo, salida)
+from tests.ayudas_terreno import (ID_CAZADOR_SIN_RANGO, FuenteConFichaInvalida, ficha_cazador,  # noqa: E402
+                                  ficha_errante, ficha_rastreador, mazmorra_con_costos, motor_con,
+                                  poner_enemigo, salida)
 
 
 def turno_del_jugador(motor):
@@ -466,8 +469,9 @@ class TestDatosInvalidos(unittest.TestCase):
 
     def test_h2_9_fr122_ficha_invalida_rechaza_entrar(self):
         """
-        Con una fuente de prueba que devuelve el error de datos de T052 para una sala cuyo cazador no trae
-        `rango`, y ServicioPartida(..., fuente=esa_fuente):
+        Escenario H2-9 (FR-122, T054). Con FuenteConFichaInvalida (devuelve la ficha del cazador de una sala sin
+        `rango`, no lanza el error: Data la rechaza con ErrorDatos y recuerda la sala) y
+        ServicioPartida(..., fuente=esa_fuente):
           1. la precarga llega y la partida sigue: el jugador actúa en otras salas y el cazador no se activa;
           2. intentar entrar a esa sala se rechaza con un mensaje que nombra la ficha y el campo `rango`,
              el jugador sigue en su sala y el reloj no avanza;
@@ -475,9 +479,57 @@ class TestDatosInvalidos(unittest.TestCase):
           4. ese `mover` no queda en partida.log;
           5. un segundo intento da el mismo mensaje sin una solicitud nueva.
         """
-        self.skipTest("pendiente de T052 (integrante 2): Data todavía no tiene un error de datos distinguible "
-                      "del error de red ni recuerda el rechazo por sala; y de T053 (integrante 3): Service "
-                      "todavía muestra «Sin conexión». La fuente de prueba se escribe con la clase de error de T052.")
+        # Cuadrícula de 3 x 3: la sala inicial es la 1; la 2 (la del cazador sin `rango`) queda al este y la 4 al sur.
+        fuente = FuenteConFichaInvalida(3, sala_cazador=2)
+        acciones = ServicioAccionJugador()
+        with tempfile.TemporaryDirectory() as carpeta:
+            partida = ServicioPartida(ConfiguracionDTO(), fuente=fuente,
+                                      carpeta_cache=os.path.join(carpeta, "cache"),
+                                      carpeta_logs=os.path.join(carpeta, "logs"))
+            ctx = partida.iniciar_partida("cuadricula", "Ana", semilla=1)
+
+            # 1. La precarga trajo la sala 2 y la ficha del cazador, y la partida sigue: el jugador actúa en otras
+            #    salas y el cazador no se activa (no está en ninguna sala del juego).
+            self.assertTrue(any(2 in lote for lote in fuente.lotes))
+            self.assertTrue(any(ID_CAZADOR_SIN_RANGO in lote for lote in fuente.catalogos))
+            for direccion, destino in ((S, 4), (N, 1)):
+                estado = acciones.ejecutar(ctx, AccionDTO("mover", direccion=direccion))
+                self.assertIsNone(estado.resultado)
+                self.assertEqual(estado.sala.id, destino)
+            self.assertFalse(any(e.ficha.id == ID_CAZADOR_SIN_RANGO
+                                 for sala in ctx.mazmorra.salas if sala is not None for e in sala.enemigos))
+
+            # 2. Entrar a la sala 2 se rechaza con el error de datos (ficha y campo `rango`), no con el de red;
+            #    el jugador sigue en la sala 1 y el reloj no avanza.
+            reloj, escritas = ctx.motor.reloj, ctx.bitacora.acciones_escritas()
+            lotes, catalogos = len(fuente.lotes), len(fuente.catalogos)
+            estado = acciones.ejecutar(ctx, AccionDTO("mover", direccion=E))
+            mensaje = estado.resultado
+            self.assertIsNotNone(mensaje)
+            self.assertIn(ID_CAZADOR_SIN_RANGO, mensaje)
+            self.assertIn("rango", mensaje)
+            self.assertFalse(mensaje.startswith("Sin conexión"))
+            self.assertEqual(estado.sala.id, 1)
+            self.assertEqual(estado.reloj, reloj)
+
+            # 5. Un segundo intento da el mismo mensaje sin una solicitud nueva (ni de contenido ni de catálogo).
+            estado = acciones.ejecutar(ctx, AccionDTO("mover", direccion=E))
+            self.assertEqual(estado.resultado, mensaje)
+            self.assertEqual(estado.sala.id, 1)
+            self.assertEqual(estado.reloj, reloj)
+            self.assertEqual((len(fuente.lotes), len(fuente.catalogos)), (lotes, catalogos))
+
+            # 3. La partida sigue: el jugador puede hacer otra acción.
+            estado = acciones.ejecutar(ctx, AccionDTO("mover", direccion=S))
+            self.assertIsNone(estado.resultado)
+            self.assertEqual(estado.sala.id, 4)
+
+            # 4. Ninguno de los dos `mover` hacia la sala 2 quedó en partida.log; sí los tres que se hicieron (S, N, S).
+            self.assertEqual(ctx.bitacora.acciones_escritas(), escritas + 1)
+            with open(ctx.bitacora.ruta(), encoding="utf-8") as log:
+                lineas = log.read().splitlines()
+            self.assertNotIn(AccionDTO("mover", direccion=E).a_linea(), lineas)
+            self.assertEqual(lineas.count(AccionDTO("mover", direccion=S).a_linea()), 2)
 
     def test_h2_17_fr122_costo_invalido_no_inicia(self):
         """
