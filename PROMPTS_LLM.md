@@ -1418,3 +1418,20 @@ Commit docs con la entrada; no hagas push.
 **Uso de la respuesta:** se agregaron las tres entradas anteriores. El texto de cada consulta se tomó del primer mensaje de su sesión (`.claude-bridge/sessions/<id>` da el id de la sesión de Claude Code) y el resumen, de su respuesta en `outbox`. Commit docs.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+Revision de codigo, SOLO LECTURA. Hace git fetch. Metodo nuevo Motor.avanzar_hasta(t) de la integrante 3 en origin/kris (Logic/motorJuego.py, T012) y sus pruebas tests/test_linea_tiempo_motor.py. Usa git show origin/kris:<archivo>.
+Responde con evidencia de codigo (archivo:linea):
+1. ColaEventos.ver_siguiente: descarta los eventos cancelados del tope igual que obtener_siguiente? Si devolviera un cancelado, el metodo compararia el tiempo del cancelado y despues obtener_siguiente sacaria OTRO evento distinto al que se activa (el codigo usa la variable evento de ver_siguiente, no lo que devuelve obtener_siguiente). Decime si ese caso puede pasar.
+2. Compara con avanzar_hasta_jugador (P1): el manejo del evento del jugador (Evento_pendiente = None, reloj, retorno) es igual? Alguna diferencia de comportamiento?
+3. El Motor aparte de la linea de tiempo: tiene historial None? RutasHaciaJugador._registrar_descarte y Mazmorra.observador_puertas (de origin/Marco) funcionan si el historial es None, o fallarian con un cazador?
+4. Orden de eventos con el mismo tiempo: respeta el desempate por secuencia de la cola?
+5. Las tres precisiones de FR-402: los cancelados no cuentan, si la partida termino en t el estado es el final, y no hay eventos con retraso 0.
+Salida: lo que esta bien y lo que hay que cambiar, con propuesta minima.
+
+**Uso de la respuesta:** consulta `1a1d6e7281b` (15:54), respuesta en `.claude-bridge/outbox/1a1d6e7281b.txt`. No se pudo revisar el método: a esa hora `origin/kris` (`d743186`) no tenía `avanzar_hasta` ni `tests/test_linea_tiempo_motor.py`, y T011 y T012 de la integrante 3 seguían sin marcar. Revisó el código del que va a depender: `ver_siguiente` descarta los cancelados igual que `obtener_siguiente`, así que el caso de la pregunta 1 no puede pasar (igual propone usar lo que devuelve `obtener_siguiente`); el método nuevo debe hacer lo mismo que `avanzar_hasta_jugador` al llegar el turno del jugador, incluido `_cerrar_intervalo()`; el historial del motor nunca es `None` (`RutasHaciaJugador` y el aviso de puertas lo comprueban, pero el rearme de trampas y el cierre de puertas de `Logic/Mazmorra.py` no, así que el motor aparte no debe ponerlo en `None`); el desempate por secuencia se respeta si los eventos se sacan uno por uno. Sobre FR-402 señaló que la suposición «no hay eventos con retraso 0» no se cumple del todo: `SalidaDTO.cierre_automatico` y `ObjetoDTO.duracion` no se validan como mayores que 0. Dejó una propuesta mínima de `avanzar_hasta` y una prueba más (cancelado en la raíz con tiempo ≤ `t` seguido de uno válido con tiempo > `t`). Se le pasa a la integrante 3 para comparar cuando suba el código; lo de la validación de retrasos, al integrante 2 (Data). No modificó nada (3 acciones bloqueadas por permisos).
+
+-----------------------------------------------------------------------------------------------------------------------
