@@ -1326,3 +1326,20 @@ la entrada de PROMPTS_LLM.md en el último. No hagas push.
 **Uso de la respuesta:** (1) En el historial se registra solo `registrar_cambio(RutasHaciaJugador.descartar)`, que pone `valida = False` y no copia nada: al crear o extender la búsqueda en `decidir` y en cada `puerta_cambio`. El descarte no depende de un gancho del pergamino: lo hace `HistorialRetroceso.deshacer` al ejecutar esos registros. La línea de tiempo (004, research R9) re-simula con un motor aparte que tiene su propio historial vacío y no usa esos registros. (2) Las filas ya estaban en la tabla de `plan.md`; a la de `observador_puertas` le faltaba FR-114. (3) `reiniciar` sí se usa, pero el crecimiento de los arrays (`_asegurar_tamano`) nunca ocurría: `Motor` se crea siempre después de `cargar_esqueleto`. Commits: `d284475` (plan: FR-114 en la tabla; `data-model.md` y T032 sin el crecimiento), `c838ff3` (refactor: los arrays se reservan una sola vez en el constructor), `2bc38fa` (T031), `515c785` (T032), `31641c0` (T033), `1efe941` (T034), `d4b25a5` (pruebas T027 a T029) y el último con T030, T035 y estas entradas. La suite se corrió sobre lo que entraba en cada commit (lo demás guardado con `git stash`): 460 OK hasta T034, 470 con T027 a T029 y 472 al final, siempre con skipped=2 y 31/31 scripts.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+En tasks.md, en T046, agregá dos notas para DECISIONES.md:
+1. Diferencia conocida entre la verificación (003 FR-304, literal de §3.5 y P1 §2.12) y el motor de P1:
+   abrir_puerta activa salida_abierta con cualquier puerta que pida llave_salida. No se cambia el motor
+   (no hay FR que lo pida); la diferencia va hacia el lado seguro (--forzar). Acordado con el integrante 2
+   el 13 nov; la 003 lo cita.
+2. Evidencia de FR-113 para research.md (D4): 12 partidas aleatorias, ~11 000 decisiones iguales a
+   paso_desde_cero, reutilización > 90 %, y las pruebas de mutación (sin avisos de puerta fallan 6-7
+   de 12; sin descarte por pergamino, solo la prueba fija lo detecta).
+Commit tasks(001) con su entrada en PROMPTS_LLM.md. No hagas push.
+
+**Uso de la respuesta:** se agregaron las dos notas debajo de T046 en `specs/001-terreno-cazador/tasks.md`. En la segunda, Claude señaló que la evidencia es de FR-114 (decidir igual que un cálculo desde cero), no de FR-113 (no abrir puertas), y que en `research.md` la decisión es R4 (no hay D4); la nota quedó con FR-114 y R4. En la primera se aclaró que, al 13 nov, la 003 de `origin/derek` (`f9ecaec`) todavía no cita la diferencia. Suite: 472 OK (skipped=2) y 31/31 scripts.
+
+-----------------------------------------------------------------------------------------------------------------------
