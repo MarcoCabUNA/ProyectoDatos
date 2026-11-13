@@ -1668,4 +1668,64 @@ Commit docs con la entrada; no hagas push.
 
 **Herramienta:** Claude (Claude Code)
 
-a
+Edita SOLO specs/004-linea-tiempo/spec.md y su checklist si aplica. Sin estructuras, clases ni módulos. Agrega el escenario H3-6 (FR-413, FR-419, FR-424): el jugador suelta un pergamino de retroceso en la acción 4, usa otro pergamino para revertir esa acción, y después recoge el pergamino que sigue en el suelo de la sala; cuando consulta el instante actual y los instantes posteriores, el resumen coincide con el de la partida viva (el pergamino soltado quedó fuera de la reversión, tanto en el inventario como en el suelo). Agrégalo a la tabla de trazabilidad. Verifica referencias y dime qué cambiaste.
+
+**Uso de la respuesta:** Se agregó el escenario H3-6 (pergamino soltado y vuelto a recoger tras revertir).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+Edita SOLO specs/004-linea-tiempo/plan.md, research.md, data-model.md, quickstart.md, contracts/contrato-linea-tiempo.md y tasks.md. No cambies spec.md ni escribas código.
+
+1.Cambia el diseño del pergamino (hallazgos C1 y E1 del analyze). Se elimina el marcador de pergamino (quitados/agregados). En su lugar, después de usar un pergamino, la línea quita la última acción, quita los puntos de control con más de c acciones, y toma un punto de control NUEVO en la posición c copiando el estado vivo con PartidaGuardada.guardar, reemplazando el que hubiera en c. Esa copia ya incluye inventario, suelo de las salas, azar y todo lo demás tal como quedó (en el motor, recoger y soltar un pergamino no se registran en el historial ni en el inventario ni en el suelo). Explica en research.md (R4) por qué es más simple y exacta que los marcadores, y que las consultas de instantes anteriores a c usan los puntos anteriores, que reflejan lo vivido en ese momento.
+2. Quita MarcadorPergamino y MarcadorPergaminoDTO del modelo y del contrato (también del bloque binario). La línea guardada lleva k, acciones, puntos, cargas y fichas. Mantén el campo linea y la versión 2. El contrato lo lee el integrante 2 (Derek): déjalo completo y claro.
+3. Tareas: T028 pasa a retroceder_una(estado_guardado) (quita la última acción y los puntos posteriores, y agrega o reemplaza el punto en c); T030 toma el estado con PartidaGuardada.guardar tras detectar −1 y llama a retroceder_una; T031 desaparece (el reconstructor no aplica marcadores); T034 pasa a ser «reemplazar el punto en c y verificar H3-5 y H3-6»; T010 quita el DTO de marcador. T033 incluye H3-5 y H3-6 sin skip. T007: la regla pasa a «nunca hay más de K acciones entre dos puntos consecutivos» (los puntos tras un pergamino pueden estar más cerca).
+4. E1: M6 y T060 miden el recorte más la copia del punto tras el pergamino, con historias de 100 a 5 000 acciones.
+5. Ajustes de texto: E2 (todo camino que ejecute acciones —comando manual, «ir a» de la spec 002, replay— usa ServicioLineaTiempo.ejecutar: anótalo en H-4 y en T053 de la 004); E3 (T023: si el estado trae el mapa conocido, el resumen lo copia); Q1 (quickstart §3 incluye H3-5 y H3-6); T1 (agrega FR a T037, T041, T046, T047, T050, T063 y T064 según tu tabla de cobertura); O1 (ya no aplica si T030/T034 cambian: revisa); I1 (en el plan, el dueño de motorJuego.py es «Integrante 3 (revisa Marco)»).
+6. Agrega una tarea con prueba: un escenario con un cazador comprueba que el estado reconstruido por la línea coincide con el de la partida viva (FR-419, FR-114); la búsqueda compartida del Motor aparte arranca vacía y decide igual que desde cero.
+7. DECISIONES.md ya existe (lo creó el integrante 1) con una sección «Integrante 3 — 004» vacía: T063 y T064 la completan; ajusta T063 para decir «completar» y no «crear».
+8. ConfiguracionDTO: el orden de campos es checkpoint_cada y después hasta; los de la 003 (verificar y forzar, del integrante 2) van detrás.
+9. ContextoPartida y ControladorBackend: la 004 agrega un campo y métodos al final con valor por defecto; la 003 también (resolubilidad, verificar). Anota que quien sube primero, el otro hace merge antes. --replay y --replay … --hasta no verifican la resolubilidad (FR-301 de la 003).
+10. «ir a» registra la orden como comentario «# ir a <sala>» en partida.log (formato acordado con el integrante 2). Anota que BitacoraReplayIO.leer debe ignorar esas líneas (tarea del integrante 2, spec 002) y que --replay … --hasta depende de ello. Muestra las líneas cambiadas y dime si algo de lo anterior no se pudo aplicar.
+
+**Uso de la respuesta:** Se cambió el diseño del pergamino a un punto de control nuevo tras cada uso y se ajustaron el contrato y las tareas.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+Edita SOLO tu sección de «ir a» en specs/002-niebla-ir-a/spec.md (FR-250 a FR-299). No modifiques los FR-201 a FR-249.
+
+1. FR-252 y donde corresponda: cambia «puerta recordada abierta» por «salida recordada abierta», el término de Convenciones (el mapa recuerda cada cara por separado: una salida cuenta como recordada abierta solo si se recuerda abierta la cara de la sala de la que sale; FR-208, FR-225, escenario H2-6).
+2. NFR-251: márcalo como decisión del grupo.
+3. NFR-250 y SC-252: cita que el «5 ms» sale de la tabla de §6.1 del enunciado.
+4. Actualiza la línea de Estado (línea 7) y el párrafo «Reparto de la numeración» para decir que «ir a» (FR-250 a FR-264, historias 6 y 7) ya está escrita por el integrante 3. No cambies ningún otro requisito ni escenario. Dime qué líneas cambiaste.
+
+**Uso de la respuesta:** Se ajustó la sección de «ir a» (salida recordada abierta, NFR-251, cita de §6.1) y su estado.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+/speckit-implement Ejecuta SOLO las Fases 1 y 2 de specs/004-linea-tiempo/tasks.md (ya actualizado: sin marcador de pergamino), en este orden: T001, T005, T006, T007, T008, T009, T010 y T069. T002, T003 y T004 son del integrante 2 («Coordinar»): no las implementes. Reglas: lee la constitución. Pruebas primero: escribe cada prueba, comprueba que falla y luego implementa hasta que pase. Todo código nuevo con type hints y docstring breve. Sin copy, bisect, heapq, collections, dict ni set como índice, ni sorted(). Logic no importa Data ni Service; Estructuras no importa ninguna capa. No modifiques archivos de otros integrantes ni de la primera entrega, salvo DTO/ConfiguracionDTO.py (T069: la constante CHECKPOINT_POR_DEFECTO y el campo checkpoint_cada, al final y con valor por defecto). Marca con [X] en tasks.md solo las tareas que completes. Al terminar la fase 2 corre python tests/correr_pruebas.py (en Windows, con PYTHONIOENCODING=utf-8) y reporta cuántas pasan. Haz un commit por fase: «feat(004): ayudantes de prueba» y «feat(004): búsqueda binaria, línea de tiempo en Lógica y DTOs». Para y reporta antes de la Fase 3.
+
+**Uso de la respuesta:** Se implementaron las fases 1 y 2 de la spec 004 (búsqueda binaria, línea de tiempo en Lógica y DTOs).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+/speckit-implement Ejecuta SOLO la lectura de argumentos de T037 y T050 de specs/004-linea-tiempo/tasks.md; el cableado a los servicios queda para después. No marques T037 ni T050 como completas.
+
+1. DTO/ConfiguracionDTO.py: después de checkpoint_cada (T069) agrega el campo hasta: int | None = None, al final y con valor por defecto (el integrante 2 agregará verificar y forzar detrás).
+2. UIController/LectorArgumentos.py: agrega --checkpoint-cada (entero ≥ 1) y --hasta (entero ≥ 0). --hasta solo se acepta junto con --replay; sin valor, con un valor que no es entero o negativo, o sin --replay, es un error de uso (código 2, igual que las demás banderas inválidas). --replay sin --hasta sigue reproduciendo la partida completa, como en la primera parte. Un --checkpoint-cada inválido también es error de uso (código 2).
+3. Pruebas en un archivo nuevo (por ejemplo tests/test_banderas_linea_tiempo.py), citando FR-410 y FR-415; no modifiques los archivos de prueba del integrante 2. Reglas: pruebas primero, type hints y docstring en todo lo nuevo, solo bibliotecas permitidas, sin tocar nada más. Corre python tests/correr_pruebas.py y reporta. Un solo commit: «feat(004): banderas --checkpoint-cada y --hasta (lectura de argumentos)». No hagas push: lo hago yo al revisar el reporte.
+
+**Uso de la respuesta:** Se agregaron --checkpoint-cada y --hasta (campos y lectura de argumentos) para que Derek agregue sus banderas detrás.
+
+-----------------------------------------------------------------------------------------------------------------------
