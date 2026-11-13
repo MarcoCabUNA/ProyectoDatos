@@ -10,6 +10,7 @@ from Logic.GrafoEsqueleto import GrafoEsqueleto
 from Logic.HistorialRetroceso import HistorialRetroceso
 from Estructuras.Ordenador import Ordenador
 from Logic.RastroSalas import RastroSalas
+from Logic.RutasHaciaJugador import RutasHaciaJugador
 
 
 class Motor:
@@ -38,6 +39,8 @@ class Motor:
         self.mazmorra = mazmorra
         self.mazmorra.historial = self.historial
         self.grafo = GrafoEsqueleto(mazmorra)             # rutas del cazador sobre el esqueleto (FR-112)
+        self.rutas = RutasHaciaJugador(self.grafo, self.historial)   # búsqueda compartida (FR-114)
+        self.mazmorra.observador_puertas = self.rutas
         self.inventario = inventario
         if inventario is not None:
             inventario.historial = self.historial
