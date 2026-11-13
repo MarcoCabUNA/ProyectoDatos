@@ -45,6 +45,18 @@
   001 FR-122 en el esqueleto hace que la verificación no concluya (código 1) y la partida no inicia ni con
   `--forzar` (escenarios H3-8 y H4-5; concuerda con el escenario H3-7 de la 001). Se ajustaron FR-312,
   FR-314, casos borde, supuestos y la tabla de cobertura. Todos los ítems siguen pasando.
+- Revisión cruzada del integrante 1, puntos MEDIA y BAJA: suposición sobre los errores de `rango` de
+  001 FR-122; FR-313 observable (antes de la primera acción) y como excepción de 002 FR-217; escenarios
+  nuevos H2-10 (caras con estados distintos sin llave), H2-11 (salida sin vuelta hacia adentro no es
+  frontera), H2-12 (dos ciclos independientes con sus dependientes) y H3-9 (`--verificar` con
+  `--forzar`); FR-310 lista las dependientes inmediatamente después del ciclo; SC-305 comprobable
+  automáticamente; SC-307 con umbral concreto para la alternativa; cripta sintética de referencia en
+  NFR-301 y SC-306; H4-1 observable; H2-1 aclara `sala_salida` 5; `--replay … --hasta` fuera de alcance;
+  marcas *(decisión del grupo)*; «Supuestos» pasa a «Suposiciones». El punto 1 ALTA (llaves distintas como
+  error) quedó descartado. Todos los ítems siguen pasando.
+- Ajuste posterior: H4-5 usa la misma redacción observable que H4-1; una salida cerrada sin llave que sale
+  de la región alcanzable es frontera bloqueada y se indica «sin llave: no se puede abrir» (FR-308,
+  escenario H2-10, caso borde y tabla de cobertura). Todos los ítems siguen pasando.
 - Todos los FR-301 a FR-323 tienen al menos un escenario (tabla «Cobertura de requisitos funcionales»).
 - Las banderas (`--verificar`, `--forzar`, `--offline`, `--bench`) y `presupuesto_solicitudes` son parte
   del contrato del enunciado, no detalles de implementación.

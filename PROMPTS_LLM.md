@@ -1291,3 +1291,53 @@ Actualizá la tabla de trazabilidad (filas nuevas al final) y el checklist con u
 **Uso de la respuesta:** se usó en `specs/002-niebla-ir-a/spec.md` y `specs/002-niebla-ir-a/checklists/requirements.md` (solo la parte del integrante 2), a partir de la revisión cruzada del integrante 1 y de lo acordado con el integrante 3: nuevo FR-225 (lo que el mapa conocido ofrece a «ir a»: salidas entre salas exploradas con la cara recordada abierta, costo igualado e identificador real); FR-205 y FR-219 con el costo igualado de 001 FR-101; excepción explícita en FR-217 para el reporte de resolubilidad de 003 FR-313 y SC-202 reescrito; NFR-203 con inversas solo para el pergamino y FR-223 con la reconstrucción hacia adelante; estado recordado por cara (regla de caras de la primera parte); SC-207 nuevo; SC-206 con la cripta de referencia de la 001; la regla de eventos simultáneos para la antorcha; escenario del cazador para FR-218; decisiones del grupo marcadas; encabezado, fuente y formato al día. No se tocó la sección «ir a» del integrante 3. Revisé con Claude el cambio antes del commit.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Segunda tanda de correcciones a specs/003-resolubilidad/spec.md y su checklist, con los puntos MEDIA y BAJA de la revisión cruzada del integrante 1. Los puntos ALTA ya están hechos; su punto 1 ALTA (tratar las llaves distintas como error) quedó descartado: cada cara se rige por su llave, como en la primera parte. Editá SOLO esos dos archivos; sin código y sin nombrar estructuras de datos, clases ni módulos; no renumeres FR ni escenarios existentes (los escenarios nuevos van al final de cada historia). Antes leé specs/002-niebla-ir-a/spec.md (FR-217 y su excepción) y specs/001-terreno-cazador/spec.md (FR-122 y NFR-101).
+
+1. Punto 2 (lo que falta): agregá en los supuestos que los errores de `rango` de 001 FR-122 no afectan la verificación, porque la verificación no descarga el contenido de las salas (FR-301); un cazador inválido en la sala inicial impide iniciar la partida por 001 FR-122, no por la verificación.
+
+2. Punto 3: en FR-313, decí que mostrar el reporte completo al iniciar es la excepción de 002 FR-217: el reporte no forma parte del mapa conocido ni lo modifica.
+
+3. Punto 4: agregá un escenario al final de la Historia 2 para una puerta cuyas caras tienen estados distintos sin llave: la puerta 3–7 con la cara de la sala 3 cerrada sin llave y la cara de la sala 7 abierta, la sala 3 alcanzable y la 7 sin otro acceso; la sala 7 no es alcanzable. Y si la sala 7 fuera alcanzable por otro camino, desde ella sí se llega a la 3 (FR-302).
+
+4. Punto 5: un escenario para cada uno: FR-308, una salida sin vuelta que va de una sala de afuera hacia la región alcanzable no aparece en la frontera bloqueada; FR-310, dos ciclos independientes aparecen los dos, cada uno con sus llaves dependientes, en un orden determinista; FR-314, `--verificar` junto con `--forzar` da el mismo resultado y el mismo código de salida que sin `--forzar`.
+
+5. Punto 6: reescribí SC-305: «En todas las criptas no resolubles de prueba, el reporte contiene, para cada llave no obtenible, su id y todas sus ubicaciones o «sin ubicación»; para cada puerta de la frontera, sus dos salas y su llave; y, si hay ciclo, la secuencia completa hasta volver a la primera llave. Se comprueba automáticamente.»
+
+6. Punto 7: en SC-307, cambiá «crece de forma claramente mayor» por un umbral concreto: el tiempo de la alternativa de repetir el recorrido por cada llave crece al menos el doble de lo que crece el de la verificación *(decisión del grupo)*. Actualizá el supuesto que explica SC-307.
+
+7. Punto 8: en NFR-301 y SC-306, «la cripta publicada más grande» pasa a «la cripta publicada más grande o, mientras no esté publicada, una cripta sintética determinista de 1 000 salas en cuadrícula con 100 llaves encadenadas *(decisión del grupo)*».
+
+8. Punto 9: FR-313 debe ser observable: el resultado se muestra antes de la primera acción del jugador.
+
+9. Punto 10: en H4-1, cambiá «ni se crea estado de partida» por «no se crea `partida.log` ni archivo de guardado y el reloj no avanza».
+
+10. Punto 11: en FR-310, «junto con el ciclo» pasa a «inmediatamente después del ciclo, indicando la llave del ciclo de la que dependen».
+
+11. Punto 12: marcá «(decisión del grupo)» en: los códigos de salida 0, 3 y 1 (aclaración y FR-314), el orden con todas las llaves obtenibles (FR-305), que «sin ubicación» no es error de datos (FR-321), las copias múltiples de una llave (FR-316), SC-303, SC-307 y NFR-304.
+
+12. Punto 13: en «Fuera de alcance», agregá que la verificación tampoco corre con `--replay … --hasta` de la feature 004 (FR-301).
+
+13. Punto 14: en H2-1, aclará que en ese escenario `sala_salida` es la 5 y la puerta 4–5 es la puerta de salida (así coincide con el caso del Apéndice B: «llave_salida está detrás de la única puerta que ella misma abre»), y no la puerta 8–9 de las Convenciones.
+
+14. Punto 16: cambiá el encabezado «Supuestos» por «Suposiciones», como en las specs 002 y 004.
+
+Actualizá la tabla de cobertura y el checklist. Al final decime exactamente qué cambiaste y confirmá: que todos los FR del FR-301 al FR-323 siguen teniendo escenario; y que no hay ningún [NEEDS CLARIFICATION]. No hagas commit.
+
+Seguimiento en la misma conversación:
+
+Dos ajustes más en specs/003-resolubilidad/spec.md (y en el checklist si corresponde), sin renumerar nada:
+1. En H4-5, cambiá «no se consume tiempo virtual ni se crea estado de partida» por la misma redacción de H4-1: «no se crea `partida.log` ni archivo de guardado y el reloj no avanza».
+2. FR-308: una salida cerrada sin llave que va de una sala de la región alcanzable hacia una sala fuera de ella también es parte de la frontera bloqueada, y en el reporte DEBE indicarse «sin llave: no se puede abrir» en lugar de una llave. Agregalo a FR-308 y completá H2-10: en el primer caso, la frontera bloqueada lista la puerta 3–7 con esa indicación. Actualizá el caso borde que corresponda y la tabla de cobertura (FR-308 suma H2-10).
+Decime exactamente qué líneas cambiaste. No hagas commit.
+
+Seguimiento en la misma conversación:
+
+Sí, en SC-305 cambiá «para cada puerta de la frontera, sus dos salas y su llave» por «para cada puerta de la frontera, sus dos salas y su llave o «sin llave: no se puede abrir»». No toques nada más y decime la línea que cambiaste. No hagas commit.
+
+**Uso de la respuesta:** se usó en `specs/003-resolubilidad/spec.md` y `specs/003-resolubilidad/checklists/requirements.md`, con los puntos MEDIA y BAJA de la revisión cruzada del integrante 1: suposición sobre los errores de `rango` de 001 FR-122; FR-313 observable y como excepción de 002 FR-217; escenarios nuevos H2-10 (caras con estados distintos sin llave), H2-11 (salida sin vuelta hacia adentro), H2-12 (dos ciclos independientes) y H3-9 (`--verificar` con `--forzar`); FR-308 y SC-305 con las puertas cerradas sin llave en la frontera («sin llave: no se puede abrir»); FR-310 más preciso; SC-305 y SC-307 medibles; cripta sintética de referencia en NFR-301 y SC-306; H4-1 y H4-5 observables; H2-1 con `sala_salida` 5 como en el Apéndice B; marcas «(decisión del grupo)»; «Suposiciones». El punto 1 ALTA (llaves distintas como error) quedó descartado. Revisé con Claude el cambio antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
