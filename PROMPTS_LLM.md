@@ -1343,3 +1343,22 @@ Commit tasks(001) con su entrada en PROMPTS_LLM.md. No hagas push.
 **Uso de la respuesta:** se agregaron las dos notas debajo de T046 en `specs/001-terreno-cazador/tasks.md`. En la segunda, Claude señaló que la evidencia es de FR-114 (decidir igual que un cálculo desde cero), no de FR-113 (no abrir puertas), y que en `research.md` la decisión es R4 (no hay D4); la nota quedó con FR-114 y R4. En la primera se aclaró que, al 13 nov, la 003 de `origin/derek` (`f9ecaec`) todavía no cita la diferencia. Suite: 472 OK (skipped=2) y 31/31 scripts.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Creá DECISIONES.md en la raíz (T046, adelantado), en un commit docs(001) aparte:
+- Encabezado: qué es el archivo y cómo se cita el "antes" (docs/Documento_Decisiones.pdf de la primera entrega).
+- Una sección por integrante y spec: "Integrante 1 — 001 terreno y cazador (§5.1, §5.2, §5.6)",
+  "Integrante 2 — 002 y 003", "Integrante 3 — 004". Las de los integrantes 2 y 3 vacías, con "(pendiente)".
+- En la sección del integrante 1, ya escrita, la entrada "Diferencia conocida entre la verificación y el
+  motor de P1": 003 FR-304 sigue §3.5 y P1 §2.12; abrir_puerta activa salida_abierta con cualquier puerta
+  que pida llave_salida; el motor no se cambia (ningún FR lo pide); la diferencia va hacia el lado seguro
+  (--forzar). Acordado con el integrante 2 el 13 nov.
+- Lo demás de §5.1, §5.2 y §5.6 queda como "(se completa en T046 con las mediciones de --bench)".
+La nota 2 (evidencia de FR-113 para D4) sí va en tasks.md, en T046, como te pedí.
+Entrada en PROMPTS_LLM.md. Suite en verde. No hagas push.
+
+**Uso de la respuesta:** se creó `DECISIONES.md` en la raíz: encabezado con lo que pide el Principio VIII y cómo se cita el «antes» (`docs/Documento_Decisiones.pdf`); sección del integrante 1 con §5.1 «La ruta más barata del cazador», §5.2 «Rutas que dejan de ser válidas» y §5.6 «Revisión de decisiones de la primera parte» (títulos del enunciado) como «(se completa en T046 con las mediciones de --bench)», y la entrada «Diferencia conocida entre la verificación y el motor de P1». En esa entrada se acotó «lado seguro» a esta regla: si la verificación dice resoluble, el motor también deja ganar; lo contrario no, y para eso está `--forzar`. Las secciones de los integrantes 2 y 3 quedaron «(pendiente)». La nota 2 ya estaba en T046 de `tasks.md` (commit `c7bd816`), escrita con FR-114 y R4. Suite: 472 OK (skipped=2) y 31/31 scripts.
+
+-----------------------------------------------------------------------------------------------------------------------
