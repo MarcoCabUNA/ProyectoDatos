@@ -1224,3 +1224,23 @@ Al final decime exactamente qué cambiaste y confirmá: que no queda ninguna men
 **Uso de la respuesta:** se usó en `specs/003-resolubilidad/spec.md` y `specs/003-resolubilidad/checklists/requirements.md`, a partir de la revisión cruzada del integrante 1. Las llaves distintas en las dos caras de una puerta dejan de ser error de datos (cada cara se rige por lo que declara, como `Mazmorra._igualar_caras` de la primera parte): FR-302, FR-308, escenario H2-9 reescrito y aclaración en la Sesión 2026-11-12. Nuevo FR-323: un error de datos de 001 FR-122 en el esqueleto hace que la verificación no concluya (`--verificar` con código 1) y la partida no inicia ni con `--forzar` (escenarios H3-8 y H4-5); se ajustaron FR-312, FR-314, casos borde, supuestos, la tabla de cobertura y el checklist. Revisé con Claude el cambio contra el enunciado y el código de la primera parte antes del commit.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+1. git fetch. Mostrame git log --oneline Marco..origin/derek y después hacé git merge origin/derek
+   (commit de merge normal). Si hay conflictos en archivos de la feature 001, pará y mostrámelos.
+2. test(001): H2-17, H2-18 y H2-19 sin skip, usando la propuesta del integrante 2
+   (te paso el archivo Propuesta_pruebas_FR-122_para_Marco.md). Borrá PENDIENTE_T002.
+   Agregá "Co-Authored-By: Derek" en el commit.
+3. test(001): T054 (H2-9) con el cuerpo completo y sin skip, con la fuente FuenteConFichaInvalida
+   de la misma propuesta (la fuente devuelve la ficha sin rango, no lanza el error).
+   Cubrí los 5 puntos de T054 en tasks.md, incluido que el segundo intento no hace una solicitud nueva
+   (len(fuente.lotes) y len(fuente.catalogos)) y que el mensaje ya no empieza con "Sin conexión".
+4. tasks(001): marcá T002, T052 y T053 (y T038 si sigue sin marcar) en tasks.md.
+Suite en verde con uv run antes de cada commit; entrada en PROMPTS_LLM.md; no hagas push.
+Al final: total de pruebas, qué sigue con skip y por qué.
+
+**Uso de la respuesta:** el merge de `origin/derek` (con T002 y T052 de Derek y T053 de Kris) entró como fast-forward, sin conflictos. Commit `7c9dfc4` (test): H2-17, H2-18 y H2-19 con el cuerpo de la propuesta de Derek (`_no_inicia` y los helpers de `tests/TestValidacionDatos.py`), sin `PENDIENTE_T002`. Commit `0c1259b` (test): `FuenteConFichaInvalida` en `tests/ayudas_terreno.py` y T054 (`test_h2_9_fr122_ficha_invalida_rechaza_entrar`) con los 5 puntos, incluido el segundo intento sin solicitudes nuevas y el mensaje sin «Sin conexión». Commit tasks(001): T002, T052 y T053 marcadas (T038 ya lo estaba). Suite: 460 OK (skipped=2) y 31/31 scripts; quedan con `skip` H3-7 (spec 003) y H3-8 (fase 7).
+
+-----------------------------------------------------------------------------------------------------------------------
