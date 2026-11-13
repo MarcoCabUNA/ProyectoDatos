@@ -39,7 +39,7 @@ veces. Quien recibe el aviso descarta la búsqueda si `a` o `b` ya está resuelt
 | Grafo | «Utilizable» | Implementa |
 |---|---|---|
 | `GrafoEsqueleto` | abierta ahora, en el esqueleto completo | Integrante 1 |
-| Grafo del mapa conocido | entre salas exploradas, con la puerta **recordada** abierta | Integrante 2 (feature 002) |
+| Grafo del mapa conocido | entre salas exploradas, con la cara de la sala de origen **recordada** abierta; ids del esqueleto completo (`cantidad_salas()` de la cripta) | Integrante 2 (feature 002) |
 
 ## Operaciones
 

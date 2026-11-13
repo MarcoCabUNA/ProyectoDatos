@@ -1273,3 +1273,25 @@ Suite en verde con uv run; no hagas push.
 **Uso de la respuesta:** antes de marcar se comprobó que los casos de T050 están en `tests/TestValidacionDatos.py` (costo 0, "250" y true; caras con 100 y 250; rango ausente, null, -1 y true) y en `tests/test_terreno_cazador.py` (H2-17 a H2-19: no inicia con un error en el esqueleto ni en la sala inicial; H2-9 / T054: otra sala). T050 marcada en `specs/001-terreno-cazador/tasks.md`, en el mismo commit que esta entrada. Suite: 460 OK (skipped=2) y 31/31 scripts.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Revisión de seguimiento, SOLO LECTURA (no modifiques nada, no hagas commit). git fetch.
+Specs 002 y 003 en origin/derek, comparadas con la revisión anterior (commit ede62b8):
+git diff ede62b8 origin/derek -- specs/002-niebla-ir-a specs/003-resolubilidad
+
+1. Para cada punto de tu revisión anterior (ALTA, MEDIA, BAJA): ¿quedó resuelto, parcial o pendiente?
+   Una tabla corta.
+2. FR-225 de la 002: confirmá que dice "por cara" (la salida u→v se ofrece si la cara del lado de u
+   se recuerda abierta), costo igualado y todas las salas contadas.
+3. FR-308 nuevo de la 003 (puertas cerradas sin llave en la frontera): revisá en el código de P1
+   (Logic/Mazmorra.py, motorJuego.py, _igualar_caras) y en el enunciado si una cara cerrada sin llave
+   se puede abrir o no. Decime si FR-308 es correcto o si declararía no resolubles criptas que sí lo son.
+4. Cualquier contradicción nueva con la 001 o entre la 002 y la 003 que hayan introducido los cambios.
+Registralo en PROMPTS_LLM.md (puede ir en el próximo commit).
+Salida: solo lo que falta o está mal, con archivo y línea.
+
+**Uso de la respuesta:** revisión de solo lectura de `e1a216c` (002) y `a4782fe` (003) contra la revisión anterior. En la 002 quedaron resueltos los tres puntos ALTA y casi todos los demás; FR-225 cumple «por cara» y el costo igualado, pero no dice que todas las salas cuentan (eso va en el contrato `busqueda-rutas.md` de la 001, que todavía dice «puerta recordada abierta»). En la 003 se resolvieron las caras con llaves distintas y FR-323, pero siguen pendientes casi todos los puntos MEDIA y BAJA (SC-305, SC-307, NFR-301, FR-313, H4-1, FR-310, marcas de «decisión del grupo»). En P1 una cara cerrada sin llave nunca se abre (`motorJuego.abrir_puerta` devuelve `nada_que_abrir` y `_igualar_caras` solo le copia llave si la otra cara declara una), así que FR-302/FR-308 no declaran no resoluble una cripta resoluble; falta decir cómo se lista esa puerta en la frontera. Contradicción nueva: con llaves distintas por cara y cierre automático, el supuesto «una puerta puede volver a abrirse con la misma llave» (FR-302) deja de valer.
+
+-----------------------------------------------------------------------------------------------------------------------
