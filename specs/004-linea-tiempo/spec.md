@@ -167,6 +167,11 @@ acciones; ninguna consulta debe mostrar lo revertido.
    revertir esa acción, **cuando** consulta el instante actual, **entonces** el inventario del resumen conserva
    el pergamino recogido y no tiene el pergamino consumido, igual que la partida viva. *(FR-413, FR-419,
    FR-424)*
+6. **Dado** que el jugador suelta un pergamino de retroceso en la acción 4, usa otro pergamino para revertir
+   esa acción y después recoge el pergamino que sigue en el suelo de la sala, **cuando** consulta el instante
+   actual y los instantes posteriores, **entonces** el resumen coincide con el de la partida viva: el
+   pergamino soltado quedó fuera de la reversión, tanto en el inventario como en el suelo de la sala.
+   *(FR-413, FR-419, FR-424)*
 
 ---
 
@@ -371,6 +376,7 @@ Escenarios adicionales (no provienen del Apéndice B):
 | 11 | Archivo inexistente o ilegible: error con contexto, código 1 | H2-4 | FR-410 | Se define en `tasks.md` |
 | 12 | `--replay` sin `--hasta` reproduce la partida completa | H2-6 | FR-410 | Se define en `tasks.md` |
 | 14 | Un pergamino recogido en una acción revertida se conserva y el consumido no aparece | H3-5 | FR-413, FR-419, FR-424 | Se define en `tasks.md` |
+| 15 | Un pergamino soltado en una acción revertida queda fuera de la reversión (inventario y suelo) y, al recogerlo, el resumen coincide con la partida viva | H3-6 | FR-413, FR-419, FR-424 | Se define en `tasks.md` |
 
 Cada prueba citará el identificador del requisito que verifica (Principio X).
 

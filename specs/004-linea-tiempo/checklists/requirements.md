@@ -36,5 +36,6 @@
   (FR-410 sin `--hasta`); todos tienen fila en la tabla de trazabilidad. Los 6 casos del Apéndice B conservan
   su escenario.
 - FR-422 se eliminó y su número queda sin usar. Se agregó FR-424 (pergaminos recogidos o soltados en acciones
-  revertidas, P1 §2.11) con el escenario H3-5 y su fila de trazabilidad.
+  revertidas, P1 §2.11) con el escenario H3-5 y su fila de trazabilidad. Se agregó el escenario H3-6 (pergamino
+  soltado en la acción revertida y recogido después; FR-413, FR-419, FR-424) con su fila 15 de trazabilidad.
 - La marca de FR-402 se resolvió con `/speckit-clarify`; la spec está lista para `/speckit-plan`.
