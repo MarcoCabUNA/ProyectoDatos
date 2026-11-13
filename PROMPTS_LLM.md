@@ -1224,3 +1224,70 @@ Al final decime exactamente qué cambiaste y confirmá: que no queda ninguna men
 **Uso de la respuesta:** se usó en `specs/003-resolubilidad/spec.md` y `specs/003-resolubilidad/checklists/requirements.md`, a partir de la revisión cruzada del integrante 1. Las llaves distintas en las dos caras de una puerta dejan de ser error de datos (cada cara se rige por lo que declara, como `Mazmorra._igualar_caras` de la primera parte): FR-302, FR-308, escenario H2-9 reescrito y aclaración en la Sesión 2026-11-12. Nuevo FR-323: un error de datos de 001 FR-122 en el esqueleto hace que la verificación no concluya (`--verificar` con código 1) y la partida no inicia ni con `--forzar` (escenarios H3-8 y H4-5); se ajustaron FR-312, FR-314, casos borde, supuestos, la tabla de cobertura y el checklist. Revisé con Claude el cambio contra el enunciado y el código de la primera parte antes del commit.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Correcciones a specs/002-niebla-ir-a/spec.md, solo en la parte del integrante 2 (mapa conocido y antorcha: FR-201 a FR-249, NFR-201 a NFR-249, SC-201 a SC-249, historias 1 a 5), tras la revisión cruzada del integrante 1 y lo acordado con el integrante 3. NO modifiques la sección «Viaje automático «ir a»» (FR-250 a FR-299), ni las historias 6 y 7, ni sus filas de las tablas: son del integrante 3. Editá SOLO specs/002-niebla-ir-a/spec.md y su checklists/requirements.md; sin código y sin nombrar estructuras de datos, clases, métodos ni módulos. Todo en español. Antes de editar, leé .specify/memory/constitution.md (principios IX y X), specs/001-terreno-cazador/spec.md (FR-101), specs/003-resolubilidad/spec.md (FR-313) y specs/004-linea-tiempo/spec.md (cómo se reconstruye un instante), y la sección «ir a» de esta misma spec (FR-252 y FR-253).
+
+1. FR-225 (nuevo): el mapa conocido DEBE ofrecer a «ir a» exactamente lo que necesitan FR-252 y FR-253: para cada sala explorada, sus salidas hacia otras salas exploradas cuya puerta el mapa recuerda abierta (una puerta «sin observar» no cuenta, FR-212; una salida hacia una sala avistada o desconocida tampoco), cada una con su costo igualado según 001 FR-101; y cada sala identificada por su identificador real, para que el desempate por menor identificador de FR-253 dé el mismo resultado que la búsqueda del cazador aplicada a ese mismo conjunto de salas y salidas. No nombres operaciones ni estructuras: eso va en el plan. Agregá un escenario en la Historia 1 o la 2 que lo pruebe: salas exploradas A, B y C, con la puerta A–B recordada abierta y costo declarado 150 solo en la cara de B, la puerta A–C «sin observar» y una salida de A hacia una sala avistada D; el mapa ofrece A→B con costo 150 y no ofrece A→C ni A→D.
+
+2. FR-205 y FR-219: el costo de cada salida que se conoce y se muestra DEBE ser el costo igualado según 001 FR-101 (el mismo en los dos sentidos aunque solo una cara lo declare, y 100 si ninguna lo declara), no el declarado por una sola cara. Ajustá los escenarios que muestran costos si hace falta.
+
+3. FR-217: agregá una excepción explícita. El reporte de resolubilidad (spec 003, FR-313) DEBE mostrarse completo al iniciar la partida, como exige §7.3, aunque mencione salas, puertas o ubicaciones de llaves que el jugador no conoce; no es parte del mapa conocido, NO DEBE modificarlo (no explora ni avista ninguna sala ni cambia el estado recordado de ninguna puerta) y «ir a» no lo usa. Motivo: §3.3 dice que la vista solo muestra el conocimiento del jugador, pero §7.3 exige ver el reporte al iniciar, y el reporte de §3.5 nombra salas y llaves; el choque solo aparece cuando la cripta no es resoluble y se inicia con --forzar. Acordado con el integrante 3, dueña de la interfaz. Agregá un escenario en la Historia 5: con una cripta no resoluble iniciada con --forzar, el reporte nombra salas desconocidas y, después de mostrarlo, el mapa conocido sigue teniendo solo la sala inicial explorada y sus vecinas avistadas.
+
+4. NFR-203: las inversas son solo para el pergamino. Registrar un cambio del mapa conocido e invertirlo con el pergamino DEBE costar proporcionalmente a lo que cambió, no al tamaño del mapa conocido (§5.3). Para la línea de tiempo (feature 004), el mapa conocido NO necesita inversas: se reconstruye hacia adelante, porque forma parte del estado de la partida que se copia en cada punto de control y que la re-simulación reproduce (FR-221, FR-223, FR-224); esa copia cuesta proporcionalmente al tamaño del mapa conocido y se hace una vez por punto de control. Acordado con el integrante 3. Revisá que FR-222 y FR-223 sigan siendo coherentes con esto.
+
+5. Agregá una sección «Sesión 2026-11-13» en Clarificaciones con una pregunta y respuesta por cada uno de los puntos 1 a 4, indicando de dónde salen (revisión cruzada del integrante 1 o acuerdo con el integrante 3). No marques nada como «Reemplazada».
+
+6. Actualizá la tabla de trazabilidad y cobertura (solo tus filas y las filas nuevas), los casos borde si corresponde y el checklist. No cambies la numeración de los FR que ya existen ni la tabla del Apéndice B.
+
+Al final decime exactamente qué cambiaste y confirmá: que no tocaste nada de FR-250 a FR-299 ni de las historias 6 y 7; que FR-225 tiene al menos un escenario; que todos los FR del FR-201 al FR-225 tienen escenario; y que no hay ningún [NEEDS CLARIFICATION]. No hagas commit.
+
+Seguimiento en la misma conversación:
+
+Ajustes finales de texto en specs/002-niebla-ir-a/spec.md y specs/002-niebla-ir-a/checklists/requirements.md, sin cambiar ningún requisito ni escenario:
+1. En el encabezado, «Estado» ya no debe decir que la parte de «ir a» está pendiente: la escribió el integrante 3 (FR-250 a FR-264, historias 6 y 7).
+2. En «Reparto de la numeración», cambiá «que escribe el integrante 3 en otro commit» por «que escribió el integrante 3 en su propio commit».
+3. En «Fuera de alcance», quitá «el comando «ir a» (FR-250 a FR-299, integrante 3);» porque ahora es parte de esta spec. Lo demás de esa línea queda igual.
+4. En el checklist, cambiá la línea «La sección «ir a» (FR-250 a FR-299) queda pendiente a propósito: la escribe el integrante 3.» por una que diga que la sección «ir a» la escribió el integrante 3 en su propio commit.
+5. Sí, reacomodá la línea larga de FR-219 al mismo ancho que las demás, sin cambiar el texto.
+No toques nada más y mostrame exactamente qué líneas cambiaste. No hagas commit.
+
+Seguimiento en la misma conversación (puntos MEDIA y BAJA de la revisión cruzada del integrante 1):
+
+Segunda tanda de correcciones en specs/002-niebla-ir-a/spec.md y su checklist, con los puntos MEDIA y BAJA de la revisión cruzada del integrante 1 (los de prioridad ALTA ya están hechos). Mismas reglas: solo la parte del integrante 2; no toques FR-250 a FR-299, ni las historias 6 y 7, ni sus filas de las tablas; sin nombrar estructuras de datos, clases ni módulos; no renumeres FR ni escenarios existentes (los escenarios nuevos van al final de cada historia). Antes leé, solo para entender la primera parte, Logic/Mazmorra.py (_igualar_caras y abrir_puerta) y Logic/EventoPorg.py (__lt__), y specs/001-terreno-cazador/spec.md (FR-108, NFR-101 y SC-104).
+
+1. Caras con estados distintos (punto 4 de la 003 en la revisión). En la primera parte, las dos caras de una puerta pueden tener estados reales distintos: si ninguna declara llave y solo una está cerrada, o si las dos declaran llaves distintas, cada cara se rige por lo suyo (la 003 ya lo dice en FR-302). Hoy la 002 dice que las dos caras «son la misma puerta» con un solo estado. Corregilo así: en Convenciones, la puerta de una salida con vuelta tiene dos caras que normalmente tienen el mismo estado, pero pueden diferir según la primera parte; el estado recordado se guarda por cara; al observar una puerta (FR-207) el mapa registra el estado real de cada una de sus caras; y una salida cuenta como recordada abierta solo si se recuerda abierta la cara de la sala de la que sale (esto es lo que usa FR-225). Ajustá FR-207, FR-208, FR-225 y la entidad «Estado recordado de una puerta». Agregá un escenario al final de la Historia 2: la puerta A–B con la cara de A cerrada sin llave y la cara de B abierta; al observarla, el mapa recuerda A→B cerrada y B→A abierta, y a «ir a» solo se le ofrece B→A. Agregá la pregunta y la respuesta en la «Sesión 2026-11-13» que ya existe, indicando que surge de la revisión del integrante 1 y que es la regla de la primera parte.
+
+2. Punto 4: marcá «(decisión del grupo)» en la aclaración y en FR-207 sobre la observación de las salidas sin vuelta solo desde la sala de la que salen, citando que evita contradecir FR-206.
+
+3. Punto 5: agregá SC-207: «Con `--bench`, registrar e invertir con el pergamino la misma cantidad de cambios del mapa conocido varía menos de un factor 2 entre un mapa conocido pequeño y uno al menos 10 veces mayor *(decisión del grupo)*.»
+
+4. Punto 6: reescribí SC-202 para que sea comprobable: en cada acción de una partida de prueba de al menos 200 acciones *(decisión del grupo)*, con y sin antorcha, lo que la interfaz recibe para dibujar el mapa (vista, comando de ver el mapa y resumen de `historia`) no contiene el identificador, el nombre, las salidas ni el contenido de ninguna sala desconocida, ni más que la existencia de las avistadas; se comprueba automáticamente. Mantené la excepción del reporte de resolubilidad (FR-217).
+
+5. Punto 7: SC-206 debe usar la misma cripta de referencia que la 001 (NFR-101 y SC-104: una cripta sintética de 1 000 salas en cuadrícula con 30 cazadores activos), con la antorcha encendida *(decisión del grupo)*.
+
+6. Punto 8: reemplazá el caso borde «La antorcha se apaga en el mismo instante en que el jugador entra» por la regla concreta: los eventos con el mismo tiempo se atienden en el orden en que se programaron (la misma regla de 001 FR-108); si el fin de la antorcha se programó antes que la acción del jugador, la entrada ocurre con la antorcha apagada y no explora las vecinas; si se programó después, las explora. Agregalo también como escenario al final de la Historia 3.
+
+7. Punto 9: agregá un escenario para la parte del cazador de FR-218: un cazador que se mueve por salas desconocidas no cambia el estado de ninguna sala para el jugador ni el estado recordado de ninguna puerta.
+
+8. Punto 10: en «Fuera de alcance», agregá que la verificación de resolubilidad (003-resolubilidad) usa el esqueleto completo y no el mapa conocido, y que su reporte se muestra según la excepción de FR-217.
+
+9. Punto 11: marcá «(decisión del grupo)» en SC-203 y SC-204 (factor 2 y al menos 10 veces mayor), en NFR-204 (al menos tres tamaños) y en la aclaración sobre la sala avistada sin identificador.
+
+10. Punto 12: en NFR-205, la cita queda «P1 §5.2 y §6.1 de la Parte II».
+
+11. Punto 13: en «Fuente» agregá §3.4, §3.5, §3.6 y §7.3 de la Parte II, P1 §5.2 y la feature 001 (FR-101, FR-108 y FR-122).
+
+12. Punto 14: reacomodá las líneas cortadas de FR-204 y FR-214 al mismo ancho que las demás, sin cambiar el texto.
+
+13. Punto 15: en la tabla del Apéndice B el «#» 2 está repetido: cambialo por «2a» y «2b» (solo la etiqueta; no cambies el contenido de ninguna fila). La segunda tabla ya dice que sus escenarios no provienen del Apéndice B: dejala como está.
+
+14. Punto 17: en H1-6, unificá la cita en «(FR-203, FR-222)».
+
+Actualizá la tabla de trazabilidad (filas nuevas al final) y el checklist con una nota de esta tanda. Al final decime exactamente qué cambiaste y confirmá: que no tocaste FR-250 a FR-299, las historias 6 y 7 ni sus filas (salvo la etiqueta «2a/2b»); que todos los FR del FR-201 al FR-225 siguen teniendo escenario; y que no hay ningún [NEEDS CLARIFICATION]. No hagas commit.
+
+**Uso de la respuesta:** se usó en `specs/002-niebla-ir-a/spec.md` y `specs/002-niebla-ir-a/checklists/requirements.md` (solo la parte del integrante 2), a partir de la revisión cruzada del integrante 1 y de lo acordado con el integrante 3: nuevo FR-225 (lo que el mapa conocido ofrece a «ir a»: salidas entre salas exploradas con la cara recordada abierta, costo igualado e identificador real); FR-205 y FR-219 con el costo igualado de 001 FR-101; excepción explícita en FR-217 para el reporte de resolubilidad de 003 FR-313 y SC-202 reescrito; NFR-203 con inversas solo para el pergamino y FR-223 con la reconstrucción hacia adelante; estado recordado por cara (regla de caras de la primera parte); SC-207 nuevo; SC-206 con la cripta de referencia de la 001; la regla de eventos simultáneos para la antorcha; escenario del cazador para FR-218; decisiones del grupo marcadas; encabezado, fuente y formato al día. No se tocó la sección «ir a» del integrante 3. Revisé con Claude el cambio antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
