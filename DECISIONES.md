@@ -69,7 +69,8 @@ Con 100 cazadores el peor ciclo llega a 18,0 ms: cumple, pero con poco margen.
 **¿Coincide con el plan?** Sí. Lo que cambió fue la medición de R3: con el jugador siempre en el centro
 de cada cuadrícula, la de 10 000 salas dio 2,78 veces. Se debía a que los costos alrededor del centro
 eran distintos (12 salas resueltas en lugar de 4), no a la búsqueda. Ahora se promedian 400 posiciones
-del jugador. El array de R1 no se mide con 10 000 salas (O(S²)).
+del jugador. El array de R1 no se mide con 10 000 salas (O(S²)). Las dos mediciones de cada cambio de
+método, con su causa y su evidencia, están en [research.md](specs/001-terreno-cazador/research.md) R3 y R6.
 
 Mediciones: `python -m Service.ServicioBench` (`Logic/BenchRutas.py`), tabla completa en [bench-2026-11-13.txt](specs/001-terreno-cazador/bench-2026-11-13.txt). Máquina: AMD Ryzen 5 3600X, 32 GB, Windows 11 Pro, Python 3.12.10. Semilla `SEMILLA = 2026`: los conteos son reproducibles; los tiempos son medianas y dependen de la máquina.
 
@@ -165,10 +166,29 @@ Las decisiones de la primera entrega que esta feature toca se volvieron a medir 
 **¿Coincide con el plan?** Sí: el plan esperaba que el montículo siguiera siendo adecuado y que el
 historial no cambiara.
 
-**Pendiente.** En esta máquina, la fila de la primera entrega con 500 enemigos (`medir_ciclo`, sin
-cazadores) dio un peor ciclo de 21,2 ms y 29,5 ms en dos corridas del 13 de noviembre: «NO cumple». No
-es una medición de esta feature (no hay cazadores ni costos), y el Documento de la primera entrega ya
-dice que el peor ciclo varía entre corridas. Queda para revisarla con el equipo.
+**La fila de la primera entrega con 500 enemigos ya fallaba antes de esta feature.** `medir_ciclo`
+con 500 errantes y rastreadores, sin cazadores ni costos. Se midió el 13 de noviembre en esta máquina,
+en el último commit anterior a la 001 (`83d15c5`, en un `git worktree` aparte) y en la rama actual:
+
+| Cómo se midió | Antes de la 001 (`83d15c5`) | Rama actual |
+|---|---|---|
+| Sola, 10 corridas alternadas | peor 11,7 a 16,2 ms; mediana 5,37 a 5,67 ms | peor 12,3 a 17,0 ms; mediana 5,37 a 5,68 ms |
+| Dentro de `--bench` completo, 3 corridas | peor 17,4 / **20,7** / 16,5 ms | peor **24,3** / **25,0** / **24,0** ms |
+| Con el mismo `BenchDatos` actual antes, 4 corridas | peor 18,7 / **21,3** / 17,3 / 17,1 ms | peor 16,8 / 17,8 / 19,6 / 16,9 ms |
+
+En negrita, las que no cumplen. Los dos árboles procesan los mismos ~521 eventos por ciclo y hacen las
+mismas 21 pasadas completas del recolector de basura de Python (generación 2) durante la medición.
+Cada pasada recorre unos 103 000 objetos y tarda de 10 a 20 ms. El peor ciclo es un ciclo normal
+(5 a 8 ms) más una de esas pasadas: con el recolector desactivado, el peor ciclo baja a 7 a 12 ms en
+los dos árboles. Por eso la fila queda en el límite y a veces no cumple, con o sin la 001. Ya fallaba
+antes: una de las tres corridas del `--bench` completo en `83d15c5` dio 20,7 ms. El Documento de la
+primera entrega ya decía que el peor ciclo varía entre corridas (§4.1, límites: un pico de 119 ms).
+
+En el `--bench` completo, la rama actual da un peor ciclo más alto (24 ms frente a 16 a 21 ms). Esa
+diferencia no viene del código de la 001. Con lo mismo corriendo antes en el proceso (el `BenchDatos`
+actual), el `Logic` de antes y el de ahora dan lo mismo (tercera fila). La diferencia aparece según lo
+que corre antes en el mismo proceso, cuyo código (Servicios y Datos) también cambió desde `83d15c5`; no
+se aisló qué parte. Queda para revisarla con el equipo; esta feature no cambia nada por eso.
 
 Mediciones: `python -m Service.ServicioBench` (`Logic/BenchRutas.py`), tabla completa en [bench-2026-11-13.txt](specs/001-terreno-cazador/bench-2026-11-13.txt). Máquina: AMD Ryzen 5 3600X, 32 GB, Windows 11 Pro, Python 3.12.10. Semilla `SEMILLA = 2026`: los conteos son reproducibles; los tiempos son medianas y dependen de la máquina.
 
