@@ -50,6 +50,13 @@
   SC-202 reescrito para comprobarse en cada acción; SC-206 usa la cripta de 001; «(decisión del grupo)»
   marcado donde corresponde; «Fuente» y «Fuera de alcance» completados. En la tabla del Apéndice B solo
   cambió la etiqueta repetida «2» por «2a» y «2b». Ningún requisito ni escenario existente cambió de número.
+- Segunda revisión del integrante 1 (2026-11-13): en Convenciones («Puerta») y en la aclaración de la
+  sesión 2026-11-13 sobre las caras, las caras también pueden diferir si las dos declaran llave (la misma o
+  distintas) con distinto estado, porque la primera parte no iguala dos caras que declaran llave (alineado
+  con 003 FR-302); FR-225 reacomodado sin cambiar el texto; la tabla de escenarios adicionales usa la
+  columna «Adicional» con filas A1 a A43 en el mismo orden (incluidas las del integrante 3, solo cambió la
+  etiqueta); el caso borde del reporte con `--forzar` cita «003 H4-4». Ningún requisito ni escenario cambió
+  de número y no se tocó el contenido de FR-250 a FR-299 ni de las historias 6 y 7.
 - Los 25 requisitos FR-201 a FR-225 tienen al menos un escenario; no hay identificadores FR-0xx.
 - La sección «ir a» (FR-250 a FR-299) la escribió el integrante 3 en su propio commit.
 - La spec no nombra estructuras de datos, clases, módulos ni algoritmos (Principio IX). Lista para

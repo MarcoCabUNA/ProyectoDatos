@@ -57,6 +57,18 @@
 - Ajuste posterior: H4-5 usa la misma redacción observable que H4-1; una salida cerrada sin llave que sale
   de la región alcanzable es frontera bloqueada y se indica «sin llave: no se puede abrir» (FR-308,
   escenario H2-10, caso borde y tabla de cobertura). Todos los ítems siguen pasando.
+- Segunda revisión del integrante 1 (sesión de clarificación 2026-11-13): FR-304 conserva la definición
+  literal de §3.5 y precisa que la puerta por la que se llega a `sala_salida` está cerrada y que
+  `llave_salida` la pide la cara de la sala desde la que se entra (FR-322, Convenciones y caso borde
+  ajustados igual); nueva sesión 2026-11-13 sobre la diferencia con el motor de la primera parte (victoria
+  tras abrir cualquier puerta que pida `llave_salida`), con su caso borde y como coordinación con el
+  integrante 1; FR-302 y la sesión 2026-11-12 corrigen el cierre automático (es el de la cara desde la que
+  se abre y cierra las dos caras; cada cara se rige por su llave y su estado cerrado); caso borde *(decisión
+  del grupo)* del cierre automático con llaves distintas por cara; H2-7 exige código de salida 1 con
+  `--verificar`; FR-313 ya no habla de «quedar disponible» y define el caso sin vista (`--verificar` escribe
+  en la salida estándar, FR-314; `--replay` y `--bench` no verifican, FR-301 menciona `--bench`). Se
+  actualizó la tabla de cobertura (FR-313: H4-4; FR-314: H2-7). Ningún FR ni escenario cambió de número.
+  Todos los ítems siguen pasando.
 - Todos los FR-301 a FR-323 tienen al menos un escenario (tabla «Cobertura de requisitos funcionales»).
 - Las banderas (`--verificar`, `--forzar`, `--offline`, `--bench`) y `presupuesto_solicitudes` son parte
   del contrato del enunciado, no detalles de implementación.

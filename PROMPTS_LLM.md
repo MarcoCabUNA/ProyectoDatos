@@ -1296,7 +1296,7 @@ Actualizá la tabla de trazabilidad (filas nuevas al final) y el checklist con u
 **Herramienta:** Claude Code
 
 Segunda tanda de correcciones a specs/003-resolubilidad/spec.md y su checklist, con los puntos MEDIA y BAJA de la revisión cruzada del integrante 1. Los puntos ALTA ya están hechos; su punto 1 ALTA (tratar las llaves distintas como error) quedó descartado: cada cara se rige por su llave, como en la primera parte. Editá SOLO esos dos archivos; sin código y sin nombrar estructuras de datos, clases ni módulos; no renumeres FR ni escenarios existentes (los escenarios nuevos van al final de cada historia). Antes leé specs/002-niebla-ir-a/spec.md (FR-217 y su excepción) y specs/001-terreno-cazador/spec.md (FR-122 y NFR-101).
-
+ 
 1. Punto 2 (lo que falta): agregá en los supuestos que los errores de `rango` de 001 FR-122 no afectan la verificación, porque la verificación no descarga el contenido de las salas (FR-301); un cazador inválido en la sala inicial impide iniciar la partida por 001 FR-122, no por la verificación.
 
 2. Punto 3: en FR-313, decí que mostrar el reporte completo al iniciar es la excepción de 002 FR-217: el reporte no forma parte del mapa conocido ni lo modifica.
@@ -1339,5 +1339,34 @@ Seguimiento en la misma conversación:
 Sí, en SC-305 cambiá «para cada puerta de la frontera, sus dos salas y su llave» por «para cada puerta de la frontera, sus dos salas y su llave o «sin llave: no se puede abrir»». No toques nada más y decime la línea que cambiaste. No hagas commit.
 
 **Uso de la respuesta:** se usó en `specs/003-resolubilidad/spec.md` y `specs/003-resolubilidad/checklists/requirements.md`, con los puntos MEDIA y BAJA de la revisión cruzada del integrante 1: suposición sobre los errores de `rango` de 001 FR-122; FR-313 observable y como excepción de 002 FR-217; escenarios nuevos H2-10 (caras con estados distintos sin llave), H2-11 (salida sin vuelta hacia adentro), H2-12 (dos ciclos independientes) y H3-9 (`--verificar` con `--forzar`); FR-308 y SC-305 con las puertas cerradas sin llave en la frontera («sin llave: no se puede abrir»); FR-310 más preciso; SC-305 y SC-307 medibles; cripta sintética de referencia en NFR-301 y SC-306; H4-1 y H4-5 observables; H2-1 con `sala_salida` 5 como en el Apéndice B; marcas «(decisión del grupo)»; «Suposiciones». El punto 1 ALTA (llaves distintas como error) quedó descartado. Revisé con Claude el cambio antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Correcciones de la segunda revisión del integrante 1 en specs/003-resolubilidad/spec.md y specs/002-niebla-ir-a/spec.md (y sus checklists). Mismas reglas de siempre: sin código y sin nombrar clases ni módulos; no renumeres FR ni escenarios; los escenarios nuevos van al final de su historia; en la 002 no toques el contenido de FR-250 a FR-299 ni de las historias 6 y 7. Antes leé, solo para entender la primera parte, Logic/Mazmorra.py (abrir_puerta, _igualar_caras y CierrePuerta) y Logic/motorJuego.py (dónde se declara la victoria), y §3.5 de «Proyecto II parte.pdf».
+
+Spec 003:
+1. FR-304: mantené la definición de §3.5, que es literal del enunciado, y precisá que la puerta por la que se llega a sala_salida debe estar cerrada y que llave_salida la pide la cara de la sala desde la que se entra a sala_salida (en la primera parte, la llave que vale al abrir es la de la cara desde la que se abre). Ajustá FR-322 de la misma forma.
+2. Agregá una «Sesión 2026-11-13» en Clarificaciones (revisión del integrante 1): el motor de la primera parte declara la victoria al entrar a sala_salida después de abrir cualquier puerta que pida llave_salida, aunque esa puerta no lleve a sala_salida; en cambio §3.5 y P1 §2.12 exigen llegar a sala_salida a través de una puerta que la requiere. La verificación sigue el enunciado (FR-304). La diferencia solo aparece en una cripta donde sala_salida se alcanza sin pasar por una puerta que pida llave_salida: ahí la verificación dice «no resoluble», con el motivo de FR-322, aunque el motor permitiría ganar. Queda como coordinación con el integrante 1 (alinear el motor con P1 §2.12 es decisión suya). Agregá el caso borde.
+3. FR-302, cierres automáticos: en la primera parte, abrir una puerta abre sus dos caras, y el cierre automático que se programa es el de la cara desde la que se abrió, y cierra las dos caras. Corregí FR-302 y la aclaración de la Sesión 2026-11-12 donde dice que cada cara se rige por «su cierre automático»: cada cara se rige por su llave y su estado cerrado; el cierre automático es el de la cara que se abre y afecta a las dos.
+4. El supuesto de §3.5 «los cierres automáticos no bloquean, porque una puerta puede volver a abrirse con la misma llave» se mantiene porque es del enunciado. Agregá un caso borde marcado *(decisión del grupo)*: con llaves distintas por cara, después de un cierre automático volver por esa puerta puede exigir la llave de la otra cara; la verificación igual aplica el supuesto de §3.5 y no lo considera un bloqueo.
+5. FR-321: agregá al escenario H2-7 que, con --verificar, el código de salida es 1.
+6. FR-313: quitá «DEBE quedar disponible para que la interfaz lo muestre» y dejá que el resultado DEBE mostrarse antes de la primera acción del jugador. Agregá qué pasa sin vista: el único modo sin vista que verifica es --verificar, que escribe el resultado en la salida estándar (FR-314); --replay y --bench no verifican (FR-301).
+
+Spec 002:
+7. En Convenciones («Puerta») y en la aclaración de la Sesión 2026-11-13 sobre las caras: las caras también pueden diferir si las dos declaran llave (la misma o distintas) con distinto estado cerrado, porque la primera parte no iguala dos caras que declaran llave. Dejalo así: «si ninguna declara llave y solo una está cerrada, o si las dos declaran llave (la misma o distintas) con distinto estado», alineado con 003 FR-302.
+8. FR-225: reacomodá la línea cortada («desconocida. Cada sala»), sin cambiar el texto.
+9. La segunda tabla de trazabilidad (escenarios adicionales) usa números que parecen casos del Apéndice B: cambiá su columna «#» por «Adicional» y numerá sus filas A1, A2… en el mismo orden. Incluye las filas del integrante 3: solo cambia la etiqueta, no el contenido.
+10. En el caso borde del reporte de resolubilidad con --forzar, la referencia «(003, escenario de --forzar)» pasa a «(003 H4-4)».
+
+Actualizá las tablas de cobertura y los checklists. Al final decime exactamente qué cambiaste en cada spec y confirmá: que no renumeraste FR ni escenarios; que no tocaste el contenido de FR-250 a FR-299 ni de las historias 6 y 7; y que no hay ningún [NEEDS CLARIFICATION]. No hagas commit.
+
+Seguimiento en la misma conversación:
+
+Ajuste en la aclaración de la Sesión 2026-11-13 de specs/003-resolubilidad/spec.md sobre el motor de la primera parte (y en su caso borde): el integrante 1 decidió mantener el motor como está, porque cambiarlo sería tocar la primera parte sin un FR que lo pida, y la diferencia va hacia el lado seguro: la verificación puede rechazar una cripta que el motor dejaría ganar (para eso está --forzar), pero nunca aprueba una que el motor no deje ganar. Queda registrado en DECISIONES.md como diferencia conocida entre la verificación y el motor. Reemplazá la frase de que alinear el motor es decisión del integrante 1 por esto. No toques nada más y decime qué líneas cambiaste. No hagas commit.
+
+**Uso de la respuesta:** se usó en `specs/003-resolubilidad/spec.md`, `specs/002-niebla-ir-a/spec.md` y sus checklists, con la segunda revisión cruzada del integrante 1. En la 003: FR-304 y FR-322 precisan que la puerta hacia `sala_salida` está cerrada y que `llave_salida` la pide la cara de la sala desde la que se entra; aclaración y caso borde sobre la diferencia con el motor de la primera parte (el integrante 1 decidió mantenerlo; va hacia el lado seguro); FR-302 corregido (el cierre automático es el de la cara que se abre y cierra las dos) y caso borde del supuesto de §3.5 con llaves distintas por cara; código 1 en H2-7; FR-313 observable y sin vista; FR-301 y FR-314 ajustados. En la 002: las caras también difieren con la misma llave y distinto estado; FR-225 reacomodado; tabla de escenarios adicionales con etiquetas A1 a A43; referencia «003 H4-4». No se tocó la sección «ir a» del integrante 3 salvo las etiquetas. Revisé con Claude el cambio antes del commit.
 
 -----------------------------------------------------------------------------------------------------------------------

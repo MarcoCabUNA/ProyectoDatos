@@ -40,8 +40,8 @@ módulos."
 - **Vecina** de una sala S: sala destino de alguna salida de S, abierta o cerrada.
 - **Puerta**: la de una salida. La puerta de una salida con vuelta tiene dos caras, una en cada una de las dos
   salas que conecta. Normalmente las dos caras tienen el mismo estado real, pero pueden diferir según la
-  primera parte: si ninguna declara llave y solo una está cerrada, o si las dos declaran llaves distintas, cada
-  cara se rige por lo suyo (003 FR-302). Una salida sin vuelta solo existe como salida de la sala de la que
+  primera parte: si ninguna declara llave y solo una está cerrada, o si las dos declaran llave (la misma o
+  distintas) con distinto estado, cada cara se rige por lo suyo (003 FR-302). Una salida sin vuelta solo existe como salida de la sala de la que
   sale, así que su puerta solo tiene cara en esa sala. El estado real de cada cara lo fija P1 (por ejemplo,
   abierta o cerrada; algunas se cierran solas).
 - **Observar una puerta**: ver el estado real de cada una de sus caras en un momento, desde una sala donde la
@@ -115,8 +115,9 @@ módulos."
   conocido y se hace una vez por punto de control (NFR-203).
 - P: Las dos caras de la puerta de una salida con vuelta, ¿tienen siempre el mismo estado? *(revisión cruzada
   del integrante 1; es la regla de la primera parte)* → R: No necesariamente. Normalmente sí, pero en la primera
-  parte pueden diferir: si ninguna cara declara llave y solo una está cerrada, o si las dos declaran llaves
-  distintas, cada cara se rige por lo suyo (003 FR-302). Por eso el estado recordado se guarda por cara: al
+  parte pueden diferir: si ninguna declara llave y solo una está cerrada, o si las dos declaran llave (la
+  misma o distintas) con distinto estado, cada cara se rige por lo suyo, porque la primera parte no iguala
+  dos caras que declaran llave (003 FR-302). Por eso el estado recordado se guarda por cara: al
   observar una puerta (FR-207), el mapa registra el estado real de cada una de sus caras, y una salida cuenta
   como recordada abierta solo si se recuerda abierta la cara de la sala de la que sale; eso es lo que se ofrece
   a «ir a» (FR-208, FR-225).
@@ -457,7 +458,7 @@ el motivo que muestra la interfaz y usar un pergamino en mitad de un viaje.
   recuerde abierta (FR-225, escenario H2-5).
 - **Reporte de resolubilidad con `--forzar`**: puede nombrar salas, puertas y ubicaciones de llaves que el
   jugador no conoce; se muestra completo, pero no cambia el mapa conocido y «ir a» no lo usa (FR-217,
-  escenario H5-7). Al cargar o reproducir con `--replay` no se muestra (003, escenario de `--forzar`).
+  escenario H5-7). Al cargar o reproducir con `--replay` no se muestra (003 H4-4).
 - **«ir a» con el destino en la sala actual**: se informa que ya está allí; sin pasos y sin tiempo (FR-251).
 - **«ir a» con un nombre que designa más de una sala explorada**: se rechaza por ambiguo, sin tiempo (FR-251).
 - **Destino sin ruta conocida desde el inicio**: no se da ningún paso, se informa el motivo y el reloj no avanza
@@ -583,10 +584,9 @@ el motivo que muestra la interfaz y usar un pergamino en mitad de un viaje.
   en esa sala se recuerda abierta, FR-208), cada una con su costo igualado según 001 FR-101 (FR-205). Una
   salida cuya cara en la sala de la que sale figura «sin observar» (FR-212) o se recuerda cerrada NO DEBE
   ofrecerse, aunque la otra cara se recuerde abierta, ni tampoco una salida hacia una sala avistada o
-  desconocida. Cada sala
-  DEBE ir identificada por su identificador real, para que el desempate por menor identificador de FR-253 dé
-  el mismo resultado que la búsqueda del cazador (feature 001) aplicada a ese mismo conjunto de salas y
-  salidas. NO DEBE ofrecerse nada más (FR-217).
+  desconocida. Cada sala DEBE ir identificada por su identificador real, para que el desempate por menor
+  identificador de FR-253 dé el mismo resultado que la búsqueda del cazador (feature 001) aplicada a ese
+  mismo conjunto de salas y salidas. NO DEBE ofrecerse nada más (FR-217).
 
 ### Viaje automático «ir a» (§3.4) — FR-250 a FR-299 (integrante 3)
 
@@ -711,51 +711,51 @@ la 7. Cuando se dice «el mapa» se entiende el mapa conocido del jugador (FR-21
 
 Escenarios adicionales (no provienen del Apéndice B):
 
-| # | Comportamiento | Escenario | Requisitos | Prueba |
+| Adicional | Comportamiento | Escenario | Requisitos | Prueba |
 |---|---|---|---|---|
-| 7 | Sala inicial explorada en el instante 0 y sus vecinas avistadas | H1-1 | FR-201, FR-202, FR-204, FR-205, FR-206 | Se define en `tasks.md` |
-| 8 | Entrar a una sala la explora y deja avistados los destinos de sus salidas | H1-2, H1-6 | FR-203 | Se define en `tasks.md` |
-| 9 | Precarga y esqueleto no cambian el conocimiento | H1-5 | FR-217, FR-218 | Se define en `tasks.md` |
-| 10 | Puerta con cierre automático figura abierta y está cerrada | H2-2 | FR-208 | Se define en `tasks.md` |
-| 11 | La antorcha explora a través de una salida cerrada | H3-2 | FR-210 | Se define en `tasks.md` |
-| 12 | Con la antorcha apagada no se exploran las vecinas | H3-3 | FR-214 | Se define en `tasks.md` |
-| 13 | Guardar y cargar conserva el mapa | H4-3 | FR-221 | Se define en `tasks.md` |
-| 14 | El pergamino revierte la observación de una puerta | H4-2 | FR-222 | Se define en `tasks.md` |
-| 15 | `historia` muestra el mapa conocido de ese instante | H4-4 | FR-223 | Se define en `tasks.md` |
-| 16 | `--replay` produce el mismo mapa | H4-5 | FR-224 | Se define en `tasks.md` |
-| 17 | El comando de ver el mapa no muestra salas desconocidas | H5-1 | FR-219 | Se define en `tasks.md` |
-| 18 | Ver el mapa no altera la partida | H5-4 | FR-220 | Se define en `tasks.md` |
-| 19 | Una salida sin vuelta que sale de una sala explorada deja avistado su destino | H1-3 | FR-204 | Se define en `tasks.md` |
-| 20 | Una sala avistada solo muestra su existencia | H1-4 | FR-204, FR-217 | Se define en `tasks.md` |
-| 21 | Una puerta que cambia mientras el jugador está en su sala se observa en ese momento | H2-3 | FR-207 | Se define en `tasks.md` |
-| 22 | La puerta de una salida sin vuelta se observa solo desde la sala de la que sale; la sala de origen de una salida sin vuelta hacia una sala explorada sigue desconocida | H2-4 | FR-204, FR-207 | Se define en `tasks.md` |
-| 23 | La antorcha deja avistados, sin explorarlos, los destinos de las salidas de las vecinas | H3-4 | FR-213 | Se define en `tasks.md` |
-| 24 | Entrar después a una sala explorada con la antorcha revela su contenido y aplica P1 | H3-5 | FR-216 | Se define en `tasks.md` |
-| 25 | Las puertas nunca observadas de una vecina explorada con la antorcha figuran «sin observar» | H3-6 | FR-205, FR-207, FR-212 | Se define en `tasks.md` |
-| 26 | Encender la antorcha estando ya en una sala no cambia el mapa | H3-7 | FR-210, FR-215 | Se define en `tasks.md` |
-| 27 | El comando de ver el mapa muestra el estado recordado, no el real | H5-2 | FR-208, FR-219 | Se define en `tasks.md` |
-| 28 | El comando muestra una sala explorada con la antorcha sin contenido y con sus puertas «sin observar» | H5-3 | FR-211, FR-212, FR-219 | Se define en `tasks.md` |
-| 29 | Dos salidas hacia la misma sala avistada se muestran por separado, sin identificador, hasta explorarla | H5-5 | FR-204, FR-219 | Se define en `tasks.md` |
-| 30 | El viaje toma la ruta de menor costo y cada paso consume el tiempo de su salida | H6-2 | FR-253, FR-254 | Se define en `tasks.md` |
-| 31 | Con rutas de igual costo, el primer paso va a la vecina de menor identificador | H6-3 | FR-253 | Se define en `tasks.md` |
-| 32 | El viaje no abre puertas aunque el jugador tenga la llave | H6-4 | FR-252, FR-257, FR-259 | Se define en `tasks.md` |
-| 33 | Una puerta «sin observar» no cuenta como recordada abierta | H6-5 | FR-212, FR-252 | Se define en `tasks.md` |
-| 34 | El viaje solo usa salas exploradas | H6-6 | FR-217, FR-252 | Se define en `tasks.md` |
-| 35 | Entre los pasos ocurren los eventos del reloj | H6-7 | FR-254 | Se define en `tasks.md` |
-| 36 | Destino en la sala actual: sin pasos y sin tiempo | H6-8 | FR-251 | Se define en `tasks.md` |
-| 37 | Cada paso aplica las reglas de una entrada ordinaria (antorcha, enemigos, trampas) | H6-9 | FR-264 | Se define en `tasks.md` |
-| 38 | El cálculo de un paso tarda menos de 5 ms | H6-10 | NFR-250, NFR-251 | Se define en `tasks.md` |
-| 39 | El viaje se detiene si entra a una sala con enemigos activos | H7-4 | FR-258, FR-260 | Se define en `tasks.md` |
-| 40 | El viaje se detiene al recibir daño | H7-5 | FR-258, FR-260 | Se define en `tasks.md` |
-| 41 | El viaje se detiene al llegar y la interfaz lo indica | H7-6 | FR-258, FR-260 | Se define en `tasks.md` |
-| 42 | `partida.log` registra cada paso como movimiento y la orden como comentario; `--replay` da el mismo resultado | H7-8 | FR-261 | Se define en `tasks.md` |
-| 43 | Cada paso cuenta como acción en la línea de tiempo; la orden no | H7-9 | FR-263 | Se define en `tasks.md` |
-| 44 | El mapa conocido ofrece a «ir a» solo las salidas entre salas exploradas con puerta recordada abierta, con costo igualado e identificador real | H2-5 | FR-205, FR-212, FR-225 | Se define en `tasks.md` |
-| 45 | El costo de cada salida que se conoce y se muestra es el igualado según 001 FR-101 | H5-6 | FR-205, FR-219 | Se define en `tasks.md` |
-| 46 | El reporte de resolubilidad se muestra completo con `--forzar` y no cambia el mapa conocido | H5-7 | FR-202, FR-217 | Se define en `tasks.md` |
-| 47 | Un cazador que se mueve por salas desconocidas no cambia el mapa conocido | H1-7 | FR-218 | Se define en `tasks.md` |
-| 48 | Las caras de una puerta con estados distintos se recuerdan por separado; a «ir a» solo se ofrece la salida cuya cara de origen se recuerda abierta | H2-6 | FR-207, FR-208, FR-225 | Se define en `tasks.md` |
-| 49 | Si la antorcha se apaga en el mismo instante de la entrada, decide el orden en que se programaron los eventos | H3-8 | FR-210, FR-214 | Se define en `tasks.md` |
+| A1 | Sala inicial explorada en el instante 0 y sus vecinas avistadas | H1-1 | FR-201, FR-202, FR-204, FR-205, FR-206 | Se define en `tasks.md` |
+| A2 | Entrar a una sala la explora y deja avistados los destinos de sus salidas | H1-2, H1-6 | FR-203 | Se define en `tasks.md` |
+| A3 | Precarga y esqueleto no cambian el conocimiento | H1-5 | FR-217, FR-218 | Se define en `tasks.md` |
+| A4 | Puerta con cierre automático figura abierta y está cerrada | H2-2 | FR-208 | Se define en `tasks.md` |
+| A5 | La antorcha explora a través de una salida cerrada | H3-2 | FR-210 | Se define en `tasks.md` |
+| A6 | Con la antorcha apagada no se exploran las vecinas | H3-3 | FR-214 | Se define en `tasks.md` |
+| A7 | Guardar y cargar conserva el mapa | H4-3 | FR-221 | Se define en `tasks.md` |
+| A8 | El pergamino revierte la observación de una puerta | H4-2 | FR-222 | Se define en `tasks.md` |
+| A9 | `historia` muestra el mapa conocido de ese instante | H4-4 | FR-223 | Se define en `tasks.md` |
+| A10 | `--replay` produce el mismo mapa | H4-5 | FR-224 | Se define en `tasks.md` |
+| A11 | El comando de ver el mapa no muestra salas desconocidas | H5-1 | FR-219 | Se define en `tasks.md` |
+| A12 | Ver el mapa no altera la partida | H5-4 | FR-220 | Se define en `tasks.md` |
+| A13 | Una salida sin vuelta que sale de una sala explorada deja avistado su destino | H1-3 | FR-204 | Se define en `tasks.md` |
+| A14 | Una sala avistada solo muestra su existencia | H1-4 | FR-204, FR-217 | Se define en `tasks.md` |
+| A15 | Una puerta que cambia mientras el jugador está en su sala se observa en ese momento | H2-3 | FR-207 | Se define en `tasks.md` |
+| A16 | La puerta de una salida sin vuelta se observa solo desde la sala de la que sale; la sala de origen de una salida sin vuelta hacia una sala explorada sigue desconocida | H2-4 | FR-204, FR-207 | Se define en `tasks.md` |
+| A17 | La antorcha deja avistados, sin explorarlos, los destinos de las salidas de las vecinas | H3-4 | FR-213 | Se define en `tasks.md` |
+| A18 | Entrar después a una sala explorada con la antorcha revela su contenido y aplica P1 | H3-5 | FR-216 | Se define en `tasks.md` |
+| A19 | Las puertas nunca observadas de una vecina explorada con la antorcha figuran «sin observar» | H3-6 | FR-205, FR-207, FR-212 | Se define en `tasks.md` |
+| A20 | Encender la antorcha estando ya en una sala no cambia el mapa | H3-7 | FR-210, FR-215 | Se define en `tasks.md` |
+| A21 | El comando de ver el mapa muestra el estado recordado, no el real | H5-2 | FR-208, FR-219 | Se define en `tasks.md` |
+| A22 | El comando muestra una sala explorada con la antorcha sin contenido y con sus puertas «sin observar» | H5-3 | FR-211, FR-212, FR-219 | Se define en `tasks.md` |
+| A23 | Dos salidas hacia la misma sala avistada se muestran por separado, sin identificador, hasta explorarla | H5-5 | FR-204, FR-219 | Se define en `tasks.md` |
+| A24 | El viaje toma la ruta de menor costo y cada paso consume el tiempo de su salida | H6-2 | FR-253, FR-254 | Se define en `tasks.md` |
+| A25 | Con rutas de igual costo, el primer paso va a la vecina de menor identificador | H6-3 | FR-253 | Se define en `tasks.md` |
+| A26 | El viaje no abre puertas aunque el jugador tenga la llave | H6-4 | FR-252, FR-257, FR-259 | Se define en `tasks.md` |
+| A27 | Una puerta «sin observar» no cuenta como recordada abierta | H6-5 | FR-212, FR-252 | Se define en `tasks.md` |
+| A28 | El viaje solo usa salas exploradas | H6-6 | FR-217, FR-252 | Se define en `tasks.md` |
+| A29 | Entre los pasos ocurren los eventos del reloj | H6-7 | FR-254 | Se define en `tasks.md` |
+| A30 | Destino en la sala actual: sin pasos y sin tiempo | H6-8 | FR-251 | Se define en `tasks.md` |
+| A31 | Cada paso aplica las reglas de una entrada ordinaria (antorcha, enemigos, trampas) | H6-9 | FR-264 | Se define en `tasks.md` |
+| A32 | El cálculo de un paso tarda menos de 5 ms | H6-10 | NFR-250, NFR-251 | Se define en `tasks.md` |
+| A33 | El viaje se detiene si entra a una sala con enemigos activos | H7-4 | FR-258, FR-260 | Se define en `tasks.md` |
+| A34 | El viaje se detiene al recibir daño | H7-5 | FR-258, FR-260 | Se define en `tasks.md` |
+| A35 | El viaje se detiene al llegar y la interfaz lo indica | H7-6 | FR-258, FR-260 | Se define en `tasks.md` |
+| A36 | `partida.log` registra cada paso como movimiento y la orden como comentario; `--replay` da el mismo resultado | H7-8 | FR-261 | Se define en `tasks.md` |
+| A37 | Cada paso cuenta como acción en la línea de tiempo; la orden no | H7-9 | FR-263 | Se define en `tasks.md` |
+| A38 | El mapa conocido ofrece a «ir a» solo las salidas entre salas exploradas con puerta recordada abierta, con costo igualado e identificador real | H2-5 | FR-205, FR-212, FR-225 | Se define en `tasks.md` |
+| A39 | El costo de cada salida que se conoce y se muestra es el igualado según 001 FR-101 | H5-6 | FR-205, FR-219 | Se define en `tasks.md` |
+| A40 | El reporte de resolubilidad se muestra completo con `--forzar` y no cambia el mapa conocido | H5-7 | FR-202, FR-217 | Se define en `tasks.md` |
+| A41 | Un cazador que se mueve por salas desconocidas no cambia el mapa conocido | H1-7 | FR-218 | Se define en `tasks.md` |
+| A42 | Las caras de una puerta con estados distintos se recuerdan por separado; a «ir a» solo se ofrece la salida cuya cara de origen se recuerda abierta | H2-6 | FR-207, FR-208, FR-225 | Se define en `tasks.md` |
+| A43 | Si la antorcha se apaga en el mismo instante de la entrada, decide el orden en que se programaron los eventos | H3-8 | FR-210, FR-214 | Se define en `tasks.md` |
 
 Cada prueba citará el identificador del requisito que verifica (Principio X).
 
