@@ -1362,3 +1362,59 @@ Entrada en PROMPTS_LLM.md. Suite en verde. No hagas push.
 **Uso de la respuesta:** se creó `DECISIONES.md` en la raíz: encabezado con lo que pide el Principio VIII y cómo se cita el «antes» (`docs/Documento_Decisiones.pdf`); sección del integrante 1 con §5.1 «La ruta más barata del cazador», §5.2 «Rutas que dejan de ser válidas» y §5.6 «Revisión de decisiones de la primera parte» (títulos del enunciado) como «(se completa en T046 con las mediciones de --bench)», y la entrada «Diferencia conocida entre la verificación y el motor de P1». En esa entrada se acotó «lado seguro» a esta regla: si la verificación dice resoluble, el motor también deja ganar; lo contrario no, y para eso está `--forzar`. Las secciones de los integrantes 2 y 3 quedaron «(pendiente)». La nota 2 ya estaba en T046 de `tasks.md` (commit `c7bd816`), escrita con FR-114 y R4. Suite: 472 OK (skipped=2) y 31/31 scripts.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+Prueba del puente (solo lectura). Lee specs/001-terreno-cazador/tasks.md y decime en 3 lineas: que tareas de la fase 5 quedan sin marcar y si existe el commit de ajustes plan(001) de las fases 1 a 4 (buscalo en PROMPTS_LLM.md, no tenes git).
+
+**Uso de la respuesta:** consulta `1a1d60173f0` (11:43), respuesta en `.claude-bridge/outbox/1a1d60173f0.txt`. Confirmó que en ese momento faltaban las 9 tareas de la fase 5 (T027 a T035). No pudo confirmar desde `PROMPTS_LLM.md` el commit `plan(001)` de ajustes de las fases 1 a 4, porque la entrada correspondiente no da título ni hash y la consulta no tenía `git`. Sirvió para probar el puente y para decidir seguir con la fase 5. No modificó nada.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+Revision de seguimiento, SOLO LECTURA (no modifiques nada). Hace git fetch.
+Specs 002 y 003 en origin/derek comparadas con la revision anterior (commit ede62b8):
+git diff ede62b8 origin/derek -- specs/002-niebla-ir-a specs/003-resolubilidad
+
+1. Para cada punto de la revision anterior (ALTA, MEDIA, BAJA): resuelto, parcial o pendiente. Tabla corta.
+2. FR-225 de la 002: confirma que dice por cara (la salida u->v se ofrece si la cara del lado de u se recuerda abierta), costo igualado y todas las salas contadas.
+3. FR-308 nuevo de la 003 (puertas cerradas sin llave en la frontera): revisa en el codigo de P1 (Logic/Mazmorra.py, Logic/motorJuego.py, _igualar_caras) y en el enunciado si una cara cerrada sin llave se puede abrir o no. Decime si FR-308 es correcto o si declararia no resolubles criptas que si lo son.
+4. Contradicciones nuevas con la 001 o entre la 002 y la 003 introducidas por los cambios.
+Salida: solo lo que falta o esta mal, con archivo y linea.
+
+**Uso de la respuesta:** consulta `1a1d6061b41` (11:51), respuesta en `.claude-bridge/outbox/1a1d6061b41.txt`. Revisó la 003 en `f9ecaec`, más nueva que la de la revisión hecha en esta sesión. Casi todos los puntos de la revisión anterior quedaron resueltos. En la 002 siguen parciales NFR-251 sin «decisión del grupo», una línea cortada en FR-225 y la numeración de la tabla de escenarios adicionales. En la 003 siguen parciales el código 1 de FR-321 sin escenario y FR-313. FR-225 dice «por cara» y costo igualado; «todas las salas» es del contrato de la 001 (ya corregido en `7d9ed8f`). FR-308 es correcto: en P1 una cara cerrada sin llave nunca se abre. Señaló que FR-304 y FR-322 pueden declarar no resoluble una cripta que P1 deja ganar, porque `abrir_puerta` activa `salida_abierta` con cualquier puerta que pida `llave_salida`. Eso llevó a la nota de T046 (`c7bd816`) y a la entrada de `DECISIONES.md` (`ded35aa`). Contradicciones nuevas: el motivo de que el cierre automático no bloquee y el «cierre automático por cara» de FR-302, la 002 corta frente a la 003 en caras con la misma llave, la referencia «003 H4-4» y el «5 ms» de NFR-250. Se le pasan al integrante 2. No modificó nada (3 acciones bloqueadas por permisos).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+Revision cruzada del PLAN de la spec 003 (integrante 2), SOLO LECTURA. Hace git fetch y lee con git show origin/derek:specs/003-resolubilidad/<archivo> (plan.md, research.md, data-model.md, contracts/, tasks.md si existe).
+Revisa contra la constitucion v1.2.0 (.specify/memory/constitution.md) y la spec 003:
+1. Principio I (capas): en que capa queda la verificacion y quien la llama. Data nunca llama a Logic, Logic nunca llama a Data ni a Service. El plan dice que combina las caras con una Mazmorra aparte para usar _igualar_caras: confirma desde que capa se construye esa Mazmorra y si eso respeta las capas.
+2. Usar _igualar_caras (metodo privado de Mazmorra) desde otro modulo: se hace por la API publica (cargar_esqueleto) o llamando al privado? Si cambia codigo de P1, debe estar en la tabla de cambios a P1 con su FR.
+3. Principio II: estructuras prohibidas (dict, set, heapq, bisect, collections, copy, sorted/list.sort en ordenamientos evaluados). Si usa un recorrido o cola, que sea propia o reutilice Estructuras/ de la 001.
+4. Regla de la salida por cara: una cara cuenta si lleva a sala_salida, esta cerrada y su llave es llave_salida. Coherencia con FR-304 y FR-322 de la spec y con Logic/Mazmorra.py (abrir_puerta, salida_abierta).
+5. Coherencia con la 001: errores de FR-122 al cargar el esqueleto antes de verificar; no usa costos ni cazadores (003 FR-302, 001 H3-7); determinismo.
+6. Mediciones de --bench planificadas para cada decision (Principio VIII) y cripta sintetica de 1000 salas y 100 llaves.
+7. Que cada FR de la spec tenga cobertura en el plan; reglas nuevas que el plan agregue y no esten en la spec (Principio IX).
+Salida: ALTA/MEDIA/BAJA con archivo y linea, y al principio que esta bien.
+
+**Uso de la respuesta:** consulta `1a1d642ea8b` (12:58), respuesta en `.claude-bridge/outbox/1a1d642ea8b.txt`. Sin hallazgos ALTA. Lo que está bien: capas (la `Mazmorra` aparte se crea en Logic), `_igualar_caras` usado por la API pública (`cargar_esqueleto`) sin tocar `Logic/Mazmorra.py`, estructuras permitidas, regla de la salida por cara coherente con FR-304, FR-322 y el motor (la diferencia ya está en `DECISIONES.md`), coherencia con 001 FR-122, mediciones B1 a B4 y cobertura de FR-301 a FR-323. MEDIA: M1, la elección de una sola puerta por llave puede dejar fuera de los ciclos señalados una llave que sí está en un ciclo (FR-310); M2, la variante no resoluble del generador del bench produce K/2 ciclos de una llave en vez de un ciclo con una cadena de dependientes; M3, un segundo `if config.offline` en `ServicioResolubilidad`. Además, 8 puntos BAJA (cita de la constitución, la alternativa ingenua en Service, mediciones de R3 y R4, reglas que no están en la spec, `ErrorPartidaNoIniciada` en dos lugares, FR-319, recursión y duración de B2). Se le pasan al integrante 2. No modificó nada (4 acciones bloqueadas por permisos).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Registrá en PROMPTS_LLM.md las tres consultas hechas por el puente (solo lectura):
+1a1d60173f0 (estado de la fase 5), 1a1d6061b41 (seguimiento de las specs 002/003) y
+1a1d642ea8b (revisión del plan de la 003). Las respuestas están en C:\Users\Eli\.claude-bridge\outbox\.
+Commit docs con la entrada; no hagas push.
+
+**Uso de la respuesta:** se agregaron las tres entradas anteriores. El texto de cada consulta se tomó del primer mensaje de su sesión (`.claude-bridge/sessions/<id>` da el id de la sesión de Claude Code) y el resumen, de su respuesta en `outbox`. Commit docs.
+
+-----------------------------------------------------------------------------------------------------------------------
