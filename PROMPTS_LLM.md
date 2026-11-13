@@ -1488,3 +1488,49 @@ Commits aparte, suite en verde con uv run, PROMPTS_LLM.md, no hagas push.
 **Uso de la respuesta:** (1) En `research.md`, R3 y R6 muestran las dos mediciones de cada cambio de método, con la causa y la evidencia. En R3, el tiempo por sala resuelta es de 3,6 a 4,4 µs con los dos métodos, así que el 2,78× venía de las 12 salas resueltas contra 4. El método nuevo empeora la razón de 100 a 1 024 salas (de 0,76 a 1,68) por los bordes de la cuadrícula chica. En la agenda, con la carga anterior y 10 000 eventos, el array solo corría el 0,5 % de los pendientes (46) por evento; con la nueva corre el 69 % (6 926). Con las dos cargas gana el montículo. (2) La fila de 500 enemigos se midió en `83d15c5` (último commit anterior a la 001) con un `git worktree` aparte, ya borrado. Sola da lo mismo en los dos árboles (peor 11,7 a 16,2 ms antes y 12,3 a 17,0 ms ahora). En el `--bench` completo, antes dio 17,4, 20,7 y 16,5 ms y ahora 24,3, 25,0 y 24,0 ms. Con el mismo `BenchDatos` antes, el `Logic` de antes y el de ahora dan lo mismo, así que la diferencia no viene de la 001. El peor ciclo es un ciclo normal más una pasada de generación 2 del recolector de basura (10 a 20 ms); sin el recolector baja a 7 a 12 ms. Ya fallaba antes de la 001, y quedó anotado así en `DECISIONES.md` §5.6. (3) La fila de `BenchLogica.medir()` del `plan.md` ahora dice 2 líneas y explica el import circular. Suite: 482 OK (skipped=1) y 32/32 scripts. Sin push.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code (spec-kit)
+
+/speckit-analyze
+
+**Uso de la respuesta:** análisis de solo lectura de `specs/001-terreno-cazador` después de la fase 7. Cubre las 54 tareas y los 32 requisitos (23 FR, 3 NFR y 6 SC), todos con al menos una tarea, y la constitución v1.2.0. Hallazgos:
+- C1 (Principio IX): la tabla del Apéndice B nombraba archivos de prueba (módulos), un error introducido en T047.
+- C2 (Principio X): H3-7 tiene su prueba con `skip` hasta que exista `--verificar` (spec 003).
+- G1: T048 cubre solo `--replay`, aunque el quickstart §6 prometía también `--hasta` y `--verificar`.
+- G2: faltan las pruebas de interfaz de H4 (T041, integrante 3).
+- I1: el plan decía «cerca y lejos»; se midieron dos escenarios de puertas inestables.
+- I2: el bench usa 1 024 salas, no 1 000.
+- I3: T044 decía «una línea».
+- I4: T043 no reflejaba los cambios de método de `medir_rango` y `medir_invalidacion`.
+- U1: varias tareas citaban FR-105, 107, 112, 113, 120 y 123 solo dentro de nombres de prueba.
+
+Sin duplicaciones ni ambigüedades. Lo que se aplicó está en la entrada siguiente.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Aplicá los hallazgos del analyze, sin cambios de código:
+1. spec(001): C1, quitá los nombres de archivo de la tabla del Apéndice B (spec.md:416-422).
+2. plan(001): I1 (los dos escenarios de puertas inestables, remitiendo a research.md R4) e
+   I2 ("1 024 salas (32 × 32), al menos 1 000").
+3. tasks(001): I3 (T044 con 2 líneas), I4 (nota en T043 que remita a research.md R3 y R4) y
+   U1 (citar FR-105, 107, 112, 113, 120 y 123 en el texto de T008, T018 y T019).
+4. docs(001): G1, en quickstart.md §6 aclarar que hoy solo se cubre --replay; --replay … --hasta y
+   --verificar llegan con las specs 004 y 003.
+C2: H3-7 se queda en la 001 con su skip (es de FR-118); no la muevas.
+Un commit por punto, suite en verde con uv run, registrá el analyze en PROMPTS_LLM.md, no hagas push.
+
+**Uso de la respuesta:** se hicieron cuatro commits, sin cambios de código:
+- `spec(001)` (C1): la tabla del Apéndice B solo nombra las funciones de prueba.
+- `plan(001)` (I1, I2): la fila de puertas inestables describe los dos escenarios y remite a `research.md` R4. Donde el plan dice 1 000 salas ahora dice «1 024 salas (32 × 32), al menos 1 000», con una nota de que las cuadrículas son cuadradas.
+- `tasks(001)` (I3, I4, U1): T044 dice 2 líneas y por qué el import va dentro de la función. T043 tiene una nota que remite a `research.md` R3 y R4. T008, T018 y T019 citan sus FR en el texto.
+- `docs(001)` (G1): el quickstart §6 dice que hoy solo se cubre `--replay`.
+
+H3-7 se queda en la 001 con su `skip` (C2). Suite: 482 OK (skipped=1) y 32/32 scripts. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
