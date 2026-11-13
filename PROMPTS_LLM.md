@@ -1244,3 +1244,20 @@ Al final: total de pruebas, qué sigue con skip y por qué.
 **Uso de la respuesta:** el merge de `origin/derek` (con T002 y T052 de Derek y T053 de Kris) entró como fast-forward, sin conflictos. Commit `7c9dfc4` (test): H2-17, H2-18 y H2-19 con el cuerpo de la propuesta de Derek (`_no_inicia` y los helpers de `tests/TestValidacionDatos.py`), sin `PENDIENTE_T002`. Commit `0c1259b` (test): `FuenteConFichaInvalida` en `tests/ayudas_terreno.py` y T054 (`test_h2_9_fr122_ficha_invalida_rechaza_entrar`) con los 5 puntos, incluido el segundo intento sin solicitudes nuevas y el mensaje sin «Sin conexión». Commit tasks(001): T002, T052 y T053 marcadas (T038 ya lo estaba). Suite: 460 OK (skipped=2) y 31/31 scripts; quedan con `skip` H3-7 (spec 003) y H3-8 (fase 7).
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+1. git commit --amend en 0c1259b (es el último commit de T054? si no, usá un rebase sin -i no es posible:
+   en ese caso dejalo como está y avisame) para agregar "Co-Authored-By: Derek García Herra <...>".
+2. tasks(001): marcá T054. T050 todavía no (espera la confirmación del integrante 2).
+3. docs: en el README, cómo correr la suite: uv run python tests/correr_pruebas.py, y en Windows
+   (Git Bash o PowerShell) con PYTHONIOENCODING=utf-8. En su propio commit.
+Suite en verde con uv run; no hagas push.
+
+Después: agregá la entrada en PROMPTS_LLM.md en un commit aparte, cubriendo el amend que no se hizo,
+T054 en tasks.md y el README.
+
+**Uso de la respuesta:** el amend no se hizo: `0c1259b` ya no era el último commit (después venía `2a85717`), así que el commit de T054 quedó sin el co-autor de Derek, aunque `FuenteConFichaInvalida` sale de su propuesta. Commit `35862c8` (tasks): T054 marcada en `specs/001-terreno-cazador/tasks.md`; T050 sigue sin marcar hasta que confirme el integrante 2. Commit `2706b39` (docs): la sección «Pruebas» del `README.md` usa `uv run python tests/correr_pruebas.py` y explica que en Windows hace falta `PYTHONIOENCODING=utf-8` (Git Bash y PowerShell, las dos probadas), porque sin eso el script se cae al imprimir un carácter que la consola no puede mostrar. Suite: 460 OK (skipped=2) y 31/31 scripts antes de cada commit.
+
+-----------------------------------------------------------------------------------------------------------------------
