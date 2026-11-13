@@ -101,7 +101,7 @@ Búsqueda de costo mínimo **reanudable** desde un origen. No conoce cazadores n
 
 | Operación | Qué hace | Costo |
 |---|---|---|
-| `reiniciar(origen)` | Nueva generación, frontera con (0, origen). Si `grafo.cantidad_salas()` aumentó, agranda los arrays. | O(1), más vaciar la frontera (y lo que crezcan los arrays) |
+| `reiniciar(origen)` | Nueva generación, frontera con (0, origen). | O(1), más vaciar la frontera |
 | `distancia_hasta(sala, limite) -> int \| None` | Extiende la búsqueda hasta resolver `sala` o hasta que el mínimo de la frontera pase `limite`. Devuelve d o `None`. | Amortizado: cada sala se resuelve una vez por generación |
 | `esta_resuelta(sala) -> bool`, `distancia_resuelta(sala) -> int` | Consultas O(1). | O(1) |
 | `paso_hacia_origen(u, d) -> tuple[int, int]` | La vecina v de menor id con costo(u, v) + dist(v) = d, y ese costo (la salida abierta más barata hacia v, FR-119). | O(g) |
@@ -110,9 +110,10 @@ Función de referencia: `paso_desde_cero(grafo, origen, u, limite)`. Crea una b�
 y devuelve el mismo resultado que el cazador **sin reutilizar nada**. La usan las pruebas de
 FR-114 y el bench (alternativas A de R2 y R4).
 
-Los arrays se crean una vez y **solo crecen**: `reiniciar` los agranda si el grafo tiene más salas, con
-casillas que no valen en ninguna generación. Así `RutasHaciaJugador` puede crear su búsqueda en
-`Motor.__init__` aunque el esqueleto todavía no esté cargado.
+Los arrays se crean una sola vez, en el constructor, con `grafo.cantidad_salas()` casillas, y no cambian
+de tamaño. Por eso la búsqueda se crea con el esqueleto ya cargado: `Motor` se crea siempre después de
+`Mazmorra.cargar_esqueleto` (`ServicioPartida`, `PartidaGuardada` y `BenchLogica`), y el esqueleto no
+crece durante la partida.
 
 Casos especiales: `paso_desde_cero` devuelve `None` también si `u == origen` (no hay paso que dar); `paso_hacia_origen` lanza `ValueError` si `u` no tiene una vecina en una ruta de costo d (no ocurre si d viene de `distancia_hasta`).
 
