@@ -1261,3 +1261,15 @@ T054 en tasks.md y el README.
 **Uso de la respuesta:** el amend no se hizo: `0c1259b` ya no era el último commit (después venía `2a85717`), así que el commit de T054 quedó sin el co-autor de Derek, aunque `FuenteConFichaInvalida` sale de su propuesta. Commit `35862c8` (tasks): T054 marcada en `specs/001-terreno-cazador/tasks.md`; T050 sigue sin marcar hasta que confirme el integrante 2. Commit `2706b39` (docs): la sección «Pruebas» del `README.md` usa `uv run python tests/correr_pruebas.py` y explica que en Windows hace falta `PYTHONIOENCODING=utf-8` (Git Bash y PowerShell, las dos probadas), porque sin eso el script se cae al imprimir un carácter que la consola no puede mostrar. Suite: 460 OK (skipped=2) y 31/31 scripts antes de cada commit.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+tasks(001): marcá T050 (revisión de las pruebas de FR-122 confirmada por el integrante 2 el 13 nov:
+cubre costo 0/"250"/true, caras 100 vs 250, rango ausente/null/-1/true, no inicia en esqueleto y sala
+inicial, y otra sala con T052/T054). Puede ir en el mismo commit que la entrada de PROMPTS_LLM.md.
+Suite en verde con uv run; no hagas push.
+
+**Uso de la respuesta:** antes de marcar se comprobó que los casos de T050 están en `tests/TestValidacionDatos.py` (costo 0, "250" y true; caras con 100 y 250; rango ausente, null, -1 y true) y en `tests/test_terreno_cazador.py` (H2-17 a H2-19: no inicia con un error en el esqueleto ni en la sala inicial; H2-9 / T054: otra sala). T050 marcada en `specs/001-terreno-cazador/tasks.md`, en el mismo commit que esta entrada. Suite: 460 OK (skipped=2) y 31/31 scripts.
+
+-----------------------------------------------------------------------------------------------------------------------
