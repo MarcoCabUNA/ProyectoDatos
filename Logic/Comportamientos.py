@@ -1,6 +1,3 @@
-from Logic.BusquedaCostoMinimo import paso_desde_cero
-
-
 class Comportamiento:
     NOMBRE = ""
 
@@ -66,7 +63,8 @@ class Cazador(Comportamiento):
     """
     Parte II §3.2: avanza un paso por la ruta más barata hacia el jugador si su costo d no pasa su rango;
     si no hay ruta o d > rango, espera (FR-106 a FR-111). Decide sin azar (FR-115) y sin abrir puertas (FR-113).
-    Historia 2: calcula la ruta desde cero en cada decisión (la búsqueda compartida llega con la historia 3).
+    Usa la búsqueda compartida de todos los cazadores (motor.rutas, R2 y R4); decide igual que paso_desde_cero
+    (FR-114).
     """
     NOMBRE = "cazador"
 
@@ -76,7 +74,7 @@ class Cazador(Comportamiento):
 
     def decidir_paso(self, enemigo, motor) -> tuple[int, int] | None:
         """(destino, costo) del paso hacia el jugador, o None para esperar."""
-        return paso_desde_cero(motor.grafo, motor.jugador.Sala_Actual, enemigo.Sala_Actual, enemigo.ficha.rango)
+        return motor.rutas.decidir(enemigo.Sala_Actual, motor.jugador.Sala_Actual, enemigo.ficha.rango)
 
 
 COMPORTAMIENTOS = [Guardian, Errante, Rastreador, Cazador]
