@@ -31,6 +31,8 @@ class CierrePuerta:
         for salida in self.caras:
             motor.historial.registrar_atributo(salida, "cerrada", salida.cerrada)
             salida.cerrada = True
+        if motor.mazmorra.observador_puertas is not None:             # FR-114: la búsqueda del cazador
+            motor.mazmorra.observador_puertas.puerta_cambio(self.caras[0].destino, self.caras[-1].destino)
 
 
 # COORDINAR (Integrante 2): SalaDTO con id, nombre y salidas como array de 4 en orden N, S, E, O
@@ -57,6 +59,11 @@ class Mazmorra:
         self.salida_abierta = False
         self.contadores_tipo = []
         self.historial = None
+        # Quien guarda una búsqueda de rutas (RutasHaciaJugador): abrir_puerta y CierrePuerta le avisan con
+        # puerta_cambio(a, b), donde a y b son los DESTINOS de las caras que cambiaron. Basta con los destinos:
+        # la búsqueda va al revés (R3), así que una salida u -> v solo se lee al resolver v. Con dos caras son
+        # los dos extremos; con una sola cara (salida sin vuelta) se pasa su destino dos veces.
+        self.observador_puertas = None
 
     # ---------- Metodos publicos
 
@@ -156,6 +163,8 @@ class Mazmorra:
         for cara in caras:
             self._registrar_atributo(cara, "cerrada", cara.cerrada)
             cara.cerrada = False
+        if self.observador_puertas is not None:                        # FR-114: la búsqueda del cazador
+            self.observador_puertas.puerta_cambio(caras[0].destino, caras[-1].destino)
         if salida.llave == self.llave_salida:
             self._registrar_atributo(self, "salida_abierta", self.salida_abierta)
             self.salida_abierta = True
