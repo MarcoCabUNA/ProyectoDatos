@@ -46,6 +46,11 @@ python main.py --offline --replay logs/partida.log
 2. Hacer una acción nueva y consultar `historia #5`: describe el estado justo antes de esa acción (H3-2).
 3. Entrar a una sala nueva, revertirla con un pergamino, entrar a otra sala nueva y comprobar que los
    números de los enemigos son los mismos que vio la partida viva (hallazgo H-1).
+4. (H3-5) Recoger un pergamino en la acción 4 y usar otro para revertir esa acción: `historia` del instante
+   actual conserva el pergamino recogido y no tiene el consumido, igual que el inventario vivo.
+5. (H3-6) Soltar un pergamino en la acción 4, usar otro para revertirla y recoger después el que sigue en
+   el suelo de la sala: `historia` del instante actual y de los instantes posteriores coincide con la
+   partida viva; el pergamino soltado quedó fuera de la reversión, en el inventario y en el suelo.
 
 ## 4. Guardar y cargar (Historia 4)
 

@@ -2,8 +2,8 @@
 
 **Feature**: `004-linea-tiempo` · **Plan**: [../plan.md](../plan.md) · **Modelo**: [../data-model.md](../data-model.md)
 
-Cuatro contratos: el DTO que se guarda (para Derek), el bloque binario, el método nuevo del motor
-(para Marco) y los comandos y banderas (integrante 3). Aquí van nombres de campos; el código llega en
+Cuatro contratos: el DTO que se guarda y el bloque binario (los dos son para Derek, integrante 2), el
+método nuevo del motor (para Marco) y los comandos y banderas (integrante 3). Aquí van nombres de campos; el código llega en
 `tasks.md`.
 
 ## 1. DTO guardado (Derek)
@@ -23,16 +23,22 @@ mismo campo (para comparar JSON contra binario, §4.10).
 |---|---|---|
 | `k` | `int` | ≥ 1 |
 | `acciones` | `list[AccionGuardadaDTO]` | `tiempo: int`, `tipo: str`, `direccion: int \| None`, `objetivo: str \| None`, `objeto: str \| None` |
-| `marcadores` | `list[MarcadorPergaminoDTO]` | `posicion: int`, `quitados: list[str]` (ids de pergaminos que salen del inventario; el pergamino usado es uno de ellos), `agregados: list[str]` (ids de pergaminos que quedan aunque la acción que los trajo se revirtió, FR-424) |
-| `puntos` | `list[PuntoControlGuardadoDTO]` | `acciones_completadas: int`, `partida: PartidaGuardadaDTO` (con `linea=None`), `salas: list[SalaGuardadaDTO]` |
+| `puntos` | `list[PuntoControlGuardadoDTO]` | `acciones_completadas: int`, `partida: PartidaGuardadaDTO` (con `linea=None`), `salas: list[SalaGuardadaDTO]`. Incluye el punto que se toma tras usar un pergamino: tiene el mismo formato que los demás |
 | `cargas` | `list[RegistroCargaGuardadoDTO]` | `ordinal: int`, `sala: SalaDTO` (el contenido inicial) |
 | `fichas` | `list` de fichas | enemigos, trampas y objetos ya existentes como DTO del catálogo, cada uno una vez |
 
-Restricciones que Derek puede validar al leer: `acciones` y `puntos` en orden creciente de
-`tiempo` / `acciones_completadas`; `marcadores` por `posicion` no decreciente, con `posicion` entre 0 y
-la cantidad de acciones, al menos un id entre `quitados` y `agregados`, ids no vacíos y ningún id en
-las dos listas del mismo marcador; `k ≥ 1`; el punto de `partida.linea` es siempre `None` (no se anida
-la línea dentro de sí misma).
+La línea guardada lleva exactamente: `k`, `acciones`, `puntos`, `cargas` y `fichas`. No hay nada más
+(el pergamino no deja marcadores: la línea toma un punto de control nuevo, ver
+[research.md, R4](../research.md)).
+
+Restricciones que Derek puede validar al leer:
+
+- `k ≥ 1`.
+- `acciones` en orden creciente de `tiempo`.
+- `puntos` en orden **estrictamente** creciente de `acciones_completadas`, cada una entre 0 y la cantidad
+  de `acciones`, y a lo sumo `k` acciones entre dos puntos consecutivos (después de un pergamino dos
+  puntos pueden estar más cerca que `k`).
+- El punto de `partida.linea` es siempre `None` (no se anida la línea dentro de sí misma).
 
 ## 2. Bloque binario (versión 2)
 
@@ -41,9 +47,9 @@ la línea dentro de sí misma).
 - La cabecera gana el **offset y el largo** del bloque de la línea (campos nuevos en la cabecera; el
   índice de salas y los bloques de sala no cambian de formato).
 - El bloque de la línea usa los mismos escritores y lectores primitivos de hoy (`entero`,
-  `texto_opcional`, `cantidad`…) y escribe: `k`, la cantidad y las acciones, la cantidad y los
-  marcadores (cada uno con su posición y la cantidad y los ids de `quitados` y de `agregados`), la cantidad y los puntos (cada uno con su bloque global y sus salas), la cantidad y las
-  cargas, la cantidad y las fichas.
+  `texto_opcional`, `cantidad`…) y escribe, en este orden: `k`, la cantidad y las acciones, la cantidad y
+  los puntos (cada uno con su `acciones_completadas`, su bloque global y sus salas), la cantidad y las
+  cargas, la cantidad y las fichas. No hay marcadores de pergamino.
 - Si `linea` es `None`, el bloque ocupa largo 0.
 - **Archivo de la primera parte (versión 1)**: se rechaza como incompatible con un mensaje que dice la
   versión leída y la esperada, sin cargar nada y sin modificar la partida actual (FR-421). No se migra.

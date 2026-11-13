@@ -21,7 +21,7 @@ ninguna línea (Abierto/Cerrado).
 | `Estructuras/Ordenador.py` | Ordenamiento híbrido (inserción / mezcla) con comparador. | La línea nace ordenada por tiempo (se agrega siempre al final), así que no hay nada que ordenar. | **No se usa** (se menciona para dejar constancia de que no hace falta). |
 | `Estructuras/MonticuloMinimo.py` | Montículo binario (feature 001). | No ayuda a ubicar por tiempo. | No se usa. |
 | `Logic/ColaEventos.py` | Montículo de eventos con secuencia de desempate; descarta inválidos al llegar a la raíz. | `ver_siguiente()` permite mirar sin extraer; no hace falta tocarla para `avanzar_hasta(t)`. | No se toca. |
-| `list` como arreglo | Almacenamiento contiguo (permitido). | `append` y `pop()` del final son O(1) amortizado; sirven para acciones, marcadores y puntos de control. | **Se usa** para los cuatro arreglos de la línea. |
+| `list` como arreglo | Almacenamiento contiguo (permitido). | `append` y `pop()` del final son O(1) amortizado; sirven para acciones y puntos de control. | **Se usa** para los arreglos de la línea. |
 
 Conclusión de la revisión: lo único nuevo en `Estructuras/` es una **búsqueda binaria propia** sobre
 un arreglo ordenado (R5). Sin `bisect`.
@@ -135,57 +135,82 @@ orden y numeraría distinto (rompe FR-419 en el nombre visible).
 ## R4. Pergamino y recorte (decisión 4)
 
 - **Problema**: las acciones revertidas deben dejar de existir (FR-413) sin recorrer toda la historia
-  (NFR-403), y el pergamino se descuenta fuera del historial.
+  (NFR-403), y el pergamino actúa **fuera** del historial: se lee, se suelta y se recoge sin registrar
+  (`Inventario.py:227`, `Mazmorra.soltar_objeto/recoger_objeto(reversible=False)`, `Motor._usar_pergamino`),
+  así que la reversión no deshace los pergaminos recogidos o soltados dentro de la acción revertida
+  (P1 §2.11, FR-424).
 - **Alternativas**:
   1. Guardar todas las acciones, incluida `retroceder`, y re-ejecutarla al reconstruir. **Descartada**:
      la re-ejecución dependería del historial de 5 (que el motor aparte no tiene en el mismo estado)
      y violaría la decisión de no re-ejecutar `retroceder`.
-  2. Guardar **solo las acciones vigentes** más un **marcador** de pergamino (elegida).
-  3. Marcar las acciones como «revertida» sin borrarlas. **Descartada**: la numeración (FR-413)
+  2. Marcar las acciones como «revertida» sin borrarlas. **Descartada**: la numeración (FR-413)
      obligaría a saltarlas en cada consulta.
-- **Decisión**: (2).
+  3. *Marcadores de pergamino* (posición, `quitados`, `agregados`) calculados comparando el inventario
+     vivo con el reconstruido a `c` acciones. **Descartada** (hallazgos C1 y E1 del analyze): exige
+     reconstruir el estado de `c` al usar el pergamino, una estructura propia (`quitados`/`agregados`) con
+     su recorte, su formato guardado y su regla de aplicación en la reconstrucción, y solo cubre lo que se
+     haya previsto comparar (inventario). Cualquier otro rastro del pergamino (el suelo de las salas, por
+     ejemplo) quedaría fuera.
+  4. **Acciones vigentes + un punto de control nuevo tras el pergamino** (elegida).
+- **Decisión**: (4).
   - **Acciones vigentes**: arreglo de (tiempo de la decisión, `AccionDTO`). La acción número k es la
     posición k del arreglo: se cuentan **separadas de las líneas de `partida.log`** (que sí incluye
     la lectura del pergamino).
-  - **Marcador de pergamino**: (posición p, `quitados`, `agregados`). `quitados` son los ids de
-    pergaminos que salen del inventario y `agregados` los pergaminos que quedan en el inventario aunque
-    la acción que los trajo se revirtió (regla de P1 §2.11, FR-424). Significa «cuando la partida
-    llevaba p acciones vigentes, estos pergaminos salieron y estos otros quedaron». El descuento del
-    pergamino usado para revertir es un «quitado». Al re-simular, al llegar a p acciones completadas
-    se quitan los `quitados` del inventario (mismo `ubicar` + `soltar_actual` que el motor) y se
-    agregan los `agregados` (con la ficha que la línea ya tiene). **Nunca** se re-ejecuta `retroceder`.
-  - **Al usar un pergamino** (el jugador pasa de `c+1` a `c` acciones): se quita la última acción
-    (`pop`), se quitan los puntos de control con más de `c` acciones (siempre los últimos del arreglo:
-    a lo sumo uno si la acción revertida lo tenía) y los marcadores con posición mayor que `c` se
-    **mueven a la posición `c`** (lo que ya persistía en la partida viva sigue persistiendo en el
-    estado actual, pero no en los pasados). Después se calcula el marcador nuevo: se reconstruye el
-    estado de `c` acciones (a lo sumo K acciones, no la historia) y se comparan sus pergaminos con los
-    del inventario vivo: los que están en el reconstruido y no en el vivo son `quitados` (incluye el
-    pergamino usado) y los que están en el vivo y no en el reconstruido son `agregados`. Si alguna
-    de las dos listas no está vacía, se agrega el marcador en `c`. El recorte ocurre en el **final**
-    de los arreglos: O(1 + r), con r los elementos quitados; no recorre la historia (NFR-403). La
-    reconstrucción de `c` acciones cuesta lo de una consulta (acotada por K), no depende de la historia.
+  - **Al usar un pergamino** (el jugador pasa de `c+1` a `c` acciones), `ServicioLineaTiempo` copia el
+    estado vivo con `PartidaGuardada.guardar` y llama a `retroceder_una(estado_guardado)`, que: (a) quita
+    la última acción (`pop`); (b) quita los puntos de control con más de `c` acciones (siempre los
+    últimos del arreglo: a lo sumo uno si la acción revertida lo tenía); (c) agrega un punto **nuevo** en
+    la posición `c` con esa copia, **reemplazando** el que hubiera en `c`.
+  - La copia ya trae todo tal como quedó la partida viva: inventario (con el pergamino consumido fuera y
+    los recogidos dentro), suelo de las salas (con los soltados), estado del azar, cola de eventos,
+    efectos y el resto. No hay que calcular nada ni aplicar reglas especiales al reconstruir: el punto
+    nuevo se usa como cualquier otro. Los pergaminos recogidos o soltados en la acción revertida quedan
+    fuera de la reversión **tanto en el inventario como en el suelo**, porque el estado vivo es el que
+    manda (FR-424).
+  - **Consultas de instantes anteriores a `c`**: no usan el punto nuevo. Usan los puntos anteriores (los
+    de posición `< c`) y re-simulan las acciones vigentes, y esos puntos reflejan **lo vivido en ese
+    momento** (cuando el pergamino aún no se había leído). Solo el instante en que el jugador tiene el
+    control después de leer el pergamino, y los posteriores, parten del punto nuevo (regla en
+    [data-model.md](data-model.md), «Qué punto usa una consulta»).
+  - **Detección de que una acción se hizo** (sin tocar `ServicioAccionJugador`): el registrador compara
+    `jugador.acciones` antes y después de ejecutar: **+1** → acción nueva (se agrega); **−1** →
+    pergamino leído (se recorta y se toma el punto nuevo); **sin cambio** → rechazada (no se registra),
+    igual que la bitácora.
   - Los **registros de carga** y las **fichas** no se recortan (R3).
-- **Detección de que una acción se hizo** (sin tocar `ServicioAccionJugador`): el registrador compara
-  `jugador.acciones` antes y después de ejecutar: **+1** → acción nueva (se agrega); **−1** →
-  pergamino leído (se recorta); **sin cambio** → rechazada (no se registra), igual que la bitácora.
-- **Complejidad**: registrar acción O(1) amortizado (+ O(copia) cada K acciones); recortar O(1 + r).
+- **Por qué es más simple y más exacta que los marcadores**:
+  - *Más simple*: desaparecen `MarcadorPergamino`, su DTO, su bloque binario, su recorte (mover
+    marcadores a `c`), el cálculo de `quitados`/`agregados` y la regla de aplicarlos en el reconstructor.
+    Se reutiliza lo que ya existe (`PartidaGuardada.guardar` y el punto de control).
+  - *Más exacta*: el marcador solo describía lo que alguien pensó describir (pergaminos del inventario);
+    la copia describe **todo** el estado vivo, incluido el suelo, sin que la línea tenga que conocer cada
+    efecto del pergamino. Si el motor cambia lo que el pergamino deja fuera de la reversión, la línea lo
+    sigue sin cambios.
+  - *Costo*: recortar sigue siendo O(1 + r); la copia cuesta O(S + E + V + I) como cualquier punto de
+    control y **no depende de la historia** (NFR-403). Antes había que reconstruir además el estado de `c`
+    acciones; ahora no.
+  - *Consecuencia*: después de un pergamino los puntos pueden estar más cerca que K, nunca más lejos.
+    La regla pasa a ser «nunca hay más de K acciones entre dos puntos consecutivos».
+- **Complejidad**: registrar acción O(1) amortizado (+ O(copia) cada K acciones); recortar O(1 + r) más
+  una copia O(S + E + V + I).
+- **Medición prevista**: M6 mide el recorte **más** la copia del punto tras el pergamino, con historias de
+  100 a 5 000 acciones (el tiempo no debe crecer con la historia).
 
 ### Hallazgo H-2 — recoger o soltar un pergamino dentro de la acción revertida
 
 `Inventario` no registra los pergaminos en el historial (`Inventario.py:227`) y `Mazmorra`
 marca como no reversible soltar y recoger un pergamino. Si la acción **revertida** era recoger o
-soltar un pergamino, ese efecto **persiste** en la partida viva aunque la acción deje de existir. Un
-marcador que solo dice «se descontó un pergamino» no lo reproduce.
+soltar un pergamino, ese efecto **persiste** en la partida viva aunque la acción deje de existir.
 
-- **Resuelto: es una regla de P1 §2.11**, que la spec fija como FR-424 (escenario H3-5): la reversión
-  no deshace los pergaminos recogidos o soltados durante el intervalo revertido. La línea debe reflejar
-  la cantidad de pergaminos igual que la partida viva (FR-419).
-- **Decisión**: el marcador se generaliza a (posición, `quitados`, `agregados`) y se calcula al usar el
-  pergamino como se describe en R4. No es una decisión pendiente ni un límite conocido.
-- **Prueba**: H3-5 sin `skip` (el jugador recoge un pergamino en la acción 4 y usa otro para
-  revertirla: el inventario del instante actual conserva el recogido y no tiene el consumido). Cita
-  FR-413, FR-419 y FR-424.
+- **Resuelto: es una regla de P1 §2.11**, que la spec fija como FR-424 (escenarios H3-5 y H3-6): la
+  reversión no deshace los pergaminos recogidos o soltados durante el intervalo revertido. La línea debe
+  reflejar la cantidad de pergaminos igual que la partida viva (FR-419), en el inventario y en el suelo.
+- **Decisión**: el punto de control nuevo en `c` (R4), que es una copia del estado vivo. No es una decisión
+  pendiente ni un límite conocido.
+- **Pruebas**: H3-5 (el jugador recoge un pergamino en la acción 4 y usa otro para revertirla: el
+  inventario del instante actual conserva el recogido y no tiene el consumido) y H3-6 (el jugador suelta un
+  pergamino en la acción 4, usa otro para revertirla y después recoge el que sigue en el suelo: el resumen
+  coincide con el de la partida viva, en el inventario y en el suelo), ambas sin `skip`. Citan FR-413,
+  FR-419 y FR-424.
 
 ## R5. Ubicar el punto de control más cercano (decisión 5)
 
@@ -229,7 +254,7 @@ marcador que solo dice «se descontó un pergamino» no lo reproduce.
 - **Problema**: guardar y cargar conserva la línea completa (FR-420) y un archivo de la primera parte
   se detecta (FR-421).
 - **Alternativas**: (1) guardar solo las acciones y re-simular todo al cargar (lento y depende del
-  catálogo). (2) guardar acciones, marcadores, puntos de control, registros de carga, fichas y K
+  catálogo). (2) guardar acciones, puntos de control, registros de carga, fichas y K
   (elegida). (3) archivo aparte. **Descartada**: dos archivos pueden desincronizarse.
 - **Decisión**: (2). Campos nuevos **al final** de `PartidaGuardadaDTO` (`linea`, con valor por
   defecto) y un **bloque propio** en el binario con `VERSION_FORMATO = 2`. El detalle está en
@@ -266,7 +291,8 @@ aparte tiene su **propio** historial vacío (lo crea `Motor`) que se descarta co
 
 Un punto de control es el par `(PartidaGuardadaDTO, [SalaGuardadaDTO])` que devuelve
 `PartidaGuardada.guardar` justo cuando el jugador tiene el control (después de
-`avanzar_hasta_jugador`), más el número de acciones completadas. Se hace **a mano** (listas nuevas y
+`avanzar_hasta_jugador`), más el número de acciones completadas. También se toma uno tras usar un pergamino (R4), con el estado vivo
+tal como quedó. Se hace **a mano** (listas nuevas y
 DTOs nuevos): sin `copy` ni `deepcopy` (Principio II).
 
 | Se copia | Cómo |

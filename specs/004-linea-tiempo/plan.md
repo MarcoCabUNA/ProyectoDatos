@@ -15,10 +15,11 @@ se arma un `Motor` aparte con `PartidaGuardada` y se re-simulan las acciones vig
 
 - las **acciones vigentes** del jugador con el tiempo de cada decisión (las revertidas por un
   pergamino desaparecen);
-- **marcadores de pergamino** (posición, `quitados` y `agregados`): la reversión no deshace los
-  pergaminos recogidos o soltados en la acción revertida (P1 §2.11, FR-424), porque el pergamino queda
-  fuera del historial. El pergamino que se usa para revertir es un «quitado»;
-- **puntos de control**: una copia completa del estado, hecha a mano, cada K acciones;
+- **puntos de control**: una copia completa del estado, hecha a mano, cada K acciones. Tras usar un
+  pergamino se toma además un punto **nuevo** en la posición `c` (las acciones que quedan) copiando el
+  estado vivo, que reemplaza al que hubiera en `c`: esa copia ya trae el inventario, el suelo de las salas
+  y el azar tal como quedaron, así que la reversión no deshace los pergaminos recogidos o soltados en la
+  acción revertida (P1 §2.11, FR-424) sin ninguna estructura aparte;
 - los **registros de carga de sala** y las **fichas** que la partida ya pidió, para reconstruir sin
   consultar a Data;
 - el valor de K.
@@ -43,8 +44,7 @@ copias de estado son manuales. **`tracemalloc` no está permitido**: la memoria 
 del archivo serializado y con un conteo de elementos guardados (M3).
 
 **Almacenamiento**: la línea viaja dentro del archivo de partida (bloque propio, versión 2). En
-memoria son cuatro arreglos (acciones, marcadores, puntos de control, registros de carga) más las
-fichas vistas.
+memoria son tres arreglos (acciones, puntos de control, registros de carga) más las fichas vistas.
 
 **Pruebas**: `unittest` en `tests/`, con `tests/correr_pruebas.py`. Cada prueba cita su FR.
 
@@ -93,17 +93,26 @@ reloj que muestra el resumen ya no es un hallazgo: lo fija FR-405 de la spec (el
   ([research.md, R3](research.md#hallazgo-h-1--el-orden-de-carga-de-salas-cambia-la-numeración-de-enemigos)).
 - **H-2** (FR-413, FR-419, FR-424) — **resuelto, es una regla de P1 §2.11**: la reversión del
   pergamino no deshace los pergaminos recogidos o soltados durante el intervalo revertido, porque el
-  pergamino está fuera del historial. La spec lo fija como FR-424 (escenario H3-5). Por eso el
-  **marcador de pergamino se generaliza**: posición + `quitados` (ids de pergaminos que salen del
-  inventario) + `agregados` (pergaminos que quedan en el inventario aunque la acción que los trajo se
-  revirtió). El descuento del pergamino usado es un «quitado». Los dos conjuntos salen de comparar
-  los pergaminos del inventario vivo con los del estado reconstruido a `c` acciones.
-  - *Prueba*: H3-5 sin `skip` (T033), citando FR-413, FR-419 y FR-424.
+  pergamino está fuera del historial. La spec lo fija como FR-424 (escenarios H3-5 y H3-6). **No hay
+  marcador de pergamino**: tras usar un pergamino la línea quita la última acción, quita los puntos de
+  control con más de `c` acciones y toma un punto **nuevo** en `c` copiando el estado vivo con
+  `PartidaGuardada.guardar`, reemplazando el que hubiera en `c`. La copia ya incluye inventario, suelo de
+  las salas, azar y todo lo demás tal como quedó. Los instantes anteriores a `c` usan los puntos
+  anteriores, que reflejan lo vivido en ese momento.
+  - *Prueba*: H3-5 y H3-6 sin `skip` (T033), citando FR-413, FR-419 y FR-424.
   - Detalle en [research.md, R4](research.md#hallazgo-h-2--recoger-o-soltar-un-pergamino-dentro-de-la-acción-revertida).
 - **H-4** (dependencia): la spec 002 ya existe. El mapa conocido (FR-223) será un campo de
   `PartidaGuardadaDTO` que actualiza el motor y se copia con `PartidaGuardada.guardar`, sin `copy`;
   Derek lo agrega. Así los puntos de control y la re-simulación lo reproducen sin nada especial de la
   004. Hasta que ese campo exista, el resumen omite esa sección (Suposiciones de la spec).
+  - **Todo camino que ejecute acciones usa `ServicioLineaTiempo.ejecutar`** (hallazgo E2): el comando
+    manual, el «ir a» de la spec 002 y el replay. Si alguno llamara directo a `ServicioAccionJugador`, la
+    línea no vería esas acciones y se desalinearía de la partida viva. Quien agregue un camino nuevo debe
+    pasar también por ahí (T053).
+  - **«ir a» y `partida.log`**: «ir a» registra la orden como un comentario `# ir a <sala>` (formato
+    acordado con el integrante 2) y cada paso como un movimiento individual. `BitacoraReplayIO.leer` debe
+    **ignorar** esas líneas (tarea del integrante 2, spec 002, T071 de esta feature): `--replay … --hasta`
+    depende de ello.
 
 ## Revisión de estructuras existentes (Principio II)
 
@@ -152,14 +161,14 @@ Estructuras/
 └── BusquedaBinaria.py            # NUEVO: último elemento con clave <= pedida (sin bisect)
 
 Logic/
-├── LineaTiempo.py                # NUEVO: acciones vigentes, marcadores (quitados/agregados), puntos de control, registros de carga, recorte y validación de rango (FR-409)
+├── LineaTiempo.py                # NUEVO: acciones vigentes, puntos de control, registros de carga, recorte (con el punto nuevo tras el pergamino) y validación de rango (FR-409)
 └── motorJuego.py                 # MODIFICADO: método nuevo avanzar_hasta(t)   (FR-401, FR-402)
 
 DTO/
-├── LineaTiempoDTO.py             # NUEVO: DTO de la línea para guardar (acciones, marcadores, puntos, cargas, fichas, K)
+├── LineaTiempoDTO.py             # NUEVO: DTO de la línea para guardar (acciones, puntos, cargas, fichas, K)
 ├── ResumenHistoriaDTO.py         # NUEVO: lo que muestra una consulta (FR-405)
 ├── PartidaGuardadaDTO.py         # MODIFICADO: campo nuevo AL FINAL (linea), con valor por defecto   (Derek)
-└── ConfiguracionDTO.py           # MODIFICADO: campos nuevos al final (hasta, checkpoint_cada)
+└── ConfiguracionDTO.py           # MODIFICADO: campos nuevos al final, en este orden: checkpoint_cada y después hasta (los de la 003, verificar y forzar, del integrante 2, van detrás)
 
 Data/
 └── GuardadoBinario.py            # MODIFICADO: VERSION_FORMATO = 2 y bloque propio de la línea   (Derek)
@@ -188,7 +197,7 @@ Service/ (bench)
 └── BenchInventario.py            # MODIFICADO: medir() devuelve también BenchLineaTiempo.medir()   (NFR-401)
 
 tests/
-├── test_linea_tiempo_logica.py       # recorte, marcadores, registros de carga, búsqueda binaria
+├── test_linea_tiempo_logica.py       # recorte con el punto nuevo, registros de carga, búsqueda binaria
 ├── test_linea_tiempo_consultas.py    # escenarios H1, H3 y casos borde
 ├── test_linea_tiempo_replay.py       # escenarios H2 y códigos de salida
 ├── test_linea_tiempo_guardado.py     # escenarios H4
@@ -206,14 +215,14 @@ antes y el después en `DECISIONES.md`.
 
 | Archivo | Cambio | Por qué es indispensable | FR | Dueño |
 |---|---|---|---|---|
-| `Logic/motorJuego.py` | Método **nuevo** `avanzar_hasta(t)`; `avanzar_hasta_jugador` no se toca | Sin él no se puede detener el reloj en t antes de la siguiente decisión | FR-401, FR-402 | Marco (revisa) |
+| `Logic/motorJuego.py` | Método **nuevo** `avanzar_hasta(t)`; `avanzar_hasta_jugador` no se toca | Sin él no se puede detener el reloj en t antes de la siguiente decisión | FR-401, FR-402 | Integrante 3 (revisa Marco) |
 | `DTO/PartidaGuardadaDTO.py` | Campo nuevo `linea` **al final**, con valor por defecto | Guardar y cargar conservan la línea | FR-420 | Derek |
 | `Data/GuardadoBinario.py` | `VERSION_FORMATO = 2` y bloque propio | Distinguir archivos de la primera parte y guardar la línea | FR-420, FR-421 | Derek |
-| `DTO/ConfiguracionDTO.py`, `UIController/LectorArgumentos.py` | Campos y banderas nuevos al final (`hasta`, `checkpoint_cada`) | Pedidos por la spec | FR-410, FR-415 | Integrante 3 (con visto bueno del integrante 2) |
+| `DTO/ConfiguracionDTO.py`, `UIController/LectorArgumentos.py` | Campos y banderas nuevos al final, en este orden: `checkpoint_cada` y después `hasta`; los de la 003 (`verificar`, `forzar`, integrante 2) van detrás | Pedidos por la spec | FR-410, FR-415 | Integrante 3 (con visto bueno del integrante 2) |
 | `main.py` | Rama `--replay` con `--hasta`; códigos 0, 1 y 2 como en el resto del programa | Pedido por la spec | FR-410, FR-411 | Integrante 3 |
-| `Service/ContextoPartida.py` | Campo final `linea = None` | Dónde vive la línea de una partida | FR-401 | Integrante 3 |
+| `Service/ContextoPartida.py` | Campo final `linea = None`, con valor por defecto (la 003 agrega `resolubilidad` después) | Dónde vive la línea de una partida | FR-401 | Integrante 3 |
 | `Service/ServicioPartida.py`, `Service/ServicioGuardado.py` | Crear/cargar la línea e instalar los grabadores (los dos únicos puntos donde se arma un contexto) | Sin ellos la línea no se alimenta ni se conserva | FR-401, FR-420 | Integrante 3 |
-| `UIController/ControladorBackend.py`, `ControlesJuego.py`, `View/…` | Ejecutar con registro, comando `historia` y mostrar el resumen | Pedido por la spec | FR-423 | Integrante 3 |
+| `UIController/ControladorBackend.py`, `ControlesJuego.py`, `View/…` | Ejecutar con registro, comando `historia` y mostrar el resumen. En `ControladorBackend` los métodos nuevos van **al final** (la 003 también agrega los suyos: `verificar`, `resolubilidad`) | Pedido por la spec | FR-423 | Integrante 3 |
 | `Service/BenchInventario.py` | `medir()` devuelve también el grupo de la línea de tiempo | Cambio indispensable para exponer el bench nuevo sin tocar `Service/ServicioBench.py`, que es del integrante 2 | NFR-401 | Integrante 3 |
 
 **No se tocan**: `Logic/HistorialRetroceso.py` (su tope de 5 es correcto; decisión 9),
@@ -221,6 +230,12 @@ antes y el después en `DECISIONES.md`.
 bloque de Derek), ninguna estructura de `Estructuras/`.
 
 **Notas sobre archivos de otras features**:
+
+- **`ContextoPartida` y `ControladorBackend` los toca también la 003** (campo `resolubilidad` y métodos
+  `verificar`/`resolubilidad`). Cada feature agrega su campo y sus métodos **al final, con valor por
+  defecto**. Quien suba primero, el otro hace `merge` antes de subir los suyos.
+- **`--replay` y `--replay … --hasta` no verifican la resolubilidad** (FR-301 de la 003: solo verifican el
+  inicio de una partida nueva y `--verificar`); `ServicioReplayHasta` no llama a `ServicioResolubilidad`.
 
 - La 004 **no toca** `Service/ServicioAccionJugador.py`. El único cambio de ese archivo es el T053 de la
   feature 001 (un `except ErrorDatos`, FR-122), que no afecta a la línea.
@@ -231,7 +246,7 @@ bloque de Derek), ninguna estructura de `Estructuras/`.
 
 Detalle en [contracts/contrato-linea-tiempo.md](contracts/contrato-linea-tiempo.md). Resumen para
 Derek: `PartidaGuardadaDTO.linea` (valor por defecto `None`) con un `LineaTiempoGuardadaDTO` nuevo,
-que contiene K, las acciones vigentes con su tiempo, los marcadores de pergamino (posición, quitados y agregados), los puntos de
+que contiene K, las acciones vigentes con su tiempo, los puntos de
 control (cada uno con su `PartidaGuardadaDTO` y su lista de `SalaGuardadaDTO`), los registros de carga
 de sala (con ordinal) y las fichas vistas. En el binario es un **bloque propio** con su offset y largo
 en la cabecera, y `VERSION_FORMATO` pasa a 2. Al cargar se conserva el K guardado en la línea, aunque se
@@ -249,7 +264,7 @@ mediciones existente sin modificar las anteriores.
 | M3 | Memoria: bytes del archivo serializado y conteo de elementos guardados | los mismos K y 100, 1 000 y 5 000 acciones | NFR-402 (crece con los cambios, no con acciones × estado) |
 | M4 | Ubicar el punto de control: búsqueda binaria contra recorrido lineal | 100, 1 000 y 10 000 puntos de control | R5 (operación frecuente, §5.5) |
 | M5 | **Costo de una copia** (un punto de control) | 6, 50, 1 000 y 10 000 salas; con 0, 10 y 100 enemigos | Riesgo R-1; si crece mal, evaluar copias incrementales |
-| M6 | Costo del recorte al usar un pergamino | historia de 100 a 5 000 acciones | NFR-403 (no debe crecer con la historia) |
+| M6 | Costo del recorte **más la copia del punto de control** que se toma tras el pergamino | historia de 100 a 5 000 acciones | NFR-403 (no debe crecer con la historia) |
 
 Además, la repetición de las mediciones de la primera parte con la carga nueva (§5.6) incluye ahora
 `avanzar_hasta`, la cola de eventos con muchos eventos válidos y el historial de retroceso con la
@@ -264,7 +279,7 @@ después en `DECISIONES.md`.
 | R-2 | **Duplicación del despacho** de acciones respecto de `ServicioAccionJugador`. | Una prueba compara el estado del despacho propio contra el del servicio para todas las acciones; una firma cambiada del motor la rompe. |
 | R-3 | **El motor no es perfectamente reproducible** si alguien introduce estado nuevo que `PartidaGuardada` no guarda. | La prueba de SC-402 (200+ acciones, 100 % de coincidencias) es la red de seguridad; cualquier estado nuevo del motor debe entrar en `PartidaGuardada` (aviso al equipo). |
 | R-4 | **Orden de carga de salas** (H-1). | Registros con ordinal, sin recorte, aplicados como prefijo; prueba específica. |
-| R-5 | **Pergamino recogido o soltado en la acción revertida** (H-2, FR-424). | Marcador con `quitados` y `agregados`, calculado al usar el pergamino; prueba H3-5 sin `skip` (T033). |
+| R-5 | **Pergamino recogido o soltado en la acción revertida** (H-2, FR-424). | Punto de control nuevo en `c` copiando el estado vivo, que reemplaza al que hubiera en `c`; pruebas H3-5 y H3-6 sin `skip` (T033). |
 | R-6 | **Memoria con K = 1**: una copia por acción. | Es la medición M3; el bench muestra el costo y justifica el valor por defecto. |
 | R-7 | **Archivo grande** al guardar (copias + registros). | Se mide el tamaño (M3); formato binario con tamaños fijos y contadores. |
 | R-8 | **Mapa conocido aún no integrado** (spec 002, FR-223). | Mientras `PartidaGuardadaDTO` no lo traiga, se omite en el resumen; cuando exista, entra solo en los puntos de control. |
@@ -280,11 +295,11 @@ después en `DECISIONES.md`.
 | FR-409 | Validación de rango en `LineaTiempo` (instante ≤ reloj actual, k entre 1 y acciones; `ValueError` con motivo y rango), que `ServicioLineaTiempo` solo propaga; la estructura del comando la valida el controlador |
 | FR-410 a FR-412 | `LectorArgumentos`, `main.py`, `ServicioReplayHasta` |
 | FR-413, FR-414 | `LineaTiempo` (recorte en el final de los arreglos), independiente de `HistorialRetroceso` |
-| FR-424 | Marcador de pergamino con `quitados` y `agregados` (`LineaTiempo`), calculado en `ServicioLineaTiempo` y aplicado por `ReconstructorEstado` |
+| FR-424 | Punto de control nuevo en `c` tras el pergamino (`LineaTiempo.retroceder_una(estado_guardado)`), con el estado vivo copiado por `ServicioLineaTiempo` |
 | FR-415, FR-416, FR-418 | `LectorArgumentos`; puntos de control cada K en `LineaTiempo`; el resultado no depende de K |
 | FR-419 | Punto de control con azar; re-simulación con las mismas reglas; H-1 |
 | FR-420, FR-421 | `LineaTiempoDTO`, `GuardadoBinario` versión 2 |
 | FR-423 | `ControlesJuego` y la vista |
 | NFR-401 | `BenchLineaTiempo` (M1 a M6) y `DECISIONES.md` |
 | NFR-402 | Solo acciones vigentes entre puntos de control; M3 |
-| NFR-403 | Recorte por el final de los arreglos; M6 |
+| NFR-403 | Recorte por el final de los arreglos más una copia que no depende de la historia; M6 |
