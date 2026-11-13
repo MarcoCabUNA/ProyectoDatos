@@ -7,8 +7,9 @@ Contrato: specs/001-terreno-cazador/contracts/busqueda-rutas.md. Decisiones: res
   así que una salida u -> x solo se lee al resolver x (por eso la búsqueda va «al revés»).
 - Es reanudable: distancia_hasta(sala, limite) extiende la búsqueda solo hasta resolver esa sala o hasta
   que el mínimo de la frontera pase el límite, y otra llamada sigue desde donde quedó.
-- Arrays con generación: distancia, marca_distancia y marca_resuelta se crean una vez; una casilla vale
-  solo si su marca es igual a la generación actual, así que reiniciar no recorre los arrays.
+- Arrays con generación: distancia, marca_distancia y marca_resuelta se crean una sola vez, en el
+  constructor, con grafo.cantidad_salas() casillas (el esqueleto ya está cargado y no crece). Una casilla
+  vale solo si su marca es igual a la generación actual, así que reiniciar no recorre los arrays.
 - La frontera es un MonticuloMinimo con borrado perezoso: las entradas viejas se descartan al extraerlas.
 - No usa el generador aleatorio (FR-115): el desempate es por menor id (FR-111).
 
@@ -22,18 +23,17 @@ class BusquedaCostoMinimo:
 
     def __init__(self, grafo) -> None:
         self.grafo = grafo
-        self.distancia: list[int] = []
-        self.marca_distancia: list[int] = []
-        self.marca_resuelta: list[int] = []
+        salas = grafo.cantidad_salas()
+        self.distancia: list[int] = [0] * salas
+        self.marca_distancia: list[int] = [-1] * salas       # -1: no vale en ninguna generación
+        self.marca_resuelta: list[int] = [-1] * salas
         self.frontera = MonticuloMinimo()
         self.generacion = 0
         self.origen: int | None = None
         self.resueltas = 0
-        self._asegurar_tamano()
 
     def reiniciar(self, origen: int) -> None:
         """Empieza una búsqueda nueva desde 'origen'. No recorre los arrays: cambia la generación."""
-        self._asegurar_tamano()
         self.generacion += 1
         self.frontera.vaciar()
         self.origen = origen
@@ -100,13 +100,6 @@ class BusquedaCostoMinimo:
     def _fijar_distancia(self, sala: int, valor: int) -> None:
         self.distancia[sala] = valor
         self.marca_distancia[sala] = self.generacion
-
-    def _asegurar_tamano(self) -> None:
-        """Agranda los arrays si el grafo tiene más salas que antes (las casillas nuevas no valen)."""
-        while len(self.distancia) < self.grafo.cantidad_salas():
-            self.distancia.append(0)
-            self.marca_distancia.append(-1)
-            self.marca_resuelta.append(-1)
 
 
 def paso_desde_cero(grafo, origen: int, u: int, limite: int | None) -> tuple[int, int] | None:
