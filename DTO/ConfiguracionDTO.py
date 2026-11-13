@@ -9,7 +9,8 @@ Servicios lo recibe y decide con él, sin leer sys.argv:
     bench       True -> correr las mediciones de --bench
     ayuda       True -> mostrar cómo se usa el programa y terminar
     checkpoint_cada   cada cuántas acciones del jugador la línea de tiempo toma un punto de control
-                      (feature 004, FR-415; la bandera --checkpoint-cada la agrega T050)
+                      (feature 004, FR-415; la bandera es --checkpoint-cada)
+    hasta       instante t hasta el que reproducir con --replay ... --hasta t, o None (feature 004, FR-410)
 
 Regla de los DTOs: solo transportan datos.
 """
@@ -31,3 +32,4 @@ class ConfiguracionDTO:
     bench: bool = False
     ayuda: bool = False
     checkpoint_cada: int = CHECKPOINT_POR_DEFECTO   # feature 004: al final y con valor por defecto
+    hasta: int | None = None                        # feature 004: después de checkpoint_cada; al final de los de la 004
