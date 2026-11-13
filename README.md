@@ -147,6 +147,20 @@ Ninguna de estas carpetas se sube al repositorio (están en `.gitignore`). Se cr
 Para correr todas de una vez (no abre ventanas; termina con código 0 si todo pasa):
 
 ```
+uv run python tests/correr_pruebas.py
+```
+
+En Windows hay que pedirle a Python que escriba en UTF-8; si no, el script se cae al imprimir un carácter que la
+consola no puede mostrar (no es una prueba que falle):
+
+```
+PYTHONIOENCODING=utf-8 uv run python tests/correr_pruebas.py                (Git Bash)
+$env:PYTHONIOENCODING = "utf-8"; uv run python tests/correr_pruebas.py      (PowerShell)
+```
+
+Sin uv, con el entorno virtual ya creado:
+
+```
 .venv\Scripts\python.exe tests/correr_pruebas.py        (Windows)
 .venv/bin/python tests/correr_pruebas.py             (Linux / macOS)
 ```
