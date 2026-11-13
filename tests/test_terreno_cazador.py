@@ -24,14 +24,14 @@ from Logic.BusquedaCostoMinimo import paso_desde_cero  # noqa: E402
 from Logic.Comportamientos import Cazador, Errante, crear_comportamiento  # noqa: E402
 from Logic.Enemigo import Enemigo  # noqa: E402
 from Logic.Inventario import Inventario  # noqa: E402
-from Logic.Mazmorra import CierrePuerta  # noqa: E402
+from Logic.Mazmorra import CierrePuerta, Mazmorra  # noqa: E402
 from Service.ServicioAccionJugador import ServicioAccionJugador  # noqa: E402
 from Service.ServicioPartida import ServicioPartida  # noqa: E402
 from tests.TestValidacionDatos import CAZADOR, SIN_RANGO, api_con_cazador, api_con_costos  # noqa: E402
 from tests.Utilidades import ID_CRIPTA, fuente_red  # noqa: E402
-from tests.ayudas_terreno import (ID_CAZADOR_SIN_RANGO, FuenteConFichaInvalida, ficha_cazador,  # noqa: E402
-                                  ficha_errante, ficha_rastreador, mazmorra_con_costos, motor_con,
-                                  poner_enemigo, salida)
+from tests.ayudas_terreno import (ID_CAZADOR_SIN_RANGO, LLAVE_FINAL, FuenteConFichaInvalida,  # noqa: E402
+                                  cuadricula_con_costos, ficha_cazador, ficha_errante, ficha_rastreador,
+                                  mazmorra_con_costos, motor_con, poner_enemigo, salida)
 
 
 def turno_del_jugador(motor):
@@ -574,6 +574,74 @@ def _no_inicia(prueba: unittest.TestCase, api) -> str:
             partida.iniciar_partida(ID_CRIPTA, "Ana", semilla=1)
         prueba.assertFalse(os.path.isdir(os.path.join(carpeta, "logs")))    # no se creó ningún partida.log
     return str(ctx.exception)
+
+
+class TestDeterminismo(unittest.TestCase):
+    """FR-115, escenario H3-6 y SC-103: misma semilla y mismas acciones, misma partida."""
+
+    def test_h3_6_fr115_misma_semilla_misma_partida(self):
+        """
+        Escenario H3-6 (FR-115): la misma cripta, la misma semilla y la misma secuencia de acciones, jugadas dos
+        veces, dan los mismos mensajes y, después de cada acción, el mismo reloj y las mismas salas y vidas.
+        """
+        for semilla in (3, 11, 27):
+            with self.subTest(semilla=semilla):
+                primera = _partida_guionada(semilla, rango_cazadores=1000)
+                self.assertEqual(primera, _partida_guionada(semilla, rango_cazadores=1000))
+                mensajes, traza = primera
+                self.assertTrue(any("ataca" in m for m in mensajes))      # hubo combate (consume el azar)
+                self.assertNotEqual(traza[0][2], traza[-1][2])           # los enemigos se movieron
+
+    def test_sc103_cazadores_no_cambian_lo_que_eligen_los_errantes(self):
+        """
+        SC-103 (FR-115): con cazadores que deciden en cada turno pero nunca atacan (rango 0, lejos del jugador,
+        que solo espera), las salas que eligen los errantes son las mismas con y sin cazadores.
+        """
+        for semilla in (3, 11, 27):
+            with self.subTest(semilla=semilla):
+                _, sin = _partida_guionada(semilla, rango_cazadores=None, solo_esperar=True)
+                _, con = _partida_guionada(semilla, rango_cazadores=0, solo_esperar=True)
+                self.assertEqual([_errantes(paso) for paso in con], [_errantes(paso) for paso in sin])
+                self.assertNotEqual(_errantes(sin[0]), _errantes(sin[-1]))   # los errantes sí se movieron
+
+
+def _partida_guionada(semilla: int, rango_cazadores: int | None, solo_esperar: bool = False):
+    """
+    Cuadrícula de 5 x 5 con costos, el jugador en la 1, tres errantes y, si rango_cazadores no es None, tres
+    cazadores con ese rango. 60 acciones del jugador sacadas de un generador propio del guion (no del motor).
+    Devuelve (mensajes, traza): por acción, (reloj, sala del jugador, ((id, sala, vida) de cada enemigo)).
+    """
+    salas = cuadricula_con_costos(5, random.Random(semilla))
+    mazmorra = Mazmorra(sala_salida=25, llave_salida=LLAVE_FINAL)
+    mazmorra.cargar_esqueleto(salas)
+    for sala in salas:
+        mazmorra.sala(sala.id).contenido_cargado = True
+    motor, mensajes = motor_con(mazmorra, 1, semilla)
+    motor.jugador.vida = motor.jugador.vida_Max = 100000
+    motor.iniciar()
+    enemigos = [poner_enemigo(motor, sala, ficha_errante(), f"e-{i}", numero=i)
+                for i, sala in ((1, 7), (2, 13), (3, 19))]
+    if rango_cazadores is not None:
+        enemigos += [poner_enemigo(motor, sala, ficha_cazador(rango_cazadores), f"e-{i}", numero=i)
+                     for i, sala in ((4, 5), (5, 21), (6, 25))]
+    guion = random.Random(1000 + semilla)
+    traza = []
+    motor.avanzar_hasta_jugador()
+    for _ in range(60):
+        if motor.terminado:
+            break
+        direccion = guion.randrange(5)
+        if solo_esperar or direccion == 4 or motor.mover_jugador(direccion) != "ok":
+            motor.esperar()
+        motor.avanzar_hasta_jugador()
+        traza.append((motor.reloj, motor.jugador.Sala_Actual,
+                      tuple((e.id, e.Sala_Actual, e.vida) for e in enemigos)))
+    return list(mensajes), traza
+
+
+def _errantes(paso) -> tuple:
+    """(id, sala) de los errantes (e-1 a e-3) en un paso de la traza."""
+    return tuple((id_enemigo, sala) for id_enemigo, sala, _ in paso[2] if id_enemigo in ("e-1", "e-2", "e-3"))
 
 
 class TestModosSinVista(unittest.TestCase):

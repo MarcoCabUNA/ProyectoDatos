@@ -1295,3 +1295,34 @@ Salida: solo lo que falta o está mal, con archivo y línea.
 **Uso de la respuesta:** revisión de solo lectura de `e1a216c` (002) y `a4782fe` (003) contra la revisión anterior. En la 002 quedaron resueltos los tres puntos ALTA y casi todos los demás; FR-225 cumple «por cara» y el costo igualado, pero no dice que todas las salas cuentan (eso va en el contrato `busqueda-rutas.md` de la 001, que todavía dice «puerta recordada abierta»). En la 003 se resolvieron las caras con llaves distintas y FR-323, pero siguen pendientes casi todos los puntos MEDIA y BAJA (SC-305, SC-307, NFR-301, FR-313, H4-1, FR-310, marcas de «decisión del grupo»). En P1 una cara cerrada sin llave nunca se abre (`motorJuego.abrir_puerta` devuelve `nada_que_abrir` y `_igualar_caras` solo le copia llave si la otra cara declara una), así que FR-302/FR-308 no declaran no resoluble una cripta resoluble; falta decir cómo se lista esa puerta en la frontera. Contradicción nueva: con llaves distintas por cara y cierre automático, el supuesto «una puerta puede volver a abrirse con la misma llave» (FR-302) deja de valer.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+OK con 4b. Corregí specs/001-terreno-cazador/contracts/busqueda-rutas.md: "con la cara de la sala de
+origen recordada abierta; ids del esqueleto completo (cantidad_salas() de la cripta)". Commit plan(001)
+(el contrato es del plan), junto con la entrada pendiente de PROMPTS_LLM.md. Suite en verde, no hagas push.
+Después seguí con la fase 5.
+
+**Uso de la respuesta:** commit `7d9ed8f` (plan): la fila «Grafo del mapa conocido» del contrato `busqueda-rutas.md` dice «con la cara de la sala de origen recordada abierta; ids del esqueleto completo (`cantidad_salas()` de la cripta)», junto con la entrada de la revisión de seguimiento. Fase 5 con `/speckit.implement` (T027 a T035; los commits están en la entrada siguiente): `Logic/RutasHaciaJugador.py` (nuevo: búsqueda compartida por todos los cazadores; se rehace si cambia la sala del jugador o si se descartó; `puerta_cambio` la descarta solo si toca una sala resuelta; registra «descartar» en el historial al crearla o extenderla y en cada aviso de puerta), `Logic/Mazmorra.py` (`observador_puertas`; `abrir_puerta` y `CierrePuerta.activar` avisan con los destinos de las caras), `Logic/motorJuego.py` (`self.rutas`) y `Logic/Comportamientos.py` (`Cazador.decidir_paso` usa `motor.rutas.decidir`). Pruebas: `tests/test_rutas_equivalencia.py` (H3-1 a H3-5; 12 partidas aleatorias con puertas, cierres automáticos, muertes, velocidades y pergaminos, unas 11 000 decisiones comparadas con `paso_desde_cero`, sin diferencias; historial, con una prueba extra para abrir una puerta sin moverse y deshacer con el pergamino) y `TestDeterminismo` en `tests/test_terreno_cazador.py` (H3-6 y SC-103). Se comprobó con mutaciones que las pruebas detectan quitar el aviso de puertas o el registro en el historial. Suite: 472 OK (skipped=2) y 31/31 scripts.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Antes de commitear, respondé:
+1. ¿Qué queda registrado en HistorialRetroceso? Método, cuándo se registra y qué ve la línea de
+   tiempo de la integrante 3. El acuerdo era un aviso de "descartar caché", sin copiar nada.
+   Si hoy el descarte depende solo de un gancho del pergamino y no de un registro en el historial,
+   decímelo antes de cambiar nada.
+2. ¿observador_puertas y los avisos en abrir_puerta y CierrePuerta.activar están en la tabla
+   "Cambios a código de la primera entrega" de plan.md? Si no, agregalos con su FR en un commit plan(001)
+   antes del código.
+3. ¿_asegurar_tamano()/reiniciar se usa ahora? Si no, quitalo.
+Después commiteá agrupando por tarea (no todo en uno): suite en verde antes de cada commit,
+la entrada de PROMPTS_LLM.md en el último. No hagas push.
+
+**Uso de la respuesta:** (1) En el historial se registra solo `registrar_cambio(RutasHaciaJugador.descartar)`, que pone `valida = False` y no copia nada: al crear o extender la búsqueda en `decidir` y en cada `puerta_cambio`. El descarte no depende de un gancho del pergamino: lo hace `HistorialRetroceso.deshacer` al ejecutar esos registros. La línea de tiempo (004, research R9) re-simula con un motor aparte que tiene su propio historial vacío y no usa esos registros. (2) Las filas ya estaban en la tabla de `plan.md`; a la de `observador_puertas` le faltaba FR-114. (3) `reiniciar` sí se usa, pero el crecimiento de los arrays (`_asegurar_tamano`) nunca ocurría: `Motor` se crea siempre después de `cargar_esqueleto`. Commits: `d284475` (plan: FR-114 en la tabla; `data-model.md` y T032 sin el crecimiento), `c838ff3` (refactor: los arrays se reservan una sola vez en el constructor), `2bc38fa` (T031), `515c785` (T032), `31641c0` (T033), `1efe941` (T034), `d4b25a5` (pruebas T027 a T029) y el último con T030, T035 y estas entradas. La suite se corrió sobre lo que entraba en cada commit (lo demás guardado con `git stash`): 460 OK hasta T034, 470 con T027 a T029 y 472 al final, siempre con skipped=2 y 31/31 scripts.
+
+-----------------------------------------------------------------------------------------------------------------------
