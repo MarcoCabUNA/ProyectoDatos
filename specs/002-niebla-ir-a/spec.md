@@ -4,7 +4,7 @@
 
 **Creada**: 2026-11-12
 
-**Estado**: Borrador (parte del integrante 2: mapa conocido y antorcha; parte del integrante 3: «ir a», FR-250 a FR-264, historias 6 y 7)
+**Estado**: Borrador (parte del integrante 2: mapa conocido y antorcha; parte del integrante 3: «ir a», FR-250 a FR-264, historias 6 y 7, ya escrita por el integrante 3)
 
 **Fuente**: Cripta - Parte II §3.3, §3.4, §3.5, §3.6, §5.3, §6.1, §6.3, §7.3 y Apéndice B «Niebla de guerra e «ir a»»; Primer Proyecto (P1) §2.4 (enemigos dormidos), §2.7 (antorcha), §2.11 (pergamino de retroceso), §4.2 (precarga) y §5.2; feature `001-terreno-cazador` (FR-101, FR-108 y FR-122)
 
@@ -12,7 +12,8 @@
 
 **Reparto de la numeración**: esta spec la comparten dos integrantes. El mapa conocido y la antorcha usan
 FR-201 a FR-249, NFR-201 a NFR-249 y SC-201 a SC-249. El rango 250 a 299 (FR, NFR y SC) queda reservado para
-el viaje automático «ir a» (§3.4), que escribió el integrante 3 en su propio commit.
+el viaje automático «ir a» (§3.4), que el integrante 3 ya escribió en su propio commit (FR-250 a FR-264,
+historias 6 y 7).
 
 **Fuera de alcance**: cómo se dibuja el mapa en la interfaz (integrante 3); el costo de las salidas y el
 cazador (feature `001-terreno-cazador`); la línea de tiempo en sí (feature `004-linea-tiempo`, que usa el mapa
@@ -333,7 +334,7 @@ lista con los estados de sala y puertas esperados.
 Como jugador, quiero indicar a qué sala que ya exploré quiero ir y que el viaje se haga solo, paso a paso,
 para no repetir a mano un recorrido que ya conozco.
 
-**Por qué esta prioridad**: se apoya en el mapa conocido (historias 1 y 2) y en las puertas recordadas; sin
+**Por qué esta prioridad**: se apoya en el mapa conocido (historias 1 y 2) y en las salidas recordadas abiertas; sin
 ella el jugador igual puede moverse a mano, pero deja sin uso lo que el mapa recuerda (§3.4).
 
 **Prueba independiente**: explorar varias salas, ejecutar «ir a» hacia una de ellas y comprobar la ruta que se
@@ -356,10 +357,10 @@ recuerda abiertas.
    identificador que C, **cuando** ejecuta «ir a» hacia D, **entonces** el primer paso va hacia B. *(FR-253)*
 4. **Dado** que la ruta más corta hacia D pasa por una puerta que el mapa recuerda cerrada y que el jugador
    tiene la llave de esa puerta, **cuando** ejecuta «ir a» hacia D, **entonces** el viaje no abre la puerta: toma
-   otra ruta con puertas recordadas abiertas, aunque sea más larga; y si no hay otra, no se da ningún paso, se
+   otra ruta con salidas recordadas abiertas, aunque sea más larga; y si no hay otra, no se da ningún paso, se
    informa que no hay ruta conocida y el reloj no avanza. *(FR-252, FR-257, FR-259)*
 5. **Dado** que una sala explorada solo por la antorcha tiene una puerta «sin observar» en la única ruta hacia el
-   destino, **cuando** el jugador ejecuta «ir a», **entonces** esa puerta no cuenta como recordada abierta y el
+   destino, **cuando** el jugador ejecuta «ir a», **entonces** esa salida no cuenta como recordada abierta y el
    viaje no la usa. *(FR-212, FR-252)*
 6. **Dado** que la ruta más corta imaginable hacia D atraviesa una sala avistada o desconocida, **cuando** el
    jugador ejecuta «ir a» hacia D, **entonces** el viaje no la usa: solo recorre salas exploradas, aunque el
@@ -608,8 +609,10 @@ la 7. Cuando se dice «el mapa» se entiende el mapa conocido del jugador (FR-21
 **La ruta**
 
 - **FR-252**: La ruta DEBE calcularse solo con el conocimiento del jugador: únicamente por salas exploradas y
-  únicamente por salidas cuya puerta el mapa recuerda abierta. Una salida cuya puerta se recuerda cerrada, o
-  figura «sin observar» (FR-212), NO DEBE usarse. NO DEBE usar salas avistadas ni desconocidas, ni el estado real
+  únicamente por **salidas recordadas abiertas**: el mapa recuerda cada cara de una puerta por separado, y una
+  salida cuenta como recordada abierta solo si se recuerda abierta la cara de la sala de la que sale (FR-208,
+  FR-225; escenario H2-6). Una salida cuya cara se recuerda cerrada, o figura «sin observar» (FR-212), NO DEBE
+  usarse. NO DEBE usar salas avistadas ni desconocidas, ni el estado real
   de las puertas, ni nada del esqueleto de la cripta que el jugador no conozca (FR-217).
 - **FR-253**: Entre las rutas permitidas, la ruta DEBE minimizar la suma de los costos de las salidas (§3.1). Si
   hay varias de igual costo mínimo, el primer paso DEBE ir hacia la vecina de menor identificador entre las que
@@ -673,10 +676,11 @@ la 7. Cuando se dice «el mapa» se entiende el mapa conocido del jugador (FR-21
 - **NFR-205**: Las actualizaciones del mapa conocido NO DEBEN hacer que el ciclo de eventos entre dos
   decisiones del jugador supere el límite de 20 ms (P1 §5.2 y §6.1 de la Parte II).
 - **NFR-250**: El cálculo de un paso de «ir a» DEBE tardar menos de 5 ms con el mapa conocido completo de la
-  cripta de referencia, medido en el equipo local, sin red ni renderizado (§6.1).
+  cripta de referencia, medido en el equipo local, sin red ni renderizado. El «5 ms» sale de la tabla de §6.1
+  del enunciado.
 - **NFR-251**: `--bench` DEBE medir el cálculo de un paso de «ir a» en criptas sintéticas deterministas por
-  semilla de al menos tres tamaños, incluido el mapa conocido completo, y las decisiones que se tomen con esas
-  mediciones DEBEN documentarse en `DECISIONES.md` (§6.3, Principio VIII).
+  semilla de al menos tres tamaños, incluido el mapa conocido completo *(decisión del grupo)*, y las decisiones
+  que se tomen con esas mediciones DEBEN documentarse en `DECISIONES.md` (§6.3, Principio VIII).
 
 ### Entidades clave
 
@@ -739,7 +743,7 @@ Escenarios adicionales (no provienen del Apéndice B):
 | A24 | El viaje toma la ruta de menor costo y cada paso consume el tiempo de su salida | H6-2 | FR-253, FR-254 | Se define en `tasks.md` |
 | A25 | Con rutas de igual costo, el primer paso va a la vecina de menor identificador | H6-3 | FR-253 | Se define en `tasks.md` |
 | A26 | El viaje no abre puertas aunque el jugador tenga la llave | H6-4 | FR-252, FR-257, FR-259 | Se define en `tasks.md` |
-| A27 | Una puerta «sin observar» no cuenta como recordada abierta | H6-5 | FR-212, FR-252 | Se define en `tasks.md` |
+| A27 | Una salida con puerta «sin observar» no cuenta como recordada abierta | H6-5 | FR-212, FR-252 | Se define en `tasks.md` |
 | A28 | El viaje solo usa salas exploradas | H6-6 | FR-217, FR-252 | Se define en `tasks.md` |
 | A29 | Entre los pasos ocurren los eventos del reloj | H6-7 | FR-254 | Se define en `tasks.md` |
 | A30 | Destino en la sala actual: sin pasos y sin tiempo | H6-8 | FR-251 | Se define en `tasks.md` |
@@ -792,7 +796,8 @@ Cada prueba citará el identificador del requisito que verifica (Principio X).
   no abre ninguna puerta, y cada paso coincide con el que resulta de calcular la ruta desde cero con el
   conocimiento de ese momento, con el desempate por menor identificador.
 - **SC-252**: Con `--bench`, el cálculo de un paso de «ir a» con el mapa conocido completo de la cripta de
-  referencia (o de una sintética de tamaño equivalente) tarda menos de 5 ms.
+  referencia (o de una sintética de tamaño equivalente) tarda menos de 5 ms (el «5 ms» sale de la tabla de §6.1
+  del enunciado).
 - **SC-253**: En el 100 % de los viajes probados, reproducir `partida.log` con `--replay` deja la partida y el
   mapa conocido idénticos a los originales, y la línea de tiempo cuenta exactamente un paso por acción.
 
