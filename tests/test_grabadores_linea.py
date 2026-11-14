@@ -133,8 +133,19 @@ class PruebasGrabadoresConDobles(unittest.TestCase):
         self.assertEqual((linea.fichas, linea.cargas), ([], []))         # no queda ningún registro
 
 
+def _sin_grabadores(contexto) -> None:
+    """Quita lo que iniciar_partida ya instaló (los grabadores y la línea) para dejar el contexto como en la 1.ª entrega."""
+    contexto.contenido = contexto.contenido._original
+    contexto.resolvedor = contexto.resolvedor._original
+    contexto.linea = None
+
+
 def _instalar(contexto, linea: LineaTiempo) -> None:
-    """Lo que hará iniciar_partida (T018): envolver los dos objetos de Data del contexto."""
+    """Instala los grabadores en un contexto SIN grabadores: un solo envoltorio, con la línea de la prueba.
+
+    iniciar_partida ya los instala (T018), así que primero se quitan; si no, quedarían doblemente envueltos."""
+    _sin_grabadores(contexto)
+    assert not isinstance(contexto.contenido, ContenidoGrabador) and not isinstance(contexto.resolvedor, ResolvedorGrabador)
     contexto.contenido = ContenidoGrabador(contexto.contenido, linea, contexto.jugador)
     contexto.resolvedor = ResolvedorGrabador(contexto.resolvedor, linea)
 
@@ -174,6 +185,7 @@ class PruebasGrabadoresConLaPartida(unittest.TestCase):
     def test_grabadores_no_piden_nada_nuevo_a_data(self):
         def prueba(carpeta):
             _, _, sin = _crear(os.path.join(carpeta, "sin"), semilla=4, reforzar=True)
+            _sin_grabadores(sin)                                         # sin NINGÚN grabador: el contraste es real
             _, _, con = _crear(os.path.join(carpeta, "con"), semilla=4, reforzar=True)
             _instalar(con, LineaTiempo(5))
             jugar(sin, 60)
@@ -186,9 +198,13 @@ class PruebasGrabadoresConLaPartida(unittest.TestCase):
     def test_grabadores_no_cambian_lo_que_ve_el_servicio_fr419(self):
         def prueba(carpeta):
             _, _, sin = _crear(os.path.join(carpeta, "sin"), semilla=5, reforzar=True)
+            _sin_grabadores(sin)
             _, _, con = _crear(os.path.join(carpeta, "con"), semilla=5, reforzar=True)
             _instalar(con, LineaTiempo(5))
             self.assertEqual(jugar(sin, 50), jugar(con, 50))
+            self.assertIs(type(con.contenido), ContenidoGrabador)           # un solo envoltorio
+            self.assertNotIsInstance(con.contenido._original, ContenidoGrabador)
+            self.assertNotIsInstance(con.resolvedor._original, ResolvedorGrabador)
         _correr(prueba)
 
 
