@@ -48,15 +48,27 @@ Data: a un cazador no se le inventa un `rango`.
 | `costo` de una salida | no es entero (incluido `bool`), o es menor que 1 | sala, dirección, valor recibido |
 | `costo` de los dos lados de una salida | los dos lo declaran y son distintos (se comprueba con el esqueleto completo) | las dos salas, las dos direcciones, los dos valores |
 | `rango` de una ficha con `comportamiento == "cazador"` | falta, es `null`, no es entero (incluido `bool`) o es negativo | id de la ficha, campo (`rango`), valor recibido |
+| `cierre_automatico` de una salida (`SalidaDTO`), si viene | no es entero (incluido `bool`), o es menor que 1 | sala, dirección, campo (`cierre_automatico`), valor recibido |
+| `duracion` de la ficha de un objeto (`ObjetoDTO`), si la trae | no es entero (incluido `bool`), o es menor que 1 | id de la ficha, campo (`duracion`), valor recibido |
+
+Las dos últimas filas las pidió el integrante 2 (T055, escenarios H2-20 y H2-21): los dos campos
+programan eventos en la agenda, y la feature 004 supone que ningún efecto se programa con retraso 0.
+`null` o ausente sigue siendo válido en los dos, como en P1. La `duracion` de `EfectoFichaDTO` queda
+**fuera**: P1 ya convierte las duraciones ≤ 0 en `None`, así que no programa eventos con retraso 0, y
+ese comportamiento no cambia.
 
 Efecto: un error de datos con contexto, que se pueda distinguir de un error de red (hoy
-`FuenteDatos` usa `ErrorRed` para los dos; ver T052). El programa no se cae en ningún caso. Según
-de dónde venga el dato:
+`FuenteDatos` usa `ErrorRed` para los dos; ver T052). El mensaje sigue el mismo formato en todos
+los casos: sala y dirección si el dato es del esqueleto, o id de la ficha y campo si es de una
+ficha, más el valor recibido. El programa no se cae en ningún caso. Según de dónde venga el dato:
 
-- **Esqueleto** (costos) o **ficha de un cazador de la sala inicial**: la partida no inicia.
+- **Esqueleto** (costos y `cierre_automatico`): la partida no inicia, tampoco con `--forzar`
+  (003 FR-323).
+- **Ficha de la sala inicial** (cazador con `rango` inválido u objeto con `duracion` inválida): se
+  rechaza la ficha y la partida no inicia.
 - **Ficha de cualquier otra sala**, llegue antes o durante la partida: no se vuelve a pedir (Data
-  recuerda el rechazo por sala) y solo esa sala queda como contenido no disponible; el cazador no se
-  activa (FR-123). Si el jugador intenta entrar, el movimiento se rechaza con ese mensaje, sin
+  recuerda el rechazo por sala) y solo esa sala queda como contenido no disponible; un cazador de
+  esa sala no se activa (FR-123). Si el jugador intenta entrar, el movimiento se rechaza con ese mensaje, sin
   consumir tiempo ni registrarse en `partida.log`, y la partida sigue. Mostrar el mensaje es de
   Service (integrante 3, T053). No cambian el formato de `partida.log` ni el replay.
 
