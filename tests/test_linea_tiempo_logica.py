@@ -11,10 +11,12 @@ from types import SimpleNamespace
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from ayudas_terreno import salidas_con_costos
+from ayudas_terreno import mazmorra_con_costos, motor_con, salida, salidas_con_costos
 from TestPartidaGuardadaDTO import partida_de_ejemplo, sala_de_ejemplo
 from DTO.AccionDTO import AccionDTO
+from Logic.Inventario import Inventario
 from Logic.LineaTiempo import LineaTiempo, PuntoControl
+from Logic.PartidaGuardada import PartidaGuardada
 
 
 def _punto(acciones: int) -> PuntoControl:
@@ -133,6 +135,114 @@ class PruebasLineaTiempoRegistros(unittest.TestCase):
         self.assertEqual([f.id for f in linea.fichas], ["ene_rata", "trp_pinchos"])
         self.assertIs(linea.ficha("ene_rata"), rata)
         self.assertIsNone(linea.ficha("no_existe"))
+
+
+# ---------- Recorte con el pergamino (T027, T028): FR-413, FR-416, FR-424 y NFR-403
+
+def _estado_vivo(acciones: int) -> tuple:
+    """El estado guardado de un motor de verdad (PartidaGuardada.guardar) con `acciones` acciones hechas."""
+    motor, _ = motor_con(mazmorra_con_costos(2, [salida(1, 2, 2, 100)]), 1)
+    motor.inventario = Inventario(5)                               # guardar necesita el inventario
+    motor.iniciar()
+    motor.avanzar_hasta_jugador()
+    motor.jugador.acciones = acciones
+    return PartidaGuardada.guardar(motor, SimpleNamespace(id="c-prueba", version="1"), "v1", 1)
+
+
+def _linea_con_puntos(cantidad: int, k: int) -> LineaTiempo:
+    """Una línea con `cantidad` acciones y un punto de control cada k (en 0, k, 2k...), como la deja ServicioLineaTiempo."""
+    linea = _linea_con(cantidad, k)
+    for posicion in range(k, cantidad + 1, k):
+        linea.agregar_punto(_punto(posicion))
+    return linea
+
+
+class PruebasRetrocederUna(unittest.TestCase):
+
+    def test_retroceder_una_quita_la_ultima_accion_fr413(self):
+        linea = _linea_con_puntos(7, 3)
+        linea.retroceder_una(_estado_vivo(6))
+        self.assertEqual(len(linea.acciones), 6)
+        self.assertEqual(linea.acciones[-1].tiempo, 600)               # quedó la acción 6; la 7 se fue
+        self.assertEqual([a.tiempo for a in linea.acciones], [100 * i for i in range(1, 7)])
+
+    def test_retroceder_una_quita_los_puntos_con_mas_acciones_fr413(self):
+        linea = _linea_con_puntos(10, 3)                               # puntos en 0, 3, 6, 9
+        linea.retroceder_una(_estado_vivo(9))                          # c = 9: el punto de 9 se reemplaza
+        self.assertEqual([p.acciones_completadas for p in linea.puntos], [0, 3, 6, 9])
+        linea.retroceder_una(_estado_vivo(8))                          # c = 8: el de 9 sobra y se agrega el de 8
+        self.assertEqual([p.acciones_completadas for p in linea.puntos], [0, 3, 6, 8])
+        for c in (7, 6, 5):                                            # varios pergaminos seguidos
+            linea.retroceder_una(_estado_vivo(c))
+        self.assertEqual([p.acciones_completadas for p in linea.puntos], [0, 3, 5])
+        self.assertEqual(len(linea.acciones), 5)
+
+    def test_retroceder_una_agrega_el_punto_en_c_fr424(self):
+        linea = _linea_con_puntos(8, 3)                                # puntos en 0, 3, 6; en c = 7 no hay
+        estado = _estado_vivo(7)
+        linea.retroceder_una(estado)
+        self.assertEqual([p.acciones_completadas for p in linea.puntos], [0, 3, 6, 7])
+        nuevo = linea.puntos[-1]
+        self.assertIs(nuevo.partida, estado[0])                        # es el estado guardado que se le pasó
+        self.assertIs(nuevo.salas, estado[1])
+        self.assertEqual(nuevo.partida.jugador.acciones, 7)
+
+    def test_retroceder_una_reemplaza_el_punto_en_c_fr424(self):
+        linea = _linea_con_puntos(7, 3)                                # puntos en 0, 3, 6; la acción 7 se revierte: c = 6
+        viejo = linea.puntos[-1]
+        estado = _estado_vivo(6)
+        linea.retroceder_una(estado)
+        self.assertEqual([p.acciones_completadas for p in linea.puntos], [0, 3, 6])   # uno solo en c
+        self.assertIsNot(linea.puntos[-1], viejo)
+        self.assertIs(linea.puntos[-1].partida, estado[0])             # el nuevo, no el que había
+
+    def test_retroceder_una_no_deja_mas_de_k_entre_puntos_fr416(self):
+        for cantidad in range(1, 40):
+            linea = _linea_con_puntos(cantidad, 4)
+            linea.retroceder_una(_estado_vivo(cantidad - 1))
+            posiciones = [p.acciones_completadas for p in linea.puntos]
+            for anterior, siguiente in zip(posiciones, posiciones[1:]):
+                self.assertTrue(0 < siguiente - anterior <= 4, (cantidad, posiciones))   # estrictamente creciente
+            self.assertEqual(posiciones[-1], cantidad - 1)             # el último es el de c
+            self.assertLessEqual(len(linea.acciones) - posiciones[-1], 4)
+
+    def test_retroceder_una_no_recorre_la_historia_nfr403(self):
+        class _Contada(list):
+            """Una lista que cuenta los elementos que se tocan (sacar, agregar, iterar o indexar)."""
+            tocados = 0
+
+            def pop(self, *args):
+                _Contada.tocados += 1
+                return super().pop(*args)
+
+            def append(self, valor):
+                _Contada.tocados += 1
+                super().append(valor)
+
+            def __iter__(self):
+                _Contada.tocados += 1000
+                return super().__iter__()
+
+            def __getitem__(self, indice):
+                _Contada.tocados += 1
+                return super().__getitem__(indice)
+
+        costos = []
+        for cantidad in (100, 5000):
+            linea = _linea_con_puntos(cantidad, 20)
+            linea.acciones, linea.puntos = _Contada(linea.acciones), _Contada(linea.puntos)
+            estado = _estado_vivo(cantidad - 1)
+            _Contada.tocados = 0
+            linea.retroceder_una(estado)
+            costos.append(_Contada.tocados)
+        self.assertEqual(costos[0], costos[1])                         # no depende del largo de la historia
+        self.assertLess(costos[0], 20)
+
+    def test_retroceder_sin_acciones_falla_fr413(self):
+        linea = _linea_con(0)
+        with self.assertRaises(ValueError):
+            linea.retroceder_una(_estado_vivo(0))
+        self.assertEqual([p.acciones_completadas for p in linea.puntos], [0])    # no cambió nada
 
 
 if __name__ == "__main__":

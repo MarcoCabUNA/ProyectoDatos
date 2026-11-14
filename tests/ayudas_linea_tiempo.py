@@ -16,11 +16,13 @@ RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ))
 sys.path.insert(0, str(RAIZ / "tests"))
 
-from test_servicios import ID_CRIPTA, _correr, _crear, _elegir_accion  # noqa: E402,F401  (_correr se reexporta)
+from test_servicios import ID_CRIPTA, ID_PERGAMINO, _correr, _crear, _elegir_accion  # noqa: E402,F401  (se reexportan)
 from Data.FuenteOffline import FuenteOffline  # noqa: E402
 from DTO.AccionDTO import AccionDTO  # noqa: E402
 from DTO.ConfiguracionDTO import ConfiguracionDTO  # noqa: E402
 from DTO.EstadoJuegoDTO import EstadoJuegoDTO  # noqa: E402
+from DTO.FichaEnemigoDTO import FichaEnemigoDTO  # noqa: E402
+from DTO.SalaDTO import EnemigoEnSalaDTO  # noqa: E402
 from Service.ArmadorEstado import ArmadorEstado  # noqa: E402
 from Service.ContextoPartida import ContextoPartida  # noqa: E402
 from Service.ServicioAccionJugador import ServicioAccionJugador  # noqa: E402,F401
@@ -44,15 +46,58 @@ class FuenteReforzada(FuenteOffline):
         return replace(cripta, jugador_vida_max=self.VIDA, jugador_ataque=self.ATAQUE)
 
 
+class FuenteConCazador(FuenteReforzada):
+    """Como FuenteReforzada, pero la sala 4 (Osario profundo) trae además un cazador de rango enorme.
+
+    El paquete offline no trae ningún cazador. Este lo persigue por todo el pasillo 4-3-2-1 en cuanto el jugador
+    entra a la sala 4, así que usa la búsqueda compartida de RutasHaciaJugador (T070)."""
+
+    ID_CAZADOR = "ent_cazador_prueba"
+    SALA_CAZADOR = 4
+
+    def obtener_contenido(self, id_cripta, ids_salas):
+        contenidos = super().obtener_contenido(id_cripta, ids_salas)
+        for contenido in contenidos:
+            if contenido.sala == self.SALA_CAZADOR:
+                contenido.enemigos.append(EnemigoEnSalaDTO("e-cazador", self.ID_CAZADOR, 40))
+        return contenidos
+
+    def obtener_catalogo(self, ids):
+        ids = list(ids)
+        resto = [i for i in ids if i != self.ID_CAZADOR]
+        fichas = super().obtener_catalogo(resto) if resto else []
+        if self.ID_CAZADOR in ids:
+            fichas.append(FichaEnemigoDTO(id=self.ID_CAZADOR, nombre="Cazador de prueba", vida_max=40, ataque=3,
+                                          defensa=1, velocidad=100, comportamiento="cazador", suelta=[],
+                                          rango=100000))
+        return fichas
+
+
+def dar_pergaminos(contexto: ContextoPartida, cantidad: int) -> None:
+    """Pone `cantidad` pergaminos en el inventario por fuera de los servicios (como test_servicios._crear).
+
+    Se hace al empezar: se vuelve a tomar el punto de control 0, para que la línea ya los tenga (si no, un
+    estado reconstruido a partir del punto 0 no los traería)."""
+    from Service.ServicioLineaTiempo import ServicioLineaTiempo
+    from Service.SincronizadorUsos import SincronizadorUsos
+    for _ in range(cantidad):
+        contexto.inventario.recoger(contexto.resolvedor.ficha(ID_PERGAMINO))
+    SincronizadorUsos().sincronizar(contexto)
+    if contexto.linea is not None:
+        contexto.linea.puntos.clear()
+        ServicioLineaTiempo.tomar_punto(contexto)
+
+
 def partida_de_prueba(carpeta: str, semilla: int = 2026, k: int | None = None,
-                      reforzado: bool = True) -> tuple[ServicioPartida, ContextoPartida]:
+                      reforzado: bool = True, fuente_clase=None) -> tuple[ServicioPartida, ContextoPartida]:
     """Una partida nueva con el paquete offline y carpetas temporales: (servicio_partida, contexto).
 
     `k` se pasa como `checkpoint_cada` (sin k se usa el valor por defecto de la configuración).
-    `reforzado` (por defecto sí) usa FuenteReforzada para que la partida dure cientos de acciones."""
+    `reforzado` (por defecto sí) usa FuenteReforzada para que la partida dure cientos de acciones;
+    `fuente_clase` pone otra fuente (por ejemplo FuenteConCazador)."""
     kwargs = {} if k is None else {"checkpoint_cada": k}
     config = ConfiguracionDTO(offline=True, cache_size=25, **kwargs)
-    clase = FuenteReforzada if reforzado else FuenteOffline
+    clase = fuente_clase or (FuenteReforzada if reforzado else FuenteOffline)
     fuente = clase(str(RAIZ / "paquete"))
     partida = ServicioPartida(config, fuente=fuente, carpeta_cache=os.path.join(carpeta, "cache"),
                               carpeta_logs=os.path.join(carpeta, "logs"))
