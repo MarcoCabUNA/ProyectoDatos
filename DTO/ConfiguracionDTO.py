@@ -20,7 +20,9 @@ from dataclasses import dataclass
 # con el de Data/CacheCatalogo.py (este DTO no importa la capa de Datos).
 CACHE_SIZE_POR_DEFECTO = 25
 
-# Valor por defecto de --checkpoint-cada (feature 004, FR-415). PROVISIONAL: se confirma con --bench (T062).
+# Valor por defecto de --checkpoint-cada (feature 004, FR-415). K = 20 CONFIRMADO por el banco de pruebas (T062):
+# con 5 000 acciones `historia` tarda 0,62 ms (el límite es 50 ms); sin puntos de control tardaría 147 ms.
+# Ver specs/004-linea-tiempo/bench-tabla.txt y DECISIONES.md §5.5.
 CHECKPOINT_POR_DEFECTO = 20
 
 
