@@ -52,11 +52,15 @@ from DTO.ElementoDTO import (ELEMENTO_BOTON, ELEMENTO_ENEMIGO, ELEMENTO_INVENTAR
                              ELEMENTO_PUERTA, ElementoDTO)
 from DTO.EstadoJuegoDTO import EstadoJuegoDTO
 from DTO.InventarioDTO import InventarioDTO
+from DTO.ResumenHistoriaDTO import ResumenHistoriaDTO
 from UIController.ControladorBackend import CRITERIOS_INVENTARIO, ControladorBackend, ErrorOperacion
 
 PIDE_PAUSA = "pausa"
 PIDE_GUARDAR = "guardar"
 PIDE_CARGAR = "cargar"
+
+MENSAJE_USO_HISTORIA = "Uso: historia <t> (instante, entero >= 0) o historia #k (acción, entero >= 1)."
+_PALABRA_HISTORIA = "historia"
 
 BOTONES = ("Esperar",)          # los botones de la pantalla de juego; ELEMENTO_BOTON con indice 0 es "Esperar"
 DOBLE_CLIC_MS = 400             # dos clics sobre la misma casilla en menos de esto cuentan como doble clic
@@ -97,6 +101,7 @@ class ControlesJuego:
         self._modificadores = modificadores if modificadores is not None else pygame.key.get_mods
         self.estado = estado
         self.aviso: str | None = None
+        self.resumen: ResumenHistoriaDTO | None = None       # el último `historia` consultado (solo lectura, feature 004)
         self._objetivo: str | None = None
         self._ultimo_clic: tuple[int, int] | None = None     # (casilla, milisegundos) del último clic en el inventario
 
@@ -133,6 +138,28 @@ class ControlesJuego:
         except ErrorOperacion as error:
             self.aviso = str(error)
         return None
+
+    # ================================================================== línea de comandos: historia (feature 004)
+    def procesar_comando(self, texto: str) -> None:
+        """`historia <t>` (entero >= 0) o `historia #k` (entero >= 1). Valida solo la ESTRUCTURA: otra cosa deja el aviso de
+        uso y no llama al backend. El rango lo valida Logic (el backend lo devuelve como ErrorOperacion y su mensaje se
+        muestra tal cual). Una consulta no cambia la partida: ni reloj, ni acciones, ni partida.log."""
+        self.aviso = None
+        partes = texto.split()
+        if len(partes) != 2 or partes[0].casefold() != _PALABRA_HISTORIA:
+            self.aviso = MENSAJE_USO_HISTORIA
+            return
+        argumento = partes[1]
+        es_accion = argumento.startswith("#")
+        numero = _entero_sin_signo(argumento[1:] if es_accion else argumento)
+        if numero is None or (es_accion and numero < 1):
+            self.aviso = MENSAJE_USO_HISTORIA
+            return
+        try:
+            self.resumen = (self._backend.historia_por_accion(numero) if es_accion
+                            else self._backend.historia_por_instante(numero))
+        except ErrorOperacion as error:
+            self.aviso = str(error)
 
     # ================================================================== teclado
     def _teclado(self, evento) -> str | None:
@@ -271,6 +298,16 @@ def _de(lista: list, indice: int, que: str):
     if not 0 <= indice < len(lista):
         raise ErrorOperacion(f"Ese {que} ya no está.")
     return lista[indice]
+
+
+def _entero_sin_signo(texto: str) -> int | None:
+    """El entero que escriben solo los dígitos 0-9 de `texto`; None si hay otra cosa o está vacío ('-3', '2.5', 'x', '')."""
+    if texto == "":
+        return None
+    for caracter in texto:
+        if not ("0" <= caracter <= "9"):
+            return None
+    return int(texto)
 
 
 def _direccion_de(tecla: int) -> int | None:

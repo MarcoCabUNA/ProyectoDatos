@@ -41,10 +41,10 @@ from DTO.ResultadoBenchDTO import ResultadoBenchDTO
 from DTO.ResultadoReplayDTO import ResultadoReplayDTO
 from DTO.ResumenHistoriaDTO import ResumenHistoriaDTO
 from Service.ErroresServicio import ERRORES_ESPERADOS
-from Service.ServicioAccionJugador import ServicioAccionJugador
 from Service.ServicioBench import ServicioBench
 from Service.ServicioGuardado import ServicioGuardado
 from Service.ServicioInventario import ServicioInventario
+from Service.ServicioLineaTiempo import ServicioLineaTiempo
 from Service.ServicioPartida import ServicioPartida
 from Service.ServicioPuntajes import ServicioPuntajes
 from Service.ServicioReplay import ServicioReplay
@@ -69,7 +69,7 @@ class ControladorBackend:
         self._partida = servicio_partida if servicio_partida is not None else ServicioPartida(config)
         self._puntajes = servicio_puntajes if servicio_puntajes is not None else ServicioPuntajes()
         self._bench = servicio_bench if servicio_bench is not None else ServicioBench()
-        self._acciones = ServicioAccionJugador()
+        self._acciones = ServicioLineaTiempo()      # toda acción pasa por la línea de tiempo (feature 004, FR-423)
         self._inventarios = ServicioInventario()
         self._guardado = ServicioGuardado(self._partida)
         self._replay = ServicioReplay(self._partida)
@@ -249,4 +249,24 @@ class ControladorBackend:
         except ValueError as error:
             if isinstance(error, ErrorOperacion):
                 raise
+            raise ErrorOperacion(str(error)) from error
+
+    def historia_por_instante(self, t: int) -> ResumenHistoriaDTO:
+        """`historia <t>` (feature 004, FR-423): el resumen del estado en el instante t. No consume tiempo, no es una
+        acción y no se registra en partida.log. El rango de t lo valida Logic; su mensaje sale tal cual."""
+        return self._consultar_historia(lambda contexto: self._acciones.consultar_por_instante(contexto, t))
+
+    def historia_por_accion(self, k: int) -> ResumenHistoriaDTO:
+        """`historia #k` (feature 004, FR-423): el resumen justo antes de la acción k. Mismas reglas que por instante."""
+        return self._consultar_historia(lambda contexto: self._acciones.consultar_por_accion(contexto, k))
+
+    def _consultar_historia(self, consulta) -> ResumenHistoriaDTO:
+        contexto = self._activa()
+        if contexto.linea is None:
+            raise ErrorOperacion("Esta partida no tiene línea de tiempo que consultar.")
+        try:
+            return self._llamar(consulta, contexto)
+        except ErrorOperacion:
+            raise
+        except ValueError as error:                      # el rango lo valida Logic (LineaTiempo): el mensaje va tal cual
             raise ErrorOperacion(str(error)) from error
