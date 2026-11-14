@@ -2262,3 +2262,40 @@ Salida: ALTA/MEDIA/BAJA con archivo y línea, y al principio lo que está bien. 
 **Uso de la respuesta:** revisión de solo lectura de `origin/derek` (`acd4196`); no se tocó ningún archivo de la 002. `tasks.md` de la 002 todavía no existe. Se contrastaron las anclas de la tabla con `Logic/motorJuego.py` (líneas 42-43, 58 y 124) y `Logic/PartidaGuardada.py` (29 y 87), y todas las escrituras de `cerrada` en Logic (solo `abrir_puerta` y `CierrePuerta` cambian puertas durante la partida, y las dos avisan). Bien: capas, estructuras, las 4 líneas del motor, el repartidor (orden fijo, sin pérdida, el pergamino revierte por casilla sin avisos), el grafo de FR-225 y el uso de las funciones privadas solo como lectura. Sin hallazgos ALTA. MEDIA: `PartidaGuardada.cargar` no son 2 líneas y el comportamiento con `mapa = None` se describe distinto en el plan y en el data-model; NFR-250 se da por cumplido sin medición; `observador_rutas` sin requisito que lo pida (YAGNI); H-5 reinterpreta un escenario en vez de aclararlo en la spec. BAJA: números del bench de la 001 sin el mapa, data-model de la 001 desactualizado (H-1), la variante de B8 con puerta que cambia, la prueba de SC-202 que depende del integrante 3 y las alternativas del repartidor y del formato binario sin medir. Sin push.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+SOLO LECTURA, con archivo:linea. Hace git fetch.
+A) Revision linea por linea de origin/kris commit 2753a53 (git show 2753a53): Motor.avanzar_hasta(t) en Logic/motorJuego.py y tests/test_linea_tiempo_motor.py. Verifica: 1) usa el evento que devuelve obtener_siguiente; 2) cuando le toca al jugador hace exactamente lo mismo que avanzar_hasta_jugador (registrar reloj y Evento_pendiente, _cerrar_intervalo, devolver True); 3) si el siguiente evento es > t se detiene sin extraerlo ni mover el reloj; 4) se detiene si terminado; 5) la prueba del cancelado en la raiz con tiempo <= t seguido de uno valido > t existe y comprueba False sin mover el reloj; 6) avanzar_hasta_jugador no cambio. Mira tambien por encima los cambios de origin/kris en ControladorBackend._ejecutar y ServicioPartida.iniciar_partida: rompen algo de la 001 o el determinismo?
+B) Preguntas de la integrante 3 para el plan de ir a:
+M-1. Logic/BusquedaCostoMinimo.py paso_desde_cero con limite=None: guarda algo entre llamadas que cambie el resultado? El desempate es por la vecina de menor id del primer paso (no entre rutas completas)?
+M-2. En P1 hay curacion o regeneracion que pueda ocurrir dentro de un mismo paso del jugador (efectos, pulsos, objetos)? Existe un contador o evento de dano recibido mas fiable que comparar la vida antes y despues?
+M-3. motor.enemigos_vivos (o equivalente) incluye a los enemigos dormidos que se activan al entrar a la sala? Cuando se agregan?
+Salida: A con lo que esta bien y lo que hay que cambiar; B con respuesta corta y evidencia.
+
+**Uso de la respuesta:** consulta `1a1dc7afa4b`, respuesta en `.claude-bridge/outbox/1a1dc7afa4b.txt`. La consulta terminó **sin respuesta**: la sección «Respuesta» quedó vacía y 7 acciones quedaron bloqueadas por permisos (`git show`/`git diff` de `origin/main`, `HEAD` y `origin/kris` con `awk` y `grep`, `git log origin/main..origin/kris`, `git ls-tree` de `origin/kris`, y extraer `origin/kris` con `git archive` para correr `tests.test_linea_tiempo_motor`). No hay revisión de `2753a53` ni respuestas a M-1, M-2 y M-3; hay que repetir la consulta con esos permisos. No modificó nada.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+1. plan(001): en contracts/contrato-datos.md, sección "Validación (FR-122)", agregá:
+   "AlmacenCatalogo solo guarda fichas válidas, botín incluido; ficha() revalida al leer del disco.
+   Un enemigo con botín rechazado no se guarda ni en disco ni en memoria, y la regla vale también
+   en otra partida." (confirmado por el integrante 2, se implementa en T057).
+2. test(001): a test_h2_22 agregale un subcaso de segunda partida: la primera partida guarda en caché
+   la ficha del enemigo; en la segunda, con la misma carpeta de caché, su sala tiene que quedar
+   igual de rechazada. Sigue con skip hasta T057.
+3. docs: registrá en PROMPTS_LLM.md la consulta del puente 1a1dc7afa4b (revisión de avanzar_hasta de
+   la integrante 3, commit 2753a53, y sus preguntas M-1 a M-3 para «ir a»). La respuesta va a estar en
+   C:\Users\Eli\.claude-bridge\outbox\1a1dc7afa4b.txt cuando el puente termine; si todavía no está,
+   registrá solo el pedido y completá el resumen después.
+Suite en verde con uv run, no hagas push.
+
+**Uso de la respuesta:** (1) `plan(001)`: el párrafo va en «Validación (FR-122)» de `contracts/contrato-datos.md`, después del de la fila de `suelta`. (2) `test(001)`: `test_h2_22` tiene un subcaso «segunda partida»: dos `ServicioPartida` con la misma carpeta de caché (y logs aparte); en las dos, entrar a la sala 2 se rechaza con el mismo mensaje, sin mover al jugador ni el reloj. Sigue con `skipTest` hasta T057; sin el skip falla igual que el subcaso de la sala no inicial (ya en la partida 1), sin errores de otro tipo. (3) La consulta `1a1dc7afa4b` se registró arriba; el puente terminó sin respuesta (7 acciones bloqueadas por permisos), así que no hay resumen que completar hasta repetirla. Suite: 549 OK (skipped=2: H3-7 y H2-22). Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
