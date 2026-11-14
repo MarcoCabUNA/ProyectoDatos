@@ -571,7 +571,6 @@ class TestDatosInvalidos(unittest.TestCase):
         no deja iniciar la partida; el error indica la sala, la dirección y el campo, y el programa no se cae.
         La parte de `--forzar` (003 FR-323) se agrega cuando exista la spec 003, como en H3-7.
         """
-        self.skipTest("pendiente de T055 (integrante 2): Data todavía no valida cierre_automatico")
         for cierre in (0, -5, "10", True):
             with self.subTest(cierre_automatico=cierre):
                 error = _no_inicia(self, _api_con_cierre_automatico(2, "N", cierre))
@@ -584,7 +583,6 @@ class TestDatosInvalidos(unittest.TestCase):
         la sala 2, que no es la inicial), la partida inicia y entrar a la sala 2 se rechaza con un mensaje que nombra
         la ficha y el campo `duracion`; el jugador sigue en la sala 1, el reloj no avanza y la partida sigue.
         """
-        self.skipTest("pendiente de T055 (integrante 2): Data todavía no valida la duracion de ObjetoDTO")
         for duracion in (0, -5, "10", True):
             with self.subTest(duracion=duracion):
                 fuente = FuenteConObjetoInvalido(3, sala_objeto=2, duracion=duracion)
