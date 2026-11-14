@@ -10,7 +10,8 @@ ServicioLineaTiempo (Servicios, Integrante 3, feature 004): alimenta y consulta 
 Cómo sabe `ejecutar` qué pasó, sin tocar ServicioAccionJugador: compara `jugador.acciones` antes y después.
     +1   la acción se hizo           -> agregar_accion(reloj de la decisión, acción) y, si toca, un punto de control
     sin cambio                        -> la acción fue rechazada: no se registra nada (FR-407)
-    -1   se leyó un pergamino         -> se trata en T030 (fase 4); hasta entonces no se registra nada
+    -1   se leyó un pergamino         -> LineaTiempo.retroceder_una con el estado vivo ya revertido (FR-413, FR-424):
+                                         quita la última acción y deja un punto de control nuevo en c
 Las consultas NO cambian la partida: no consumen tiempo, no cuentan como acción, no se anexan a partida.log y no
 tocan el historial de retroceso (FR-407, FR-408). La validación del rango de t y de k es regla de negocio y vive en
 Logic/LineaTiempo (ValueError con el rango válido); aquí solo se propaga.
@@ -46,7 +47,11 @@ class ServicioLineaTiempo:
             linea.agregar_accion(tiempo, accion)
             if linea.necesita_punto(despues):
                 self.tomar_punto(contexto)
-        # despues == antes - 1: el pergamino (T030). Sin cambio: acción rechazada, nada que registrar.
+        elif despues == antes - 1:                       # se leyó un pergamino: `retroceder` nunca queda en la línea
+            partida, salas = PartidaGuardada.guardar(contexto.motor, contexto.cripta,
+                                                     contexto.resolvedor.version_catalogo(), contexto.semilla)
+            linea.retroceder_una((partida, salas))
+        # sin cambio: acción rechazada, nada que registrar
         return estado
 
     @staticmethod

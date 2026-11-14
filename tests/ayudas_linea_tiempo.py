@@ -73,6 +73,23 @@ class FuenteConCazador(FuenteReforzada):
         return fichas
 
 
+class FuenteConRatas(FuenteReforzada):
+    """Como FuenteReforzada, pero las salas 3 y 5 (vecinas de la 2) traen cada una una rata gigante.
+
+    En la cripta-01 solo la sala 2 tiene ratas y el camino no se bifurca, así que no hay dos salas nuevas con el
+    mismo tipo de enemigo entre las que elegir. Con estas dos, el orden en que se cargan las salas 3 y 5 cambia el
+    número de las ratas (hallazgo H-1 de la spec)."""
+
+    SALAS = (3, 5)
+
+    def obtener_contenido(self, id_cripta, ids_salas):
+        contenidos = super().obtener_contenido(id_cripta, ids_salas)
+        for contenido in contenidos:
+            if contenido.sala in self.SALAS:
+                contenido.enemigos.append(EnemigoEnSalaDTO(f"e-rata-{contenido.sala}", "ent_rata_gigante", None))
+        return contenidos
+
+
 def dar_pergaminos(contexto: ContextoPartida, cantidad: int) -> None:
     """Pone `cantidad` pergaminos en el inventario por fuera de los servicios (como test_servicios._crear).
 
