@@ -2276,10 +2276,46 @@ Salida: ALTA/MEDIA/BAJA con archivo y línea, y al principio lo que está bien. 
 **Uso de la respuesta:** revisión de solo lectura de `origin/derek` (`acd4196`); no se tocó ningún archivo de la 002. `tasks.md` de la 002 todavía no existe. Se contrastaron las anclas de la tabla con `Logic/motorJuego.py` (líneas 42-43, 58 y 124) y `Logic/PartidaGuardada.py` (29 y 87), y todas las escrituras de `cerrada` en Logic (solo `abrir_puerta` y `CierrePuerta` cambian puertas durante la partida, y las dos avisan). Bien: capas, estructuras, las 4 líneas del motor, el repartidor (orden fijo, sin pérdida, el pergamino revierte por casilla sin avisos), el grafo de FR-225 y el uso de las funciones privadas solo como lectura. Sin hallazgos ALTA. MEDIA: `PartidaGuardada.cargar` no son 2 líneas y el comportamiento con `mapa = None` se describe distinto en el plan y en el data-model; NFR-250 se da por cumplido sin medición; `observador_rutas` sin requisito que lo pida (YAGNI); H-5 reinterpreta un escenario en vez de aclararlo en la spec. BAJA: números del bench de la 001 sin el mapa, data-model de la 001 desactualizado (H-1), la variante de B8 con puerta que cambia, la prueba de SC-202 que depende del integrante 3 y las alternativas del repartidor y del formato binario sin medir. Sin push.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
 
-**Herramienta:** Claude (Claude Code)
+**Herramienta:** Claude Code
 
 /speckit-implement T027 a T035 y T070 (Fase 4, historia 3: retroceder con pergamino) de specs/004-linea-tiempo/tasks.md. Pruebas primero en cada par; luego implementa y marca [X] solo lo que completes.
 Reglas: constitución v1.2.0, MVC n-capas, solo estructuras y librerías permitidas, sin copy/deepcopy. El pergamino no es una acción y no deja marcador: después de usarlo toma un punto de control nuevo en c copiando el estado vivo con PartidaGuardada.guardar (reemplaza el que ya exista en c, quita la última acción y los puntos posteriores a c). T030: ServicioLineaTiempo.ejecutar debe registrar ese caso (hoy el pergamino deja la línea inconsistente). T033 con H3-5 y H3-6 sin skip. T070: prueba del cazador después de retroceder (decide igual que desde cero, con la búsqueda de RutasHaciaJugador de Marco; no modifiques código de Marco). Después de cada commit, suite completa con PYTHONIOENCODING=utf-8 python tests/correr_pruebas.py. No empieces la Fase 5 ni H2. Reporte final con tareas hechas, pruebas, decisiones y pendientes de Marco o Derek.
 
 **Uso de la respuesta:** Se implementa la historia de retroceder con pergamino (punto de control nuevo) y la prueba del cazador (T027 a T035 y T070).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement Correcciones de documentación en specs/004-linea-tiempo (solo documentos, un commit «spec(004): ...», sin tocar código):
+1) spec.md, Suposiciones: SalidaDTO.cierre_automatico y ObjetoDTO.duracion ya se validan en Data como enteros >= 1 (FR-122 de specs/001-terreno-cazador; escenarios H2-20 y H2-21 y, para los objetos que suelta un enemigo, H2-22). Restaura la suposición «ningún efecto se programa con retraso 0, así que al ejecutar los eventos de un instante t no aparecen eventos nuevos en ese mismo t» y cita FR-122 de la 001 como respaldo; quita la nota de «pendiente del integrante 2».
+2) tasks.md: T032 no se implementa (la regla del prefijo por ordinal no hace falta: el punto nuevo en c copia el estado vivo, y cargar salas por adelantado cambiaría contenido_cargado). Déjala sin [X] y con la nota «(no necesaria: el punto en c copia el estado vivo; verificada con FuenteConRatas en T034)». En plan.md, hallazgo H-1, escribe el mismo motivo. Los registros de carga con su ordinal (T016) se mantienen.
+3) contracts/contrato-linea-tiempo.md §1 y §2: PartidaGuardadaDTO tendrá el campo `mapa` (integrante 2, spec 002 FR-223) ANTES de `linea`, de modo que `linea` siga siendo el último campo; la cabecera v2 lleva también offset y largo del bloque del mapa; cada punto de control es un PartidaGuardadaDTO y por eso lleva su propio mapa. Anótalo como «acordado con el integrante 2; falta confirmar el orden de campos».
+4) tasks.md: marca [X] T027, T028, T029, T030, T033, T034, T035, T070 y T071 si no lo están (T071 está en origin/derek). No marques T002 ni T003 (todavía no están en el código).
+No cambies ningún FR. No hagas push. Reporta los commits.
+
+**Uso de la respuesta:** Se corrigió la documentación de la 004 (retraso de efectos respaldado por FR-122, T032 no necesaria, contrato con el campo mapa) y se marcaron las tareas hechas.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement T036 a T042 (H2: --replay … --hasta) y T049 a T051 (H5: K configurable) de specs/004-linea-tiempo/tasks.md. Antes: confirma que la rama ya incluye origin/derek (T071: BitacoraReplayIO.leer ignora las líneas que empiezan con «#») y corre la suite.
+Pruebas primero en cada par (T036, T038, T040, T049) y confirma que fallan por la causa esperada; luego implementa y marca [X] lo que completes. T037 y T050: la lectura de --hasta y --checkpoint-cada ya está hecha (commit de las banderas); completa solo el cableado que falte (ConfiguracionDTO y LectorArgumentos son del integrante 2: agrega solo al final, sin cambiar su orden). T041: ControladorBackend.reproducir_hasta(ruta, t) al final de la clase, sin tocar lo de la 003.
+Reglas: constitución v1.2.0, MVC n-capas, solo estructuras y librerías permitidas; la validación de t vive en Logic y ServicioReplayHasta solo la propaga; códigos de salida 0, 1 y 2; --hasta solo con --replay; una línea «# ir a» en el log no cambia el resultado del replay. Después de cada commit corre la suite completa con PYTHONIOENCODING=utf-8 python tests/correr_pruebas.py. No empieces H4 ni la interfaz. Reporte final con tareas hechas, pruebas, decisiones y pendientes de Marco o Derek.
+
+**Uso de la respuesta:** Se implementa --replay --hasta y el K configurable (T036 a T042 y T049 a T051) con T071 de Derek ya integrado.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Lee specs/002-niebla-ir-a/spec.md (mi sección «ir a»: FR-250 a FR-264, historias 6 y 7 y su trazabilidad en el Apéndice B), specs/002-niebla-ir-a/plan.md (la parte del integrante 2 y mi sección reservada al final), specs/002-niebla-ir-a/contracts/contrato-mapa-conocido.md y la constitución v1.2.0. Escribe SOLO mi sección del plan de «ir a» al final de plan.md, en un commit aparte «plan(002): ir a (integrante 3)». Sin tasks y sin código. Cubre: el servicio, el uso de GrafoMapaConocido con paso_desde_cero de Marco, el recálculo y la parada cuando una puerta recordada resulta estar cerrada, enemigos dormidos, pergamino durante el viaje, el comentario «# ir a» con anexar_comentario (solo si la orden da al menos un paso), el paso de cada movimiento por ServicioLineaTiempo.ejecutar, la validación en Logic, la comparación de nombres con strip().casefold() (H-3) y el análisis de H-2 (qué usa EscenaJuego de sala_destino; propón opciones sin implementar). Reporta los hallazgos y las preguntas para Derek y Marco.
+
+**Uso de la respuesta:** Se escribe mi sección del plan de «ir a» (002) y se analiza el hallazgo H-2 sin implementar.
+
