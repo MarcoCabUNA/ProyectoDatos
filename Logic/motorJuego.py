@@ -109,16 +109,20 @@ class Motor:
 
         Devuelve True si se detuvo justo antes de una decisión del jugador (su evento sale de la cola y el
         reloj queda en ese tiempo) y False en otro caso. Si la partida termina, se detiene en cuanto
-        `terminado` es verdadero: los demás eventos de ese instante no se ejecutan. No registra nada en el
-        historial por su cuenta (se usa en un Motor aparte)."""
+        `terminado` es verdadero: los demás eventos de ese instante no se ejecutan. Antes de devolver True hace lo
+        mismo que avanzar_hasta_jugador: registra el reloj y el evento pendiente del jugador en el historial y
+        cierra el intervalo."""
         while not self.terminado:
-            evento = self.cola.ver_siguiente()                 # los cancelados se descartan al mirar
-            if evento is None or evento.tiempo > t:
+            siguiente = self.cola.ver_siguiente()              # los cancelados se descartan al mirar
+            if siguiente is None or siguiente.tiempo > t:
                 return False
-            self.cola.obtener_siguiente()
+            evento = self.cola.obtener_siguiente()             # el evento que sale de la cola es el que se ejecuta
+            self.historial.registrar_atributo(self, "reloj", self.reloj)
             self.reloj = evento.tiempo
-            if evento.dueno is self.jugador:
-                self.jugador.Evento_pendiente = None           # le toca decidir: se detiene antes de tomar la decisión
+            if evento.dueno is self.jugador:                   # le toca decidir: se detiene antes de tomar la decisión
+                self.historial.registrar_atributo(self.jugador, "Evento_pendiente", self.jugador.Evento_pendiente)
+                self.jugador.Evento_pendiente = None
+                self._cerrar_intervalo()
                 return True
             evento.dueno.activar(self, evento)
         return False

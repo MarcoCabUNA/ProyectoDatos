@@ -138,6 +138,17 @@ class PruebasAvanzarHasta(unittest.TestCase):
         self.assertEqual(nuevo.azar.getstate(), clasico.azar.getstate())
         self.assertIsNone(nuevo.jugador.Evento_pendiente)
 
+    def test_fr402_cancelado_en_la_raiz_y_valido_posterior_no_mueve_el_reloj(self):
+        motor = _escenario()
+        motor.programar_accion(motor.jugador, 900)
+        cancelado = _en(motor, 200, "accion_actor", motor.jugador)    # un evento cancelado con tiempo <= t en la raíz
+        cancelado.cancelar()
+        _enemigo_en(motor, 600)                                       # y uno válido con tiempo > t detrás
+        reloj = motor.reloj
+        self.assertFalse(motor.avanzar_hasta(300))
+        self.assertEqual(motor.reloj, reloj)                          # no se movió el reloj
+        self.assertEqual(motor.cola.ver_siguiente().tiempo, 600)      # y el evento válido sigue en la cola
+
 
 if __name__ == "__main__":
     unittest.main()
