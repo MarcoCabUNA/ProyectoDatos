@@ -2238,3 +2238,27 @@ enemigo cuenta como inválida. No agrega solicitudes: ResolvedorCatalogo ya baja
 Suite: 549 OK (skipped=2: H3-7 y H2-22) y 32/32 scripts. Sin push.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Revisión cruzada del PLAN de la spec 002 (mapa conocido, integrante 2), SOLO LECTURA. git fetch;
+leé con git show origin/derek:specs/002-niebla-ir-a/<archivo> (plan.md, research.md, data-model.md,
+contracts/, tasks.md). Contra la constitución v1.2.0 y la spec 002:
+1. Capas (Principio I) y estructuras prohibidas (Principio II).
+2. Cambios a mi código: las 4 líneas y 2 imports en Logic/motorJuego.py y las 2 de Logic/PartidaGuardada.py,
+   exactos en la tabla "Cambios a código existente". ¿Rompen algo de la 001 (rutas, observador_puertas,
+   historial, determinismo)?
+3. RepartidorAvisosPuertas: ¿reenvía puerta_cambio a mis rutas y al mapa sin cambiar el orden ni perder
+   avisos? ¿Qué pasa al deshacer con el pergamino?
+4. FR-225: el grafo del mapa conocido cumple contracts/busqueda-rutas.md de la 001 (por cara, costo igualado,
+   ids del esqueleto completo).
+5. Uso de funciones privadas mías (las 8 de la nota de dependencias del plan de la 001 y _salida_inversa):
+   que solo se usen, no se modifiquen.
+6. Mediciones de --bench para cada decisión (Principio VIII) y que el plan no agregue reglas que no estén
+   en la spec (Principio IX).
+Salida: ALTA/MEDIA/BAJA con archivo y línea, y al principio lo que está bien. Registralo en PROMPTS_LLM.md.
+
+**Uso de la respuesta:** revisión de solo lectura de `origin/derek` (`acd4196`); no se tocó ningún archivo de la 002. `tasks.md` de la 002 todavía no existe. Se contrastaron las anclas de la tabla con `Logic/motorJuego.py` (líneas 42-43, 58 y 124) y `Logic/PartidaGuardada.py` (29 y 87), y todas las escrituras de `cerrada` en Logic (solo `abrir_puerta` y `CierrePuerta` cambian puertas durante la partida, y las dos avisan). Bien: capas, estructuras, las 4 líneas del motor, el repartidor (orden fijo, sin pérdida, el pergamino revierte por casilla sin avisos), el grafo de FR-225 y el uso de las funciones privadas solo como lectura. Sin hallazgos ALTA. MEDIA: `PartidaGuardada.cargar` no son 2 líneas y el comportamiento con `mapa = None` se describe distinto en el plan y en el data-model; NFR-250 se da por cumplido sin medición; `observador_rutas` sin requisito que lo pida (YAGNI); H-5 reinterpreta un escenario en vez de aclararlo en la spec. BAJA: números del bench de la 001 sin el mapa, data-model de la 001 desactualizado (H-1), la variante de B8 con puerta que cambia, la prueba de SC-202 que depende del integrante 3 y las alternativas del repartidor y del formato binario sin medir. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
