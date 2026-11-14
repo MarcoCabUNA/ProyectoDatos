@@ -39,6 +39,7 @@ from DTO.PuntajeDTO import PuntajeDTO
 from DTO.ReporteDatosDTO import ReporteDatosDTO
 from DTO.ResultadoBenchDTO import ResultadoBenchDTO
 from DTO.ResultadoReplayDTO import ResultadoReplayDTO
+from DTO.ResumenHistoriaDTO import ResumenHistoriaDTO
 from Service.ErroresServicio import ERRORES_ESPERADOS
 from Service.ServicioAccionJugador import ServicioAccionJugador
 from Service.ServicioBench import ServicioBench
@@ -47,6 +48,7 @@ from Service.ServicioInventario import ServicioInventario
 from Service.ServicioPartida import ServicioPartida
 from Service.ServicioPuntajes import ServicioPuntajes
 from Service.ServicioReplay import ServicioReplay
+from Service.ServicioReplayHasta import ServicioReplayHasta
 
 # Criterios que existen. Son tuplas (no dict, §7) y públicas: la Interfaz las recorre para pasar de uno al siguiente.
 CRITERIOS_INVENTARIO = (None, "peso", "valor", "nombre")  # None = orden real del inventario
@@ -236,3 +238,15 @@ class ControladorBackend:
             if criterio == valido:
                 return criterio
         raise ErrorOperacion(f"{mensaje}: {criterio!r}.")
+
+    # ================================================================== feature 004 (línea de tiempo)
+    def reproducir_hasta(self, ruta: str, t: int) -> ResumenHistoriaDTO:
+        """--replay ... --hasta t (feature 004, FR-410): el resumen de la partida del log en el instante t, sin la
+        vista. Un t fuera del rango de la partida (la validación es de Logic) sale como ErrorOperacion con el rango."""
+        ruta = self._texto(ruta, "Falta indicar el archivo del log.")
+        try:
+            return self._llamar(ServicioReplayHasta(self._partida).reproducir_hasta, ruta, t)
+        except ValueError as error:
+            if isinstance(error, ErrorOperacion):
+                raise
+            raise ErrorOperacion(str(error)) from error
