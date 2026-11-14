@@ -148,6 +148,23 @@ son decisiones del grupo.
   hay partida que iniciar. No es un caso de FR-320, que trata la ubicación de las llaves de una cripta que
   sí existe (FR-314) *(decisión del grupo)*.
 
+### Sesión 2026-11-14 (análisis de consistencia)
+
+Las preguntas de esta sesión surgen del análisis de consistencia entre la spec, el plan y las tareas.
+
+- P: ¿Qué es «la cripta publicada más grande» de NFR-301 y SC-306, y cómo la mide `--bench`? → R: La tabla de
+  §6.1 pone el límite de 200 ms de la verificación sobre «la cripta publicada más grande». Se mide como la
+  cripta con más salas del paquete local de `--offline`, elegida por cantidad de salas, sin nombrar ids
+  (Principio VI) y leída sin red. `--bench` la mide además de las criptas sintéticas de NFR-304, sin iniciar
+  partidas, sin crear `partida.log` y sin pasar por la verificación previa a una partida. Mientras el paquete
+  local no traiga criptas con ubicación de llaves, vale la cripta sintética de 1 000 salas con 100 llaves
+  encadenadas (FR-301, NFR-301, SC-306) *(decisión del grupo)*.
+- P: ¿Qué errores de 001 FR-122 cuentan para FR-323? → R: Los costos no enteros o menores que 1, los costos
+  distintos entre las dos caras de una salida y, desde que 001 FR-122 lo incluye (commit `a725e31` del
+  integrante 1, escenario H2-20 de la 001), un `cierre_automatico` que no es un entero ≥ 1. Con cualquiera de
+  ellos la verificación no concluye, `--verificar` termina con código 1 y la partida no inicia, ni con
+  `--forzar` (FR-323).
+
 ---
 
 ## Escenarios de usuario y pruebas *(obligatorio)*
@@ -260,8 +277,8 @@ comparar cada parte del reporte (llaves no obtenibles, frontera, ubicaciones, ci
 6. **Dada** la puerta 4–5 (C), con la sala 4 alcanzable y `llave_salida` en la sala 5, donde C no aparece
    en la lista de ubicaciones, **cuando** se verifica, **entonces** la verificación concluye: la cripta no
    es resoluble, C aparece entre las llaves no obtenibles con la indicación «sin ubicación», la puerta 4–5
-   aparece en la frontera bloqueada con la llave C, y no se informa ningún error de datos (FR-307, FR-309,
-   FR-321).
+   aparece en la frontera bloqueada con la llave C, y no se informa ningún error de datos (FR-307, FR-308,
+   FR-309, FR-321).
 7. **Dada** una ubicación `{ "id": A, "sala": 99 }` donde la sala 99 no existe en el esqueleto, **cuando** se
    verifica, **entonces** se informa un error de datos con contexto (la llave A y la sala 99), la
    verificación no concluye, la partida no inicia salvo con `--forzar`, el programa no se cae y, con
@@ -379,7 +396,7 @@ comprobar si la partida inicia y si se muestra el reporte.
 4. **Dada** una partida iniciada con `--forzar` sobre una cripta no resoluble, guardada y registrada en
    `partida.log`, **cuando** el jugador la carga sin `--forzar` o la reproduce con `--replay`, **entonces**
    no se ejecuta la verificación, no se muestra el reporte y la partida se carga o se reproduce
-   normalmente (FR-301).
+   normalmente (FR-301, FR-313).
 5. **Dada** una cripta cuya salida 3–4 declara costo 150 en la cara de la sala 3 y costo 200 en la cara de
    la sala 4, **cuando** el jugador intenta iniciar una partida con `--forzar`, **entonces** se muestra el
    error de datos con contexto (qué salida y qué campo), la partida no inicia, no se crea `partida.log` ni
@@ -429,8 +446,8 @@ comprobar si la partida inicia y si se muestra el reporte.
   por lo que declara; para atravesar la puerta desde una sala hace falta la llave de la cara de esa sala,
   y en la frontera bloqueada la puerta aparece con la llave de la cara de la sala alcanzable (FR-302,
   FR-308, escenario H2-9).
-- **Esqueleto con un error de datos de 001 FR-122** (costo no entero o menor que 1, o costos distintos
-  entre las dos caras de una salida): la verificación no concluye; `--verificar` termina con código 1 y la
+- **Esqueleto con un error de datos de 001 FR-122** (costo no entero o menor que 1, costos distintos
+  entre las dos caras de una salida, o un `cierre_automatico` que no es un entero ≥ 1): la verificación no concluye; `--verificar` termina con código 1 y la
   partida no inicia, ni siquiera con `--forzar` (FR-323, escenarios H3-8 y H4-5).
 - **La misma llave aparece en varias ubicaciones**: cada una es una copia válida; basta con que una sea
   alcanzable, y el reporte muestra todas las ubicaciones distintas en un orden determinista (FR-316,
@@ -488,8 +505,10 @@ comprobar si la partida inicia y si se muestra el reporte.
   NO DEBE requerir el contenido de las salas, NO DEBE consumir el generador aleatorio de la partida y NO
   DEBE modificar ningún estado del juego. Cargar una partida guardada y `--replay` NO DEBEN ejecutar la
   verificación ni bloquearse por ella, porque reanudan o reproducen una partida que ya inició. `--bench`
-  tampoco la ejecuta como paso previo a una partida: no inicia partidas y solo mide la verificación sobre
-  criptas sintéticas (NFR-304).
+  tampoco la ejecuta como paso previo a una partida: no inicia partidas ni crea `partida.log`, y mide la
+  verificación sobre criptas sintéticas deterministas (NFR-304) y, además, si el paquete local de `--offline`
+  trae criptas con ubicación de llaves, sobre la cripta del paquete con más salas, elegida por cantidad de
+  salas, sin nombrar ids (Principio VI) y leída sin red (NFR-301).
 - **FR-302**: La verificación DEBE suponer que: el jugador puede atravesar cualquier salida abierta y
   cualquier salida cerrada cuya llave ya obtuvo; las llaves no se consumen; todo enemigo puede ser
   derrotado; las trampas y los cierres automáticos no bloquean, porque una puerta puede volver a abrirse
@@ -573,9 +592,10 @@ comprobar si la partida inicia y si se muestra el reporte.
 - **FR-313**: Al iniciar una partida, el resultado de la verificación (resoluble con su orden de llaves,
   o el reporte de no resolubilidad) DEBE mostrarse antes de la primera acción del jugador (§7.3). Mostrar
   el reporte completo al iniciar es la excepción de 002 FR-217: el reporte no forma parte del mapa conocido
-  ni lo modifica. Cómo se dibuja queda fuera de alcance. Sin vista, el único modo que verifica es
-  `--verificar`, que escribe el resultado en la salida estándar (FR-314); `--replay` y `--bench` no
-  verifican (FR-301).
+  ni lo modifica. Cómo se dibuja queda fuera de alcance. Sin vista, el único modo que muestra el
+  resultado de la verificación es `--verificar`, que lo escribe en la salida estándar (FR-314); `--replay` no
+  verifica y `--bench` solo mide cuánto tarda la verificación, sin mostrar veredictos ni iniciar partidas
+  (FR-301).
 - **FR-314**: `--verificar <cripta>` DEBE ejecutar únicamente la verificación y escribir su resultado en la
   salida estándar, sin instanciar la vista y sin iniciar una partida. DEBE funcionar también con `--offline`. Al terminar, el
   programa DEBE devolver el código de salida 0 si la cripta es resoluble, 3 si no es resoluble y 1 si la
@@ -625,7 +645,8 @@ comprobar si la partida inicia y si se muestra el reporte.
   `llave_salida` pero no lleva a `sala_salida` no cuenta. El reporte DEBE indicar ese motivo de forma
   explícita.
 - **FR-323**: Si el esqueleto tiene un error de datos de los que define 001 FR-122 (una salida con un costo
-  no entero o menor que 1, o con costos distintos entre sus dos caras), la verificación NO DEBE concluir:
+  no entero o menor que 1, o con costos distintos entre sus dos caras, o una salida con un `cierre_automatico`
+  que no es un entero ≥ 1), la verificación NO DEBE concluir:
   NO DEBE mostrarse ningún veredicto, el programa DEBE mostrar el error con contexto (qué salida y qué
   campo) y NO DEBE caerse. `--verificar` DEBE terminar con el código de salida 1 (FR-314). La partida NO
   DEBE iniciar, ni siquiera con `--forzar`, porque 001 FR-122 exige que con esos datos la partida no inicie
@@ -635,10 +656,11 @@ comprobar si la partida inicia y si se muestra el reporte.
 
 ### Requisitos de rendimiento
 
-- **NFR-301**: La verificación DEBE tardar menos de 200 ms con la cripta publicada más grande o, mientras
-  no esté publicada, una cripta sintética determinista de 1 000 salas en cuadrícula con 100 llaves
-  encadenadas *(decisión del grupo)*, medida en el equipo local con los datos ya disponibles, sin red ni
-  renderizado (§6.1).
+- **NFR-301**: La verificación DEBE tardar menos de 200 ms con la cripta publicada más grande (§6.1), que se
+  mide como la cripta con más salas del paquete local, leída sin red; mientras el paquete local no traiga
+  criptas con ubicación de llaves, con una cripta sintética determinista de 1 000 salas en cuadrícula con
+  100 llaves encadenadas *(decisión del grupo)*. Se mide en el equipo local con los datos ya disponibles,
+  sin red ni renderizado (§6.1).
 - **NFR-302**: El costo total de la verificación DEBE crecer aproximadamente de forma lineal con la
   cantidad de salas, salidas y llaves. Obtener una llave NO DEBE implicar repetir el recorrido completo de
   la cripta (§5.4).
@@ -726,9 +748,10 @@ Cada prueba citará el identificador del requisito que verifica (Principio X).
   obtenible, su id y todas sus ubicaciones o «sin ubicación»; para cada puerta de la frontera, sus dos salas
   y su llave o «sin llave: no se puede abrir»; y, si hay ciclo, la secuencia completa hasta volver a la primera llave. Se comprueba
   automáticamente.
-- **SC-306**: `--bench` muestra que la verificación de la cripta publicada más grande o, mientras no esté
-  publicada, una cripta sintética determinista de 1 000 salas en cuadrícula con 100 llaves encadenadas
-  *(decisión del grupo)*, tarda menos de 200 ms.
+- **SC-306**: `--bench` muestra que la verificación de la cripta publicada más grande, medida como la cripta
+  con más salas del paquete local y leída sin red, o, mientras el paquete local no traiga criptas con
+  ubicación de llaves, de una cripta sintética determinista de 1 000 salas en cuadrícula con 100 llaves
+  encadenadas *(decisión del grupo)*, tarda menos de 200 ms.
 - **SC-307**: En `--bench`, al multiplicar por 10 la cantidad de salas, salidas y llaves de una cripta
   sintética con llaves encadenadas, el tiempo de la verificación crece a lo sumo 20 veces, y el de la
   alternativa de repetir el recorrido por cada llave crece al menos el doble de lo que crece el de la
@@ -752,7 +775,7 @@ Cada prueba citará el identificador del requisito que verifica (Principio X).
   acepta porque §3.5 pide verificar con las llaves y las puertas, no simular el reloj ni los cierres
   (FR-302). Es lo contrario de la diferencia en la regla de la puerta de salida, donde la verificación solo
   puede equivocarse rechazando (Clarificaciones, sesiones 2026-11-13; FR-304, FR-322).
-- Los costos del esqueleto son válidos según 001 FR-122 para que la verificación concluya y la partida
+- Los costos y los `cierre_automatico` del esqueleto son válidos según 001 FR-122 para que la verificación concluya y la partida
   inicie; si no lo son, ni `--forzar` permite jugar (FR-323).
 - Los errores de `rango` de 001 FR-122 (una ficha de cazador sin `rango` o con un `rango` inválido) no
   afectan la verificación, porque la verificación no descarga el contenido de las salas (FR-301). Un
