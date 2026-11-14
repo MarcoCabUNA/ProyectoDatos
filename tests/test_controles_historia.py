@@ -19,7 +19,9 @@ from ayudas_controladores import crear_backend  # noqa: E402
 from DTO.ResumenHistoriaDTO import ResumenHistoriaDTO  # noqa: E402
 from DTO.ActorDTO import ActorDTO  # noqa: E402
 from UIController.ControladorBackend import ErrorOperacion  # noqa: E402
-from UIController.ControlesJuego import MENSAJE_USO_HISTORIA, ControlesJuego  # noqa: E402
+from UIController.ControlesJuego import (LARGO_MAXIMO_LINEA, MENSAJE_USO_HISTORIA, PIDE_PAUSA,  # noqa: E402
+                                         ControlesJuego)
+from test_controlador_pygame import Entorno  # noqa: E402
 
 JUGADOR = ActorDTO("jugador", "jugador", "J", 30, 30, 5, 1, 100, 1)
 
@@ -35,7 +37,15 @@ class BackendQueAnota:
 
     def __init__(self):
         self.llamadas = []
+        self.otras = []
         self.falla_con = None
+
+    def __getattr__(self, nombre):
+        """Cualquier otra llamada (mover, esperar, retroceder...) se anota en `otras`: con la línea abierta no debe haber."""
+        def otra(*argumentos):
+            self.otras.append((nombre, argumentos))
+            raise ErrorOperacion(f"no debería llamarse a {nombre}")
+        return otra
 
     def _consulta(self, nombre, valor):
         self.llamadas.append((nombre, valor))
@@ -128,6 +138,125 @@ class PruebasComandoHistoria(unittest.TestCase):
                 self.assertEqual(archivo.read(), log_antes)                       # nada en partida.log
         finally:
             shutil.rmtree(carpeta, ignore_errors=True)
+
+
+def _teclas(controles, *eventos):
+    return [controles.procesar_evento(evento) for evento in eventos]
+
+
+def _escribir(controles, texto):
+    for caracter in texto:
+        controles.procesar_evento(tecla(ord(caracter.lower()), caracter=caracter))
+
+
+class PruebasLineaDeComandos(unittest.TestCase):
+    """T056: Enter abre la línea, Enter acepta, Esc la cierra sin pausar; y con la línea abierta las teclas del juego se
+    escriben (no actúan). Se revisaron los controles de View/ y de ControladorPygame: Enter solo activa botones de los
+    menús y acepta el nombre; en la partida no hacía nada. Esc sí choca: pedía la pausa (ver la última prueba)."""
+
+    def test_fr423_enter_abre_y_acepta_y_esc_cierra_sin_pausar(self):
+        backend = BackendQueAnota()
+        controles = controles_con(backend)
+        self.assertIsNone(controles.linea)
+        controles.procesar_evento(tecla(pygame.K_RETURN))
+        self.assertEqual(controles.linea, "")                                     # abierta y vacía
+        _escribir(controles, "historia 7")
+        self.assertEqual(controles.linea, "historia 7")
+        self.assertIsNone(controles.procesar_evento(tecla(pygame.K_RETURN)))
+        self.assertIsNone(controles.linea)                                        # aceptar la cierra
+        self.assertEqual(backend.llamadas, [("instante", 7)])
+        controles.procesar_evento(tecla(pygame.K_KP_ENTER))                       # el Enter del teclado numérico también
+        self.assertEqual(controles.linea, "")
+        self.assertIsNone(controles.procesar_evento(tecla(pygame.K_ESCAPE)))      # Esc cierra la línea: NO pide pausa
+        self.assertIsNone(controles.linea)
+        self.assertEqual(backend.llamadas, [("instante", 7)])                     # y no ejecuta nada
+        self.assertEqual(backend.otras, [])
+
+    def test_fr423_enter_con_la_linea_vacia_solo_la_cierra(self):
+        backend = BackendQueAnota()
+        controles = controles_con(backend)
+        _teclas(controles, tecla(pygame.K_RETURN), tecla(pygame.K_RETURN))
+        self.assertIsNone(controles.linea)
+        self.assertIsNone(controles.aviso)
+        self.assertEqual(backend.llamadas, [])
+
+    def test_con_la_linea_abierta_las_teclas_del_juego_se_escriben_y_no_actuan(self):
+        backend = BackendQueAnota()
+        controles = controles_con(backend)
+        controles.procesar_evento(tecla(pygame.K_RETURN))
+        for caracter in "wasdezqugvx ":
+            controles.procesar_evento(tecla(ord(caracter), caracter=caracter))
+        controles.procesar_evento(tecla(pygame.K_TAB))
+        controles.procesar_evento(tecla(pygame.K_UP))
+        controles.procesar_evento(tecla(pygame.K_F5))
+        controles.procesar_evento(tecla(pygame.K_z, mod=pygame.KMOD_CTRL))
+        self.assertEqual(backend.otras, [], "ninguna tecla de juego debe llegar al backend con la línea abierta")
+        self.assertEqual(controles.linea, "wasdezqugvx ")                          # lo imprimible quedó escrito
+
+    def test_con_la_linea_abierta_retroceso_borra_y_no_lee_el_pergamino(self):
+        backend = BackendQueAnota()
+        controles = controles_con(backend)
+        controles.procesar_evento(tecla(pygame.K_RETURN))
+        _escribir(controles, "hist")
+        ordenes = _teclas(controles, tecla(pygame.K_BACKSPACE), tecla(pygame.K_BACKSPACE))
+        self.assertEqual(controles.linea, "hi")
+        self.assertEqual(ordenes, [None, None])
+        self.assertEqual(backend.otras, [])                                       # retroceder() nunca se llamó
+        _teclas(controles, *[tecla(pygame.K_BACKSPACE)] * 5)                      # borrar de más no falla
+        self.assertEqual(controles.linea, "")
+
+    def test_la_linea_tiene_un_largo_maximo(self):
+        controles = controles_con(BackendQueAnota())
+        controles.procesar_evento(tecla(pygame.K_RETURN))
+        _escribir(controles, "a" * 200)
+        self.assertEqual(len(controles.linea), LARGO_MAXIMO_LINEA)
+
+    def test_esc_cierra_primero_el_panel_de_historia_y_despues_pide_la_pausa(self):
+        controles = controles_con(BackendQueAnota())
+        controles.procesar_comando("historia 3")
+        self.assertIsNotNone(controles.resumen)
+        self.assertIsNone(controles.procesar_evento(tecla(pygame.K_ESCAPE)))      # cierra el panel: sin pausa
+        self.assertIsNone(controles.resumen)
+        self.assertEqual(controles.procesar_evento(tecla(pygame.K_ESCAPE)), PIDE_PAUSA)
+
+    def test_una_accion_del_jugador_cierra_el_panel_y_la_consulta_no_toca_el_estado_vivo(self):
+        controles = controles_con(BackendQueAnota())
+        estado = controles.estado
+        controles.procesar_comando("historia 3")
+        self.assertIs(controles.estado, estado)                                    # el panel no toca el estado vivo
+        controles._aplicar(estado)                                                 # una acción del jugador
+        self.assertIsNone(controles.resumen)
+
+    def test_fr423_en_el_controlador_de_pygame_la_linea_y_el_panel_llegan_a_la_vista(self):
+        with Entorno() as e:
+            e.al_juego()
+            self.assertIsNone(e.pantalla().linea_comandos)
+            e.pulsar(pygame.K_RETURN)
+            self.assertEqual(e.pantalla().linea_comandos, "")
+            activaciones = e.pantalla().activaciones
+            e.escribir("historia 0")
+            self.assertEqual(e.pantalla().linea_comandos, "historia 0")
+            self.assertEqual(e.pantalla().activaciones, activaciones)             # escribir no cuenta como esperar ni suena
+            e.pulsar(pygame.K_RETURN)
+            pantalla = e.pantalla()
+            self.assertIsNone(pantalla.linea_comandos)
+            self.assertIsNotNone(pantalla.resumen)
+            self.assertEqual((pantalla.resumen.reloj, pantalla.resumen.sala_id), (0, 1))
+            self.assertEqual(pantalla.pantalla, "juego")
+            e.pulsar(pygame.K_ESCAPE)                                              # cierra el panel
+            self.assertIsNone(e.pantalla().resumen)
+            self.assertEqual(e.pantalla().pantalla, "juego")                       # sin pausar
+            e.pulsar(pygame.K_ESCAPE)
+            self.assertEqual(e.pantalla().pantalla, "pausa")                       # el siguiente Esc sí
+
+    def test_fr423_un_comando_mal_escrito_en_la_linea_deja_el_aviso_de_uso(self):
+        with Entorno() as e:
+            e.al_juego()
+            e.pulsar(pygame.K_RETURN)
+            e.escribir("historia abc")
+            e.pulsar(pygame.K_RETURN)
+            self.assertEqual(e.pantalla().aviso, MENSAJE_USO_HISTORIA)
+            self.assertIsNone(e.pantalla().resumen)
 
 
 class PruebasBackendHistoria(unittest.TestCase):

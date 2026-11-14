@@ -26,6 +26,10 @@ pantalla actual quedan en su valor por omisión (None o vacío).
                movido desde la última tecla, clic o rueda. La Vista lo usa para mostrar el nombre de un objeto del suelo
     activaciones   cuántas veces se activó un botón (con el ratón o con Enter) y cuántas veces se esperó en la partida
                (botón Esperar o tecla Z). Nunca se reinicia; la Vista toca un sonido cuando sube
+    resumen    el ResumenHistoriaDTO del último `historia` consultado ("juego", feature 004); la Vista lo muestra en un
+               panel de solo lectura sin calcular nada. None si no hay ninguno
+    linea_comandos   lo que el jugador lleva escrito en la línea de comandos ("juego"); None si está cerrada, "" si está
+               abierta y vacía
 
 Regla de los DTOs: solo transportan datos.
 """
@@ -35,6 +39,7 @@ from DTO.ElementoDTO import ElementoDTO
 from DTO.EstadoJuegoDTO import EstadoJuegoDTO
 from DTO.PuntajeDTO import PuntajeDTO
 from DTO.ReporteDatosDTO import ReporteDatosDTO
+from DTO.ResumenHistoriaDTO import ResumenHistoriaDTO
 
 
 @dataclass(frozen=True)
@@ -54,3 +59,5 @@ class PantallaDTO:
     criterio: str | None = None
     elemento_bajo_el_raton: ElementoDTO | None = None
     activaciones: int = 0
+    resumen: ResumenHistoriaDTO | None = None
+    linea_comandos: str | None = None

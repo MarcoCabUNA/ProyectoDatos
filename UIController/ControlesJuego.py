@@ -25,7 +25,8 @@ visible, así que sus controles no necesitan abrirlo:
     Cambiar la vista         V (real, peso, valor, nombre; el orden real no cambia)
     Pergamino de retroceso   Retroceso o Ctrl + Z
     Guardar / Cargar         Ctrl + S o F5 / Ctrl + L o F9      (las hace ControladorPygame; aquí solo se piden)
-    Menú                     Esc
+    Línea de comandos        Enter la abre (historia <t> o historia #k); Enter acepta; Esc la cierra
+    Menú                     Esc (con la línea o el panel de historia abiertos, Esc los cierra primero)
 
 Decisiones donde el documento deja un hueco (están anotadas para poder cambiarlas):
   - Objetivo prefijado: el último enemigo atacado si sigue en la sala; si no, el primero de la lista.
@@ -71,19 +72,21 @@ _TECLAS_DE_DIRECCION = (
 )
 _CLIC_IZQUIERDO = 1
 _CLIC_DERECHO = 3
+_TECLAS_ENTER = (pygame.K_RETURN, pygame.K_KP_ENTER)
+LARGO_MAXIMO_LINEA = 40         # lo más que se puede escribir en la línea de comandos
 
 AYUDA_JUEGO = (
     "WASD / flechas: moverse",
     "Clic en un enemigo (o Espacio): atacar",
     "Clic en un objeto del suelo: recoger",
     "E (o clic en la puerta): abrir una puerta",
-    "Z: esperar",
+    "Z: esperar   Enter: línea de comandos (historia)",
     "Rueda o Tab: recorrer el inventario",
     "U (o doble clic): usar   Q (o clic derecho): equipar",
     "G (o Mayús + clic): soltar   V: cambiar el orden",
     "Retroceso o Ctrl + Z: pergamino de retroceso",
     "Ctrl + S / F5: guardar   Ctrl + L / F9: cargar",
-    "Esc: menú",
+    "Esc: menú (o cierra la línea o el panel)",
 )
 
 
@@ -102,6 +105,7 @@ class ControlesJuego:
         self.estado = estado
         self.aviso: str | None = None
         self.resumen: ResumenHistoriaDTO | None = None       # el último `historia` consultado (solo lectura, feature 004)
+        self.linea: str | None = None                        # la línea de comandos: None cerrada, "" abierta y vacía
         self._objetivo: str | None = None
         self._ultimo_clic: tuple[int, int] | None = None     # (casilla, milisegundos) del último clic en el inventario
 
@@ -130,6 +134,9 @@ class ControlesJuego:
         self.aviso = None
         try:
             if tipo == pygame.KEYDOWN:
+                if self.linea is not None:
+                    self._teclado_en_la_linea(evento)           # con la línea abierta, el teclado es solo suyo
+                    return None
                 return self._teclado(evento)
             if tipo == pygame.MOUSEWHEEL:
                 self._rueda(evento.y)
@@ -160,6 +167,22 @@ class ControlesJuego:
                             else self._backend.historia_por_instante(numero))
         except ErrorOperacion as error:
             self.aviso = str(error)
+
+    def _teclado_en_la_linea(self, evento) -> None:
+        """Con la línea abierta las teclas del juego NO actúan: W, E, Z... se escriben, Retroceso borra (no lee el
+        pergamino) y Esc la cierra sin pausar. Enter acepta: cierra la línea y ejecuta lo escrito."""
+        tecla = evento.key
+        if tecla == pygame.K_ESCAPE:
+            self.linea = None
+        elif tecla in _TECLAS_ENTER:
+            texto, self.linea = self.linea, None
+            if texto.strip() != "":
+                self.procesar_comando(texto)
+        elif tecla == pygame.K_BACKSPACE:
+            self.linea = self.linea[:-1]
+        elif len(evento.unicode) == 1 and evento.unicode.isprintable() and len(self.linea) < LARGO_MAXIMO_LINEA \
+                and not evento.mod & pygame.KMOD_CTRL:
+            self.linea += evento.unicode
 
     # ================================================================== teclado
     def _teclado(self, evento) -> str | None:
@@ -200,7 +223,12 @@ class ControlesJuego:
             return PIDE_GUARDAR
         elif tecla == pygame.K_F9:
             return PIDE_CARGAR
+        elif tecla in _TECLAS_ENTER:
+            self.linea = ""                 # abre la línea de comandos (feature 004)
         elif tecla == pygame.K_ESCAPE:
+            if self.resumen is not None:
+                self.resumen = None         # primero se cierra el panel de historia: el juego sigue tal cual estaba
+                return None
             return PIDE_PAUSA
         return None
 
@@ -274,6 +302,7 @@ class ControlesJuego:
     def _aplicar(self, estado: EstadoJuegoDTO) -> None:
         """Una acción del jugador: el estado nuevo reemplaza al anterior. Si fue rechazada, el motivo es el aviso."""
         self.estado = estado
+        self.resumen = None                 # el panel de historia describe un estado pasado: una acción nueva lo cierra
         self._ultimo_clic = None            # el inventario pudo cambiar: un clic anterior ya no cuenta
         if not estado.terminado and estado.resultado is not None:
             self.aviso = estado.resultado
