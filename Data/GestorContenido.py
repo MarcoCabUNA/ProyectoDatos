@@ -28,8 +28,8 @@ Catálogo (§4.3): si se le pasa un ResolvedorCatalogo, cada lote de contenido q
 entrega enseguida, para que las fichas de sus enemigos, trampas y objetos queden disponibles
 antes de que el jugador entre (en lotes de hasta 10 ids, sin repetir lo que ya está).
 
-Fichas inválidas (FR-122, T052): si el resolvedor rechaza la ficha de un enemigo, SOLO la sala que lo
-tiene queda RECHAZADA (contenido no disponible); las demás salas del lote se cargan normalmente. El
+Fichas inválidas (FR-122, T052 y T055): si el resolvedor rechaza la ficha de un enemigo o de un objeto del
+suelo, SOLO la sala que lo tiene queda RECHAZADA (contenido no disponible); las demás salas del lote se cargan normalmente. El
 error se guarda en el array '_errores' (índice = id de sala). Una sala RECHAZADA no se vuelve a pedir
 y asegurar_sala() lanza otra vez ese mismo error sin hacer ninguna solicitud. La precarga no se
 interrumpe: la partida sigue mientras el jugador no intente entrar a esa sala.
@@ -252,13 +252,18 @@ class GestorContenido:
 
     def _rechazo_de(self, contenido) -> ErrorDatos | None:
         """
-        FR-122: el error de la primera ficha rechazada que menciona la sala (enemigos en el orden recibido),
-        o None. 'contenido' es un ContenidoSalaDTO o un SalaDTO. O(enemigos x fichas rechazadas).
+        FR-122: el error de la primera ficha rechazada que menciona la sala (primero los enemigos y luego los
+        objetos del suelo, T055, cada uno en el orden recibido), o None. 'contenido' es un ContenidoSalaDTO o
+        un SalaDTO. O((enemigos + objetos) x fichas rechazadas).
         """
         if self._resolvedor is None:
             return None
         for enemigo in contenido.enemigos:
             rechazo = self._resolvedor.rechazo(enemigo.tipo)
+            if rechazo is not None:
+                return rechazo
+        for id_objeto in contenido.objetos:
+            rechazo = self._resolvedor.rechazo(id_objeto)
             if rechazo is not None:
                 return rechazo
         return None

@@ -8,6 +8,9 @@ del error de red, el rechazo se recuerda por sala sin otra solicitud, y solo esa
 Todo pasa por FuenteRed + ApiFalsa (la cripta real del paquete, sin red), así que el JSON recorre el
 mismo camino que en el juego: FuenteJson -> DTO -> GestorEsqueleto / ResolvedorCatalogo / GestorContenido.
 El escenario H2-9 completo (el movimiento rechazado en Servicios) es la prueba T054 del integrante 1.
+
+T055 (escenarios H2-20 y H2-21): cierre_automatico de una salida y duracion de la ficha de un objeto, los dos
+enteros >= 1 si vienen (0, -5, "10" y true son inválidos). La duracion de un efecto de ficha no cambia.
 """
 import copy
 import os
@@ -15,6 +18,7 @@ import shutil
 import tempfile
 import unittest
 
+import Data.ValidacionDatos as validacion
 from Data.ClienteHttp import ErrorRed
 from Data.FuenteJson import FuenteJson
 from Data.GestorContenido import GestorContenido
@@ -22,9 +26,11 @@ from Data.GestorEsqueleto import GestorEsqueleto
 from Data.ResolvedorCatalogo import ResolvedorCatalogo
 from Data.ValidacionDatos import ErrorDatos, error_de_ficha, es_costo_valido
 from DTO.ConfiguracionDTO import ConfiguracionDTO
+from DTO.EfectoFichaDTO import leer_efectos
 from DTO.FichaEnemigoDTO import FichaEnemigoDTO
+from DTO.ObjetoDTO import ObjetoDTO
 from Service.ServicioPartida import ServicioPartida
-from tests.Utilidades import ID_CRIPTA, ApiFalsa, catalogo_real, contenido_real, fuente_red, pagina_real
+from tests.Utilidades import ID_CRIPTA, ApiFalsa, catalogo_real, contenido_real, fuente_red, pagina_real, sala_de
 
 CAZADOR = "ent_cazador_prueba"
 SIN_RANGO = object()   # marca: la ficha no trae el campo 'rango'
@@ -66,6 +72,45 @@ def ficha_dto(rango=SIN_RANGO) -> FichaEnemigoDTO:
     return FichaEnemigoDTO.desde_diccionario(ficha_cazador(rango))
 
 
+# ---- T055: cierre_automatico y duracion de objeto
+POCION = "itm_pocion_prueba"
+AUSENTE = object()                       # marca: el campo no viene en el JSON
+VALORES_INVALIDOS = (0, -5, "10", True)  # los de los escenarios H2-20 y H2-21
+
+
+def ficha_pocion(duracion=AUSENTE) -> dict:
+    ficha = {"id": POCION, "nombre": "Poción de prueba", "clase": "pocion", "peso": 1, "valor": 10,
+             "modificador_velocidad": 20}
+    if duracion is not AUSENTE:
+        ficha["duracion"] = duracion
+    return ficha
+
+
+def pocion_dto(duracion=AUSENTE) -> ObjetoDTO:
+    return ObjetoDTO.desde_diccionario(ficha_pocion(duracion))
+
+
+def api_con_objeto(sala: int, duracion) -> ApiFalsa:
+    """El contenido real de cripta-01 con la poción de prueba agregada al suelo de esa sala."""
+    contenido = copy.deepcopy(contenido_real())
+    for c in contenido:
+        if c["sala"] == sala:
+            c.setdefault("objetos", []).append(POCION)
+    return ApiFalsa(contenidos={ID_CRIPTA: contenido}, catalogo=catalogo_real() + [ficha_pocion(duracion)])
+
+
+def api_con_cierre(id_sala: int, direccion: str, cierre) -> ApiFalsa:
+    """La cripta real con ese cierre_automatico en una salida (AUSENTE: se quita el campo)."""
+    pagina = copy.deepcopy(pagina_real())
+    for sala in pagina["salas"]:
+        if sala["id"] == id_sala:
+            salida = sala["salidas"][direccion]
+            salida.pop("cierre_automatico", None)
+            if cierre is not AUSENTE:
+                salida["cierre_automatico"] = cierre
+    return ApiFalsa(paginas={ID_CRIPTA: [pagina]})
+
+
 class PruebasReglas(unittest.TestCase):
     """ValidacionDatos por sí solo."""
 
@@ -102,6 +147,42 @@ class PruebasReglas(unittest.TestCase):
         self.assertIsNone(error_de_ficha(FichaEnemigoDTO.desde_diccionario(sin_rango_no_cazador)))
         for ficha in catalogo_real():                            # el catálogo de la Parte 1 sigue siendo válido
             self.assertIsNone(error_de_ficha(FuenteJson.ficha_desde_diccionario(ficha)), ficha["id"])
+
+    def test_t055_fr122_cierres_validos_e_invalidos(self):
+        for cierre in (None, 1, 500):
+            self.assertTrue(validacion.es_cierre_valido(cierre), cierre)
+        for cierre in (0, -5, "10", True, False, 1.5):
+            self.assertFalse(validacion.es_cierre_valido(cierre), cierre)
+
+    def test_t055_fr122_objeto_con_duracion_invalida(self):
+        for duracion in VALORES_INVALIDOS:
+            with self.subTest(duracion=duracion):
+                error = error_de_ficha(pocion_dto(duracion))
+                self.assertIsInstance(error, ErrorDatos)
+                assert error is not None
+                self.assertEqual(error.id_ficha, POCION)
+                # mismo formato que el rango del cazador: qué ficha, qué campo y el valor recibido
+                self.assertEqual(str(error), f"Datos inválidos en 'ficha {POCION}': el campo 'duracion' de un "
+                                             f"objeto debe ser un entero >= 1 (se recibió {duracion!r})")
+
+    def test_t055_fr122_objeto_con_duracion_valida_o_sin_duracion(self):
+        for duracion in (AUSENTE, None, 1):
+            self.assertIsNone(error_de_ficha(pocion_dto(duracion)))
+
+    def test_t055_fr122_la_ficha_de_cazador_sigue_igual(self):
+        self.assertEqual(str(error_de_ficha(ficha_dto(-1))),
+                         f"Datos inválidos en 'ficha {CAZADOR}': el campo 'rango' de un cazador debe ser un "
+                         f"entero >= 0 (se recibió -1)")
+        self.assertIsNone(error_de_ficha(ficha_dto(0)))
+
+    def test_t055_fr122_la_duracion_de_un_efecto_no_cambia(self):
+        # P1: una duracion <= 0 dentro de un efecto se convierte en None, sin error (EfectoFichaDTO no se valida)
+        for duracion in (0, -5):
+            efectos = leer_efectos({"veneno": {"daño": 2, "duracion": duracion}})
+            self.assertEqual(len(efectos), 1)
+            self.assertIsNone(efectos[0].duracion)
+            enemigo = dict(ficha_cazador(600), comportamiento="errante", veneno={"daño": 2, "duracion": duracion})
+            self.assertIsNone(error_de_ficha(FichaEnemigoDTO.desde_diccionario(enemigo)))
 
 
 class PruebasEsqueleto(unittest.TestCase):
@@ -145,6 +226,31 @@ class PruebasEsqueleto(unittest.TestCase):
         for costos in casos:
             esqueleto = self.cargar(api_con_costos(costos))
             self.assertTrue(esqueleto.esta_cargado(), costos)
+
+    def mensaje_de(self, api: ApiFalsa) -> str:
+        fuente = fuente_red(api)
+        with self.assertRaises(ErrorDatos) as ctx:
+            GestorEsqueleto(fuente).cargar(fuente.obtener_datos_generales(ID_CRIPTA))
+        return str(ctx.exception)
+
+    def test_t055_fr122_cierre_automatico_invalido_no_carga(self):
+        for cierre in VALORES_INVALIDOS + (1.5,):
+            with self.subTest(cierre_automatico=cierre):
+                # sala 2, salida N (a la sala 3): sala, dirección, campo y valor recibido
+                self.assert_rechaza(api_con_cierre(2, "N", cierre), "sala 2", "salida N", "cierre_automatico",
+                                    repr(cierre))
+                # mismo formato que el error de costo, cambiando solo el nombre del campo
+                costo = self.mensaje_de(api_con_costos([(2, "N", cierre)]))
+                self.assertEqual(self.mensaje_de(api_con_cierre(2, "N", cierre)),
+                                 costo.replace("costo", "cierre_automatico"))
+
+    def test_t055_fr122_cierre_automatico_valido_carga_normal(self):
+        for cierre in (AUSENTE, None, 1, 500):
+            with self.subTest(cierre_automatico=cierre):
+                esqueleto = self.cargar(api_con_cierre(2, "N", cierre))
+                self.assertTrue(esqueleto.esta_cargado())
+                salida = sala_de(esqueleto, 2).salidas[0]          # N
+                self.assertEqual(salida.cierre_automatico, None if cierre is AUSENTE else cierre)
 
 
 class PruebasFichas(unittest.TestCase):
@@ -260,6 +366,41 @@ class PruebasFichas(unittest.TestCase):
             contenido.asegurar_sala(3)
         self.assertEqual(api.solicitudes_realizadas, antes)
 
+    def test_t055_fr122_objeto_con_duracion_invalida_deja_solo_esa_sala_sin_contenido(self):
+        # Igual que el cazador sin rango (T052): se rechaza, se recuerda, solo la sala 3 queda sin contenido
+        # y las demás fichas del lote siguen.
+        for duracion in VALORES_INVALIDOS:
+            with self.subTest(duracion=duracion):
+                api = api_con_objeto(3, duracion)
+                resolvedor, contenido = self.crear(api)
+                contenido.asegurar_sala(1)                                   # un lote con las 6 salas
+                self.assertIsInstance(resolvedor.rechazo(POCION), ErrorDatos)
+                self.assertIsNotNone(resolvedor.ficha("itm_coraza_cuero"))   # la otra ficha de la sala 3
+                self.assertIsNotNone(resolvedor.ficha("ent_rata_gigante"))
+                for id_sala in (1, 2, 4, 5, 6):
+                    self.assertTrue(contenido.contenido_disponible(id_sala), id_sala)
+                self.assertFalse(contenido.contenido_disponible(3))
+                self.assertIsNone(contenido.obtener_contenido(3))
+                antes = api.solicitudes_realizadas
+                for _ in range(2):                                           # recordado, sin otra solicitud
+                    with self.assertRaises(ErrorDatos) as ctx:
+                        contenido.asegurar_sala(3)
+                    self.assertIn(POCION, str(ctx.exception))
+                    self.assertIn("duracion", str(ctx.exception))
+                    with self.assertRaises(ErrorDatos):
+                        resolvedor.ficha(POCION)
+                self.assertEqual(api.solicitudes_realizadas, antes)
+                shutil.rmtree(self.carpeta)
+
+    def test_t055_fr122_objeto_valido_se_carga_normal(self):
+        for duracion in (AUSENTE, None, 1):
+            with self.subTest(duracion=duracion):
+                resolvedor, contenido = self.crear(api_con_objeto(3, duracion))
+                contenido.asegurar_sala(1)
+                self.assertTrue(contenido.contenido_disponible(3))
+                self.assertIsNone(resolvedor.rechazo(POCION))
+                shutil.rmtree(self.carpeta)
+
 
 class PruebasInicioDePartida(unittest.TestCase):
     """T002 (a) y (b): la partida no inicia; el programa no se cae (el error es un ErrorRed esperado)."""
@@ -290,6 +431,23 @@ class PruebasInicioDePartida(unittest.TestCase):
 
     def test_fr122_cazador_invalido_en_otra_sala_la_partida_inicia(self):
         contexto = self.iniciar(api_con_cazador(3))
+        self.assertEqual(contexto.jugador.Sala_Actual, 1)
+        self.assertFalse(contexto.contenido.contenido_disponible(3))
+
+    def test_t055_fr122_cierre_automatico_invalido_la_partida_no_inicia(self):
+        with self.assertRaises(ErrorDatos) as ctx:
+            self.iniciar(api_con_cierre(2, "N", 0))
+        self.assertIn("cierre_automatico", str(ctx.exception))
+        self.assertFalse(os.path.isdir(os.path.join(self.temp, "logs")))   # no se creó ningún log
+
+    def test_t055_fr122_objeto_invalido_en_la_sala_inicial_la_partida_no_inicia(self):
+        with self.assertRaises(ErrorDatos) as ctx:
+            self.iniciar(api_con_objeto(1, -5))                              # la sala 1 es la inicial
+        self.assertIn(POCION, str(ctx.exception))
+        self.assertIn("duracion", str(ctx.exception))
+
+    def test_t055_fr122_objeto_invalido_en_otra_sala_la_partida_inicia(self):
+        contexto = self.iniciar(api_con_objeto(3, 0))
         self.assertEqual(contexto.jugador.Sala_Actual, 1)
         self.assertFalse(contexto.contenido.contenido_disponible(3))
 

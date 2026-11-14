@@ -18,7 +18,7 @@ Datos). Las reglas del juego (puertas, llaves, movimiento) son de la Lógica.
 """
 from Data.ClienteHttp import ErrorRed
 from Data.FuenteDatos import FuenteDatos
-from Data.ValidacionDatos import ErrorDatos, es_costo_valido
+from Data.ValidacionDatos import ErrorDatos, es_cierre_valido, es_costo_valido
 from DTO.CriptaDTO import CriptaDTO
 from DTO.Direcciones import DIRECCIONES
 from DTO.SalaDTO import SalaDTO, SalidaDTO
@@ -36,8 +36,8 @@ class GestorEsqueleto:
     def cargar(self, cripta: CriptaDTO) -> None:
         """
         Descarga todas las páginas del esqueleto (una solicitud por página) y arma el grafo.
-        Si los datos son incoherentes lanza ErrorRed y el gestor queda sin cargar. Si un costo es
-        inválido (FR-122) lanza ErrorDatos, que también es un ErrorRed: la partida no inicia.
+        Si los datos son incoherentes lanza ErrorRed y el gestor queda sin cargar. Si un costo o un
+        cierre_automatico es inválido (FR-122) lanza ErrorDatos, que también es un ErrorRed: la partida no inicia.
         """
         if cripta.paginas < 1:
             raise ErrorRed(self._op(cripta), f"la cripta declara {cripta.paginas} páginas")
@@ -152,9 +152,9 @@ class GestorEsqueleto:
     @staticmethod
     def _validar_costos(cripta: CriptaDTO, salas: list[SalaDTO | None]) -> None:
         """
-        FR-122 (T002), con el esqueleto completo y antes de iniciar la partida. Dos pasadas, para que el
-        mensaje sea siempre el del primer problema real:
-          1. cada costo declarado es un entero >= 1;
+        FR-122 (T002 y T055), con el esqueleto completo y antes de iniciar la partida. Dos pasadas, para que
+        el mensaje sea siempre el del primer problema real:
+          1. cada costo declarado es un entero >= 1, y cada cierre_automatico que venga también (T055);
           2. si los dos lados de una salida declaran costo, es el mismo (FR-101).
         El otro lado se busca igual que en Lógica (Mazmorra._salida_inversa): la primera salida de la sala
         destino, en orden N, S, E, O, que vuelve a la sala de origen. O(salas): a lo sumo 4 salidas por sala.
@@ -165,9 +165,14 @@ class GestorEsqueleto:
                 continue
             for direccion in range(len(sala.salidas)):
                 salida = sala.salidas[direccion]
-                if salida is not None and salida.costo is not None and not es_costo_valido(salida.costo):
+                if salida is None:
+                    continue
+                if salida.costo is not None and not es_costo_valido(salida.costo):
                     raise ErrorDatos(op, f"la salida {DIRECCIONES[direccion]} de la sala {sala.id} declara "
                                          f"costo {salida.costo!r}: debe ser un entero >= 1")
+                if not es_cierre_valido(salida.cierre_automatico):                       # T055
+                    raise ErrorDatos(op, f"la salida {DIRECCIONES[direccion]} de la sala {sala.id} declara "
+                                         f"cierre_automatico {salida.cierre_automatico!r}: debe ser un entero >= 1")
         for sala in salas:
             if sala is None:
                 continue
