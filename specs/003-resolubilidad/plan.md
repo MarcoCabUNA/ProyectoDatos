@@ -18,6 +18,8 @@ Enfoque técnico ([research.md](research.md)):
 
 - **Datos de las llaves** (R1): `UbicacionLlaveDTO`, `FuenteDatos.obtener_llaves` (una solicitud, cuenta en el
   presupuesto), `llaves.json` en el paquete, persistencia por versión en `cache/llaves/` y validación de FR-321 en Data.
+  El almacén de llaves se elige en el mismo `if` donde `ServicioPartida.fuente()` elige `FuenteOffline` o `FuenteRed`
+  (offline → sin almacén; red → `AlmacenLlaves`); `ServicioResolubilidad` lo recibe ya decidido.
 - **Índice propio de llaves** (R3): ordenar las menciones con el `Ordenador` y compactar; sin `dict` ni búsquedas.
 - **Recorrido incremental por oleadas** (R4): la frontera se guarda **agrupada por llave** (`esperando[k]`, un array
   de listas indexado por el índice de la llave); al obtener una llave se reabren solo sus puertas. Cola de
@@ -26,10 +28,14 @@ Enfoque técnico ([research.md](research.md)):
   que pide `llave_salida` desde la sala desde la que se entra (FR-304); si no existe ninguna cara así, el motivo de
   FR-322. El cierre automático no se lee: no es por cara y no bloquea (FR-302).
 - **Orden** (R5): por oleada y, dentro de cada oleada, por id; todo ordenado con el `Ordenador`.
-- **Ciclos** (R6): una fase hacia afuera del mismo recorrido asigna a cada sala la puerta que la encierra; cada llave
-  no obtenible apunta a una sola llave y los ciclos de ese grafo se hallan en O(K) sin repetir.
-- **Bench** (R7): cuadrículas sintéticas por semilla con llaves encadenadas (100, 1 000 y 10 000 salas) contra la
-  alternativa de repetir el recorrido por llave.
+- **Ciclos** (R6): una fase hacia afuera del mismo recorrido asigna a cada sala la puerta que la bloquea, con la regla
+  de FR-310 (menor nivel; desempate por sala de origen y dirección); cada llave no obtenible apunta a una sola llave y
+  los ciclos de ese grafo y sus dependientes se hallan en O(K), sin repetir y **sin recursión**.
+- **Bench** (R7): `Logic/BenchResolubilidad.py`, que `Service/ServicioBench.py` agrega a su lista por defecto después
+  de `BenchLogica.medir`; reutiliza el cronómetro de `BenchLogica` sin modificarlo. Cuadrículas sintéticas por semilla con llaves encadenadas (100, 1 000 y 10 000 salas) contra la alternativa de
+  repetir el recorrido por llave, y las alternativas descartadas de R3 (búsqueda lineal de ids) y R4 (frontera en una
+  sola lista). Además, `Service/ServicioBench.py` mide la cripta con más salas del paquete local, leída sin red, para
+  el límite de 200 ms de §6.1 sobre «la cripta publicada más grande» (NFR-301, SC-306).
 - **Sin historial ni línea de tiempo** (R9): la verificación ocurre antes de que exista el motor.
 
 ## Contexto técnico
@@ -49,13 +55,16 @@ En memoria, arreglos planos indexados por sala, por cara (`sala*4 + dirección`)
 
 **Tipo de proyecto**: juego de escritorio por eventos, MVC en n capas (Principio I).
 
-**Metas de rendimiento**: < 200 ms con la cuadrícula sintética de 1 000 salas y 100 llaves (NFR-301, SC-306);
+**Metas de rendimiento**: < 200 ms con la cripta con más salas del paquete local, leída sin red, o, mientras el
+paquete no traiga criptas con `llaves.json`, con la cuadrícula sintética de 1 000 salas y 100 llaves (NFR-301, SC-306);
 crecimiento ≤ ×20 por cada ×10 de tamaño (SC-307).
 
 **Restricciones**: determinismo (Principio IV): el resultado no depende del orden del JSON; Abierto/Cerrado
 (Principio III): lo nuevo en módulos nuevos, los cambios a lo existente en la tabla de abajo.
 
 **Escala**: criptas publicadas de hasta 50 salas (paquete actual); sintéticas de hasta 10 000 salas y 1 000 llaves.
+La prueba de que los dependientes se hallan sin recursión usa una cripta de 6 000 salas (2 × 3 000) con unas
+1 500 dependientes, por encima de la escala de las mediciones (research R6 y R7).
 
 ## Verificación de la constitución
 
@@ -63,15 +72,15 @@ crecimiento ≤ ×20 por cada ×10 de tamaño (SC-307).
 
 | Principio | Cómo lo cumple este plan | Antes | Después |
 |---|---|---|---|
-| I. MVC en n capas | Data entrega y valida (llaves, almacén, FR-321). Logic decide (recorrido, orden, ciclos, reporte) y **no importa Data**: recibe `CriptaDTO`, `SalaDTO` y `UbicacionLlaveDTO`. Service orquesta y no valida: solo convierte los errores del paso de llaves en un reporte «no concluyó». La interfaz habla con Service por `ControladorBackend`. `--offline` cambia la fuente sin `if` dispersos (la única condición está donde ya se elige la fuente) | ✅ | ✅ |
+| I. MVC en n capas | Data entrega y valida (llaves, almacén, FR-321). Logic decide (recorrido, orden, ciclos, reporte) y **no importa Data**: recibe `CriptaDTO`, `SalaDTO` y `UbicacionLlaveDTO`. Service orquesta y no valida: solo convierte los errores del paso de llaves en un reporte «no concluyó». La interfaz habla con Service por `ControladorBackend`. `--offline` cambia la fuente sin `if` dispersos: la única condición es el `if` de `ServicioPartida.fuente()`, que elige a la vez la fuente y el almacén de llaves; `ServicioResolubilidad` no mira `config.offline` | ✅ | ✅ |
 | II. Bibliotecas y estructuras | `Cola` y `Ordenador` del equipo; arreglos indexados por entero; índice de llaves por ordenamiento y compactación (R3). Revisión de estructuras existentes: R0 | ✅ | ✅ |
 | III. KISS, YAGNI, Abierto/Cerrado | Módulos nuevos con type hints y docstring. Cambios a la primera entrega en la tabla siguiente, cada uno con su FR. `obtener_llaves` no es abstracto para no romper fuentes falsas | ✅ | ✅ |
 | IV. Determinismo | Reglas de orden y desempate definidas por los datos (R5, R6); una prueba permuta la entrada y compara (FR-306); 10 ejecuciones en procesos separados (SC-303). No consume el generador aleatorio (FR-301) | ✅ | ✅ |
-| V. Modos sin vista | `--verificar` va por `main.py` → `ControladorBackend` → Service, no importa pygame y escribe el resultado en la salida estándar; es el único modo sin vista que verifica (`--replay` y `--bench` no, FR-301, FR-313) | ✅ | ✅ |
+| V. Modos sin vista | `--verificar` va por `main.py` → `ControladorBackend` → Service, no importa pygame y escribe el resultado en la salida estándar; es el único modo sin vista que muestra el resultado de la verificación (`--replay` no verifica y `--bench` solo mide cuánto tarda la verificación, sin mostrar veredictos ni iniciar partidas; FR-301, FR-313) | ✅ | ✅ |
 | VI. Sin datos de una cripta concreta | Nada de ids, salas ni versiones en el código; el bench genera criptas por semilla | ✅ | ✅ |
 | VII. Red y presupuesto | Una solicitud de llaves, que cuenta en el presupuesto (`ClienteHttp`); persistida por versión, no se repite; 429 y red → mensaje con contexto, sin caerse (FR-320) | ✅ | ✅ |
-| VIII. Rendimiento con evidencia | B1 a B4 en `--bench`, con la alternativa descartada (R7); resultados a `DECISIONES.md` | ✅ | ✅ |
-| IX. Spec antes del código | La spec está confirmada (commits `a4782fe`, `f9ecaec` y `45e959e`, la segunda revisión del integrante 1). El plan se realineó con `45e959e` (FR-301, FR-302, FR-304, FR-313, FR-314, FR-322 y la Sesión 2026-11-13). Este plan no agrega reglas: los hallazgos H-1 a H-4 no cambian la spec | ✅ | ✅ |
+| VIII. Rendimiento con evidencia | B1 a B6 en `--bench`, con las alternativas descartadas de R3, R4 y §5.4 que se pueden medir con sentido (R7); resultados a `DECISIONES.md` | ✅ | ✅ |
+| IX. Spec antes del código | La spec está confirmada (commits `a4782fe`, `f9ecaec` y `45e959e`, la segunda revisión del integrante 1). El plan se realineó con `45e959e` (FR-301, FR-302, FR-304, FR-313, FR-314, FR-322 y la Sesión 2026-11-13) y después con la revisión del plan del integrante 1 («Sesión 2026-11-13 (revisión del plan por el integrante 1)»: FR-309, FR-310, FR-312, FR-314, H1-12, H2-13 y Suposiciones), que se confirma en la spec en un commit anterior al de este plan. Este plan no agrega reglas: los hallazgos H-1 a H-4 no cambian la spec | ✅ | ✅ |
 | X. Trazabilidad | Una prueba por escenario y por caso del Apéndice B, citando su FR (R10) | ✅ | ✅ |
 | XI. Bitácora de LLM | El prompt de este `/speckit-plan` se registra en `PROMPTS_LLM.md` (en el commit del plan) | ✅ | ✅ |
 
@@ -83,9 +92,15 @@ Ninguno bloquea; detalle en [research.md, Hallazgos](research.md#hallazgos).
 
 - **H-1** (decidido en la Sesión 2026-11-13 de la spec): el motor de P1 gana con `salida_abierta`, que se activa al
   abrir cualquier puerta que pida `llave_salida`; la verificación exige una cara cerrada hacia `sala_salida` que pida
-  `llave_salida` (FR-304, FR-322). Donde difieren, la verificación dice «no resoluble» y el motor dejaría ganar: va
-  hacia el lado seguro (para eso está `--forzar`). **El integrante 1 mantiene el motor como está y registra la
-  diferencia en `DECISIONES.md`.** Este plan no toca el motor y prueba el caso (research, R10).
+  `llave_salida` (FR-304, FR-322). Donde difieren, la verificación dice «no resoluble» y el motor dejaría ganar: **en
+  esta regla** va hacia el lado seguro (si la verificación dice «resoluble», el motor también deja ganar; para el caso
+  contrario está `--forzar`). **El integrante 1 mantiene el motor como está y registra la diferencia en
+  `DECISIONES.md`.** Este plan no toca el motor y prueba el caso (research, R10). **Límite conocido en la otra
+  dirección** (spec, Suposiciones y Sesión 2026-11-13 de la revisión del plan): en una puerta con cierre automático y
+  llaves distintas por cara, la verificación supone que la puerta sigue abierta (§3.5), pero el motor la cierra en sus
+  dos caras y volver pide la llave de la otra cara; ahí la verificación puede decir «resoluble» y el jugador quedar
+  encerrado. Es una decisión del grupo; la prueba del caso borde comprueba que la verificación no lo trata como
+  bloqueo.
 - **H-2** (informativo): la solicitud de llaves gasta 1 del presupuesto en vivo y no en el replay (FR-317).
 - **H-3** (datos): el paquete actual es de la primera parte, sin `llaves.json`, `costo` ni `rango`; hay que
   regenerarlo. Hasta entonces `--verificar --offline` da código 1, que es lo correcto.
@@ -143,18 +158,18 @@ Data/
 └── GestorLlaves.py               # NUEVO: almacén -> fuente -> validación                (FR-317, FR-320, FR-321)
 
 Logic/
-├── GrafoLlaves.py                # NUEVO: preparación (caras combinadas, índice de llaves, ubicaciones)
+├── GrafoLlaves.py                # NUEVO: preparación (caras combinadas, índice de llaves, ubicaciones sin repetir)
 ├── RecorridoLlaves.py            # NUEVO: oleadas incrementales, frontera, fase hacia afuera   (FR-302..FR-305, FR-308)
-├── CiclosLlaves.py               # NUEVO: ciclos y dependientes                          (FR-310)
-└── VerificadorResolubilidad.py   # NUEVO: veredicto y armado del DTO                     (FR-301..FR-310, FR-322)
+├── CiclosLlaves.py               # NUEVO: ciclos y dependientes, iterativo               (FR-310)
+├── VerificadorResolubilidad.py   # NUEVO: veredicto y armado del DTO                     (FR-301..FR-310, FR-322)
+└── BenchResolubilidad.py         # NUEVO: B1 a B6, criptas sintéticas por semilla, alternativas descartadas   (NFR-301..NFR-304)
 
 Service/
-├── ServicioResolubilidad.py      # NUEVO: verificar(id) e iniciar_partida_nueva(...)     (FR-301, FR-311..FR-315, FR-320)
-├── BenchResolubilidad.py         # NUEVO: B1 a B4, cuadrículas por semilla, alternativa ingenua   (NFR-301..NFR-304)
-├── ServicioBench.py              # MODIFICADO: agrega BenchResolubilidad.medir a la lista por defecto
-├── ServicioPartida.py            # MODIFICADO (integrante 3): iniciar_partida(..., datos=None)
+├── ServicioBench.py              # MODIFICADO (integrante 2): agrega BenchResolubilidad.medir a la lista por defecto, después de BenchLogica.medir
+├── ServicioResolubilidad.py      # NUEVO: verificar(id), iniciar_partida_nueva(...) y ErrorPartidaNoIniciada   (FR-301, FR-311..FR-315, FR-320)
+├── ServicioPartida.py            # MODIFICADO (integrante 3): iniciar_partida(..., datos=None); fuente() elige también el almacén de llaves
 ├── ContextoPartida.py            # MODIFICADO (integrante 3): campo final resolubilidad = None
-└── ErroresServicio.py            # MODIFICADO (integrante 3): + ErrorPartidaNoIniciada
+└── ErroresServicio.py            # MODIFICADO (integrante 3): importa ErrorPartidaNoIniciada y lo agrega a ERRORES_ESPERADOS
 
 UIController/
 ├── LectorArgumentos.py           # MODIFICADO: --verificar (grupo excluyente) y --forzar  (FR-314)
@@ -170,8 +185,8 @@ tests/
 ├── test_resolubilidad_reporte.py     # H2, SC-305 (Apéndice B caso 1)
 ├── test_resolubilidad_datos.py       # contrato de llaves, H2-7, H2-8, H3-4..H3-7
 ├── test_resolubilidad_servicio.py    # H4, H1-8, H1-9, R9 (Apéndice B caso 4)
-├── test_resolubilidad_cli.py         # H3-1..H3-3, H3-8, H3-9, SC-303, SC-308
-└── test_resolubilidad_bench.py       # generador por semilla, incremental = ingenua (NFR-304)
+├── test_resolubilidad_cli.py         # H3-1..H3-3, H3-8, H3-9, cripta inexistente, --forzar sin efecto, SC-303, SC-308
+└── test_resolubilidad_bench.py       # generadores por semilla, incremental = ingenua, alternativas = decisión (NFR-304)
 ```
 
 **Decisión de estructura**: se mantiene MVC en n capas. El recorrido y el reporte son de Logic porque son reglas del
@@ -190,13 +205,13 @@ después en `DECISIONES.md`.
 | `Data/FuenteOffline.py` | Ruta `criptas/{id}/llaves` | Leer las llaves del paquete | FR-318, FR-320 | Integrante 2 |
 | `Data/DescargadorPaquete.py` | Descargar y escribir `llaves.json` | El paquete debe traer las llaves | FR-318 | Integrante 2 |
 | `Data/ValidacionDatos.py` | `validar_ubicaciones` | FR-321 con `ErrorDatos` | FR-321 | Integrante 2 |
-| `Service/ServicioBench.py` | Agregar `BenchResolubilidad.medir` | Exponer las mediciones nuevas | NFR-304 | Integrante 2 |
-| `DTO/ConfiguracionDTO.py`, `UIController/LectorArgumentos.py` | `verificar` y `forzar`, **después** de `hasta` y `checkpoint_cada` | Banderas pedidas por la spec | FR-312, FR-314 | Integrante 2 (**después** de que el integrante 3 agregue los de la 004) |
+| `Service/ServicioBench.py` | Importar `BenchResolubilidad` desde `Logic` (como ya importa `BenchLogica`) y agregar `BenchResolubilidad.medir` a la lista por defecto, después de `BenchLogica.medir`. Sin import circular: `BenchResolubilidad` importa de `Logic/BenchLogica.py` solo `_cronometrar`, `_mejor_y_mediana` y `SEMILLA`, y ni `BenchLogica` ni `BenchRutas` importan `BenchResolubilidad` ni `ServicioBench`. Además, si el paquete local trae criptas con `llaves.json`, una fila que mide la verificación de la cripta con más salas del paquete (elegida por cantidad de salas, sin nombrar ids), leída sin red: Service orquesta `FuenteOffline`, `GestorEsqueleto`, `GestorLlaves` sin almacén y `VerificadorResolubilidad`; `Logic/BenchResolubilidad` no lee Data. Si no hay `llaves.json`, la fila no se agrega y la nota lo dice | Exponer las mediciones nuevas en `--bench` y medir «la cripta publicada más grande» de §6.1. `Logic/BenchLogica.py` no se modifica (feature 001 cerrada) | NFR-301, NFR-304, SC-306 | Integrante 2 |
+| `DTO/ConfiguracionDTO.py`, `UIController/LectorArgumentos.py` | `verificar` y `forzar`, **después** de `hasta` (ya están `checkpoint_cada` y `hasta`, commit `1b53bc9`) | Banderas pedidas por la spec | FR-312, FR-314 | Integrante 2 |
 | `main.py` | Rama `--verificar`: escribe las líneas de `TextoResolubilidad` en la salida estándar y devuelve 0, 3 o 1 | Pedido por la spec | FR-314 | Integrante 2, sobre la versión con la rama `--hasta` del integrante 3 |
-| `Service/ServicioPartida.py` | Parámetro final `datos=None` en `iniciar_partida`: si viene, no llama a `abrir_datos` | Para no pedir dos veces los datos generales y el esqueleto (presupuesto) | FR-311, FR-317 | Integrante 3 |
-| `Service/ContextoPartida.py` | Campo final `resolubilidad = None` (después de `linea` de la 004) | Dónde queda el reporte para mostrarlo | FR-313 | Integrante 3 |
-| `Service/ErroresServicio.py` | Agregar `ErrorPartidaNoIniciada` a `ERRORES_ESPERADOS` | Que el controlador lo muestre sin caerse | FR-311, FR-320 | Integrante 3 |
-| `UIController/ControladorBackend.py` | `iniciar` llama a `ServicioResolubilidad.iniciar_partida_nueva(..., config.forzar)` y guarda el reporte (también el de `ErrorPartidaNoIniciada`); métodos nuevos `verificar(id)` y `resolubilidad()` | La interfaz solo habla con Service por el controlador | FR-311 a FR-315 | Integrante 3 |
+| `Service/ServicioPartida.py` | (a) Parámetro final `datos=None` en `iniciar_partida`: si viene, no llama a `abrir_datos`. (b) El `if` de `fuente()` elige también el almacén de llaves: offline → `FuenteOffline()` y sin almacén; red → `FuenteRed()` y `AlmacenLlaves()`. Método nuevo `almacen_llaves() -> AlmacenLlaves \| None` (llama antes a `fuente()`) y parámetro final `almacen_llaves=None` en el constructor para las pruebas que inyectan la fuente | (a) No pedir dos veces los datos generales y el esqueleto (presupuesto). (b) Una sola condición para `--offline` (Principio I): `ServicioResolubilidad` no vuelve a mirar `config.offline` | FR-311, FR-317, FR-318 | Integrante 3; lo escribe el integrante 2 y ella lo revisa antes del merge (acuerdo del 14/11) |
+| `Service/ContextoPartida.py` | Campo final `resolubilidad = None` (después de `linea` de la 004) | Dónde queda el reporte para mostrarlo | FR-313 | Integrante 3; lo escribe el integrante 2 y ella lo revisa antes del merge (acuerdo del 14/11) |
+| `Service/ErroresServicio.py` | Importar `ErrorPartidaNoIniciada` de `Service/ServicioResolubilidad.py` y agregarlo a `ERRORES_ESPERADOS`, como ya se hace con `ErrorCarga` (`ServicioGuardado`) y `ErrorReplay` (`ServicioReplay`). Sin import circular: `ServicioResolubilidad` no importa `ErroresServicio` (solo lo importa `ControladorBackend`) | Que el controlador lo muestre sin caerse | FR-311, FR-320 | Integrante 3; lo escribe el integrante 2 y ella lo revisa antes del merge (acuerdo del 14/11) |
+| `UIController/ControladorBackend.py` | `iniciar` llama a `ServicioResolubilidad.iniciar_partida_nueva(..., config.forzar)` y guarda el reporte (también el de `ErrorPartidaNoIniciada`); métodos nuevos `verificar(id)` y `resolubilidad()`, al final de la clase | La interfaz solo habla con Service por el controlador | FR-311 a FR-315 | Integrante 3; lo escribe el integrante 2 y ella lo revisa antes del merge (acuerdo del 14/11) |
 | `View/…`, `UIController/ControladorPygame.py` | Mostrar el reporte antes de la primera acción, como advertencia con `--forzar`, y completo si no inicia | §7.3 | FR-311 a FR-313 | Integrante 3 |
 | `README.md` | Comandos `--verificar` y `--forzar` (§7.2) | Pedido por el enunciado | FR-314 | Quien actualice el README (acordar) |
 | `paquete/` | Regenerar con `DescargadorPaquete` cuando el API publique la Parte II | Hoy no trae `llaves.json`, `costo` ni `rango` (H-3) | FR-318 | Integrante 2, avisando antes |
@@ -209,12 +224,20 @@ después en `DECISIONES.md`.
 
 **Con el integrante 3**:
 
-1. **Hoy (13/11)**: revisar y confirmar [contrato-reporte-resolubilidad.md](contracts/contrato-reporte-resolubilidad.md).
-2. **Orden de `ConfiguracionDTO` y `LectorArgumentos`**: ella agrega primero `hasta` y `checkpoint_cada`; después van
-   `verificar` y `forzar`. `--verificar` va en el grupo excluyente de `--replay` y `--bench`.
+1. **Hecho**: [contrato-reporte-resolubilidad.md](contracts/contrato-reporte-resolubilidad.md) quedó confirmado por el
+   integrante 3 el 14/11, sin cambios (T002).
+2. **Orden de `ConfiguracionDTO` y `LectorArgumentos`**: **ya está hecho** lo suyo (commit `1b53bc9`):
+   `checkpoint_cada` (por defecto 20) y después `hasta` en `ConfiguracionDTO`; `--checkpoint-cada` y `--hasta` en
+   `LectorArgumentos`. `verificar` y `forzar` van **detrás de `hasta`**. `--verificar` va en el grupo excluyente de
+   `--replay` y `--bench`.
 3. **`main.py`**: la rama `--verificar` se agrega sobre su versión con `--hasta`.
 4. Los cambios de su código de la tabla de arriba (`ServicioPartida`, `ContextoPartida`, `ErroresServicio`,
    `ControladorBackend`, vista). El parámetro `datos` y el campo `resolubilidad` van al final, con valor por defecto.
+   **Acuerdo del 14/11**: los cambios a `ServicioPartida`, `ContextoPartida`, `ErroresServicio` y `ControladorBackend`
+   **los escribe el integrante 2**, con sus pruebas, sobre la versión de su rama (`origin/kris`, que se mergea antes
+   de empezar), y **ella los revisa antes del merge**. Condiciones: `ContextoPartida.resolubilidad` va después de
+   `linea`; los métodos nuevos de `ControladorBackend` van al final de la clase; quien suba segundo hace el merge.
+   **La vista sigue siendo suya.**
 5. **Línea de tiempo**: la verificación no registra nada en la línea ni en el historial (R9). Su `iniciar_partida`
    con la línea y los grabadores no cambia; solo recibe `datos`.
 
@@ -227,6 +250,9 @@ después en `DECISIONES.md`.
    `DECISIONES.md` la diferencia conocida entre la verificación y el motor (Sesión 2026-11-13 de la spec). Este plan
    no toca el motor; la prueba del caso queda en `tests/test_resolubilidad_logica.py`.
 3. Revisión cruzada del plan, como en las specs.
+4. **Dependencia de la 001 en el bench**: `Logic/BenchResolubilidad.py` reutiliza `_cronometrar`, `_mejor_y_mediana`
+   y `SEMILLA`, que son privadas de `Logic/BenchLogica.py` (integrante 1, feature 001). El integrante 1 confirmó el
+   14/11 que no les cambia el nombre ni la firma sin avisar: si cambian, el integrante 1 avisa antes.
 
 **Con los tres**: regenerar `paquete/` (H-3) cambia archivos que usan pruebas de todos; se avisa y se hace en un
 commit propio.
@@ -239,12 +265,18 @@ Criptas sintéticas deterministas por semilla (Principio VIII); detalle en
 | # | Qué mide | Tamaños | Para qué |
 |---|---|---|---|
 | B1 | Verificación completa, cripta resoluble | 100 / 1 000 / 10 000 salas (10, 100, 1 000 llaves) | SC-306 (< 200 ms en 1 000), SC-307 (≤ ×20) |
-| B2 | Alternativa: repetir el recorrido completo por cada llave | los mismos | SC-307 (crece al menos el doble que B1) |
-| B3 | Verificación completa, no resoluble (ciclo + dependientes) | los mismos | NFR-303 |
+| B2 | Alternativa: repetir el recorrido completo por cada llave | los mismos (10 000: una sola repetición, con nota) | SC-307 (crece al menos el doble que B1) |
+| B3 | Verificación completa, no resoluble (un ciclo de una llave + cadena de unas K/2 dependientes) | los mismos | NFR-303 |
 | B4 | Desglose: preparación, recorrido, ciclos y armado | 1 000 salas | Dónde se va el tiempo |
+| B5 | Índice de llaves (R3): ordenar y compactar frente a la búsqueda lineal de ids (descartada) | las cuadrículas de B1 (10 000: la lineal con una sola repetición, con nota) | Respaldar R3: O(M log M) frente a O(M·K) |
+| B6 | Recorrido (R4): frontera agrupada por llave frente a una sola lista revisada entera al obtener cada llave (descartada) | «peine» de 100 / 1 000 / 3 000 dientes (3 000: la lista única con una sola repetición, con nota) | Respaldar R4: O(S + E + U) frente a O(K·F) |
 
-Además, `DECISIONES.md` gana la sección «Resolubilidad» con problema, alternativas, decisión, complejidad y los
-números de B1 a B4.
+B1 a B6 usan criptas sintéticas. Además, `Service/ServicioBench.py` agrega la fila de la **cripta con más salas del
+paquete local**, leída sin red, cuando el paquete trae criptas con `llaves.json` (NFR-301, SC-306: «la cripta
+publicada más grande» de §6.1); si no, la fila no se agrega, la nota lo dice y vale B1 a 1 000 salas.
+
+Las alternativas descartadas que no se miden (con su motivo) están en research, R7. Además, `DECISIONES.md` gana la
+sección «Resolubilidad» con problema, alternativas, decisión, complejidad y los números de B1 a B6.
 
 ## Riesgos
 
@@ -258,6 +290,7 @@ números de B1 a B4.
 | R-6 | **Ordenar las menciones domina el tiempo** | B4 lo muestra; si pasa, se ordenan solo las caras con llave (son pocas) |
 | R-7 | **Entrega atrasada del contrato de llaves** | Este plan lo fija; es la primera tarea de `tasks.md` |
 | R-8 | **Decidir por `alcanzable[sala_salida]`** en lugar de por la cara que pide `llave_salida` | El veredicto usa `caras_de_salida` (research R4); pruebas de los casos borde de la salida y de la diferencia con el motor (FR-304, FR-322) |
+| R-9 | **Recursión en una cadena larga de dependientes** (límite de Python: 1 000 llamadas por defecto) | `CiclosLlaves` es iterativo (research R6); prueba con una cadena de más de 1 000 llaves (research R7) |
 
 ## Mapa de requisitos a componentes
 
@@ -268,14 +301,15 @@ números de B1 a B4.
 | FR-303, FR-316 | `UbicacionLlaveDTO`; `GrafoLlaves.llaves_en_sala` (todas las copias) |
 | FR-304, FR-322 | `GrafoLlaves` (`es_cara_de_salida`, `hay_puerta_de_salida`), `RecorridoLlaves` (`caras_de_salida`), `VerificadorResolubilidad` (veredicto y texto del motivo) |
 | FR-305, FR-306 | `RecorridoLlaves` (oleadas) + `Ordenador` (R5) |
-| FR-307, FR-309 | `VerificadorResolubilidad` (no obtenibles con ubicaciones o «sin ubicación») |
+| FR-307, FR-309 | `VerificadorResolubilidad` (no obtenibles con ubicaciones o «sin ubicación»); `GrafoLlaves` (ubicaciones idénticas una sola vez) |
 | FR-308 | `RecorridoLlaves` (`esperando` y `sin_llave` → frontera) |
-| FR-310 | `RecorridoLlaves` (fase hacia afuera) + `CiclosLlaves` |
-| FR-311, FR-312, FR-313 | `ServicioResolubilidad`, `ControladorBackend`, vista (antes de la primera acción del jugador) |
-| FR-314, FR-315 | `LectorArgumentos`, `main.py` (salida estándar), `ServicioResolubilidad.verificar`, `TextoResolubilidad` |
-| FR-317, FR-319 | `GestorLlaves`, `AlmacenLlaves` (`validar_version`) |
+| FR-310 | `RecorridoLlaves` (fase hacia afuera: puerta que bloquea según la regla de FR-310) + `CiclosLlaves` (iterativo) |
+| FR-311, FR-312, FR-313 | `ServicioResolubilidad`, `ControladorBackend`, vista (antes de la primera acción del jugador); `--forzar` sin efecto con `--replay`, `--bench` y la carga (no pasan por `ServicioResolubilidad`) |
+| FR-314, FR-315 | `LectorArgumentos`, `main.py` (salida estándar), `ServicioResolubilidad.verificar` (cripta inexistente → `no_concluyo`, código 1), `TextoResolubilidad` |
+| FR-317 | `GestorLlaves`, `AlmacenLlaves`; `ServicioPartida.fuente()` elige el almacén (red) o ninguno (offline) |
+| FR-319 | `AlmacenLlaves` (`validar_version`) y `GestorLlaves` para las llaves; `AlmacenCatalogo` para los datos que ya persistía la primera parte (sin cambios: su carpeta por versión del catálogo ya los invalida) |
 | FR-318 | `LectorPaquete`, `DescargadorPaquete` |
 | FR-320 | `GestorLlaves` → `ErrorRed` → reporte `no_concluyo` en `ServicioResolubilidad` |
 | FR-321 | `validar_ubicaciones` (Data); «sin ubicación» en Logic |
 | FR-323 | `GestorEsqueleto.cargar` (ya existe); `ServicioResolubilidad` lo propaga al iniciar |
-| NFR-301 a NFR-304 | `BenchResolubilidad` (B1 a B4) y `DECISIONES.md` |
+| NFR-301 a NFR-304 | `Logic/BenchResolubilidad` (B1 a B6), enganchado en la lista por defecto de `Service/ServicioBench.py`, y `DECISIONES.md` |

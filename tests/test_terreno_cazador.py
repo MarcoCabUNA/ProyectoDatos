@@ -5,6 +5,7 @@ Una prueba por escenario de aceptación de spec.md, con el escenario y el FR en 
 
     python -m unittest tests.test_terreno_cazador -v
 """
+import copy
 import os
 import random
 import sys
@@ -28,8 +29,10 @@ from Logic.Mazmorra import CierrePuerta, Mazmorra  # noqa: E402
 from Service.ServicioAccionJugador import ServicioAccionJugador  # noqa: E402
 from Service.ServicioPartida import ServicioPartida  # noqa: E402
 from tests.TestValidacionDatos import CAZADOR, SIN_RANGO, api_con_cazador, api_con_costos  # noqa: E402
-from tests.Utilidades import ID_CRIPTA, fuente_red  # noqa: E402
-from tests.ayudas_terreno import (ID_CAZADOR_SIN_RANGO, LLAVE_FINAL, FuenteConFichaInvalida,  # noqa: E402
+from tests.Utilidades import ID_CRIPTA, ApiFalsa, fuente_red, pagina_real  # noqa: E402
+from tests.ayudas_terreno import (ID_CAZADOR_SIN_RANGO, ID_ENEMIGO_BOTIN_INVALIDO,  # noqa: E402
+                                  ID_OBJETO_DURACION_INVALIDA, LLAVE_FINAL, FuenteConBotinInvalido,
+                                  FuenteConFichaInvalida, FuenteConObjetoInvalido,
                                   cuadricula_con_costos, ficha_cazador, ficha_errante, ficha_rastreador,
                                   mazmorra_con_costos, motor_con, poner_enemigo, salida)
 
@@ -465,7 +468,7 @@ class TestCazadorBordes(unittest.TestCase):
 
 
 class TestDatosInvalidos(unittest.TestCase):
-    """FR-122, escenarios H2-9 y H2-17 a H2-19: datos inválidos de terreno y de cazador."""
+    """FR-122, escenarios H2-9 y H2-17 a H2-22: datos inválidos de terreno, de cazador, de objeto y de botín."""
 
     def test_h2_9_fr122_ficha_invalida_rechaza_entrar(self):
         """
@@ -562,6 +565,102 @@ class TestDatosInvalidos(unittest.TestCase):
                 error = _no_inicia(self, api_con_cazador(1, rango))    # la sala 1 es la inicial de cripta-01
                 self.assertIn(CAZADOR, error)
                 self.assertIn("rango", error)
+
+    def test_h2_20_fr122_cierre_automatico_invalido_no_inicia(self):
+        """
+        Escenario H2-20 (FR-122, T056): un esqueleto con una salida cuyo `cierre_automatico` es 0, -5, "10" o true
+        no deja iniciar la partida; el error indica la sala, la dirección y el campo, y el programa no se cae.
+        La parte de `--forzar` (003 FR-323) se agrega cuando exista la spec 003, como en H3-7.
+        """
+        for cierre in (0, -5, "10", True):
+            with self.subTest(cierre_automatico=cierre):
+                error = _no_inicia(self, _api_con_cierre_automatico(2, "N", cierre))
+                for texto in ("sala 2", "salida N", "cierre_automatico", repr(cierre)):
+                    self.assertIn(texto, error)
+
+    def test_h2_21_fr122_duracion_invalida_deja_la_sala_sin_contenido(self):
+        """
+        Escenario H2-21 (FR-122, T056): con FuenteConObjetoInvalido (una poción con `duracion` 0, -5, "10" o true en
+        la sala 2, que no es la inicial), la partida inicia y entrar a la sala 2 se rechaza con un mensaje que nombra
+        la ficha y el campo `duracion`; el jugador sigue en la sala 1, el reloj no avanza y la partida sigue.
+        """
+        for duracion in (0, -5, "10", True):
+            with self.subTest(duracion=duracion):
+                fuente = FuenteConObjetoInvalido(3, sala_objeto=2, duracion=duracion)
+                acciones = ServicioAccionJugador()
+                with tempfile.TemporaryDirectory() as carpeta:
+                    partida = ServicioPartida(ConfiguracionDTO(), fuente=fuente,
+                                              carpeta_cache=os.path.join(carpeta, "cache"),
+                                              carpeta_logs=os.path.join(carpeta, "logs"))
+                    ctx = partida.iniciar_partida("cuadricula", "Ana", semilla=1)
+                    reloj = ctx.motor.reloj
+
+                    estado = acciones.ejecutar(ctx, AccionDTO("mover", direccion=E))
+                    mensaje = estado.resultado
+                    self.assertIsNotNone(mensaje)
+                    self.assertIn(ID_OBJETO_DURACION_INVALIDA, mensaje)
+                    self.assertIn("duracion", mensaje)
+                    self.assertFalse(mensaje.startswith("Sin conexión"))
+                    self.assertEqual(estado.sala.id, 1)
+                    self.assertEqual(estado.reloj, reloj)
+
+                    # La partida sigue: el jugador puede moverse a otra sala.
+                    estado = acciones.ejecutar(ctx, AccionDTO("mover", direccion=S))
+                    self.assertIsNone(estado.resultado)
+                    self.assertEqual(estado.sala.id, 4)
+
+    def test_h2_22_fr122_botin_invalido_deja_la_sala_sin_contenido(self):
+        """
+        Escenario H2-22 (FR-122, T057): con FuenteConBotinInvalido, un errante cuya `suelta` trae una poción con
+        `duracion` 0, -5, "10" o true. En la sala 2 (no inicial), la partida inicia y entrar a la sala 2 se rechaza
+        con un mensaje que nombra la ficha del enemigo, el campo `suelta` y la ficha rechazada; el jugador sigue
+        en la sala 1, el reloj no avanza y la partida sigue. En la sala 1 (la inicial), la partida no inicia.
+        """
+        self.skipTest("pendiente de T057 (integrante 2): Data todavía no rechaza un enemigo por su suelta")
+        acciones = ServicioAccionJugador()
+        for duracion in (0, -5, "10", True):
+            with self.subTest(sala="no inicial", duracion=duracion):
+                with tempfile.TemporaryDirectory() as carpeta:
+                    partida = _partida_con(FuenteConBotinInvalido(3, sala_enemigo=2, duracion=duracion), carpeta)
+                    ctx = partida.iniciar_partida("cuadricula", "Ana", semilla=1)
+                    reloj = ctx.motor.reloj
+
+                    estado = acciones.ejecutar(ctx, AccionDTO("mover", direccion=E))
+                    mensaje = estado.resultado
+                    self.assertIsNotNone(mensaje)
+                    for texto in (ID_ENEMIGO_BOTIN_INVALIDO, "suelta", ID_OBJETO_DURACION_INVALIDA):
+                        self.assertIn(texto, mensaje)
+                    self.assertFalse(mensaje.startswith("Sin conexión"))
+                    self.assertEqual(estado.sala.id, 1)
+                    self.assertEqual(estado.reloj, reloj)
+
+                    estado = acciones.ejecutar(ctx, AccionDTO("mover", direccion=S))
+                    self.assertIsNone(estado.resultado)
+                    self.assertEqual(estado.sala.id, 4)
+
+            with self.subTest(sala="inicial", duracion=duracion):
+                with tempfile.TemporaryDirectory() as carpeta:
+                    partida = _partida_con(FuenteConBotinInvalido(3, sala_enemigo=1, duracion=duracion), carpeta)
+                    with self.assertRaises(ErrorDatos) as error:
+                        partida.iniciar_partida("cuadricula", "Ana", semilla=1)
+                    for texto in (ID_ENEMIGO_BOTIN_INVALIDO, "suelta", ID_OBJETO_DURACION_INVALIDA):
+                        self.assertIn(texto, str(error.exception))
+                    self.assertFalse(os.path.isdir(os.path.join(carpeta, "logs")))    # no se creó partida.log
+
+
+def _partida_con(fuente, carpeta: str) -> ServicioPartida:
+    """Un ServicioPartida con esa fuente y la caché y los logs dentro de 'carpeta' (H2-22)."""
+    return ServicioPartida(ConfiguracionDTO(), fuente=fuente, carpeta_cache=os.path.join(carpeta, "cache"),
+                           carpeta_logs=os.path.join(carpeta, "logs"))
+
+
+def _api_con_cierre_automatico(id_sala: int, direccion: str, cierre):
+    """La cripta real con un `cierre_automatico` en la salida 'direccion' de la sala 'id_sala' (H2-20)."""
+    pagina = copy.deepcopy(pagina_real())
+    for sala in pagina["salas"]:
+        if sala["id"] == id_sala:
+            sala["salidas"][direccion]["cierre_automatico"] = cierre
+    return ApiFalsa(paginas={ID_CRIPTA: [pagina]})
 
 
 def _no_inicia(prueba: unittest.TestCase, api) -> str:
@@ -661,7 +760,27 @@ class TestModosSinVista(unittest.TestCase):
         Escenario H3-8 (FR-118): en `--bench`, con cuadrículas con costos y cazadores, cada decisión de cazador
         coincide con un cálculo desde cero y la medición corre sin vista.
         """
-        self.skipTest("pendiente de la fase 7 (T042 a T045): `Logic/BenchRutas.py` todavía no existe")
+        import re
+        import subprocess
+        from Logic import BenchRutas
+
+        # Las mediciones con cazadores comparan cada decisión con paso_desde_cero y fallan si alguna difiere.
+        ciclo = BenchRutas.medir_ciclo_cazadores((4,), lado=8, otros=2, ciclos=3, ciclos_comprobados=40)
+        for r in ciclo:
+            comprobadas = int(re.search(r"(\d+) decisiones de cazador comprobadas contra paso_desde_cero",
+                                        r.nota).group(1))
+            self.assertGreater(comprobadas, 0, r.nota)
+        for r in BenchRutas.medir_compartida((5,), lado=8, ciclos=10, repeticiones=1)[1:]:
+            self.assertIn("decisiones iguales a paso_desde_cero", r.nota)
+        for r in BenchRutas.medir_invalidacion(cazadores=5, lado=8, ciclos=20, repeticiones=1):
+            self.assertIn("decisiones iguales a recalcular siempre", r.nota)
+
+        # Sin vista: el bench de rutas no carga la Vista ni pygame (Principio V).
+        codigo = ("import sys; from Logic import BenchLogica, BenchRutas; "
+                  "BenchRutas.medir_ciclo_cazadores((2,), lado=6, otros=1, ciclos=2, ciclos_comprobados=2); "
+                  "print(any(m == 'pygame' or m.startswith(('pygame.', 'View')) for m in sys.modules))")
+        salida = subprocess.run([sys.executable, "-c", codigo], cwd=RAIZ, capture_output=True, text=True, check=True)
+        self.assertEqual(salida.stdout.strip(), "False")
 
 
 if __name__ == "__main__":

@@ -13,13 +13,21 @@ Formato del archivo (texto UTF-8, versión 1 del formato):
     semilla=12345
     #ACCIONES
     mover|0||                    <- una línea por acción: AccionDTO.a_linea() (Integrante 3)
+    # ir a 12                    <- comentario (T071, FR-261 de la spec 002): leer() lo ignora
+    mover|2||
     recoger|||itm_daga_oxidada
+
+  Después de #ACCIONES, toda línea que empieza con '#' es un comentario: no es una acción, no cuenta
+  en acciones_escritas() y no cambia la reproducción. Lo usa «ir a» para dejar la orden en el log
+  (para depurar) además de cada paso como un movimiento normal. En el encabezado (antes de #ACCIONES)
+  no hay comentarios: un '#' ahí sigue siendo un error.
 
 Uso desde Servicios:
     # partida normal (ruta_libre elige el primer nombre que no existe: logs/partida_001.log, _002, ...)
     bitacora = BitacoraReplayIO(BitacoraReplayIO.ruta_libre("logs"))
     bitacora.iniciar(EncabezadoReplayDTO(cripta.id, cripta.version, resolvedor.version_catalogo(), semilla))
     bitacora.anexar(accion)                 # después de cada acción del jugador
+    bitacora.anexar_comentario("ir a 12")   # «ir a»: la orden como comentario; cada paso va con anexar()
 
     # al guardar la partida (paso 12b): el guardado lleva bitacora.ruta() y bitacora.acciones_escritas()
     # al cargar esa partida: log nuevo con las primeras N acciones del anterior, y se sigue anexando ahí
@@ -37,7 +45,8 @@ Decisiones:
     si el programa se cae después, el log tiene todas las acciones hasta ese momento.
   - Antes de escribir una acción se comprueba que al leerla vuelva igual
     (desde_linea(a_linea(a)) == a). Así nunca se escribe una línea que el replay leería distinto
-    (por ejemplo un id con '|' o un campo vacío "" que se leería como None).
+    (por ejemplo un id con '|' o un campo vacío "" que se leería como None). Tampoco una acción
+    cuya línea empiece con '#': al leerla se tomaría como comentario y se perdería.
   - Si la última línea quedó a medio escribir (sin el '\\n' final) se descarta y se avisa en
     PartidaReplayDTO.ultima_linea_descartada: aunque se pudiera leer, podría estar cortada
     ("atacar||e-20" en lugar de "e-201") y reproduciría otra cosa.
@@ -52,11 +61,13 @@ Decisiones:
     meter todas las acciones dentro del archivo de guardado (lo haría crecer en cada guardado),
     el guardado solo recuerda la ruta del log y cuántas acciones tenía; continuar_desde() copia esas
     acciones a un log nuevo. Así una partida cargada se sigue pudiendo reproducir desde la semilla.
+    Los comentarios no se copian: son solo para depurar y no cambian la reproducción.
 
-Costos (n = acciones del log):
+Costos (n = acciones del log, m = líneas de la sección de acciones, comentarios incluidos):
     anexar            O(1) por acción (abrir en modo "a" no lee lo que ya hay)
-    leer              O(n) tiempo y memoria (el array de acciones)
-    continuar_desde   O(n) una sola vez al cargar (lee el log anterior y escribe el nuevo de una vez)
+    anexar_comentario O(1) por comentario (igual que anexar)
+    leer              O(m) tiempo; O(n) memoria para el array de acciones
+    continuar_desde   O(m) una sola vez al cargar (lee el log anterior y escribe el nuevo de una vez)
     ruta_libre        O(k), k = logs que ya existen con ese prefijo
 """
 import os
@@ -69,6 +80,7 @@ VERSION_FORMATO = 1
 _PREFIJO_FORMATO = "#CRIPTA-REPLAY "
 _LINEA_FORMATO = f"{_PREFIJO_FORMATO}{VERSION_FORMATO}"
 _LINEA_ACCIONES = "#ACCIONES"
+_MARCA_COMENTARIO = "#"          # en la sección de acciones, una línea que empieza así es un comentario
 
 _CLAVE_ID = "id_cripta"
 _CLAVE_VERSION_CRIPTA = "version_cripta"
@@ -105,7 +117,11 @@ class BitacoraReplayIO:
 
         encabezado_esperado: el de la partida guardada; si el log anterior tiene otro, es de otra
         partida y se rechaza. Lanza ErrorBitacora sin crear nada si algo no cuadra.
-        Costo: O(acciones del log anterior) para leerlo, una sola vez al cargar.
+
+        'cantidad' cuenta acciones, no líneas: los comentarios del log anterior (por ejemplo
+        "# ir a 12") no cuentan y NO se copian al log nuevo, porque son solo para depurar y no
+        cambian la reproducción.
+        Costo: O(líneas del log anterior) para leerlo, una sola vez al cargar.
         """
         if not isinstance(cantidad, int) or isinstance(cantidad, bool) or cantidad < 0:
             raise ErrorBitacora(f"la cantidad de acciones debe ser un entero >= 0 (llegó {cantidad!r})")
@@ -155,6 +171,9 @@ class BitacoraReplayIO:
         if not isinstance(accion, AccionDTO):
             raise ErrorBitacora(f"se esperaba un AccionDTO y llegó {type(accion).__name__}")
         linea = accion.a_linea()
+        if linea.startswith(_MARCA_COMENTARIO):    # leer() la tomaría por un comentario (T071)
+            raise ErrorBitacora(f"la acción {accion!r} no se puede escribir: su línea empieza con "
+                                f"{_MARCA_COMENTARIO!r} y al leerla se tomaría como comentario")
         try:
             reversible = "\n" not in linea and "\r" not in linea and _leer_accion(linea) == accion
         except ValueError:          # por ejemplo, un '|' de más cambia la cantidad de campos
@@ -162,6 +181,26 @@ class BitacoraReplayIO:
         if not reversible:
             raise ErrorBitacora(f"la acción {accion!r} no se puede escribir sin cambiar al leerla "
                                 f"(no se permiten '|', saltos de línea ni campos vacíos \"\")")
+        self._escribir_linea(linea)
+        self._acciones_escritas += 1
+
+    def anexar_comentario(self, texto: str) -> None:
+        """
+        Agrega la línea "# <texto>" al final del log (T071, FR-261 de la spec 002: «ir a» deja así su
+        orden, por ejemplo anexar_comentario("ir a 12")). Es solo para depurar: leer() la ignora y no
+        cuenta en acciones_escritas(). Mismo mecanismo de solo anexado que anexar().
+        Lanza ErrorBitacora, sin escribir nada, si no se llamó a iniciar() o si el texto no es un str,
+        está vacío o tiene un salto de línea ('\\n' o '\\r'), que partiría la línea.
+        Costo: O(1), como anexar().
+        """
+        if not self._iniciada:
+            raise ErrorBitacora("primero hay que llamar a iniciar() con el encabezado")
+        if not isinstance(texto, str) or texto == "" or "\n" in texto or "\r" in texto:
+            raise ErrorBitacora(f"el comentario debe ser un texto no vacío y sin saltos de línea (llegó {texto!r})")
+        self._escribir_linea(f"{_MARCA_COMENTARIO} {texto}")
+
+    def _escribir_linea(self, linea: str) -> None:
+        """Anexa una línea ya validada al log existente: abre en modo "a", escribe y cierra."""
         if not os.path.isfile(self._ruta):     # el modo "a" lo crearía de nuevo, pero sin encabezado
             raise ErrorBitacora(f"el log {self._ruta!r} ya no existe")
         try:
@@ -169,7 +208,6 @@ class BitacoraReplayIO:
                 archivo.write(linea + "\n")
         except OSError as error:
             raise ErrorBitacora(f"no se pudo escribir en el log {self._ruta!r}: {error}") from None
-        self._acciones_escritas += 1
 
     def acciones_escritas(self) -> int:
         """Acciones que tiene el log (incluye las copiadas por continuar_desde). Es lo que se guarda."""
@@ -263,6 +301,8 @@ class BitacoraReplayIO:
         acciones: list[AccionDTO] = []
         for j in range(i + 1, len(lineas)):
             linea = _sin_retorno(lineas[j])
+            if linea.startswith(_MARCA_COMENTARIO):      # comentario (T071): no es una acción
+                continue
             try:
                 accion = _leer_accion(linea)
             except ValueError:

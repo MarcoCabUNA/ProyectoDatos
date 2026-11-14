@@ -108,10 +108,62 @@ La pregunta de esta sesión surge de la segunda revisión del integrante 1.
   por una puerta que pida `llave_salida`: ahí la verificación dice «no resoluble», con el motivo de FR-322,
   aunque el motor permitiría ganar abriendo otra puerta que pide `llave_salida` y entrando a `sala_salida`
   por otro camino. El integrante 1 decidió mantener el motor como está, porque cambiarlo sería tocar la
-  primera parte sin un FR que lo pida, y la diferencia va hacia el lado seguro: la verificación puede
-  rechazar una cripta que el motor dejaría ganar (para eso está `--forzar`), pero nunca aprueba una que el
-  motor no deje ganar. Queda registrado en `DECISIONES.md` como diferencia conocida entre la verificación y
-  el motor (FR-304, FR-322).
+  primera parte sin un FR que lo pida, y en esta regla la diferencia va hacia el lado seguro: si la
+  verificación dice «resoluble», en el motor también se gana, porque abrir la puerta que requiere
+  `llave_salida` y da a `sala_salida` activa la victoria; lo contrario sí puede pasar, y la verificación
+  puede rechazar una cripta que el motor dejaría ganar (para eso está `--forzar`). El «lado seguro» vale solo
+  para esta regla de la puerta de salida: el supuesto de §3.5 sobre los cierres automáticos puede producir
+  una diferencia en la otra dirección (ver la sesión siguiente y la sección «Suposiciones»). Queda
+  registrado en `DECISIONES.md` como diferencia conocida entre la verificación y el motor (FR-304, FR-322).
+
+### Sesión 2026-11-13 (revisión del plan por el integrante 1)
+
+Las preguntas de esta sesión surgen de la revisión del plan que hizo el integrante 1. Todas las respuestas
+son decisiones del grupo.
+
+- P: ¿Es cierto en general que la verificación nunca aprueba una cripta que el motor no deje ganar? → R: No.
+  Solo vale para la regla de la puerta de salida (FR-304, FR-322). En una puerta con cierre automático y
+  llaves distintas por cara, la verificación supone que una puerta abierta puede volver a abrirse con la
+  misma llave (§3.5), pero el motor la cierra en sus dos caras y volver por ella pide la llave de la otra
+  cara: la verificación puede decir «resoluble» y el jugador quedar encerrado. Se acepta porque §3.5 pide
+  verificar con las llaves y las puertas, no simular el reloj ni los cierres (Suposiciones; FR-302)
+  *(decisión del grupo)*.
+- P: Si a la zona donde está una llave se llega por varias puertas cerradas, ¿cuál es «la puerta que la
+  bloquea» para formar los ciclos y las llaves dependientes? → R: Una sola, elegida de forma determinista:
+  la que se cruzaría primero desde la región alcanzable (la que exige cruzar menos puertas cerradas) y, si
+  empatan, la de menor sala de origen y luego la de menor dirección. Los ciclos y las dependencias se forman
+  solo con esas puertas: una llave puede ser pedida por otra puerta de su zona sin quedar en un ciclo propio
+  (FR-310, escenario H2-13) *(decisión del grupo)*.
+- P: Si la lista de ubicaciones trae dos o más ubicaciones idénticas de la misma llave (misma sala y misma
+  instancia de enemigo, o las dos sin enemigo), ¿el reporte las repite? → R: No. El reporte indica esa
+  ubicación una sola vez; las ubicaciones distintas se siguen listando todas en orden determinista (FR-309,
+  escenario H1-12) *(decisión del grupo)*.
+- P: ¿Qué hace `--forzar` junto con `--replay`, con `--bench` o al cargar una partida guardada? → R: Nada.
+  Esos modos no verifican (FR-301), así que el resultado y el código de salida son los mismos que sin
+  `--forzar`, igual que con `--verificar` (H3-9). No es un error de argumentos (FR-312)
+  *(decisión del grupo)*.
+- P: ¿Qué hace `--verificar` con una cripta que no existe (el servicio responde que no existe, o el paquete
+  local no la trae con `--offline`)? → R: La verificación no concluye: el programa muestra un mensaje con
+  contexto, no se cae y termina con el código de salida 1. `--forzar` no cambia eso, porque sin esqueleto no
+  hay partida que iniciar. No es un caso de FR-320, que trata la ubicación de las llaves de una cripta que
+  sí existe (FR-314) *(decisión del grupo)*.
+
+### Sesión 2026-11-14 (análisis de consistencia)
+
+Las preguntas de esta sesión surgen del análisis de consistencia entre la spec, el plan y las tareas.
+
+- P: ¿Qué es «la cripta publicada más grande» de NFR-301 y SC-306, y cómo la mide `--bench`? → R: La tabla de
+  §6.1 pone el límite de 200 ms de la verificación sobre «la cripta publicada más grande». Se mide como la
+  cripta con más salas del paquete local de `--offline`, elegida por cantidad de salas, sin nombrar ids
+  (Principio VI) y leída sin red. `--bench` la mide además de las criptas sintéticas de NFR-304, sin iniciar
+  partidas, sin crear `partida.log` y sin pasar por la verificación previa a una partida. Mientras el paquete
+  local no traiga criptas con ubicación de llaves, vale la cripta sintética de 1 000 salas con 100 llaves
+  encadenadas (FR-301, NFR-301, SC-306) *(decisión del grupo)*.
+- P: ¿Qué errores de 001 FR-122 cuentan para FR-323? → R: Los costos no enteros o menores que 1, los costos
+  distintos entre las dos caras de una salida y, desde que 001 FR-122 lo incluye (commit `a725e31` del
+  integrante 1, escenario H2-20 de la 001), un `cierre_automatico` que no es un entero ≥ 1. Con cualquiera de
+  ellos la verificación no concluye, `--verificar` termina con código 1 y la partida no inicia, ni con
+  `--forzar` (FR-323).
 
 ---
 
@@ -176,9 +228,11 @@ el reporte de no resolubilidad.
     `llave_salida`, **cuando** se verifica, **entonces** A es obtenible gracias a su copia en la sala 4 y
     aparece en el orden antes que `llave_salida`; ninguna de sus dos ubicaciones se trata como error de
     datos (FR-316, FR-305).
-12. **Dada** la llave C con dos ubicaciones, la sala 10 y la sala 13, ambas fuera de la región alcanzable,
-    en una cripta no resoluble, **cuando** se verifica varias veces, **entonces** el reporte lista C entre
-    las llaves no obtenibles con sus dos ubicaciones, siempre en el mismo orden (FR-316, FR-309, FR-306).
+12. **Dada** la llave C con cuatro ubicaciones en la lista, la sala 10, la sala 13, otra vez la sala 10 (sin
+    enemigo) y la sala 13 con el enemigo e-1301, todas fuera de la región alcanzable, en una cripta no
+    resoluble, **cuando** se verifica varias veces, **entonces** el reporte lista C entre las llaves no
+    obtenibles con tres ubicaciones: la sala 10 una sola vez, la sala 13 y la sala 13 con el enemigo e-1301,
+    siempre en el mismo orden (FR-316, FR-309, FR-306).
 
 ---
 
@@ -223,8 +277,8 @@ comparar cada parte del reporte (llaves no obtenibles, frontera, ubicaciones, ci
 6. **Dada** la puerta 4–5 (C), con la sala 4 alcanzable y `llave_salida` en la sala 5, donde C no aparece
    en la lista de ubicaciones, **cuando** se verifica, **entonces** la verificación concluye: la cripta no
    es resoluble, C aparece entre las llaves no obtenibles con la indicación «sin ubicación», la puerta 4–5
-   aparece en la frontera bloqueada con la llave C, y no se informa ningún error de datos (FR-307, FR-309,
-   FR-321).
+   aparece en la frontera bloqueada con la llave C, y no se informa ningún error de datos (FR-307, FR-308,
+   FR-309, FR-321).
 7. **Dada** una ubicación `{ "id": A, "sala": 99 }` donde la sala 99 no existe en el esqueleto, **cuando** se
    verifica, **entonces** se informa un error de datos con contexto (la llave A y la sala 99), la
    verificación no concluye, la partida no inicia salvo con `--forzar`, el programa no se cae y, con
@@ -258,6 +312,17 @@ comparar cada parte del reporte (llaves no obtenibles, frontera, ubicaciones, ci
     llaves no obtenibles que dependen de él, indicando la llave del ciclo de la que dependen
     (`llave_salida` y G dependen de A; H depende de E); y los dos ciclos, la llave por la que empieza cada
     uno y sus llaves dependientes aparecen siempre en el mismo orden (FR-307, FR-310, FR-306).
+13. **Dada** una región alcanzable formada por las salas 1 a 4; la llave A en la sala 6, a la que solo se
+    llega por dos puertas desde la región, la puerta 2–6 (B), que sale de la sala 2 por el este, y la puerta
+    3–6 (A), que sale de la sala 3 por el norte; la llave B en la sala 7, cuya única puerta de acceso es la
+    puerta 4–7 (B); `llave_salida` en la sala 1; y la sala 8, desde la que se entra a `sala_salida` por la
+    puerta de salida, a la que solo se llega por la puerta 4–8 (A), **cuando** se verifica, **entonces** la
+    cripta no es resoluble; las puertas 2–6 y 3–6 tienen el mismo nivel (las dos se cruzan primero desde la
+    región), así que la puerta que bloquea a A es la 2–6, por tener la menor sala de origen; el reporte
+    señala un solo ciclo, B está en la sala 7 → la puerta 4–7 requiere B, y lista A inmediatamente después,
+    como dependiente de B (A está en la sala 6 → la puerta 2–6 requiere B). A no aparece en un ciclo propio,
+    aunque la puerta 3–6 la pida, y la frontera bloqueada lista igual las cuatro puertas 2–6, 3–6, 4–7 y 4–8
+    (FR-307, FR-308, FR-310, FR-306).
 
 ---
 
@@ -331,7 +396,7 @@ comprobar si la partida inicia y si se muestra el reporte.
 4. **Dada** una partida iniciada con `--forzar` sobre una cripta no resoluble, guardada y registrada en
    `partida.log`, **cuando** el jugador la carga sin `--forzar` o la reproduce con `--replay`, **entonces**
    no se ejecuta la verificación, no se muestra el reporte y la partida se carga o se reproduce
-   normalmente (FR-301).
+   normalmente (FR-301, FR-313).
 5. **Dada** una cripta cuya salida 3–4 declara costo 150 en la cara de la sala 3 y costo 200 en la cara de
    la sala 4, **cuando** el jugador intenta iniciar una partida con `--forzar`, **entonces** se muestra el
    error de datos con contexto (qué salida y qué campo), la partida no inicia, no se crea `partida.log` ni
@@ -353,14 +418,22 @@ comprobar si la partida inicia y si se muestra el reporte.
 - **Ninguna puerta por la que se entra a `sala_salida` pide `llave_salida`, pero otra puerta sí la pide**:
   la verificación dice «no resoluble», con el motivo de FR-322, aunque el motor de la primera parte
   permitiría ganar abriendo esa otra puerta y entrando a `sala_salida` por otro camino. La verificación
-  sigue el enunciado (§3.5, P1 §2.12). El motor se mantiene como está: la diferencia va hacia el lado
-  seguro (la verificación puede rechazar una cripta que el motor dejaría ganar, para eso está `--forzar`,
-  pero nunca aprueba una que el motor no deje ganar) y queda registrada en `DECISIONES.md` como diferencia
-  conocida entre la verificación y el motor (Clarificaciones, sesión 2026-11-13; FR-304, FR-322).
+  sigue el enunciado (§3.5, P1 §2.12). El motor se mantiene como está: en esta regla la diferencia va hacia
+  el lado seguro (si la verificación dice «resoluble», en el motor también se gana; lo contrario sí puede
+  pasar, y para eso está `--forzar`) y queda registrada en `DECISIONES.md` como diferencia conocida entre la
+  verificación y el motor (Clarificaciones, sesión 2026-11-13; FR-304, FR-322). El «lado seguro» vale solo
+  para la regla de la puerta de salida: el caso borde del cierre automático en una puerta con llaves
+  distintas por cara va en la otra dirección.
 - **Una llave obtenible pero innecesaria para ganar**: aparece igual en el orden, porque el orden incluye
   todas las llaves obtenibles de la cripta (FR-305).
 - **Varios ciclos independientes**: cada llave no obtenible que forma parte de un ciclo aparece en al menos
   un ciclo señalado, sin repetir ciclos y en un orden determinista (FR-310, escenario H2-12).
+- **A la zona de una llave se llega por varias puertas del mismo nivel** *(decisión del grupo)*: la puerta
+  que la bloquea es una sola, la de menor sala de origen y luego menor dirección; los ciclos y las llaves
+  dependientes se forman solo con esa puerta. Por ejemplo, si a la sala de la llave A se llega por la puerta
+  2–6 (B) y por la puerta 3–6 (A), y B está detrás de una puerta que pide B, se señala el ciclo de B y A se
+  lista como dependiente de B; A no forma un ciclo propio aunque la puerta 3–6 la pida. Las dos puertas se
+  listan igual en la frontera bloqueada (FR-310, FR-308, escenario H2-13).
 - **Una llave no obtenible que no está en un ciclo, sino que depende de uno** (escenarios H2-4 y H2-12):
   aparece en la lista de llaves no obtenibles y se lista inmediatamente después del ciclo del que depende,
   indicando la llave del ciclo de la que depende (FR-310).
@@ -373,11 +446,15 @@ comprobar si la partida inicia y si se muestra el reporte.
   por lo que declara; para atravesar la puerta desde una sala hace falta la llave de la cara de esa sala,
   y en la frontera bloqueada la puerta aparece con la llave de la cara de la sala alcanzable (FR-302,
   FR-308, escenario H2-9).
-- **Esqueleto con un error de datos de 001 FR-122** (costo no entero o menor que 1, o costos distintos
-  entre las dos caras de una salida): la verificación no concluye; `--verificar` termina con código 1 y la
+- **Esqueleto con un error de datos de 001 FR-122** (costo no entero o menor que 1, costos distintos
+  entre las dos caras de una salida, o un `cierre_automatico` que no es un entero ≥ 1): la verificación no concluye; `--verificar` termina con código 1 y la
   partida no inicia, ni siquiera con `--forzar` (FR-323, escenarios H3-8 y H4-5).
 - **La misma llave aparece en varias ubicaciones**: cada una es una copia válida; basta con que una sea
-  alcanzable, y el reporte muestra todas en un orden determinista (FR-316, escenarios H1-11 y H1-12).
+  alcanzable, y el reporte muestra todas las ubicaciones distintas en un orden determinista (FR-316,
+  FR-309, escenarios H1-11 y H1-12).
+- **Ubicaciones idénticas repetidas** *(decisión del grupo)*: si la misma llave aparece dos o más veces con
+  la misma sala y la misma instancia de enemigo (o las dos sin enemigo), el reporte indica esa ubicación una
+  sola vez (FR-309, escenario H1-12).
 - **Una salida sin vuelta que solo va de una sala de afuera hacia la región alcanzable**: no es parte de la
   frontera bloqueada (FR-308, escenario H2-11).
 - **Una misma llave abre varias puertas**: no se consume (FR-302, escenario H1-7).
@@ -386,9 +463,11 @@ comprobar si la partida inicia y si se muestra el reporte.
 - **Puerta con cierre automático o trampa en el camino**: no bloquea (FR-302). Abrir una puerta abre sus
   dos caras; el cierre automático que se programa es el de la cara desde la que se abre y cierra las dos.
 - **Cierre automático en una puerta con llaves distintas por cara** *(decisión del grupo)*: después de que
-  la puerta se cierra sola, volver por ella puede exigir la llave de la otra cara, que el jugador quizá no
-  tiene. La verificación igual aplica el supuesto de §3.5 («una puerta puede volver a abrirse con la misma
-  llave») y no lo considera un bloqueo (FR-302).
+  la puerta se cierra sola (el motor la cierra en sus dos caras), volver por ella exige la llave de la otra
+  cara, que el jugador quizá no tiene. La verificación igual aplica el supuesto de §3.5 («una puerta puede
+  volver a abrirse con la misma llave») y no lo considera un bloqueo (FR-302). Esta diferencia con el motor
+  va en la dirección contraria a la de la puerta de salida: la verificación puede decir «resoluble» y el
+  jugador quedar encerrado. Se acepta como supuesto de §3.5 (ver «Suposiciones»).
 - **Una puerta cerrada aparece desde sus dos salas**: en la frontera bloqueada se lista una sola vez
   (FR-308).
 - **Llave requerida por una puerta sin ubicación en la lista** (incluida `llave_salida`): es no obtenible y
@@ -401,6 +480,13 @@ comprobar si la partida inicia y si se muestra el reporte.
   resoluble (FR-301, escenario H4-4).
 - **`--verificar` junto con `--forzar`**: `--verificar` no inicia partida, así que `--forzar` no tiene
   efecto: el resultado y el código de salida son los mismos que sin `--forzar` (FR-314, escenario H3-9).
+- **`--forzar` con `--replay`, con `--bench` o al cargar una partida guardada** *(decisión del grupo)*: esos
+  modos no verifican (FR-301), así que `--forzar` no tiene efecto: el resultado y el código de salida son
+  los mismos que sin `--forzar`, y no es un error de argumentos (FR-312).
+- **`--verificar` con una cripta que no existe** (el servicio responde que no existe, o el paquete local no
+  la trae con `--offline`) *(decisión del grupo)*: la verificación no concluye; se muestra un mensaje con
+  contexto, el programa no se cae y el código de salida es 1. `--forzar` no cambia eso: sin esqueleto no hay
+  partida (FR-314).
 - **Código de salida de `--verificar`**: 0 resoluble, 3 no resoluble, 1 verificación no concluida
   (incluidos los errores de datos de FR-321 y FR-323) (FR-314).
 - **No se pudo obtener la ubicación de llaves**: la verificación no concluye; ver FR-320.
@@ -419,8 +505,10 @@ comprobar si la partida inicia y si se muestra el reporte.
   NO DEBE requerir el contenido de las salas, NO DEBE consumir el generador aleatorio de la partida y NO
   DEBE modificar ningún estado del juego. Cargar una partida guardada y `--replay` NO DEBEN ejecutar la
   verificación ni bloquearse por ella, porque reanudan o reproducen una partida que ya inició. `--bench`
-  tampoco la ejecuta como paso previo a una partida: no inicia partidas y solo mide la verificación sobre
-  criptas sintéticas (NFR-304).
+  tampoco la ejecuta como paso previo a una partida: no inicia partidas ni crea `partida.log`, y mide la
+  verificación sobre criptas sintéticas deterministas (NFR-304) y, además, si el paquete local de `--offline`
+  trae criptas con ubicación de llaves, sobre la cripta del paquete con más salas, elegida por cantidad de
+  salas, sin nombrar ids (Principio VI) y leída sin red (NFR-301).
 - **FR-302**: La verificación DEBE suponer que: el jugador puede atravesar cualquier salida abierta y
   cualquier salida cerrada cuya llave ya obtuvo; las llaves no se consumen; todo enemigo puede ser
   derrotado; las trampas y los cierres automáticos no bloquean, porque una puerta puede volver a abrirse
@@ -468,15 +556,27 @@ comprobar si la partida inicia y si se muestra el reporte.
 - **FR-309**: El reporte DEBE indicar dónde se encuentra cada llave que aparece en él (las no obtenibles y
   las que requieren las puertas de la frontera): su sala y, si la suelta un enemigo, la instancia de ese
   enemigo. Si la llave tiene varias ubicaciones, DEBE indicarlas todas en un orden determinista (FR-306).
+  Dos o más ubicaciones idénticas de la misma llave (misma sala y misma instancia de enemigo, o las dos sin
+  enemigo) DEBEN indicarse una sola vez *(decisión del grupo)*.
   Si la llave no aparece en la lista de ubicaciones, DEBE indicar «sin ubicación» (FR-321).
 - **FR-310**: Si una llave está ubicada detrás de puertas que solo ella abre, directamente o mediante una
   cadena de llaves, el reporte DEBE señalar el ciclo concreto: la secuencia de llaves que lo forman y, para
   cada una, la sala donde está y la puerta que la bloquea con la llave que esa puerta requiere, hasta
-  volver a la primera llave. Cada llave no obtenible que forma parte de un ciclo DEBE aparecer en al menos
-  un ciclo señalado; NO DEBEN repetirse ciclos, y qué ciclos se señalan, por qué llave empiezan y en qué
-  orden se listan DEBE ser determinista (FR-306). Las llaves no obtenibles que no forman parte de un ciclo,
-  pero dependen de uno, DEBEN listarse inmediatamente después del ciclo, indicando la llave del ciclo de la
-  que dependen.
+  volver a la primera llave. **La puerta que bloquea a una llave es una sola**, elegida de forma
+  determinista *(decisión del grupo)*: se llama zona de una sala de afuera de la región alcanzable al
+  conjunto de salas a las que se llega desde ella sin cruzar puertas cerradas que no se pueden abrir con las
+  llaves obtenibles; el nivel de una puerta es cuántas de esas puertas hay que cruzar, contando la propia,
+  para atravesarla partiendo de la región alcanzable (las de la frontera bloqueada tienen nivel 1). Entre las puertas por las que se entra a la
+  zona donde está la llave, la que la bloquea es la de menor nivel (la que se cruzaría primero) y, si
+  empatan, la de menor sala de origen y luego la de menor dirección (N, S, E, O). Si la llave tiene varias
+  ubicaciones, se usa la de menor nivel y, si empatan, la primera en el orden de FR-309. Los ciclos y las
+  llaves dependientes se forman solo con esas puertas: una llave forma parte de un ciclo si, al seguir desde
+  ella la llave que pide la puerta que la bloquea, y desde esa la de la puerta que la bloquea a ella, y así
+  sucesivamente, se vuelve a la misma llave. Cada llave no obtenible que forma parte de un ciclo, en ese
+  sentido, DEBE aparecer en al menos un ciclo señalado; NO DEBEN repetirse ciclos, y qué ciclos se señalan,
+  por qué llave empiezan y en qué orden se listan DEBE ser determinista (FR-306). Las llaves no obtenibles
+  que no forman parte de un ciclo, pero cuya cadena llega a uno, DEBEN listarse inmediatamente después del
+  ciclo, indicando la llave del ciclo de la que dependen (escenario H2-13).
 
 **Inicio de partida y banderas**
 
@@ -484,18 +584,28 @@ comprobar si la partida inicia y si se muestra el reporte.
   mostrarse el reporte de no resolubilidad.
 - **FR-312**: Con `--forzar`, la partida DEBE iniciar aunque la cripta no sea resoluble, y el reporte DEBE
   mostrarse igual. Con una cripta resoluble, `--forzar` NO DEBE cambiar nada. `--forzar` NO permite
-  iniciar con un esqueleto que tiene un error de datos de 001 FR-122 (FR-323).
+  iniciar con un esqueleto que tiene un error de datos de 001 FR-122 (FR-323). Con `--replay`, con
+  `--bench` o al cargar una partida guardada, `--forzar` NO DEBE tener efecto, porque esos modos no
+  verifican (FR-301), igual que con `--verificar` (FR-314): el resultado y el código de salida DEBEN ser los
+  mismos que sin `--forzar`, y la combinación NO DEBE tratarse como un error de argumentos
+  *(decisión del grupo)*.
 - **FR-313**: Al iniciar una partida, el resultado de la verificación (resoluble con su orden de llaves,
   o el reporte de no resolubilidad) DEBE mostrarse antes de la primera acción del jugador (§7.3). Mostrar
   el reporte completo al iniciar es la excepción de 002 FR-217: el reporte no forma parte del mapa conocido
-  ni lo modifica. Cómo se dibuja queda fuera de alcance. Sin vista, el único modo que verifica es
-  `--verificar`, que escribe el resultado en la salida estándar (FR-314); `--replay` y `--bench` no
-  verifican (FR-301).
+  ni lo modifica. Cómo se dibuja queda fuera de alcance. Sin vista, el único modo que muestra el
+  resultado de la verificación es `--verificar`, que lo escribe en la salida estándar (FR-314); `--replay` no
+  verifica y `--bench` solo mide cuánto tarda la verificación, sin mostrar veredictos ni iniciar partidas
+  (FR-301).
 - **FR-314**: `--verificar <cripta>` DEBE ejecutar únicamente la verificación y escribir su resultado en la
   salida estándar, sin instanciar la vista y sin iniciar una partida. DEBE funcionar también con `--offline`. Al terminar, el
   programa DEBE devolver el código de salida 0 si la cripta es resoluble, 3 si no es resoluble y 1 si la
   verificación no concluyó (FR-320, FR-321, FR-323) *(decisión del grupo)*. El código 2 sigue reservado para los argumentos
-  inválidos, como en la primera parte, y `--verificar` NO DEBE usarlo para ningún veredicto.
+  inválidos, como en la primera parte, y `--verificar` NO DEBE usarlo para ningún veredicto. Si la cripta
+  no existe (el servicio responde que no existe o, con `--offline`, el paquete local no la trae), la
+  verificación no concluye: el programa DEBE mostrar un mensaje con contexto, NO DEBE caerse y DEBE
+  terminar con el código de salida 1, también con `--forzar`, porque sin esqueleto no hay partida
+  *(decisión del grupo)*. No es un caso de FR-320, que trata la ubicación de las llaves de una cripta que
+  sí existe.
 - **FR-315**: El resultado de `--verificar` DEBE ser idéntico al de la verificación que se hace al iniciar
   una partida con la misma cripta.
 
@@ -535,7 +645,8 @@ comprobar si la partida inicia y si se muestra el reporte.
   `llave_salida` pero no lleva a `sala_salida` no cuenta. El reporte DEBE indicar ese motivo de forma
   explícita.
 - **FR-323**: Si el esqueleto tiene un error de datos de los que define 001 FR-122 (una salida con un costo
-  no entero o menor que 1, o con costos distintos entre sus dos caras), la verificación NO DEBE concluir:
+  no entero o menor que 1, o con costos distintos entre sus dos caras, o una salida con un `cierre_automatico`
+  que no es un entero ≥ 1), la verificación NO DEBE concluir:
   NO DEBE mostrarse ningún veredicto, el programa DEBE mostrar el error con contexto (qué salida y qué
   campo) y NO DEBE caerse. `--verificar` DEBE terminar con el código de salida 1 (FR-314). La partida NO
   DEBE iniciar, ni siquiera con `--forzar`, porque 001 FR-122 exige que con esos datos la partida no inicie
@@ -545,10 +656,11 @@ comprobar si la partida inicia y si se muestra el reporte.
 
 ### Requisitos de rendimiento
 
-- **NFR-301**: La verificación DEBE tardar menos de 200 ms con la cripta publicada más grande o, mientras
-  no esté publicada, una cripta sintética determinista de 1 000 salas en cuadrícula con 100 llaves
-  encadenadas *(decisión del grupo)*, medida en el equipo local con los datos ya disponibles, sin red ni
-  renderizado (§6.1).
+- **NFR-301**: La verificación DEBE tardar menos de 200 ms con la cripta publicada más grande (§6.1), que se
+  mide como la cripta con más salas del paquete local, leída sin red; mientras el paquete local no traiga
+  criptas con ubicación de llaves, con una cripta sintética determinista de 1 000 salas en cuadrícula con
+  100 llaves encadenadas *(decisión del grupo)*. Se mide en el equipo local con los datos ya disponibles,
+  sin red ni renderizado (§6.1).
 - **NFR-302**: El costo total de la verificación DEBE crecer aproximadamente de forma lineal con la
   cantidad de salas, salidas y llaves. Obtener una llave NO DEBE implicar repetir el recorrido completo de
   la cripta (§5.4).
@@ -572,7 +684,8 @@ comprobar si la partida inicia y si se muestra el reporte.
 - **Orden de obtención de llaves**: secuencia de llaves en la que cada una aparece después de todas las
   necesarias para alcanzarla.
 - **Ciclo de dependencia**: secuencia de llaves en la que cada una está bloqueada por una puerta que
-  requiere la siguiente, y la última por una que requiere la primera.
+  requiere la siguiente, y la última por una que requiere la primera. La puerta que bloquea a cada llave es
+  la única que elige la regla de FR-310.
 - **Reporte de resolubilidad**: veredicto y, según el caso, orden de llaves o llaves no obtenibles,
   frontera bloqueada, ubicaciones y ciclo.
 
@@ -598,11 +711,11 @@ Cada prueba citará el identificador del requisito que verifica (Principio X).
 | FR-303 | H1-4, H2-8 |
 | FR-304 | H1-1, H1-2, H1-3, H2-1 |
 | FR-305 | H1-1, H1-3, H1-5, H1-10, H1-11 |
-| FR-306 | H1-5, H1-12, H2-3, H2-12, H3-3 |
-| FR-307 | H2-1, H2-2, H2-4, H2-5, H2-6, H2-12 |
-| FR-308 | H2-1, H2-5, H2-6, H2-9, H2-10, H2-11 |
+| FR-306 | H1-5, H1-12, H2-3, H2-12, H2-13, H3-3 |
+| FR-307 | H2-1, H2-2, H2-4, H2-5, H2-6, H2-12, H2-13 |
+| FR-308 | H2-1, H2-5, H2-6, H2-9, H2-10, H2-11, H2-13 |
 | FR-309 | H1-12, H2-1, H2-4, H2-6 |
-| FR-310 | H2-1, H2-2, H2-3, H2-4, H2-12 |
+| FR-310 | H2-1, H2-2, H2-3, H2-4, H2-12, H2-13 |
 | FR-311 | H4-1 |
 | FR-312 | H4-2, H4-3 |
 | FR-313 | H1-9, H4-2, H4-4 |
@@ -635,9 +748,10 @@ Cada prueba citará el identificador del requisito que verifica (Principio X).
   obtenible, su id y todas sus ubicaciones o «sin ubicación»; para cada puerta de la frontera, sus dos salas
   y su llave o «sin llave: no se puede abrir»; y, si hay ciclo, la secuencia completa hasta volver a la primera llave. Se comprueba
   automáticamente.
-- **SC-306**: `--bench` muestra que la verificación de la cripta publicada más grande o, mientras no esté
-  publicada, una cripta sintética determinista de 1 000 salas en cuadrícula con 100 llaves encadenadas
-  *(decisión del grupo)*, tarda menos de 200 ms.
+- **SC-306**: `--bench` muestra que la verificación de la cripta publicada más grande, medida como la cripta
+  con más salas del paquete local y leída sin red, o, mientras el paquete local no traiga criptas con
+  ubicación de llaves, de una cripta sintética determinista de 1 000 salas en cuadrícula con 100 llaves
+  encadenadas *(decisión del grupo)*, tarda menos de 200 ms.
 - **SC-307**: En `--bench`, al multiplicar por 10 la cantidad de salas, salidas y llaves de una cripta
   sintética con llaves encadenadas, el tiempo de la verificación crece a lo sumo 20 veces, y el de la
   alternativa de repetir el recorrido por cada llave crece al menos el doble de lo que crece el de la
@@ -653,7 +767,15 @@ Cada prueba citará el identificador del requisito que verifica (Principio X).
 - Si ninguna cara de una puerta declara llave, cada cara se rige por lo que declara: una cara cerrada sin
   llave no puede abrirse y nunca se atraviesa en ese sentido en la verificación (FR-302). Si las dos caras
   declaran llave, aunque sean distintas, también se rige cada una por lo que declara (FR-302).
-- Los costos del esqueleto son válidos según 001 FR-122 para que la verificación concluya y la partida
+- **Cierre automático en una puerta con llaves distintas por cara** (supuesto de §3.5, *decisión del
+  grupo*): la verificación supone que una puerta que se abrió sigue pudiéndose atravesar, porque «una puerta
+  puede volver a abrirse con la misma llave». En la partida, el motor la cierra en sus dos caras al vencer el
+  cierre automático, y volver por ella pide la llave de la otra cara. La diferencia va en esta dirección: la
+  verificación puede decir «resoluble» y el jugador quedar encerrado del otro lado si no tiene esa llave. Se
+  acepta porque §3.5 pide verificar con las llaves y las puertas, no simular el reloj ni los cierres
+  (FR-302). Es lo contrario de la diferencia en la regla de la puerta de salida, donde la verificación solo
+  puede equivocarse rechazando (Clarificaciones, sesiones 2026-11-13; FR-304, FR-322).
+- Los costos y los `cierre_automatico` del esqueleto son válidos según 001 FR-122 para que la verificación concluya y la partida
   inicie; si no lo son, ni `--forzar` permite jugar (FR-323).
 - Los errores de `rango` de 001 FR-122 (una ficha de cazador sin `rango` o con un `rango` inválido) no
   afectan la verificación, porque la verificación no descarga el contenido de las salas (FR-301). Un

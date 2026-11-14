@@ -1,11 +1,15 @@
 """
-ValidacionDatos (Integrante 2): datos inválidos de la Parte II (FR-122, T002 y T052).
+ValidacionDatos (Integrante 2): datos inválidos de la Parte II (FR-122, T002, T052 y T055).
 
 Aquí están, en un solo lugar, las reglas de FR-122 que le tocan a Datos:
   - costo de una salida: entero >= 1 (un bool NO cuenta como entero);
-  - rango de una ficha con comportamiento "cazador": entero >= 0 (tampoco bool); no puede faltar ni ser null.
-La regla de los dos lados de una salida con costos distintos necesita el esqueleto completo: la
-aplica GestorEsqueleto con es_costo_valido() de este archivo.
+  - cierre_automatico de una salida, si viene: entero >= 1 (tampoco bool); null o ausente es válido (T055);
+  - rango de una ficha con comportamiento "cazador": entero >= 0 (tampoco bool); no puede faltar ni ser null;
+  - duracion de la ficha de un objeto, si la trae: entero >= 1 (tampoco bool); null o ausente es válido (T055).
+cierre_automatico y duracion programan eventos en la agenda, y la feature 004 supone que nada se programa con
+retraso 0. La duracion de un efecto de ficha (EfectoFichaDTO) NO se valida aquí: P1 ya convierte las <= 0 en None.
+Las reglas del esqueleto (costo, cierre_automatico y los dos lados de una salida con costos distintos) las
+aplica GestorEsqueleto con es_costo_valido() y es_cierre_valido() de este archivo; las de las fichas, error_de_ficha().
 
 ErrorDatos es el "error de datos" que pide el contrato (contracts/contrato-datos.md): el dato llegó,
 pero no es válido. Es subclase de ErrorRed para que los 'except ErrorRed' de la Parte 1 (Servicios,
@@ -16,6 +20,7 @@ Datos solo valida (Principio I); no decide reglas del juego. Lógica supone que 
 """
 from Data.ClienteHttp import ErrorRed
 from DTO.FichaEnemigoDTO import FichaEnemigoDTO
+from DTO.ObjetoDTO import ObjetoDTO
 
 COMPORTAMIENTO_CAZADOR = "cazador"
 
@@ -43,13 +48,20 @@ def es_costo_valido(costo) -> bool:
     return es_entero(costo) and costo >= 1
 
 
+def es_cierre_valido(cierre) -> bool:
+    """cierre_automatico de una salida (FR-122, T055): None (no viene) o un entero >= 1."""
+    return cierre is None or (es_entero(cierre) and cierre >= 1)
+
+
 def error_de_ficha(ficha) -> ErrorDatos | None:
     """
     El ErrorDatos de una ficha inválida, o None si es válida. No lanza: así quien la recibe decide
     qué hacer con la ficha (ResolvedorCatalogo la rechaza y sigue con las demás del lote).
-    Por ahora la única regla es la del rango del cazador (FR-122). Las fichas que no son de un
-    enemigo cazador no se revisan aquí: su formato ya lo valida FuenteJson al convertirlas.
+    Reglas (FR-122): el rango de un cazador y la duracion de un objeto (T055). Las demás fichas no se
+    revisan aquí: su formato ya lo valida FuenteJson al convertirlas.
     """
+    if isinstance(ficha, ObjetoDTO):
+        return _error_de_duracion(ficha)
     if not isinstance(ficha, FichaEnemigoDTO) or ficha.comportamiento != COMPORTAMIENTO_CAZADOR:
         return None
     rango = ficha.rango
@@ -59,3 +71,13 @@ def error_de_ficha(ficha) -> ErrorDatos | None:
     return ErrorDatos(f"ficha {ficha.id}",
                       f"el campo 'rango' de un cazador debe ser un entero >= 0 ({recibido})",
                       id_ficha=ficha.id)
+
+
+def _error_de_duracion(objeto: ObjetoDTO) -> ErrorDatos | None:
+    """T055: la duracion de un objeto, si la trae, es un entero >= 1. Mismo formato de mensaje que el rango."""
+    duracion = objeto.duracion
+    if duracion is None or (es_entero(duracion) and duracion >= 1):
+        return None
+    return ErrorDatos(f"ficha {objeto.id}",
+                      f"el campo 'duracion' de un objeto debe ser un entero >= 1 (se recibió {duracion!r})",
+                      id_ficha=objeto.id)

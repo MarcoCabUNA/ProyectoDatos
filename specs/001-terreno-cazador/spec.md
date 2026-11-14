@@ -182,6 +182,19 @@ cada turno del cazador qué acción toma, a qué sala va y cuánto cuesta esa ac
 19. **Dada** la ficha de un cazador de la sala inicial sin `rango` o con `rango` -1, **cuando** se intenta
     iniciar la partida, **entonces** no inicia y el error indica esa ficha y el campo `rango`, sin que el
     programa se caiga.
+20. **Dado** un esqueleto con una salida cuyo `cierre_automatico` es 0, -5, `"10"` o `true`, **cuando** se
+    intenta iniciar la partida, también con `--forzar`, **entonces** no inicia y el error indica esa sala,
+    la dirección de la salida y el campo `cierre_automatico`, sin que el programa se caiga (FR-122).
+21. **Dada** una sala que no es la inicial con un objeto cuya ficha trae `duracion` 0, -5, `"10"` o `true`,
+    **cuando** llega la precarga y el jugador intenta entrar a esa sala, **entonces** la partida sigue, la
+    sala queda como contenido no disponible y el movimiento se rechaza con un error que nombra esa ficha y
+    el campo `duracion`, sin consumir tiempo (FR-122).
+22. **Dado** un enemigo cuya ficha trae en `suelta` un objeto cuya ficha tiene `duracion` 0, -5, `"10"` o
+    `true`, **cuando** ese enemigo está en una sala que no es la inicial, llega la precarga y el jugador
+    intenta entrar a esa sala, **entonces** la partida sigue, la sala queda como contenido no disponible y
+    el movimiento se rechaza con un error que nombra la ficha del enemigo, el campo `suelta` y la ficha del
+    objeto rechazado, sin consumir tiempo; **y** si ese enemigo está en la sala inicial, la partida no
+    inicia (FR-122).
 
 ---
 
@@ -275,8 +288,11 @@ que muestra la interfaz.
   sin `rango` entero ≥ 0 impide iniciar si el cazador está en la sala inicial. En cualquier otra sala,
   llegue antes o durante la partida, la ficha no se vuelve a pedir y su sala queda como contenido no
   disponible: cada intento de entrar se rechaza con el error de datos, sin consumir tiempo, y la partida
-  sigue. En todos los casos se informa con contexto y el programa no se cae (FR-122, escenarios H2-9 y
-  H2-17 a H2-19).
+  sigue. Un `cierre_automatico` que no es un entero ≥ 1 se trata como un costo inválido (no inicia, ni con
+  `--forzar`), y una ficha de objeto con `duracion` que no es un entero ≥ 1 como una ficha de cazador sin
+  `rango` válido. Una ficha de enemigo cuyo botín (`suelta`) trae una ficha rechazada también es inválida,
+  para no fallar a mitad de partida cuando el enemigo muere. En todos los casos se informa con contexto y
+  el programa no se cae (FR-122, escenarios H2-9 y H2-17 a H2-22).
 
 ---
 
@@ -380,6 +396,24 @@ que muestra la interfaz.
     registrarse en `partida.log` (escenarios H2-9 y H2-19).
   - *(Decisión del grupo)* Que los dos lados de una salida declaren costos distintos es un error y no se
     elige uno de los dos (escenario H2-18).
+  - *(Pedido del integrante 2)* Dos campos que programan eventos en la agenda tampoco admiten valores
+    menores que 1, porque la feature 004 supone que ningún efecto se programa con retraso 0 (004,
+    «Suposiciones»): el `cierre_automatico` de una salida (`SalidaDTO`), si viene, y la `duracion` de la
+    ficha de un objeto (`ObjetoDTO`), si la trae, DEBEN ser enteros ≥ 1; un `bool` no cuenta como entero.
+    Un `cierre_automatico` inválido es un error del esqueleto: se trata como un costo inválido y la partida
+    NO DEBE iniciar, ni siquiera con `--forzar` (003 FR-323; escenario H2-20). Una `duracion` inválida
+    rechaza la ficha igual que un `rango` inválido de cazador: el error indica la ficha y el campo, la
+    ficha no se vuelve a pedir y la sala que contiene ese objeto queda como contenido no disponible (si es
+    la sala inicial, la partida no inicia) (escenario H2-21). La `duracion` de un efecto de ficha
+    (`EfectoFichaDTO`) queda fuera de esta regla: convertir una duración ≤ 0 en `None` es comportamiento
+    de la primera parte y no programa eventos con retraso 0.
+  - *(Pedido del integrante 2)* Si alguna ficha del botín (`suelta`) de un enemigo quedó rechazada (por
+    ejemplo, un objeto con `duracion` inválida), la ficha de ese enemigo DEBE contar como inválida, con el
+    mismo efecto que un `rango` inválido de cazador: el error indica la ficha del enemigo, el campo
+    `suelta` y la ficha rechazada, la sala que contiene ese enemigo queda como contenido no disponible y, si
+    es la sala inicial, la partida NO DEBE iniciar (escenario H2-22). Así el programa no falla a mitad de
+    partida cuando el enemigo muere y suelta ese objeto. No agrega solicitudes: el catálogo ya descarga las
+    fichas de `suelta` antes de integrar la sala.
 - **FR-123**: El cazador DEBE activarse y programar su primera acción igual que los demás enemigos
   (P1 §2.4). Mientras está dormido no actúa.
 
@@ -413,15 +447,15 @@ que muestra la interfaz.
 
 | # | Caso del Apéndice B | Escenario | Requisitos | Prueba |
 |---|---|---|---|---|
-| 1 | Un cazador no tiene ruta abierta hacia el jugador: espera con costo 100 | H2-1 | FR-108, FR-109, FR-113 | Se define en `tasks.md` |
-| 2 | La ruta más barata del cazador cuesta más que su `rango`: espera con costo 100 | H2-2 | FR-108, FR-109 | Se define en `tasks.md` |
-| 3 | Ruta de menos salas y mayor costo frente a otra de más salas y menor costo: sigue la de menor costo | H2-3 | FR-108, FR-110 | Se define en `tasks.md` |
-| 4 | Dos vecinas inician rutas de costo mínimo: va a la de menor id | H2-4 | FR-111 | Se define en `tasks.md` |
-| 5 | Una puerta de la ruta se cierra entre dos turnos: decide como si calculara desde cero | H3-1 | FR-113, FR-114 | Se define en `tasks.md` |
-| 6 | Un actor de velocidad alta atraviesa una salida de costo 1: el intervalo es al menos 1 | H1-4 | FR-102 | Se define en `tasks.md` |
-| 7 | Cambia la velocidad de un actor que atraviesa una salida costosa: el restante se escala según P1 §2.3 | H1-5 | FR-102, FR-105 | Se define en `tasks.md` |
+| 1 | Un cazador no tiene ruta abierta hacia el jugador: espera con costo 100 | H2-1 | FR-108, FR-109, FR-113 | `test_h2_1_apendiceB_caso1_fr109_sin_ruta_abierta_espera` |
+| 2 | La ruta más barata del cazador cuesta más que su `rango`: espera con costo 100 | H2-2 | FR-108, FR-109 | `test_h2_2_apendiceB_caso2_fr109_d700_mayor_que_rango600_espera` |
+| 3 | Ruta de menos salas y mayor costo frente a otra de más salas y menor costo: sigue la de menor costo | H2-3 | FR-108, FR-110 | `test_h2_3_apendiceB_caso3_fr110_ruta_de_mas_salas_y_menor_costo` |
+| 4 | Dos vecinas inician rutas de costo mínimo: va a la de menor id | H2-4 | FR-111 | `test_h2_4_apendiceB_caso4_fr111_desempate_menor_id` |
+| 5 | Una puerta de la ruta se cierra entre dos turnos: decide como si calculara desde cero | H3-1 | FR-113, FR-114 | `test_h3_1_apendiceB_caso5_fr114_puerta_se_cierra_entre_turnos` |
+| 6 | Un actor de velocidad alta atraviesa una salida de costo 1: el intervalo es al menos 1 | H1-4 | FR-102 | `test_h1_4_apendiceB_caso6_fr102_intervalo_minimo_1` |
+| 7 | Cambia la velocidad de un actor que atraviesa una salida costosa: el restante se escala según P1 §2.3 | H1-5 | FR-102, FR-105 | `test_h1_5_apendiceB_caso7_fr105_cambio_de_velocidad` |
 
-Cada prueba citará el identificador del requisito que verifica (Principio X).
+Cada prueba cita en su nombre el caso del Apéndice B y el requisito que verifica (Principio X).
 
 ### Trazabilidad de los escenarios agregados en la revisión cruzada
 
@@ -440,6 +474,9 @@ Cada prueba citará el identificador del requisito que verifica (Principio X).
 | H2-17 | FR-122 | `test_h2_17_fr122_costo_invalido_no_inicia` |
 | H2-18 | FR-101, FR-122 | `test_h2_18_fr122_costos_distintos_entre_caras_no_inicia` |
 | H2-19 | FR-122 | `test_h2_19_fr122_ficha_invalida_en_la_sala_inicial_no_inicia` |
+| H2-20 | FR-122 | `test_h2_20_fr122_cierre_automatico_invalido_no_inicia` |
+| H2-21 | FR-122 | `test_h2_21_fr122_duracion_invalida_deja_la_sala_sin_contenido` |
+| H2-22 | FR-122 | `test_h2_22_fr122_botin_invalido_deja_la_sala_sin_contenido` |
 | H3-7 | FR-118, FR-122 | `test_h3_7_fr118_fr122_verificar_no_depende_de_costos_ni_cazadores` |
 | H3-8 | FR-118 | `test_h3_8_fr118_bench_aplica_las_mismas_reglas` |
 | H4-1 | FR-116 | `test_h4_1_fr116_el_costo_llega_a_la_vista` (datos); lo que se dibuja, en T041 |

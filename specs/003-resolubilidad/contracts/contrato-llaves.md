@@ -39,7 +39,7 @@ GET /criptas/{id}/llaves
 - `desde_diccionario(d)` lee un elemento de `llaves`; `a_diccionario()` produce **el mismo formato del API** y omite
   `enemigo` si es `None`.
 - La lista se entrega como `list[UbicacionLlaveDTO]` **en el orden de la respuesta**. Data no ordena ni deduplica: el
-  orden del reporte lo fija Logic (research R5).
+  orden del reporte y quitar las ubicaciones idénticas (FR-309) los hace Logic (research R5).
 
 ## Métodos
 
@@ -94,7 +94,11 @@ cache/llaves/<id_cripta>.json
 - Se persiste **antes** de validar FR-321 (la respuesta es la del API para esa versión; repetir la solicitud no la
   cambia).
 - **Con `--offline` el almacén no se usa** (`GestorLlaves(fuente, None)`): las llaves salen solo del paquete
-  (FR-318, H3-7). Lo decide `ServicioResolubilidad`, donde ya se mira `config.offline`.
+  (FR-318, H3-7). **Una sola condición** (Principio I): el almacén se elige en el mismo `if` donde
+  `ServicioPartida.fuente()` elige `FuenteOffline` o `FuenteRed` (offline → sin almacén; red → `AlmacenLlaves()`), y
+  `ServicioPartida.almacen_llaves()` lo entrega ya decidido. `ServicioResolubilidad` arma
+  `GestorLlaves(partida.fuente(), partida.almacen_llaves())` y **no mira `config.offline`**. `ServicioPartida` es del
+  integrante 3: el cambio está en la tabla de coordinación del plan.
 - `cache/` ya está en `.gitignore`.
 
 ## Errores y efecto
@@ -107,6 +111,7 @@ cache/llaves/<id_cripta>.json
 | Formato inválido | `ErrorRed` | ídem |
 | Sala inexistente (FR-321) | `ErrorDatos` | ídem; con `--verificar`, código 1 (H2-7, FR-314) |
 | Costo inválido en el esqueleto (FR-323) | `ErrorDatos` desde `GestorEsqueleto.cargar` | **se propaga**: la partida no inicia ni con `--forzar`; `--verificar` → `no_concluyo`, código 1 |
+| Cripta inexistente (404 en los datos generales, o carpeta ausente del paquete con `--offline`) | `ErrorRed` (con el código 404) desde `obtener_datos_generales` | antes del paso de llaves: la partida no inicia ni con `--forzar` (no hay esqueleto); `--verificar` → `no_concluyo`, código 1, con o sin `--forzar` (FR-314). No es FR-320 |
 
 ## Paquete offline (FR-318)
 
