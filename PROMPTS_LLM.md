@@ -1561,3 +1561,22 @@ Suite en verde con uv run, PROMPTS_LLM.md, no hagas push.
 Suite: 484 OK (skipped=3: H3-7, H2-20, H2-21) y 32/32 scripts. Sin push.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Sí: plan(001), agregá a contracts/contrato-datos.md, sección "Validación (FR-122)", las dos reglas nuevas
+(cierre_automatico y ObjetoDTO.duracion, entero >= 1 sin bool; esqueleto → no inicia, también con --forzar;
+ficha → rechaza la ficha, y en la sala inicial no inicia), el formato del mensaje de error (sala y dirección,
+o ficha y campo, como los demás de FR-122) y que EfectoFichaDTO queda fuera. Con su entrada en PROMPTS_LLM.md.
+No hagas push.
+
+**Uso de la respuesta:** un commit `plan(001)` en `contracts/contrato-datos.md`, sección «Validación (FR-122)»:
+- La tabla tiene dos filas nuevas: `cierre_automatico` de `SalidaDTO` y `duracion` de `ObjetoDTO`, válidos si vienen como entero ≥ 1 (un `bool` no cuenta), con su contexto mínimo. Un párrafo explica que los pidió el integrante 2 (T055, H2-20 y H2-21) por la suposición de la 004, que `null` o ausente sigue siendo válido y que `EfectoFichaDTO` queda fuera.
+- El efecto ahora distingue tres casos: esqueleto (no inicia, tampoco con `--forzar`, 003 FR-323), ficha de la sala inicial (no inicia) y ficha de otra sala (la sala queda sin contenido).
+- El mensaje usa el mismo formato que los demás de FR-122: sala y dirección, o ficha y campo, más el valor recibido.
+
+Suite: 484 OK (skipped=3) y 32/32 scripts. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
