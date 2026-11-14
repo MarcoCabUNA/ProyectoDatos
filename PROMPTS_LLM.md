@@ -2208,3 +2208,33 @@ Restricciones: constitución v1.2.0 (sin dict ni set como índice, sin heapq, bi
 **Uso de la respuesta:** plan de la parte del integrante 2 de la 002 en `specs/002-niebla-ir-a/`: `plan.md`, `research.md` (R1 a R8), `data-model.md`, `quickstart.md` y `contracts/contrato-mapa-conocido.md`. Decisiones: el mapa vive en Logic dentro del motor (`MapaConocido`), con un arreglo de estado por sala y otro por cara (consultas O(1)); se escribe en tres puntos (iniciar, `entrar` desde `mover_jugador` y `puerta_cambio` mediante un `RepartidorAvisosPuertas`, porque la `Mazmorra` admite un solo observador); el pergamino usa `registrar_cambio` por casilla que cambia; el campo `mapa` de `PartidaGuardadaDTO` va antes de `linea`; el binario v2 lleva un bloque del mapa y otro de la línea; `GrafoMapaConocido` tiene la interfaz exacta de `busqueda-rutas.md` de la 001; el `MapaConocidoDTO` no trae ids de salas avistadas; y `buscar_exploradas(nombre)` para «ir a». Bench B1 a B10 enganchado en `ServicioBench`. Hallazgos para coordinar: H-2 (`EstadoJuegoDTO` le pasa a la vista el id de salas avistadas), H-3 (comparación de nombres) y el dueño de `PartidaGuardada.py`. Las cuatro líneas de `motorJuego.py` se le piden al integrante 1. Revisé el plan y el contrato contra la spec, la 001 y la 004 antes del commit.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+1. git fetch y git merge origin/derek (trae T055). Si hay conflictos en archivos de la 001, pará y mostrámelos.
+2. test(001): T056, quitá el skip de H2-20 y H2-21 y marcá T055 y T056.
+3. spec(001): FR-122, una ficha de enemigo cuyo botín trae un objeto con duracion inválida es una ficha
+   inválida (la sala queda sin contenido; en la sala inicial no inicia), para no fallar a mitad de partida
+   cuando el enemigo muere. Escenario H2-22 y una tarea nueva para el integrante 2. Actualizá también
+   contracts/contrato-datos.md (plan(001)). Prueba de H2-22 con skip hasta su tarea.
+4. tasks(001): la nota de T046 (~línea 190) dice "lado seguro" sin limitarlo; dejala como en DECISIONES.md
+   ("en esta regla de la puerta de salida").
+5. plan(001): una nota de dependencias externas: _cronometrar, _mejor_y_mediana y SEMILLA (BenchLogica),
+   _cuadricula_con_costos, _motor_con_cazadores, _centro y _peor (BenchRutas) y Mazmorra._salida_inversa
+   son usados por las specs 002 y 003; no cambiar su nombre ni firma sin avisar al integrante 2.
+Un commit por punto, suite en verde con uv run, PROMPTS_LLM.md, no hagas push.
+
+Regla exacta (del integrante 2): si alguna ficha de 'suelta' de un enemigo quedó rechazada, la ficha del
+enemigo cuenta como inválida. No agrega solicitudes: ResolvedorCatalogo ya baja esas fichas antes de integrar la sala.
+
+**Uso de la respuesta:**
+- Merge de `origin/derek`: fast-forward hasta `acd4196`, sin conflictos (trae T055 y las specs 002 a 004).
+- `test(001)`: sin los `skipTest` de H2-20 y H2-21, que pasan con T055; T055 y T056 marcadas en `tasks.md`.
+- Punto 3 en tres commits, uno por prefijo: `spec(001)` (FR-122 con la regla de `suelta`, escenario H2-22, caso borde, trazabilidad y T057 para el integrante 2 en `tasks.md`), `plan(001)` (fila de `suelta` en `contracts/contrato-datos.md`) y `test(001)` (`test_h2_22_fr122_botin_invalido_deja_la_sala_sin_contenido` con `FuenteConBotinInvalido` en `tests/ayudas_terreno.py`, con `skipTest` hasta T057). La prueba cubre una sala no inicial (la sala queda sin contenido, el mensaje nombra la ficha del enemigo, `suelta` y la ficha rechazada) y la sala inicial (no inicia). Se comprobó que pasa con una implementación provisional en `GestorContenido._rechazo_de` (descartada, es del integrante 2) y que falla sin ella.
+- `tasks(001)`: la nota de T046 dice «En esta regla de la puerta de salida, la diferencia va hacia el lado seguro», como `DECISIONES.md`.
+- `plan(001)`: nota de dependencias externas en «Dependencias con otros integrantes» de `plan.md`.
+
+Suite: 549 OK (skipped=2: H3-7 y H2-22) y 32/32 scripts. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
