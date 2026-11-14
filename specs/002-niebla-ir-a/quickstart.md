@@ -10,9 +10,10 @@ su sección del plan.
 ## Requisitos previos
 
 - Python 3.11 o superior con las dependencias del proyecto (`uv sync`), desde la raíz del repositorio.
-- Los cambios del integrante 1 en `Logic/motorJuego.py` (tabla de cambios del plan) ya integrados: sin ellos el motor
-  no crea `motor.mapa`.
-- Para H4-4 (`historia`): `Service/ArmadorResumen.py` de la 004 (T023). Mientras no exista, esa prueba queda en `skip`
+- El cambio de `Logic/motorJuego.py` y de `Logic/PartidaGuardada.py` (tabla de cambios del plan; T033 y T040) ya
+  integrado: lo escribe el integrante 2 y lo revisa el integrante 1 antes del merge (acuerdo del 14/11). Sin él, el
+  motor no crea `motor.mapa`.
+- Para H4-4 (`historia`): `Service/ArmadorResumen.py` (T023 de la 004). Mientras no exista, esa prueba queda en `skip`
   con su motivo.
 
 ## 1. Pruebas automatizadas
@@ -73,7 +74,7 @@ El mapa final (y el del resumen en t = 300) es igual al de la partida original, 
 uv run python main.py --bench | Out-File -Encoding utf8 bench.txt
 ```
 
-En la tabla, el subsistema «mapa conocido» trae las filas B1 a B10 ([research.md, R7](research.md)). Qué mirar:
+En la tabla, el subsistema «mapa conocido» trae las filas B1 a B11 ([research.md, R7](research.md)). Qué mirar:
 
 | Fila | Criterio | Requisito |
 |---|---|---|
@@ -84,5 +85,6 @@ En la tabla, el subsistema «mapa conocido» trae las filas B1 a B10 ([research.
 | B5, B7 | Las alternativas descartadas crecen con el tamaño | Principio VIII |
 | B8 | La nota dice «cumple»: peor ciclo < 20 ms con 30 cazadores y la antorcha encendida | NFR-205, SC-206 |
 | B9, B10 | Crecen en forma lineal con S | NFR-203, R5 |
+| B11 | Armar el grafo más un paso con 1 024 salas: la nota dice si queda por debajo de 5 ms (lo que se lee, sin suponerlo antes) | R5 (a); referencia para NFR-250 |
 
 Los números y la decisión final van a `DECISIONES.md`, sección del integrante 2, «Mapa conocido» (NFR-204).

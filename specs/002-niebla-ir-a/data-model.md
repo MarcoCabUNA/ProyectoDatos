@@ -31,7 +31,6 @@ Estado de la partida. Lo crea el motor (`motor.mapa`); lo escriben solo `iniciar
 | `mazmorra` | `Mazmorra` | Solo lectura: nombre, salidas, `SalidaViva.costo` y `cerrada` (para observar), `_salida_inversa` |
 | `jugador` | `Jugador` | Solo lectura: `Sala_Actual`, para re-observar al recibir un aviso |
 | `historial` | `HistorialRetroceso \| None` | Donde se registran las reversiones (R3); `None` en el bench sin motor |
-| `observador_rutas` | objeto con `puerta_cambio(a, b)` o `None` | Aviso opcional para una búsqueda de «ir a» guardada entre pasos (contrato, (a)) |
 
 | Método | Qué hace | Costo | Requisitos |
 |---|---|---|---|
@@ -43,7 +42,7 @@ Estado de la partida. Lo crea el motor (`motor.mapa`); lo escriben solo `iniciar
 | `a_dto() -> MapaConocidoDTO` | Vista de solo lectura (§4) | O(S) | FR-217, FR-219, FR-220 |
 | `buscar_exploradas(nombre: str) -> list[int]` | Ids de exploradas con ese nombre | O(S) | FR-251 |
 | `a_guardado() -> MapaConocidoGuardadoDTO` | Copia de los dos arreglos con `list(...)` | O(S) | FR-221, FR-223, NFR-203 |
-| `restaurar(dto: MapaConocidoGuardadoDTO) -> None` | Valida largos (`ValueError`) y copia los arreglos; no registra en el historial | O(S) | FR-221, FR-223 |
+| `restaurar(dto: MapaConocidoGuardadoDTO \| None) -> None` | Con un DTO: valida largos (`ValueError`, riesgo R-8) y copia los arreglos, reemplazando el mapa en curso; no registra en el historial. Con `None`: pone todo en `DESCONOCIDA` / `SIN_OBSERVAR` y arma el mapa inicial desde `jugador.Sala_Actual`, como `iniciar` (esa sala explorada, los destinos de sus salidas avistados y sus puertas observadas, FR-202); lo que registre queda en el intervalo abierto, que `PartidaGuardada.cargar` descarta enseguida | O(S) | FR-202, FR-221, FR-223 |
 
 Privados:
 
@@ -51,7 +50,7 @@ Privados:
 |---|---|
 | `_explorar(sala)` | Si ya está `EXPLORADA`, no hace nada. Si no, `_poner_estado(sala, EXPLORADA)` y, por cada salida de `sala` hacia una sala v que existe con `estado[v] == DESCONOCIDA`, `_poner_estado(v, AVISTADA)` |
 | `_observar_puertas(sala)` | Por cada dirección d con salida s hacia una sala que existe: `_poner_cara(sala*4 + d, CERRADA si s.cerrada si no ABIERTA)`; si `_salida_inversa(sala, s.destino)` existe, su dirección d' (por identidad entre las 4 salidas del destino) y `_poner_cara(s.destino*4 + d', …)` con su estado real |
-| `_poner_estado(sala, valor)` / `_poner_cara(c, valor)` | Si el valor es igual, nada. Si no: registra la reversión de esa casilla (índice y valor anterior ligados) con `historial.registrar_cambio`, escribe y, si `observador_rutas` no es `None` y cambió una salida utilizable, le avisa (contrato, (a)) |
+| `_poner_estado(sala, valor)` / `_poner_cara(c, valor)` | Si el valor es igual, nada. Si no: registra la reversión de esa casilla (índice y valor anterior ligados) con `historial.registrar_cambio` y escribe. No avisa a nadie (una búsqueda de «ir a» empieza de nuevo en cada paso, contrato (a)) |
 
 **Invariantes** (se prueban):
 
@@ -144,15 +143,23 @@ No hay campos de contenido (enemigos, objetos, trampas) ni de estado real.
 
 `a_diccionario` agrega `"mapa": None` o el diccionario; `desde_diccionario` usa `d.get("mapa")`.
 
+`PartidaGuardada` (`Logic/PartidaGuardada.py`, modificado; lo escribe el integrante 2 y lo revisa el integrante 1,
+acuerdo del 14/11): `guardar` pasa `mapa=motor.mapa.a_guardado()`; `cargar` suma **una sola línea**, antes de
+`motor.historial.descartar_intervalo_abierto()`: `motor.mapa.restaurar(partida.mapa)`, sin `if` ni `raise`. Si
+`partida.mapa` es `None`, `restaurar(None)` arma el mapa inicial desde la sala actual del jugador (§2), como FR-202 con
+la sala de inicio. Los guardados reales (versión 2) y los puntos de control siempre traen el mapa, así que `None` solo
+aparece en un `PartidaGuardadaDTO` armado a mano (pruebas de otros integrantes que no conocen el mapa). `cargar` no
+gana ningún comportamiento nuevo: nunca rechaza una partida por el mapa.
+
 ## 6. Bloque binario del mapa (`Data/GuardadoBinario.py`, versión 2)
 
 | Parte | Formato |
 |---|---|
-| Cabecera | `<4sHQIQIIQIQI>` (58 bytes): magia, versión (= 2), offset y largo global, offset del índice, entradas, id mínimo, offset y largo del mapa, offset y largo de la línea (T003) |
+| Cabecera | `<4sHQIQIIQIQI>` (58 bytes): magia, versión (= 2), offset y largo global, offset del índice, entradas, id mínimo, offset y largo del mapa, offset y largo de la línea (T003 de la 004) |
 | Bloque del mapa | `I` cantidad S · `S` bytes de estado · `S` bytes de caras (bits 0-1 = N, 2-3 = S, 4-5 = E, 6-7 = O) |
 | Largo 0 | `mapa` es `None` |
 | Validación (solo formato) | estado ∈ {0, 1, 2}; cada par de bits ∈ {0, 1, 2}; largo exacto; offset y largo dentro de la zona anterior al índice. Si no, `ErrorGuardado` |
-| Puntos de control (bloque de la línea, T003) | Después del bloque global de cada punto, el bloque de su mapa con el mismo formato |
+| Puntos de control (bloque de la línea, T003 de la 004) | Cada punto lleva, en este orden, su bloque global, sus salas y el bloque de su mapa con el mismo formato |
 
 `cargar_sala` no lee este bloque. Un archivo de versión 1 se rechaza antes de leer la cabecera completa.
 
@@ -163,7 +170,7 @@ No hay campos de contenido (enemigos, objetos, trampas) ni de estado real.
 | `observadores: list` | En orden fijo: `[motor.rutas, motor.mapa]` |
 | `puerta_cambio(a, b) -> None` | Llama a `puerta_cambio(a, b)` de cada observador, en orden. O(cantidad de observadores) = O(1) |
 
-## 8. Cambios en el motor (`Logic/motorJuego.py`, integrante 1)
+## 8. Cambios en el motor (`Logic/motorJuego.py`; lo escribe el integrante 2 en T033 y lo revisa el integrante 1 antes del merge, acuerdo del 14/11)
 
 | Lugar | Línea nueva o cambiada | FR |
 |---|---|---|
