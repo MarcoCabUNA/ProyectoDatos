@@ -131,6 +131,20 @@ class PruebasReconstructor(unittest.TestCase):
             self.assertEqual(reconstructor.acciones_reaplicadas, 0)
         _correr(prueba)
 
+    def test_instante_entre_decisiones_no_usa_el_punto_posterior_fr402(self):
+        """Un instante a mitad de un intervalo no es el punto de control siguiente (su reloj es mayor que t)."""
+        def prueba(carpeta):
+            fotos = {}
+            for k_linea in (1, 1000):                              # con 1000 solo existe el punto 0
+                _, ctx = partida_de_prueba(os.path.join(carpeta, f"k{k_linea}"), semilla=2026, k=k_linea)
+                jugar(ctx, 15)
+                reconstructor = ReconstructorEstado(ctx)
+                fotos[k_linea] = [_foto(reconstructor.hasta_instante(t), ctx) for t in range(0, ctx.motor.reloj + 1, 2)]
+            self.assertEqual(len(fotos[1]), len(fotos[1000]))
+            for i, (con_k1, sin_puntos) in enumerate(zip(fotos[1], fotos[1000])):
+                self.assertTrue(con_k1 == sin_puntos, f"el instante {2 * i} difiere entre K=1 y K=1000")   # sin volcar el estado
+        _correr(prueba)
+
 
 if __name__ == "__main__":
     unittest.main()
