@@ -22,6 +22,7 @@ if RAIZ not in sys.path:
 from DTO.CriptaDTO import CriptaDTO  # noqa: E402
 from DTO.Direcciones import E, N, O, S  # noqa: E402
 from DTO.FichaEnemigoDTO import FichaEnemigoDTO  # noqa: E402
+from DTO.ObjetoDTO import ObjetoDTO  # noqa: E402
 from DTO.SalaDTO import EnemigoEnSalaDTO, SalaDTO, SalidaDTO  # noqa: E402
 from Logic.Enemigo import Enemigo  # noqa: E402
 from Logic.jugador import Jugador  # noqa: E402
@@ -172,6 +173,37 @@ class FuenteConFichaInvalida(FuenteCuadricula):
     def obtener_catalogo(self, ids):
         self.catalogos.append(list(ids))
         return [ficha_cazador(None, id=ID_CAZADOR_SIN_RANGO) for i in ids if i == ID_CAZADOR_SIN_RANGO]
+
+
+ID_OBJETO_DURACION_INVALIDA = "obj_pocion_duracion_invalida"
+
+
+class FuenteConObjetoInvalido(FuenteCuadricula):
+    """
+    FR-122 (T056, escenario H2-21): la sala 'sala_objeto' trae una poción cuya ficha llega con 'duracion' inválida.
+
+    Igual que FuenteConFichaInvalida, la fuente NO lanza el error: devuelve el dato inválido y Data (T055) lo
+    rechaza con ErrorDatos y recuerda la sala.
+    """
+
+    def __init__(self, n: int, sala_objeto: int, duracion):
+        super().__init__(n)
+        self.sala_objeto = sala_objeto
+        self.duracion = duracion
+        self.catalogos: list[list[str]] = []     # cada lote pedido a /catalogo, para contar solicitudes
+
+    def obtener_contenido(self, id_cripta, ids_salas):
+        contenidos = super().obtener_contenido(id_cripta, ids_salas)
+        for c in contenidos:
+            if c.sala == self.sala_objeto:
+                c.objetos.append(ID_OBJETO_DURACION_INVALIDA)
+        return contenidos
+
+    def obtener_catalogo(self, ids):
+        self.catalogos.append(list(ids))
+        return [ObjetoDTO(ID_OBJETO_DURACION_INVALIDA, "Poción rara", "pocion", 1, 10,
+                          modificador_velocidad=20, duracion=self.duracion)
+                for i in ids if i == ID_OBJETO_DURACION_INVALIDA]
 
 
 ID_CAZADOR = "ent_cazador"
