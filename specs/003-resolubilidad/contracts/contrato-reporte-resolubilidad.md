@@ -30,15 +30,15 @@ NO_CONCLUYO = "no_concluyo"
 | Campo | Tipo | Significado |
 |---|---|---|
 | `id` | `str` | Id de la llave |
-| `ubicaciones` | `list[UbicacionLlaveDTO]` | Todas, en orden (sala; sin enemigo primero; id de enemigo). **Vacía ⇒ mostrar «sin ubicación»** (FR-309, FR-321) |
+| `ubicaciones` | `list[UbicacionLlaveDTO]` | Todas las **distintas**, en orden (sala; sin enemigo primero; id de enemigo). Las idénticas (misma sala y mismo enemigo, o las dos sin enemigo) llegan **una sola vez**: Logic las quita en la preparación, O(U) después de ordenar (FR-309, H1-12). **Vacía ⇒ mostrar «sin ubicación»** (FR-309, FR-321) |
 
 ### `PasoCicloDTO`: «llave está en sala → la puerta X requiere la siguiente»
 
 | Campo | Tipo | Significado |
 |---|---|---|
 | `llave` | `str` | Llave de este paso |
-| `ubicacion` | `UbicacionLlaveDTO` | La ubicación usada (la de menor nivel de puertas; research R6) |
-| `puerta` | `PuertaLlaveDTO` | Puerta que la encierra; `puerta.llave` es la llave del paso siguiente (la del último paso es la del primero) |
+| `ubicacion` | `UbicacionLlaveDTO` | La ubicación usada (la de menor nivel de puertas; si empatan, la primera de `ubicaciones`; FR-310, research R6) |
+| `puerta` | `PuertaLlaveDTO` | La única puerta que la bloquea según FR-310 (menor nivel; desempate por sala de origen y dirección); `puerta.llave` es la llave del paso siguiente (la del último paso es la del primero) |
 
 ### `DependienteCicloDTO`
 
@@ -111,7 +111,7 @@ ReporteResolubilidadDTO(
 | `--verificar <cripta>` | `ControladorBackend.verificar(id)` → `ServicioResolubilidad.verificar(id)` | El DTO; `main.py` escribe sus líneas (`UIController/TextoResolubilidad.py`) en la **salida estándar** (FR-314). Es el único modo sin vista que verifica (FR-313) |
 | Iniciar partida, resoluble o con `--forzar` | `ControladorBackend.iniciar(...)` guarda `contexto.resolubilidad` | `ControladorBackend.resolubilidad()` devuelve el DTO; la vista lo muestra **antes de la primera acción** (FR-313). Con `--forzar` y no resoluble, como advertencia (FR-312) |
 | Iniciar partida, no resoluble o no concluyó, sin `--forzar` | `ServicioResolubilidad` lanza `ErrorPartidaNoIniciada` (con `.reporte`) | `iniciar` lanza `ErrorOperacion` con un mensaje corto y `resolubilidad()` devuelve el reporte para mostrarlo completo (FR-311) |
-| Cargar partida, `--replay`, `--replay … --hasta` | — | Nada: no se verifica (FR-301). `resolubilidad()` devuelve `None` |
+| Cargar partida, `--replay`, `--replay … --hasta` (con o sin `--forzar`) | — | Nada: no se verifica (FR-301) y `--forzar` no tiene efecto (FR-312). `resolubilidad()` devuelve `None` |
 | `--bench` | — | Nada: no inicia partidas ni verifica como paso previo (FR-301); solo mide la verificación sobre criptas sintéticas (NFR-304) |
 
 Mostrar el reporte completo al iniciar es la excepción de 002 FR-217: no forma parte del mapa conocido ni lo
@@ -158,9 +158,12 @@ Falló 'ubicación de llaves de cripta-01': se alcanzó el presupuesto de 9 soli
 | `… --verificar` sin valor o con texto vacío | Error de uso | 2 |
 | `… --verificar X --replay L` o `--verificar X --bench` | Error de uso (grupo excluyente) | 2 |
 | `… --forzar` (partida normal) | Inicia aunque no sea resoluble o no concluya; muestra el reporte como advertencia | — |
+| `… --verificar <cripta inexistente>` (con o sin `--offline`, con o sin `--forzar`) | «la verificación NO CONCLUYÓ» con el error con contexto (404 del servicio, o «falta el archivo» del paquete) | 1 (FR-314) |
 | `… --forzar` con un error de FR-323 | No inicia; la interfaz muestra el error con contexto | — |
 | `… --replay L` o `… --bench` | No verifican (FR-301) | sin cambios |
+| `… --replay L --forzar`, `… --bench --forzar`, o cargar una partida guardada con `--forzar` | Se acepta (no es error de argumentos) y **no tiene efecto**: el resultado y el código de salida son los mismos que sin `--forzar` (FR-312) | los mismos que sin `--forzar` |
 
-`ConfiguracionDTO` gana `verificar: str | None = None` y `forzar: bool = False`, **después** de `hasta` y
-`checkpoint_cada` de la 004. `--verificar` va en el mismo grupo excluyente que `--replay` y `--bench`. `--forzar`
-con `--replay` o `--bench` se acepta y no tiene efecto (no inician una partida nueva).
+`ConfiguracionDTO` gana `verificar: str | None = None` y `forzar: bool = False`, **detrás de `hasta`** (`checkpoint_cada`
+y `hasta` de la 004 ya están, commit `1b53bc9`). `--verificar` va en el mismo grupo excluyente que `--replay` y
+`--bench`. `--forzar` no va en ningún grupo excluyente: solo lo lee `ServicioResolubilidad.iniciar_partida_nueva`, así
+que con `--replay`, con `--bench`, al cargar una partida y con `--verificar` no cambia nada (FR-312, FR-314).

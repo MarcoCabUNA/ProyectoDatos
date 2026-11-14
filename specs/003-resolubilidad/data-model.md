@@ -20,14 +20,14 @@ Detalle de campos y formato: [contrato-llaves.md](contracts/contrato-llaves.md) 
 | `DependienteCicloDTO` | ídem | `llave`, `ubicacion`, `puerta`, `depende_de` | `depende_de` es una llave del ciclo |
 | `CicloLlavesDTO` | ídem | `pasos`, `dependientes` | Empieza por la llave de menor id |
 | `ReporteResolubilidadDTO` | ídem | `id_cripta`, `veredicto`, `version_cripta`, `llave_salida`, `orden_llaves`, `llaves_no_obtenibles`, `frontera`, `ciclos`, `motivo`, `mensaje` | Campos nuevos al final, con valor por defecto |
-| `ConfiguracionDTO` | `DTO/ConfiguracionDTO.py` (modificado) | + `verificar: str \| None = None`, + `forzar: bool = False` | Después de `hasta` y `checkpoint_cada` (004) |
+| `ConfiguracionDTO` | `DTO/ConfiguracionDTO.py` (modificado) | + `verificar: str \| None = None`, + `forzar: bool = False` | Detrás de `hasta`, el último campo de la 004 (`checkpoint_cada` y `hasta` ya están, commit `1b53bc9`) |
 
 ### Estados del veredicto
 
 ```text
-                 ┌─ error al leer datos generales / esqueleto (incl. FR-323) ─┐
- verificar(id) ──┤                                                             ├─► NO_CONCLUYO (mensaje)
-                 ├─ error en el paso de llaves (FR-320, FR-321, formato) ─────┘
+                 ┌─ error al leer datos generales / esqueleto (FR-323, cripta inexistente) ─┐
+ verificar(id) ──┤                                                                          ├─► NO_CONCLUYO (mensaje)
+                 ├─ error en el paso de llaves (FR-320, FR-321, formato) ───────────────────┘
                  └─ datos completos ─► recorrido ─┬─► RESOLUBLE   (orden_llaves)
                                                   └─► NO_RESOLUBLE (no obtenibles, frontera, ciclos, motivo?)
 ```
@@ -41,6 +41,10 @@ partida no inicia, ni con `--forzar` (FR-323). El resto es igual.
 | `NO_RESOLUBLE` | **no inicia**; muestra el reporte (FR-311) | inicia; reporte como advertencia (FR-312) | 3 |
 | `NO_CONCLUYO` (llaves) | **no inicia**; muestra el mensaje (FR-320) | inicia; mensaje como advertencia | 1 |
 | error del esqueleto (FR-323) | no inicia | **no inicia** | 1 |
+| cripta inexistente (404, o ausente del paquete con `--offline`) | no inicia | **no inicia** (sin esqueleto no hay partida) | 1 (FR-314) |
+
+`--forzar` solo se lee en `iniciar_partida_nueva`. Con `--replay`, con `--bench` o al cargar una partida no tiene
+efecto (esos caminos no verifican, FR-301, FR-312), y con `--verificar` tampoco (H3-9).
 
 ## 2. Data
 
@@ -59,7 +63,7 @@ devuelve `None`) → `guardar` → *vigente*; *dañado* → `leer` lo borra → 
 | Atributo | Tipo | Contenido |
 |---|---|---|
 | `_fuente` | `FuenteDatos` | La de la ejecución (red u offline) |
-| `_almacen` | `AlmacenLlaves \| None` | `None` con `--offline` |
+| `_almacen` | `AlmacenLlaves \| None` | `None` con `--offline`. Lo decide `ServicioPartida.fuente()` en el mismo `if` que elige la fuente, y llega por `ServicioPartida.almacen_llaves()`; ni `GestorLlaves` ni `ServicioResolubilidad` miran `config.offline` |
 
 `obtener(cripta, esqueleto)`: almacén vigente → si no, una solicitud y `guardar` → `validar_ubicaciones`.
 
@@ -83,7 +87,7 @@ Se arma una vez por verificación, a partir de `CriptaDTO`, `list[SalaDTO]` y `l
 | `destino[c]` | `list[int]` | cara | sala destino, o −1 |
 | `llave_cara[c]` | `list[int]` | cara | índice de llave, o −1 |
 | `ids[k]` | `list[str]` | llave | id de la llave; **ordenado** (índice menor = id menor) |
-| `ubicaciones` | `list[UbicacionLlaveDTO]` | posición | ordenadas por (llave, sala, enemigo), sin duplicados idénticos |
+| `ubicaciones` | `list[UbicacionLlaveDTO]` | posición | ordenadas por (llave, sala, enemigo), sin duplicados idénticos (FR-309): después de ordenar, una pasada O(U) descarta cada ubicación igual a la anterior (misma llave, sala y enemigo, o las dos sin enemigo) |
 | `llave_ubicacion[i]` | `list[int]` | ubicación | índice de llave |
 | `inicio_ubic[k]`, `fin_ubic[k]` | `list[int]` | llave | tramo de `ubicaciones` de la llave `k` (vacío ⇒ «sin ubicación») |
 | `llaves_en_sala[s]` | `list[list[int]]` | sala | índices de llave ubicados en `s` |
@@ -100,6 +104,11 @@ supuesto de §3.5, nunca bloquea. El costo tampoco se lee.
 Construcción del índice de llaves (research R3): menciones `(id, tipo, posición)` → `Ordenador.ordenar` → una
 pasada que asigna índices consecutivos y los escribe en `llave_cara` y `llave_ubicacion`. O(M log M).
 
+Ubicaciones sin repetir (research R5, FR-309): se ordenan por (índice de llave, sala, enemigo) con el `Ordenador`,
+O(U log U), y una pasada O(U) copia cada una solo si es distinta de la anterior; las idénticas quedan juntas por el
+orden. No cambia la obtenibilidad (una copia repetida está en la misma sala) y así el reporte y los pasos de los
+ciclos las indican una sola vez. Data no deduplica: entrega la lista tal como llega (contrato de llaves).
+
 ### `RecorridoLlaves` (`Logic/RecorridoLlaves.py`, nuevo): oleadas y fase hacia afuera
 
 | Atributo | Tipo | Índice | Contenido |
@@ -112,7 +121,7 @@ pasada que asigna índices consecutivos y los escribe en `llave_cara` y `llave_u
 | `sin_llave` | `list[int]` | — | caras cerradas sin llave que salen de una sala alcanzable |
 | `caras_de_salida` | `list[int]` | — | caras con `es_cara_de_salida[c]` que salen de una sala alcanzable |
 | `frontera` | `list[int]` | — | caras de la frontera, ordenadas por `c` |
-| `puerta_que_encierra[s]` | `list[int]` | sala | cara por la que se llegó a la zona de `s` en la fase hacia afuera, o −1 |
+| `puerta_que_encierra[s]` | `list[int]` | sala | la puerta que bloquea la zona de `s` según FR-310 (menor nivel; desempate por sala de origen y dirección): la primera por la que se llegó a esa zona en la fase hacia afuera, o −1 |
 | `nivel[s]` | `list[int]` | sala | puertas cruzadas desde la región (0 dentro de la región, −1 si no se llega) |
 
 Ciclo de vida de una llave `k`:
@@ -141,10 +150,18 @@ Complejidad: tiempo O(S + E + U + K log K); espacio O(S + E + U + K).
 | `siguiente[k]` | `list[int]` | llave | llave de la puerta que encierra a `k`, o −1 (sin arista) |
 | `ubic_usada[k]` | `list[int]` | llave | posición en `ubicaciones` de la ubicación usada, o −1 |
 | `marca[k]` | `list[int]` | llave | número del recorrido que la visitó, o 0 |
+| `pos_camino[k]` | `list[int]` | llave | posición de `k` en `camino` durante su recorrido (para saber dónde empieza un ciclo) |
+| `camino` | `list[int]` | — | llaves del recorrido actual, en el orden en que se siguieron las aristas; se vacía al empezar cada recorrido |
 | `ciclo_de[k]` | `list[int]` | llave | número de ciclo al que pertenece o del que depende, o −1 |
-| `entrada[k]` | `list[int]` | llave | llave del ciclo donde entra su cadena (dependientes), o −1 |
+| `entrada[k]` | `list[int]` | llave | llave del ciclo donde entra su cadena (ella misma si está en el ciclo), o −1 |
 
-Complejidad: O(K) + O(K log K) para ordenar dependientes.
+**Sin recursión** (research R6): seguir las aristas es un `while` que agrega cada llave a `camino`; al terminar el
+recorrido, un `for` sobre `camino` asigna `entrada` y `ciclo_de` (ciclo nuevo desde `pos_camino[k]`, la `entrada`
+de una llave de un recorrido anterior, o −1). Una cadena de 1 000 o más llaves no llega al límite de recursión de
+Python.
+
+Complejidad: O(K) (cada llave entra una vez a `camino` y se recorre una vez al asignar) + O(K log K) para ordenar
+dependientes.
 
 ### `VerificadorResolubilidad` (`Logic/VerificadorResolubilidad.py`, nuevo)
 
@@ -171,8 +188,9 @@ FR-302 y FR-303, FR-304, FR-305, FR-307 a FR-310, FR-316 (copias), FR-321 «sin 
 
 | Clase | Archivo | Atributos | Operaciones |
 |---|---|---|---|
-| `ServicioResolubilidad` | `Service/ServicioResolubilidad.py` (nuevo) | `_partida: ServicioPartida`, `_config: ConfiguracionDTO`, `_carpeta_llaves: str \| None` | `verificar(id) -> ReporteResolubilidadDTO`; `iniciar_partida_nueva(id, nombre, forzar, semilla=None) -> ContextoPartida` |
-| `ErrorPartidaNoIniciada` | ídem | `reporte: ReporteResolubilidadDTO` | Subclase de `ValueError`; mensaje corto para el jugador |
+| `ServicioResolubilidad` | `Service/ServicioResolubilidad.py` (nuevo) | `_partida: ServicioPartida` | `verificar(id) -> ReporteResolubilidadDTO`; `iniciar_partida_nueva(id, nombre, forzar, semilla=None) -> ContextoPartida`. Arma `GestorLlaves(partida.fuente(), partida.almacen_llaves())`: **no mira `config.offline`** |
+| `ErrorPartidaNoIniciada` | ídem (se define aquí, como `ErrorCarga` en `ServicioGuardado.py` y `ErrorReplay` en `ServicioReplay.py`) | `reporte: ReporteResolubilidadDTO` | Subclase de `ValueError`; mensaje corto para el jugador. `Service/ErroresServicio.py` solo lo importa y lo agrega a `ERRORES_ESPERADOS` (sin import circular: `ServicioResolubilidad` no importa `ErroresServicio`) |
+| `ServicioPartida` | `Service/ServicioPartida.py` (modificado, integrante 3) | + `_almacen_llaves: AlmacenLlaves \| None` (parámetro final `almacen_llaves=None` del constructor) | `fuente()`: el mismo `if` elige `FuenteOffline()` sin almacén o `FuenteRed()` con `AlmacenLlaves()`; nuevo `almacen_llaves() -> AlmacenLlaves \| None` (llama antes a `fuente()`); `iniciar_partida(..., datos=None)` |
 | `ContextoPartida` | `Service/ContextoPartida.py` (modificado) | + `resolubilidad: ReporteResolubilidadDTO \| None = None`, al final | — |
 
 ## 5. Lo que la verificación NO toca (research R9)
