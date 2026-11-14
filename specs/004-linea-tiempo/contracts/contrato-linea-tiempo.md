@@ -8,7 +8,10 @@ método nuevo del motor (para Marco) y los comandos y banderas (integrante 3). A
 
 ## 1. DTO guardado (Derek)
 
-`PartidaGuardadaDTO` recibe **un campo nuevo al final**, con valor por defecto:
+`PartidaGuardadaDTO` recibe **un campo nuevo al final**, con valor por defecto. Además tendrá el campo `mapa`
+(integrante 2, spec 002 FR-223) **antes** de `linea`, de modo que `linea` siga siendo el último campo. Cada punto
+de control es un `PartidaGuardadaDTO` y por eso lleva su propio mapa. *Acordado con el integrante 2; falta
+confirmar el orden de campos.*
 
 | Campo | Tipo | Valor por defecto |
 |---|---|---|
@@ -44,6 +47,8 @@ Restricciones que Derek puede validar al leer:
 
 - `VERSION_FORMATO` pasa de 1 a **2**. La cabecera sigue empezando por la magia `CRPT` y la versión,
   que se compara **antes** de interpretar el resto (ya ocurre hoy).
+- La cabecera v2 lleva también el **offset y el largo del bloque del mapa** (spec 002), además de los de la línea
+  (*acordado con el integrante 2; falta confirmar el orden de campos*). Cada punto de control lleva su propio mapa.
 - La cabecera gana el **offset y el largo** del bloque de la línea (campos nuevos en la cabecera; el
   índice de salas y los bloques de sala no cambian de formato).
 - El bloque de la línea usa los mismos escritores y lectores primitivos de hoy (`entero`,

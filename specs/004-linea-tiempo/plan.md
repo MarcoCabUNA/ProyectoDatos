@@ -91,6 +91,10 @@ reloj que muestra el resumen ya no es un hallazgo: lo fija FR-405 de la spec (el
   Re-simular solo las acciones vigentes cambiaría la numeración. Solución sin reglas nuevas:
   registros de carga con ordinal, guardados en el orden real y aplicados como prefijo
   ([research.md, R3](research.md#hallazgo-h-1--el-orden-de-carga-de-salas-cambia-la-numeración-de-enemigos)).
+  **Aplicado en la implementación**: la regla del prefijo por ordinal (T032) no hace falta, porque el punto
+  nuevo en `c` copia el estado vivo y ya trae las salas cargadas en la acción revertida; cargar salas por
+  adelantado cambiaría `contenido_cargado`. Se verificó con `FuenteConRatas` en T034. Los registros de carga
+  con su ordinal (T016) se mantienen.
 - **H-2** (FR-413, FR-419, FR-424) — **resuelto, es una regla de P1 §2.11**: la reversión del
   pergamino no deshace los pergaminos recogidos o soltados durante el intervalo revertido, porque el
   pergamino está fuera del historial. La spec lo fija como FR-424 (escenarios H3-5 y H3-6). **No hay
