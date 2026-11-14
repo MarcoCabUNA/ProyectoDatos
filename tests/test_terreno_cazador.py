@@ -30,7 +30,8 @@ from Service.ServicioAccionJugador import ServicioAccionJugador  # noqa: E402
 from Service.ServicioPartida import ServicioPartida  # noqa: E402
 from tests.TestValidacionDatos import CAZADOR, SIN_RANGO, api_con_cazador, api_con_costos  # noqa: E402
 from tests.Utilidades import ID_CRIPTA, ApiFalsa, fuente_red, pagina_real  # noqa: E402
-from tests.ayudas_terreno import (ID_CAZADOR_SIN_RANGO, ID_OBJETO_DURACION_INVALIDA, LLAVE_FINAL,  # noqa: E402
+from tests.ayudas_terreno import (ID_CAZADOR_SIN_RANGO, ID_ENEMIGO_BOTIN_INVALIDO,  # noqa: E402
+                                  ID_OBJETO_DURACION_INVALIDA, LLAVE_FINAL, FuenteConBotinInvalido,
                                   FuenteConFichaInvalida, FuenteConObjetoInvalido,
                                   cuadricula_con_costos, ficha_cazador, ficha_errante, ficha_rastreador,
                                   mazmorra_con_costos, motor_con, poner_enemigo, salida)
@@ -467,7 +468,7 @@ class TestCazadorBordes(unittest.TestCase):
 
 
 class TestDatosInvalidos(unittest.TestCase):
-    """FR-122, escenarios H2-9 y H2-17 a H2-19: datos inválidos de terreno y de cazador."""
+    """FR-122, escenarios H2-9 y H2-17 a H2-22: datos inválidos de terreno, de cazador, de objeto y de botín."""
 
     def test_h2_9_fr122_ficha_invalida_rechaza_entrar(self):
         """
@@ -607,6 +608,50 @@ class TestDatosInvalidos(unittest.TestCase):
                     estado = acciones.ejecutar(ctx, AccionDTO("mover", direccion=S))
                     self.assertIsNone(estado.resultado)
                     self.assertEqual(estado.sala.id, 4)
+
+    def test_h2_22_fr122_botin_invalido_deja_la_sala_sin_contenido(self):
+        """
+        Escenario H2-22 (FR-122, T057): con FuenteConBotinInvalido, un errante cuya `suelta` trae una poción con
+        `duracion` 0, -5, "10" o true. En la sala 2 (no inicial), la partida inicia y entrar a la sala 2 se rechaza
+        con un mensaje que nombra la ficha del enemigo, el campo `suelta` y la ficha rechazada; el jugador sigue
+        en la sala 1, el reloj no avanza y la partida sigue. En la sala 1 (la inicial), la partida no inicia.
+        """
+        self.skipTest("pendiente de T057 (integrante 2): Data todavía no rechaza un enemigo por su suelta")
+        acciones = ServicioAccionJugador()
+        for duracion in (0, -5, "10", True):
+            with self.subTest(sala="no inicial", duracion=duracion):
+                with tempfile.TemporaryDirectory() as carpeta:
+                    partida = _partida_con(FuenteConBotinInvalido(3, sala_enemigo=2, duracion=duracion), carpeta)
+                    ctx = partida.iniciar_partida("cuadricula", "Ana", semilla=1)
+                    reloj = ctx.motor.reloj
+
+                    estado = acciones.ejecutar(ctx, AccionDTO("mover", direccion=E))
+                    mensaje = estado.resultado
+                    self.assertIsNotNone(mensaje)
+                    for texto in (ID_ENEMIGO_BOTIN_INVALIDO, "suelta", ID_OBJETO_DURACION_INVALIDA):
+                        self.assertIn(texto, mensaje)
+                    self.assertFalse(mensaje.startswith("Sin conexión"))
+                    self.assertEqual(estado.sala.id, 1)
+                    self.assertEqual(estado.reloj, reloj)
+
+                    estado = acciones.ejecutar(ctx, AccionDTO("mover", direccion=S))
+                    self.assertIsNone(estado.resultado)
+                    self.assertEqual(estado.sala.id, 4)
+
+            with self.subTest(sala="inicial", duracion=duracion):
+                with tempfile.TemporaryDirectory() as carpeta:
+                    partida = _partida_con(FuenteConBotinInvalido(3, sala_enemigo=1, duracion=duracion), carpeta)
+                    with self.assertRaises(ErrorDatos) as error:
+                        partida.iniciar_partida("cuadricula", "Ana", semilla=1)
+                    for texto in (ID_ENEMIGO_BOTIN_INVALIDO, "suelta", ID_OBJETO_DURACION_INVALIDA):
+                        self.assertIn(texto, str(error.exception))
+                    self.assertFalse(os.path.isdir(os.path.join(carpeta, "logs")))    # no se creó partida.log
+
+
+def _partida_con(fuente, carpeta: str) -> ServicioPartida:
+    """Un ServicioPartida con esa fuente y la caché y los logs dentro de 'carpeta' (H2-22)."""
+    return ServicioPartida(ConfiguracionDTO(), fuente=fuente, carpeta_cache=os.path.join(carpeta, "cache"),
+                           carpeta_logs=os.path.join(carpeta, "logs"))
 
 
 def _api_con_cierre_automatico(id_sala: int, direccion: str, cierre):
