@@ -123,6 +123,19 @@ módulos."
   como recordada abierta solo si se recuerda abierta la cara de la sala de la que sale; eso es lo que se ofrece
   a «ir a» (FR-208, FR-225).
 
+### Sesión 2026-11-14 (revisión del plan por el integrante 1)
+
+- P: El escenario H2-5 decía «lo que el mapa ofrece a "ir a" desde A» con la puerta A–C «sin observar»; si el
+  jugador estuviera en A, ¿no habría observado esa puerta? → R: Sí: estando en A la habría observado (FR-207), así
+  que esa lectura contradecía el propio escenario. «Desde A» quiere decir las salidas de A que «ir a» puede usar,
+  con el jugador en otra sala. Se reescribió H2-5 para decirlo: el jugador está en B, A y C se exploraron con la
+  antorcha sin que el jugador estuviera nunca en ellas, y por eso la cara A–C sigue «sin observar» (FR-207, FR-212,
+  FR-225).
+- P: Al cargar una partida guardada, el mapa conocido de la partida en curso puede tener más salas exploradas que
+  el guardado; ¿contradice FR-203 («una sala explorada no vuelve a avistada ni a desconocida»)? → R: No. Al cargar,
+  el mapa conocido guardado reemplaza al de la partida en curso, igual que el resto del estado: es otra partida
+  cargada, no una sala que vuelve atrás dentro de la misma partida. Se agregó a FR-221.
+
 ---
 
 ## Escenarios de usuario y pruebas *(obligatorio)*
@@ -196,12 +209,15 @@ conserva el estado viejo hasta que el jugador vuelve a estar en una de las dos s
    el último estado observado desde A. Además, **dada** una sala X que no es destino de ninguna salida de una
    sala explorada y tiene una salida sin vuelta hacia A, **cuando** el jugador está en A, **entonces** X sigue
    desconocida y la puerta de esa salida no se observa. *(FR-204, FR-207)*
-5. **Dado** que A, B y C están exploradas; que la puerta de la salida con vuelta A–B está recordada abierta y
-   solo su cara en B declara costo 150; que la puerta de la salida A–C figura «sin observar»; y que A tiene una
-   salida hacia D, que está avistada, **cuando** se consulta lo que el mapa conocido ofrece a «ir a» desde A,
-   **entonces** ofrece la salida A→B con costo 150 (y B→A también con costo 150) y no ofrece A→C ni A→D; cada
-   sala ofrecida va con su identificador real, de modo que la búsqueda del cazador aplicada a ese conjunto de
-   salas y salidas da la misma ruta y el mismo desempate que FR-253. *(FR-205, FR-212, FR-225)*
+5. **Dado** que el jugador está en B; que A, B y C están exploradas, y A y C lo fueron con la antorcha desde
+   otras salas, sin que el jugador haya estado nunca en A ni en C; que la puerta de la salida con vuelta A–B está
+   recordada abierta (el jugador la observó desde B) y solo su cara en B declara costo 150; que la puerta de la
+   salida A–C figura «sin observar», porque el jugador nunca estuvo en A ni en C, que son las dos salas donde esa
+   puerta tiene cara (FR-207, FR-212); y que A tiene una salida hacia D, que está avistada, **cuando** se consulta
+   qué salidas de A puede usar «ir a» (las salidas que salen de A, no un viaje que empiece en A), **entonces** se
+   ofrece la salida A→B con costo 150 (y B→A también con costo 150) y no se ofrecen A→C ni A→D; cada sala ofrecida
+   va con su identificador real, de modo que la búsqueda del cazador aplicada a ese conjunto de salas y salidas da
+   la misma ruta y el mismo desempate que FR-253. *(FR-205, FR-212, FR-225)*
 6. **Dado** que A y B están exploradas y que, según la primera parte, la puerta de la salida con vuelta A–B
    tiene la cara de A cerrada sin llave y la cara de B abierta, **cuando** el jugador observa esa puerta (desde
    A o desde B), **entonces** el mapa recuerda A→B cerrada y B→A abierta, y a «ir a» solo se le ofrece B→A.
@@ -565,7 +581,9 @@ el motivo que muestra la interfaz y usar un pergamino en mitad de un viaje.
 **El conocimiento del jugador es estado del juego**
 
 - **FR-221**: Guardar la partida DEBE incluir el mapa conocido; al cargar, el mapa conocido DEBE ser idéntico
-  al guardado (estado de cada sala y estado recordado de cada puerta).
+  al guardado (estado de cada sala y estado recordado de cada puerta). Al cargar una partida, el mapa conocido
+  guardado DEBE reemplazar al de la partida en curso, igual que el resto del estado; no es una sala explorada que
+  vuelve a avistada o desconocida dentro de la misma partida (FR-203).
 - **FR-222**: Al revertir una acción con un pergamino, el mapa conocido DEBE volver exactamente al estado que
   tenía antes de esa acción, incluidas las salas exploradas o avistadas por la antorcha y las puertas observadas
   durante la acción revertida.
