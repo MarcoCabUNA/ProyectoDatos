@@ -2319,3 +2319,30 @@ Lee specs/002-niebla-ir-a/spec.md (mi sección «ir a»: FR-250 a FR-264, histor
 
 **Uso de la respuesta:** Se escribe mi sección del plan de «ir a» (002) y se analiza el hallazgo H-2 sin implementar.
 
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Actualiza SOLO mi sección del plan de «ir a» en specs/002-niebla-ir-a/plan.md (commit «plan(002): decisiones de ir a (integrante 3)», sin código ni tasks), con estas decisiones:
+- I3-4: «ir a» desde una sala con enemigos vivos permite el primer paso; el viaje solo se detiene al ENTRAR a una sala con enemigos (activos o dormidos), como dice §3.4.
+- I3-5: el comentario «# ir a <sala>» se escribe justo después del primer paso aceptado (queda entre el primer y el segundo paso; el replay lo ignora).
+- I3-7: INTERRUMPIDO, TERMINADA y PASO_RECHAZADO son motivos internos, no mensajes nuevos de la spec: anótalo.
+- H-2: opción A. ArmadorEstado enmascara con una constante (SIN_EXPLORAR, valor -1, en DTO/MapaConocidoDTO.py de Derek, pendiente de su visto bueno) los sala_destino de las salas no exploradas y deja sala_salida en None hasta que se explora; la vista no cambia. ArmadorEstado usa es_explorada(sala) del mapa. La prueba de SC-202 revisa también EstadoJuegoDTO.
+- D-1: no se pide direccion_hacia; se usa Mazmorra.salida sobre las salas exploradas.
+- Detección de daño (M-2): anota como riesgo que comparar jugador.vida antes y después del paso puede fallar si hay regeneración o curación en el mismo paso; la señal fiable se decide con la respuesta de Marco.
+Reporta el commit. No hagas push.
+
+**Uso de la respuesta:** Se registran en el plan de «ir a» las decisiones I3-4, I3-5, I3-7, D-1 y la solución H-2 (opción A)
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement T052 a T057 (interfaz de la línea de tiempo: historia <t> e historia #k) de specs/004-linea-tiempo/tasks.md. Pruebas primero en cada par (T052, T055); confirma que fallan por la causa esperada, luego implementa y marca [X] lo que completes.
+Reglas: constitución v1.2.0, MVC n-capas (la vista no calcula nada, solo muestra el ResumenHistoriaDTO), solo estructuras y librerías permitidas. T053: ControladorBackend.historia_por_instante(t) e historia_por_accion(k) al final de la clase, sin tocar lo de la 003. T054: ControlesJuego.procesar_comando(texto) valida solo la ESTRUCTURA (historia <t> con entero >= 0, historia #k con entero >= 1); el rango lo valida Logic y el mensaje se muestra tal cual. Una consulta no consume tiempo, no es acción y no se registra en partida.log. T056: antes de elegir la tecla que abre la línea de comandos (Enter) y la que la cierra (Esc), revisa los controles actuales en View/ y en el controlador de pygame y dime si chocan. Las pruebas de vista usan SDL_VIDEODRIVER=dummy. No empieces H4. Después de cada commit corre la suite completa con PYTHONIOENCODING=utf-8 python tests/correr_pruebas.py. Reporte final con tareas, pruebas, decisiones y pendientes.
+
+**Uso de la respuesta:** Se implementa la interfaz de la línea de tiempo (comandos historia <t> e historia #k, T052 a T057).
+
+-----------------------------------------------------------------------------------------------------------------------
