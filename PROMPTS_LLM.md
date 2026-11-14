@@ -2419,10 +2419,46 @@ Salida: ALTA/MEDIA/BAJA con archivo y línea, y al principio lo que está bien. 
 **Uso de la respuesta:** revisión de solo lectura de `origin/derek` (`acd4196`); no se tocó ningún archivo de la 002. `tasks.md` de la 002 todavía no existe. Se contrastaron las anclas de la tabla con `Logic/motorJuego.py` (líneas 42-43, 58 y 124) y `Logic/PartidaGuardada.py` (29 y 87), y todas las escrituras de `cerrada` en Logic (solo `abrir_puerta` y `CierrePuerta` cambian puertas durante la partida, y las dos avisan). Bien: capas, estructuras, las 4 líneas del motor, el repartidor (orden fijo, sin pérdida, el pergamino revierte por casilla sin avisos), el grafo de FR-225 y el uso de las funciones privadas solo como lectura. Sin hallazgos ALTA. MEDIA: `PartidaGuardada.cargar` no son 2 líneas y el comportamiento con `mapa = None` se describe distinto en el plan y en el data-model; NFR-250 se da por cumplido sin medición; `observador_rutas` sin requisito que lo pida (YAGNI); H-5 reinterpreta un escenario en vez de aclararlo en la spec. BAJA: números del bench de la 001 sin el mapa, data-model de la 001 desactualizado (H-1), la variante de B8 con puerta que cambia, la prueba de SC-202 que depende del integrante 3 y las alternativas del repartidor y del formato binario sin medir. Sin push.
 
 -----------------------------------------------------------------------------------------------------------------------
-
 **Herramienta:** Claude (Claude Code)
 
 /speckit-implement T027 a T035 y T070 (Fase 4, historia 3: retroceder con pergamino) de specs/004-linea-tiempo/tasks.md. Pruebas primero en cada par; luego implementa y marca [X] solo lo que completes.
 Reglas: constitución v1.2.0, MVC n-capas, solo estructuras y librerías permitidas, sin copy/deepcopy. El pergamino no es una acción y no deja marcador: después de usarlo toma un punto de control nuevo en c copiando el estado vivo con PartidaGuardada.guardar (reemplaza el que ya exista en c, quita la última acción y los puntos posteriores a c). T030: ServicioLineaTiempo.ejecutar debe registrar ese caso (hoy el pergamino deja la línea inconsistente). T033 con H3-5 y H3-6 sin skip. T070: prueba del cazador después de retroceder (decide igual que desde cero, con la búsqueda de RutasHaciaJugador de Marco; no modifiques código de Marco). Después de cada commit, suite completa con PYTHONIOENCODING=utf-8 python tests/correr_pruebas.py. No empieces la Fase 5 ni H2. Reporte final con tareas hechas, pruebas, decisiones y pendientes de Marco o Derek.
 
 **Uso de la respuesta:** Se implementa la historia de retroceder con pergamino (punto de control nuevo) y la prueba del cazador (T027 a T035 y T070).
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement Feature 002-niebla-ir-a, parte del integrante 2. Primer lote, según «Estrategia» y «Entrega incremental» de specs/002-niebla-ir-a/tasks.md: solo estas tareas y en este orden.
+
+1. T001: tests/ayudas_mapa.py.
+2. Fase 2: T009 y T010 (las pruebas primero; comprobá que fallan), después T011 y T012, y T013 (la suite completa en verde).
+3. Guardado adelantado:
+   - las cuatro primeras pruebas de T035 (DTO y linea). Las de restaurar NO, esas van con T037 en otro lote;
+   - T036: PartidaGuardadaDTO con mapa antes de linea, con el import local de LineaTiempoGuardadaDTO. Es T002 de la 004;
+   - T038: las pruebas del binario, que también son las de T003 y T047 de la 004. Comprobá que fallan;
+   - T039: GuardadoBinario versión 2. Es T003 de la 004.
+   El formato v2 se implementa con el diseño de data-model.md §6 y research R4 (cabecera de 58 bytes, bloque propio del mapa y de la línea, y el orden de los bloques de cada punto de control). El integrante 3 todavía no actualizó el texto del §1 y del §2 de su contrato de la 004 (T007), pero aceptó ese diseño el 14/11. Si encontrás algo de su contrato de la 004 que contradiga el diseño, avisame en vez de elegir uno.
+
+Después de T039, PARÁ. No hagas T037, T040 ni nada de las fases 3 en adelante.
+
+Reglas:
+- Constitución v1.2.0: sin dict ni set como índice, sin heapq, bisect ni collections, sin sorted ni list.sort, sin copy fuera de tests/, y Logic no importa Data.
+- Pruebas primero, con el FR en el nombre, como dice cada tarea.
+- Solo archivos del integrante 2: tests/ayudas_mapa.py, tests/test_guardado_mapa.py, tests/test_mapa_conocido_estados.py, DTO/MapaConocidoDTO.py, Logic/MapaConocido.py, DTO/PartidaGuardadaDTO.py, Data/GuardadoBinario.py y tests/TestGuardadoBinario.py (solo la aserción de la versión). No toques archivos de otros integrantes; si alguno tuviera que cambiar, avisame.
+- Marcá con [x] en tasks.md solo las tareas que quedaron completas. T035 queda sin marcar, porque le faltan las pruebas de restaurar; anotalo en la tarea.
+- Antes de terminar corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8 en Windows) y el replay de ejemplo (python main.py --replay ejemplos/partida_ejemplo.log --offline), que debe dar lo mismo que antes. Comprobá también que guardar y cargar una partida real con ServicioGuardado sigue funcionando con la versión 2. La versión 1 ahora se rechaza: decime si eso afecta algún archivo guardado del repositorio (partidas/, ejemplos/ o tests/).
+
+Al final decime:
+- los archivos de cada grupo, separados para dos commits: (a) T001 y la fase 2, y (b) el guardado adelantado;
+- las pruebas nuevas, con su resultado antes y después;
+- el resultado de la suite y del replay;
+- cualquier diferencia con el plan.
+No hagas commit.
+
+**Uso de la respuesta:** primer lote de la 002, con las pruebas primero. Las 24 pruebas nuevas fallaban antes del código. Se hicieron T001 (`tests/ayudas_mapa.py`); la fase 2, con T009 a T013 (`DTO/MapaConocidoDTO.py` y el núcleo de `Logic/MapaConocido.py`: dos arreglos, escrituras que registran su reversión en el historial); y el guardado adelantado: T036 (`PartidaGuardadaDTO` con `mapa` antes de `linea` e import local, T002 de la 004), T038 y T039 (`GuardadoBinario` versión 2 con cabecera de 58 bytes y bloques propios del mapa y de la línea, la versión 1 rechazada sin tocar la partida actual; T003 y T047 de la 004). En `tests/TestGuardadoBinario.py` cambiaron tres aserciones de versión. T035 queda abierta hasta las pruebas de `restaurar`. Resultado: 641 OK (skipped=2) y 32/32 scripts; el replay de ejemplo es idéntico, y guardar y cargar una partida real funciona con la versión 2. Revisé el diff antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+

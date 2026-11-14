@@ -25,9 +25,14 @@ Acuerdos del equipo (10 y 11 de octubre):
   - ruta_log y acciones_en_log permiten seguir el --replay de una partida cargada
     (BitacoraReplayIO.continuar_desde).
 
+Parte II: PartidaGuardadaDTO gana dos campos al final, con None por defecto: mapa (MapaConocidoGuardadoDTO,
+feature 002) y linea (LineaTiempoGuardadaDTO, feature 004), que sigue siendo el último.
+
 Regla de los DTOs: solo transportan datos. Las colecciones son arrays (list).
 """
 from dataclasses import dataclass, field
+
+from DTO.MapaConocidoDTO import MapaConocidoGuardadoDTO
 
 
 @dataclass(frozen=True)
@@ -212,9 +217,17 @@ class PartidaGuardadaDTO:
     # ---- --replay de una partida cargada
     ruta_log: str | None = None
     acciones_en_log: int = 0
+    # ---- Parte II. Van al final, con None por defecto, en este orden: mapa y después linea, que es el ÚLTIMO
+    # (feature 002 research R4; T002 de la 004). linea se anota con texto: importar LineaTiempoDTO aquí formaría
+    # el ciclo LineaTiempoDTO -> PartidaGuardadaDTO -> LineaTiempoDTO (dataclasses no evalúa la anotación).
+    mapa: MapaConocidoGuardadoDTO | None = None            # el mapa conocido (feature 002, FR-221)
+    linea: "LineaTiempoGuardadaDTO | None" = None          # la línea de tiempo (004 FR-420); None en sus puntos
 
     @classmethod
     def desde_diccionario(cls, d: dict) -> "PartidaGuardadaDTO":
+        from DTO.LineaTiempoDTO import LineaTiempoGuardadaDTO      # aquí adentro: evita el ciclo de imports
+        mapa = d.get("mapa")
+        linea = d.get("linea")
         return cls(
             id_cripta=d["id_cripta"], version_cripta=d["version_cripta"],
             version_catalogo=d["version_catalogo"], semilla=d["semilla"],
@@ -229,6 +242,8 @@ class PartidaGuardadaDTO:
             efectos=[EfectoGuardadoDTO.desde_diccionario(e) for e in d["efectos"]],
             eventos=[EventoGuardadoDTO.desde_diccionario(e) for e in d["eventos"]],
             ruta_log=d.get("ruta_log"), acciones_en_log=d.get("acciones_en_log", 0),
+            mapa=None if mapa is None else MapaConocidoGuardadoDTO.desde_diccionario(mapa),
+            linea=None if linea is None else LineaTiempoGuardadaDTO.desde_diccionario(linea),
         )
 
     def a_diccionario(self) -> dict:
@@ -246,4 +261,6 @@ class PartidaGuardadaDTO:
             "efectos": [e.a_diccionario() for e in self.efectos],
             "eventos": [e.a_diccionario() for e in self.eventos],
             "ruta_log": self.ruta_log, "acciones_en_log": self.acciones_en_log,
+            "mapa": None if self.mapa is None else self.mapa.a_diccionario(),
+            "linea": None if self.linea is None else self.linea.a_diccionario(),
         }

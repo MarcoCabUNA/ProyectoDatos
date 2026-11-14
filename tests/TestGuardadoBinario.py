@@ -132,7 +132,7 @@ class PruebasGuardadoBinario(unittest.TestCase):
         guardar(self.ruta, self.partida, salas)
         datos = self.bytes_del_archivo()
         _, version, _, _, offset_indice, entradas, id_minimo = struct.unpack_from("<4sHQIQII", datos, 0)
-        self.assertEqual((version, entradas, id_minimo), (1, 10, 5))
+        self.assertEqual((version, entradas, id_minimo), (2, 10, 5))
         self.assertEqual(offset_indice + entradas * TAMANO_ENTRADA, len(datos))      # el índice va al final
         offset, largo = struct.unpack_from("<QI", datos, offset_indice + (11 - 5) * TAMANO_ENTRADA)
         self.assertEqual(struct.unpack_from("<i", datos, offset)[0], 11)          # el bloque empieza con su id
@@ -193,7 +193,7 @@ class PruebasGuardadoBinario(unittest.TestCase):
     def test_otra_version_del_formato(self):
         guardar(self.ruta, self.partida, self.salas)
         datos = self.bytes_del_archivo()
-        struct.pack_into("<H", datos, 4, 2)
+        struct.pack_into("<H", datos, 4, 1)
         self.escribir_bytes(datos[:40])          # aunque el resto esté cortado, primero se avisa la versión
         self.falla_al_cargar("versión 2", "versión 1")
 
@@ -250,7 +250,7 @@ class PruebasGuardadoBinario(unittest.TestCase):
             cargar(os.path.join(self.temp, "nada.sav"))
 
     def test_constantes_del_formato(self):
-        self.assertEqual((GuardadoBinario.MAGIA, GuardadoBinario.VERSION_FORMATO), (b"CRPT", 1))
+        self.assertEqual((GuardadoBinario.MAGIA, GuardadoBinario.VERSION_FORMATO), (b"CRPT", 2))
 
 
 if __name__ == "__main__":
