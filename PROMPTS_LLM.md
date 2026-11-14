@@ -2356,3 +2356,28 @@ Reglas: constitución v1.2.0, MVC n-capas, solo estructuras y librerías permiti
 **Uso de la respuesta:** Se implementa el banco de pruebas de la línea de tiempo (T058 a T062) y se mide el valor de K por defecto
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement T063, T064, T065 y T067 de specs/004-linea-tiempo/tasks.md (documentación y revisión de restricciones). Solo documentos, salvo el comentario de ConfiguracionDTO.py. No toques T066, T068 ni H4.
+1) T063 y T064: completa en DECISIONES.md la sección «Integrante 3 — 004» (§5.3, §5.5 y §5.6) con las decisiones reales de la implementación: diseño A de reconstrucción hacia adelante con un Motor aparte, pergamino sin marcador con punto de control nuevo en c, regla de la consulta (j = última acción con tiempo estrictamente menor que t), T032 no necesaria, grabadores con registros de carga y ordinal, DespachoAcciones propio, validación de t y k en Logic, línea de comandos con Enter y Esc, el error de hasta_instante que se corrigió con la prueba de regresión, y las mediciones de specs/004-linea-tiempo/bench-tabla.txt (K = 20 con 0,62 ms; sin puntos 147 ms; búsqueda binaria contra recorrido lineal; costo por acción con y sin línea; costo de una copia).
+2) En DTO/ConfiguracionDTO.py cambia SOLO el comentario «PROVISIONAL» de CHECKPOINT_POR_DEFECTO: K = 20 queda confirmado por el banco de pruebas (cita bench-tabla.txt). No cambies el valor ni el orden de los campos.
+3) T065: README.md documenta historia <t>, historia #k, Enter para abrir la línea de comandos y Esc para cerrarla, --replay partida.log --hasta T con sus códigos de salida 0, 1 y 2, --checkpoint-cada N y --bench. No documentes aún «ir a», el comando del mapa ni el guardado con línea.
+4) T067: corre el grep del Principio II sobre Logic, Estructuras, DTO, Service y UIController (copy, bisect, heapq, collections, sorted(, .sort(, tracemalloc) y reporta cada coincidencia nueva de la 004 con su motivo; no cambies nada de la primera entrega.
+Dos commits: «docs(004): decisiones, README y K confirmado» y, si T067 encuentra algo tuyo que corregir, «fix(004): ...». No hagas push. Reporte con los commits y los hallazgos.
+
+**Uso de la respuesta:** Se documentan las decisiones de la 004, el README y la confirmación de K = 20 con las mediciones del banco de pruebas (T063 a T065 y T067).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Solo lectura, no cambies ni crees archivos. Lee Logic/ (motorJuego.py, jugador.py, ActorBase.py, Enemigo.py, Efectos.py, GestorEfectos.py, Mazmorra.py) y responde con archivo y línea:
+(a) M-2: ¿en qué lugares baja jugador.vida (ataques de enemigos, veneno, trampas, otros)? ¿Existe un único punto por el que pase todo daño al jugador? ¿Hay algo que SUBA jugador.vida dentro de un mismo paso del jugador (regeneración pasiva, poción, efecto)? Si comparar jugador.vida antes y después del paso puede ocultar un daño, dime un caso concreto y propón la señal más simple y fiable (por ejemplo un contador o bandera que ya exista) sin crear estructuras nuevas.
+(b) M-3: al entrar el jugador a una sala con enemigos dormidos, ¿se activan dentro del mismo paso? ¿enemigos_vivos de esa sala los incluye cuando termina el paso?
+(c) M-1: confirma en ColaEventos y BusquedaCostoMinimo/RutasHaciaJugador que paso_desde_cero no guarda estado entre llamadas con limite=None.
+Responde en una tabla corta. Al final, indica si el plan de «ir a» (specs/002-niebla-ir-a/plan.md, mi sección) necesita cambiar algo por tus respuestas.
+
+**Uso de la respuesta:** Se resuelven con el código las preguntas M-1 a M-3 del plan de «ir a» (detección de daño y enemigos dormidos).
