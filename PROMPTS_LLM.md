@@ -2346,3 +2346,13 @@ Reglas: constitución v1.2.0, MVC n-capas (la vista no calcula nada, solo muestr
 **Uso de la respuesta:** Se implementa la interfaz de la línea de tiempo (comandos historia <t> e historia #k, T052 a T057).
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement T058 a T062 (banco de pruebas de la línea de tiempo) de specs/004-linea-tiempo/tasks.md. Pruebas primero (T058), luego implementa y marca [X] lo que completes.
+Reglas: constitución v1.2.0, MVC n-capas, solo estructuras y librerías permitidas. Usa Service/Cronometro.py y ResultadoBenchDTO como Service/BenchInventario.py. T061 modifica solo la función medir() de Service/BenchInventario.py para devolver también BenchLineaTiempo.medir() (una línea), sin tocar Service/ServicioBench.py; si el plan no lista este cambio a la primera entrega con su motivo, dilo antes de hacerlo. T062: corre python -m Service.ServicioBench y guarda la tabla en specs/004-linea-tiempo/. Comprueba el criterio de §6.1: con 5 000 acciones del jugador y el K por defecto, historia tarda menos de 50 ms y ir a un paso de línea menos de 5 ms. Si K=20 no cumple, prueba al menos 3 valores de K más y también sin puntos de control, y NO cambies CHECKPOINT_POR_DEFECTO sin avisarme: dime los números y propón el valor. Después de cada commit corre la suite completa con PYTHONIOENCODING=utf-8 python tests/correr_pruebas.py. No empieces H4. Reporte final con tareas, tabla de mediciones, decisiones y pendientes.
+
+**Uso de la respuesta:** Se implementa el banco de pruebas de la línea de tiempo (T058 a T062) y se mide el valor de K por defecto
+
+-----------------------------------------------------------------------------------------------------------------------
