@@ -340,6 +340,18 @@ Decisiones de fondo:
    decidir los motivos de parada. Service solo coordina: arma los datos, llama a Logic, ejecuta el paso y escribe el
    comentario.
 
+**Decisiones confirmadas por el integrante 3** (resuelven los hallazgos I3-1, I3-4, I3-5, I3-7 y el H-2; la
+spec no cambia):
+
+| Hallazgo | Decisión |
+|---|---|
+| I3-4 | «ir a» desde una sala con enemigos vivos **permite el primer paso**. El viaje solo se detiene al **entrar** a una sala con enemigos, activos o dormidos (§3.4, FR-258 b). La sala de partida nunca cuenta |
+| I3-5 | El comentario `# ir a <sala>` se escribe **justo después del primer paso aceptado**: queda entre el primer y el segundo paso y `--replay` lo ignora |
+| I3-7 | `INTERRUMPIDO`, `TERMINADA` y `PASO_RECHAZADO` son **motivos internos**, no mensajes nuevos de la spec (FR-260 sigue con sus cinco motivos) |
+| H-2 | **Opción A**: `ArmadorEstado` enmascara los destinos y la sala de salida no explorados; la vista no cambia (ver la sección del H-2) |
+| D-1 (I3-1) | **No se pide `direccion_hacia`**: la dirección del paso se obtiene con `Mazmorra.salida` sobre las salas exploradas |
+| M-2 (I3-3) | Riesgo anotado: la detección de daño se decide con la respuesta de Marco (ver I3-3 y R-I3-7) |
+
 ### Verificación de la constitución (v1.2.0)
 
 | Principio | Cómo lo cumple esta sección | Antes | Después |
@@ -379,8 +391,11 @@ UIController/
     `YA_AQUI`; `[id]` → `OK`; dos o más → `AMBIGUO`. Un `nombre` que no es `str` es un error de programación
     (`ValueError`); uno vacío o de solo espacios es `DESTINO_INVALIDO`.
   - `decidir_paso(grafo, sala_actual, destino) -> (direccion, vecina, costo) | None`: llama a
-    `paso_desde_cero(grafo, destino, sala_actual, None)` y devuelve `None` si no hay ruta (FR-259). Convertir la vecina
-    en dirección es la pregunta D-1.
+    `paso_desde_cero(grafo, destino, sala_actual, None)` y devuelve `None` si no hay ruta (FR-259). La **dirección**
+    se obtiene recorriendo las cuatro de la sala actual con `Mazmorra.salida(sala_actual, d)` (solo lectura) y tomando
+    la primera, por número de dirección, cuyo destino es la vecina y cuyo costo es el del paso. Solo se mira una sala
+    **explorada** (la actual) y una vecina que el grafo ya eligió, así que no se usa nada que el jugador no conozca
+    (FR-252); la elección de la ruta sigue saliendo solo del mapa. Decisión D-1: no se pide nada a Derek.
   - `motivos_de_parada(sala_actual, destino, hay_enemigos, recibio_dano, terminada) -> list[str]`: los que apliquen,
     siempre en el mismo orden (`LLEGO`, `ENEMIGOS`, `DANO`, `TERMINADA`); lista vacía si el viaje sigue (FR-258, FR-260).
 - **`Service/ServicioIrA.py`** (no guarda estado; recibe el contexto en cada llamada):
@@ -391,6 +406,8 @@ UIController/
   motivos)`; `PasoViajeDTO(viaje | None, motivos, estado)` (`viaje` es `None` cuando se detuvo; `estado` es el
   `EstadoJuegoDTO` posterior al paso, o el vigente si no se dio ninguno). Los motivos son constantes de texto de
   `DTO/ViajeDTO.py`; el texto para el jugador lo arma el Controlador, con **un solo mensaje** para `DESTINO_INVALIDO`.
+  `INTERRUMPIDO`, `TERMINADA` y `PASO_RECHAZADO` son **motivos internos** (I3-7): no son mensajes nuevos de la spec y
+  la interfaz no está obligada a mostrarlos.
 - **Controlador**: `ir_a(nombre)` valida solo la forma (texto no vacío tras `strip()`, sin saltos de línea) y llama
   a `iniciar`; `dar_paso_viaje()` guarda el `ViajeDTO` vigente de la sesión y llama a `dar_paso`; cualquier otra orden
   que cambie la partida (un pergamino, por ejemplo) descarta ese viaje. La interfaz muestra los motivos (FR-260).
@@ -421,11 +438,13 @@ UIController/
 - **Daño de cualquier origen** (enemigo, trampa, veneno): se mide como baja de `jugador.vida` entre antes del paso y
   después de que `ServicioAccionJugador` dejó correr los eventos hasta la siguiente decisión, que es donde caen los
   daños sostenidos. El viaje se detiene **antes de dar el paso siguiente** porque la comprobación es del paso actual
-  (FR-258 c).
+  (FR-258 c). **Riesgo conocido** (I3-3, R-I3-7): comparar la vida antes y después puede no detectar un daño que una
+  regeneración o una curación compense **en el mismo paso**; la señal fiable se decide con la respuesta de Marco (M-2).
 - **Enemigos**: se cuentan los vivos de la sala de llegada **después** del paso. Los dormidos ya fueron activados por
   `Motor.mover_jugador` (P1 §2.4) y los activos ya estaban: los dos cuentan (FR-258 b, H7-3 y H7-4). Si la sala de
-  llegada es el destino salen los dos motivos, `LLEGO` y `ENEMIGOS` (FR-260, H7-4). No se mira la sala de **partida**
-  (ver I3-4).
+  llegada es el destino salen los dos motivos, `LLEGO` y `ENEMIGOS` (FR-260, H7-4). **No se mira la sala de
+  partida** (decisión I3-4): quien pide «ir a» desde una sala con enemigos vivos da el primer paso; el viaje solo se
+  detiene al **entrar** a una sala con enemigos, como dice §3.4.
 
 ### Puerta recordada abierta que está cerrada (FR-256)
 
@@ -460,8 +479,9 @@ Como el viaje no guarda estado, no hay nada que «reanudar» tras el pergamino n
   **solo si la orden dio al menos un paso**, es decir, **justo después del primer paso aceptado** (paso 5). Por eso no
   se escribe nada en un rechazo (`DESTINO_INVALIDO`, `YA_AQUI`, `AMBIGUO`) ni cuando no hay ruta (FR-261). El texto
   usa el **nombre real de la sala destino** (ya explorada), no lo que escribió el jugador: no puede traer saltos de
-  línea, que `anexar_comentario` rechaza. `BitacoraReplayIO.leer` lo ignora y no cuenta como acción (T071), así que
-  el resultado de `--replay` no cambia. Si `contexto.bitacora` es `None` no se escribe nada.
+  línea, que `anexar_comentario` rechaza. **Queda entre el primer y el segundo paso** (decisión I3-5).
+  `BitacoraReplayIO.leer` lo ignora y no cuenta como acción (T071), así que el resultado de `--replay` no cambia.
+  Si `contexto.bitacora` es `None` no se escribe nada.
 - **La orden no cuenta como acción ni recibe número** (FR-263): no pasa por la línea; solo los pasos.
 - `--replay` **no pasa por `ServicioIrA`**: reproduce los movimientos del log. Nunca se vuelve a decidir un viaje al
   reproducir, así que el replay no depende de la búsqueda.
@@ -509,19 +529,30 @@ Conclusión: la vista **solo compara** el destino con la sala anterior (siempre 
 necesita saber a qué sala lleva una salida no explorada**. Los usos 2 y 3 funcionan con cualquier valor que no coincida
 con un id real; el 1 y el 4 son los que filtran.
 
-Opciones (ninguna implementada; decide el integrante 3 antes de `tasks.md`):
+**Decisión: opción A.** Las demás se dejan como alternativas descartadas (no se implementa nada en este plan):
 
 | Opción | Cambio | A favor | En contra |
 |---|---|---|---|
-| **A (recomendada)** | `ArmadorEstado` enmascara: `sala_destino = SIN_EXPLORAR` (constante `-1`) para destinos no explorados, y `sala_salida = None` mientras la sala de salida no esté explorada. La vista no cambia | Cambia una sola función; los tipos (`int`) y el formato de `SalaDTO` no cambian; los tres usos siguen funcionando (`-1` nunca iguala un id real ni a `sala_salida`); dos salidas hacia la misma avistada quedan indistinguibles, como pide FR-204 | Un valor centinela; la puerta final no se distingue hasta explorar la sala de salida (es lo que pide FR-217) |
+| **A (elegida)** | `ArmadorEstado` enmascara: `sala_destino = SIN_EXPLORAR` (constante `-1`) para destinos no explorados, y `sala_salida = None` mientras la sala de salida no esté explorada. La vista no cambia | Cambia una sola función; los tipos (`int`) y el formato de `SalaDTO` no cambian; los tres usos siguen funcionando (`-1` nunca iguala un id real ni a `sala_salida`); dos salidas hacia la misma avistada quedan indistinguibles, como pide FR-204 | Un valor centinela; la puerta final no se distingue hasta explorar la sala de salida (es lo que pide FR-217) |
 | B | `SalidaDTO.sala_destino: int \| None` (`None` si no explorada) | Más explícito que el centinela | Toca `SalaDTO` y `SalidaDTO` (Derek), el análisis de Data y `a_diccionario`; la `Mazmorra` y las pruebas usan el campo como `int` |
 | C | Campo nuevo `EstadoJuegoDTO.destinos_conocidos` (por dirección: id o `None`) y cambiar la vista (tres lugares) para usarlo; `sala_destino` queda en `-1` para los no explorados | Separa «lo que ve el jugador» de «lo que trae el esqueleto» | Toca la vista (el cambio más grande) y duplica información |
 | D | `ArmadorEstado` calcula los tres hechos que la vista usa (¿es la puerta final?, ¿cuál es la puerta por la que entró?, ¿son contiguas?) y la vista deja de comparar ids | La vista deja de manejar ids de salas | Cambia la vista y su contrato; más campos nuevos |
 
-**Qué necesita la opción A de otros**: una consulta O(1) del estado de una sala (`mapa.estado[sala]` existe por R1, pero
-no hay un método público: pregunta D-2), para no llamar a `a_dto()` (O(S)) en cada `armar_estado`. **Cómo se prueba**:
-la prueba de SC-202 de Derek ya revisa el `EstadoJuegoDTO` (R-6); además, una prueba mía de 200 acciones comprueba que
-ningún `sala_destino` ni `sala_salida` del estado sea el id de una sala no explorada.
+**Cómo queda la opción A**:
+
+- `ArmadorEstado` (Service, integrante 3) pone `sala_destino = SIN_EXPLORAR` en cada salida de `EstadoJuegoDTO.sala` cuyo
+  destino **no está explorado**, y deja `EstadoJuegoDTO.sala_salida = None` mientras la sala de salida no esté
+  explorada. Las salidas hacia salas exploradas, `sala_inicial` y el resto del estado no cambian.
+- **La constante** `SIN_EXPLORAR = -1` se define en `DTO/MapaConocidoDTO.py`, archivo de Derek: **queda pendiente de su
+  visto bueno** (pregunta D-6). Si no la acepta, va a `DTO/EstadoJuegoDTO.py` (mío) sin otro cambio.
+- `ArmadorEstado` consulta `mapa.es_explorada(sala)`, O(1) por salida, y no usa `a_dto()` (O(S)) en cada
+  `armar_estado`. El plan de Derek no nombra esa consulta (hoy existe `mapa.estado[sala]` por R1): pregunta D-2.
+- **La vista no cambia**: `-1` nunca iguala un id real ni a `sala_salida` (`None`), así que los usos 2 y 3 siguen
+  funcionando y el uso 1 deja de delatar la puerta final hasta explorar esa sala (FR-217).
+
+**Cómo se prueba**: la prueba de SC-202 de Derek **revisa también `EstadoJuegoDTO`** (R-6); además,
+`tests/test_estado_sin_filtrar.py` recorre 200 acciones, con y sin antorcha, y comprueba que ningún `sala_destino` ni
+`sala_salida` del estado sea el id de una sala no explorada.
 
 ### Pruebas previstas (una por escenario y caso)
 
@@ -541,29 +572,28 @@ mapa (mismo desempate por id).
 
 Ninguno bloquea; la spec no se modifica.
 
-- **I3-1** (dirección del paso): `paso_desde_cero` devuelve `(vecina, costo)` y `GrafoMapaConocido.salidas(u)` devuelve
-  `(destino, costo)` **sin la dirección**; el movimiento necesita la dirección. Con salidas repetidas hacia la misma
-  vecina (H-4, fuera de las criptas publicadas) la elección sería ambigua. Pedido a Derek (D-1).
-- **I3-2** (consulta del estado de una sala): para el H-2 conviene una consulta pública O(1) (`es_explorada(sala)` o
-  equivalente). Pedido a Derek (D-2).
-- **I3-3** (daño): se mide por `jugador.vida` antes y después del paso. Si P1 tiene curación que ocurra dentro del
-  mismo paso (un efecto de regeneración), un daño pequeño podría quedar compensado y no detener el viaje. Consulta a
-  Marco (M-2).
-- **I3-4** (sala de partida con enemigos): FR-258 (b) habla de **entrar** a una sala con enemigos; si el jugador pide
-  «ir a» desde una sala que ya tiene enemigos vivos, la spec no dice nada. El plan **permite** el primer paso (el
-  jugador decide) y solo cuenta las salas a las que se entra. Hay que confirmarlo (decisión tuya).
-- **I3-5** (momento del comentario): se escribe después del primer paso aceptado, no antes, para cumplir «solo si la
-  orden da al menos un paso» aun cuando el primer movimiento falle por la red al pedir el contenido de la sala
-  (`ErrorRed`). En el log el comentario queda entre el primero y el segundo paso; no cambia el resultado porque se
-  ignora al leer. Alternativa: escribirlo antes del primer paso y aceptar que una falla de red deje un comentario sin
-  paso.
+- **I3-1** (dirección del paso) — **resuelto, sin pedido a Derek**: `paso_desde_cero` devuelve `(vecina, costo)` y
+  `GrafoMapaConocido.salidas(u)` devuelve `(destino, costo)` sin la dirección. La dirección se obtiene con
+  `Mazmorra.salida` sobre la sala actual, que está explorada (ver `decidir_paso`). Con salidas repetidas hacia la
+  misma vecina (H-4, fuera de las criptas publicadas) se toma la de menor número de dirección con ese costo.
+- **I3-2** (consulta del estado de una sala): `ArmadorEstado` necesita `mapa.es_explorada(sala)`, O(1), para la opción A
+  del H-2 (pregunta D-2).
+- **I3-3** (daño) — **riesgo abierto**: se mide por `jugador.vida` antes y después del paso. Si P1 tiene regeneración
+  o curación que ocurra dentro del mismo paso, un daño pequeño podría quedar compensado y no detener el viaje
+  (FR-258 c). La señal fiable (comparar la vida u otra) se decide con la respuesta de Marco (M-2); hasta entonces el
+  plan usa la comparación de la vida.
+- **I3-4** (sala de partida con enemigos) — **decidido**: «ir a» desde una sala con enemigos vivos permite el primer
+  paso; el viaje solo se detiene al **entrar** a una sala con enemigos, activos o dormidos (FR-258 b, §3.4).
+- **I3-5** (momento del comentario) — **decidido**: se escribe justo después del primer paso aceptado, para cumplir
+  «solo si la orden da al menos un paso» aun cuando el primer movimiento falle por la red (`ErrorRed`). Queda entre el
+  primer y el segundo paso; el replay lo ignora y no cambia el resultado.
 - **I3-6** (paso rechazado): con el recálculo antes de cada paso, `mover` no debería devolver `cerrada` ni `sin_salida`.
   Si aun así se rechaza, el viaje se detiene con `PASO_RECHAZADO` sin tiempo y sin comentario; es una defensa, no un caso
   esperado. Una excepción de red (`ErrorRed`) se propaga como en cualquier acción y deja el viaje interrumpido: los
   pasos ya dados quedan hechos, igual que si el jugador los hubiera movido a mano.
-- **I3-7** (motivos fuera de la spec): `INTERRUMPIDO`, `TERMINADA` y `PASO_RECHAZADO` no están en FR-258 ni FR-260. Son
-  internos: la interfaz puede no mostrar nada para `INTERRUMPIDO`. Si el jugador muere o gana durante el paso,
-  `TERMINADA` acompaña a `DANO` o a `LLEGO`.
+- **I3-7** (motivos internos) — **decidido**: `INTERRUMPIDO`, `TERMINADA` y `PASO_RECHAZADO` no están en FR-258 ni
+  FR-260 y **no son mensajes nuevos de la spec**: son motivos internos del servicio. La interfaz puede no mostrar nada
+  para `INTERRUMPIDO`. Si el jugador muere o gana durante el paso, `TERMINADA` acompaña a `DANO` o a `LLEGO`.
 - **I3-8** (identidad del grafo): se arma un `GrafoMapaConocido` por paso. No se guarda entre pasos porque el
   pergamino, `restaurar` y cargar una partida cambian el mapa; armarlo es O(1).
 - **I3-9** (H-3): sin tildes ni espacios internos; anotarlo en `DECISIONES.md` (sección del integrante 3).
@@ -572,20 +602,17 @@ Ninguno bloquea; la spec no se modifica.
 
 **Para Derek (integrante 2)**
 
-- **D-1**: ¿puedes ofrecer en `GrafoMapaConocido` (o en `MapaConocido`) una consulta de la **dirección** de la salida
-  utilizable u→v (`direccion_hacia(u, v)`, O(4), la de menor número de dirección si hay dos)? Alternativa si no: Logic
-  de «ir a» recorre las cuatro direcciones de `u` en el esqueleto (`Mazmorra.salida(u, d)`) y toma la primera utilizable
-  cuyo destino y costo coinciden; solo mira salidas de una sala explorada, que el jugador conoce.
-- **D-2**: ¿hay una consulta pública y O(1) del estado de una sala (`es_explorada(sala)`)? La necesita `ArmadorEstado`
-  en cada estado (H-2, opción A).
+- ~~**D-1**~~ (cerrada: no se pide `direccion_hacia`; se usa `Mazmorra.salida` sobre las salas exploradas).
+- **D-2**: `ArmadorEstado` usará `mapa.es_explorada(sala)`; ¿existe como método público y O(1)? Si hoy solo está
+  `mapa.estado[sala]`, ¿lo agregas?
 - **D-3**: `buscar_exploradas(nombre)`: confirma que normaliza **ambos** lados con `strip().casefold()`, que una cadena
   vacía devuelve `[]` y que un valor que no es `str` lanza `ValueError`.
 - **D-4**: `MapaConocido.restaurar` ¿actualiza el mismo objeto `motor.mapa` (referencias vigentes) o lo reemplaza? Mi
   servicio no guarda referencias entre pasos (I3-8), pero las pruebas sí leen `motor.mapa` entre acciones.
 - **D-5**: orden de los cambios en `Service/ServicioBench.py` (tu `BenchMapaConocido` y mi `BenchViaje`): quien suba
   segundo hace el `merge`, como en la 003.
-- **D-6**: ¿es `DTO/MapaConocidoDTO.py` un buen lugar para la constante `SIN_EXPLORAR` de la opción A del H-2? Si no, va
-  a `DTO/EstadoJuegoDTO.py` (mío).
+- **D-6** (pendiente de tu visto bueno): la constante `SIN_EXPLORAR = -1` de la opción A del H-2 se define en
+  `DTO/MapaConocidoDTO.py`, que es tuyo. ¿La aceptas ahí? Si no, va a `DTO/EstadoJuegoDTO.py` sin otro cambio.
 
 **Para Marco (integrante 1)**
 
@@ -593,9 +620,9 @@ Ninguno bloquea; la spec no se modifica.
   llamadas: confirma que no guarda nada entre llamadas (es la referencia «sin reutilización») y que el desempate es el
   de menor id entre **todas** las rutas de costo mínimo (FR-253). Mi servicio la llama con `origen = destino` del viaje
   y `u = sala actual`.
-- **M-2**: ¿existe en P1 algo que cure al jugador dentro de un mismo paso (regeneración, efecto sostenido positivo)? Si
-  existe, ¿cómo prefieres detectar «recibió daño» (comparar vida, o un contador de daño recibido en el motor)? No pido
-  el cambio; solo cuál es la señal fiable (I3-3).
+- **M-2** (decide la detección de daño): ¿existe en P1 algo que cure al jugador dentro de un mismo paso (regeneración,
+  efecto sostenido positivo)? Si existe, ¿cuál es la señal fiable de «recibió daño»: comparar la vida antes y después, o
+  un contador de daño recibido en el motor? No pido el cambio; solo cuál es la señal (I3-3, R-I3-7).
 - **M-3**: `Mazmorra.enemigos_vivos(sala)` después de `mover_jugador` incluye a los dormidos recién activados,
   ¿correcto? El plan cuenta los vivos de la sala de llegada con esa función.
 
@@ -603,12 +630,13 @@ Ninguno bloquea; la spec no se modifica.
 
 | # | Riesgo | Mitigación |
 |---|---|---|
-| R-I3-1 | **La dirección del paso** no sale del grafo (I3-1) | Pedido D-1; el plan alternativo usa solo salas exploradas |
+| R-I3-1 | **La dirección del paso** no sale del grafo (I3-1) | Se obtiene con `Mazmorra.salida` sobre la sala actual, explorada; prueba con dos rutas de igual costo (H6-3) |
 | R-I3-2 | **Filtrar el id de salas no exploradas por `EstadoJuegoDTO`** (H-2) | Opción A y prueba de 200 acciones; SC-202 de Derek |
 | R-I3-3 | **El paso no cabe en 5 ms** con la cripta de referencia | `BenchViaje` lo mide antes de cerrar; si falla, se mide la búsqueda reutilizada con `observador_rutas` |
 | R-I3-4 | **El pergamino deja un viaje activo** en el Controlador | `acciones_esperadas` en el `ViajeDTO`: el servicio para aunque el Controlador no descarte el viaje |
 | R-I3-5 | **Un viaje que abre puertas o usa llaves** | `ServicioIrA` solo construye acciones `mover`; prueba H6-4 con llave en el inventario |
 | R-I3-6 | **Se revela información al rechazar** | Un solo código y un solo mensaje para destino no explorado o inexistente; la prueba H6-1 compara los tres textos |
+| R-I3-7 | **El daño no se detecta** si la vida del jugador baja y sube en el mismo paso (regeneración o curación): comparar `jugador.vida` antes y después no ve el daño compensado (FR-258 c) | Se anota; la señal fiable la decide la respuesta de Marco (M-2). Mientras tanto, prueba H7-5 con veneno sin curación y una prueba que documenta el límite si P1 tiene curación |
 
 ### Mapa de requisitos a componentes
 
