@@ -182,6 +182,13 @@ cada turno del cazador qué acción toma, a qué sala va y cuánto cuesta esa ac
 19. **Dada** la ficha de un cazador de la sala inicial sin `rango` o con `rango` -1, **cuando** se intenta
     iniciar la partida, **entonces** no inicia y el error indica esa ficha y el campo `rango`, sin que el
     programa se caiga.
+20. **Dado** un esqueleto con una salida cuyo `cierre_automatico` es 0, -5, `"10"` o `true`, **cuando** se
+    intenta iniciar la partida, también con `--forzar`, **entonces** no inicia y el error indica esa sala,
+    la dirección de la salida y el campo `cierre_automatico`, sin que el programa se caiga (FR-122).
+21. **Dada** una sala que no es la inicial con un objeto cuya ficha trae `duracion` 0, -5, `"10"` o `true`,
+    **cuando** llega la precarga y el jugador intenta entrar a esa sala, **entonces** la partida sigue, la
+    sala queda como contenido no disponible y el movimiento se rechaza con un error que nombra esa ficha y
+    el campo `duracion`, sin consumir tiempo (FR-122).
 
 ---
 
@@ -275,8 +282,10 @@ que muestra la interfaz.
   sin `rango` entero ≥ 0 impide iniciar si el cazador está en la sala inicial. En cualquier otra sala,
   llegue antes o durante la partida, la ficha no se vuelve a pedir y su sala queda como contenido no
   disponible: cada intento de entrar se rechaza con el error de datos, sin consumir tiempo, y la partida
-  sigue. En todos los casos se informa con contexto y el programa no se cae (FR-122, escenarios H2-9 y
-  H2-17 a H2-19).
+  sigue. Un `cierre_automatico` que no es un entero ≥ 1 se trata como un costo inválido (no inicia, ni con
+  `--forzar`), y una ficha de objeto con `duracion` que no es un entero ≥ 1 como una ficha de cazador sin
+  `rango` válido. En todos los casos se informa con contexto y el programa no se cae (FR-122, escenarios
+  H2-9 y H2-17 a H2-21).
 
 ---
 
@@ -380,6 +389,17 @@ que muestra la interfaz.
     registrarse en `partida.log` (escenarios H2-9 y H2-19).
   - *(Decisión del grupo)* Que los dos lados de una salida declaren costos distintos es un error y no se
     elige uno de los dos (escenario H2-18).
+  - *(Pedido del integrante 2)* Dos campos que programan eventos en la agenda tampoco admiten valores
+    menores que 1, porque la feature 004 supone que ningún efecto se programa con retraso 0 (004,
+    «Suposiciones»): el `cierre_automatico` de una salida (`SalidaDTO`), si viene, y la `duracion` de la
+    ficha de un objeto (`ObjetoDTO`), si la trae, DEBEN ser enteros ≥ 1; un `bool` no cuenta como entero.
+    Un `cierre_automatico` inválido es un error del esqueleto: se trata como un costo inválido y la partida
+    NO DEBE iniciar, ni siquiera con `--forzar` (003 FR-323; escenario H2-20). Una `duracion` inválida
+    rechaza la ficha igual que un `rango` inválido de cazador: el error indica la ficha y el campo, la
+    ficha no se vuelve a pedir y la sala que contiene ese objeto queda como contenido no disponible (si es
+    la sala inicial, la partida no inicia) (escenario H2-21). La `duracion` de un efecto de ficha
+    (`EfectoFichaDTO`) queda fuera de esta regla: convertir una duración ≤ 0 en `None` es comportamiento
+    de la primera parte y no programa eventos con retraso 0.
 - **FR-123**: El cazador DEBE activarse y programar su primera acción igual que los demás enemigos
   (P1 §2.4). Mientras está dormido no actúa.
 
@@ -440,6 +460,8 @@ Cada prueba cita en su nombre el caso del Apéndice B y el requisito que verific
 | H2-17 | FR-122 | `test_h2_17_fr122_costo_invalido_no_inicia` |
 | H2-18 | FR-101, FR-122 | `test_h2_18_fr122_costos_distintos_entre_caras_no_inicia` |
 | H2-19 | FR-122 | `test_h2_19_fr122_ficha_invalida_en_la_sala_inicial_no_inicia` |
+| H2-20 | FR-122 | `test_h2_20_fr122_cierre_automatico_invalido_no_inicia` |
+| H2-21 | FR-122 | `test_h2_21_fr122_duracion_invalida_deja_la_sala_sin_contenido` |
 | H3-7 | FR-118, FR-122 | `test_h3_7_fr118_fr122_verificar_no_depende_de_costos_ni_cazadores` |
 | H3-8 | FR-118 | `test_h3_8_fr118_bench_aplica_las_mismas_reglas` |
 | H4-1 | FR-116 | `test_h4_1_fr116_el_costo_llega_a_la_vista` (datos); lo que se dibuja, en T041 |

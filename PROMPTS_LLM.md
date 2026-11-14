@@ -1845,3 +1845,49 @@ Un commit por punto, suite en verde con uv run, registrá el analyze en PROMPTS_
 H3-7 se queda en la 001 con su `skip` (C2). Suite: 482 OK (skipped=1) y 32/32 scripts. Sin push.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Extendé FR-122 con dos validaciones nuevas (pedidas por el integrante 2, motivadas por la suposición
+de la spec 004 de que no hay eventos con retraso 0):
+1. spec(001):
+   - FR-122: SalidaDTO.cierre_automatico (si viene) y ObjetoDTO.duracion deben ser enteros >= 1, sin bool.
+     cierre_automatico inválido es error del esqueleto: la partida no inicia, tampoco con --forzar
+     (003 FR-323). duracion inválida rechaza la ficha como el rango del cazador (la sala queda como
+     contenido no disponible). Citá la suposición de la 004 como motivo.
+   - EfectoFichaDTO queda fuera: convertir duraciones <= 0 en None es comportamiento de P1 y no programa eventos.
+   - Escenarios nuevos H2-20 (cierre_automatico 0, -5, "10" o true: no inicia) y H2-21 (duracion inválida en
+     la ficha de un objeto: la sala queda sin contenido, el error nombra ficha y campo). En la trazabilidad.
+2. tasks(001): una tarea para el integrante 2 (validación en Data) y una tuya para las pruebas de H2-20 y
+   H2-21, que quedan con skipTest y el motivo hasta que esté la del integrante 2.
+3. Las pruebas con skip, en su propio commit.
+Suite en verde con uv run, PROMPTS_LLM.md, no hagas push.
+
+**Uso de la respuesta:** se hicieron tres commits:
+- `spec(001)`: FR-122 tiene un punto nuevo con las dos validaciones y cita la suposición de la 004. Un `cierre_automatico` inválido impide iniciar, también con `--forzar` (003 FR-323). Una `duracion` inválida rechaza la ficha como un `rango` inválido: la sala queda sin contenido, o la partida no inicia si es la sala inicial. `EfectoFichaDTO` queda fuera. Se agregaron los escenarios H2-20 y H2-21, el caso borde y las dos filas de la trazabilidad.
+- `tasks(001)`: T055 (integrante 2, validación en Data con `es_entero`) y T056 (integrante 1, pruebas de H2-20 y H2-21 con `skipTest` hasta T055), con sus dependencias y el grafo.
+- `test(001)`: `test_h2_20_…` y `test_h2_21_…` en `tests/test_terreno_cazador.py`, y `FuenteConObjetoInvalido` en `tests/ayudas_terreno.py`. Sin el skip, las dos fallan donde falta la validación («ErrorDatos not raised» y «mensaje None»). La parte de `--forzar` de H2-20 queda para cuando exista la spec 003.
+
+Suite: 484 OK (skipped=3: H3-7, H2-20, H2-21) y 32/32 scripts. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Sí: plan(001), agregá a contracts/contrato-datos.md, sección "Validación (FR-122)", las dos reglas nuevas
+(cierre_automatico y ObjetoDTO.duracion, entero >= 1 sin bool; esqueleto → no inicia, también con --forzar;
+ficha → rechaza la ficha, y en la sala inicial no inicia), el formato del mensaje de error (sala y dirección,
+o ficha y campo, como los demás de FR-122) y que EfectoFichaDTO queda fuera. Con su entrada en PROMPTS_LLM.md.
+No hagas push.
+
+**Uso de la respuesta:** un commit `plan(001)` en `contracts/contrato-datos.md`, sección «Validación (FR-122)»:
+- La tabla tiene dos filas nuevas: `cierre_automatico` de `SalidaDTO` y `duracion` de `ObjetoDTO`, válidos si vienen como entero ≥ 1 (un `bool` no cuenta), con su contexto mínimo. Un párrafo explica que los pidió el integrante 2 (T055, H2-20 y H2-21) por la suposición de la 004, que `null` o ausente sigue siendo válido y que `EfectoFichaDTO` queda fuera.
+- El efecto ahora distingue tres casos: esqueleto (no inicia, tampoco con `--forzar`, 003 FR-323), ficha de la sala inicial (no inicia) y ficha de otra sala (la sala queda sin contenido).
+- El mensaje usa el mismo formato que los demás de FR-122: sala y dirección, o ficha y campo, más el valor recibido.
+
+Suite: 484 OK (skipped=3) y 32/32 scripts. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------

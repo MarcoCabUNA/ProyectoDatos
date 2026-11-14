@@ -5,6 +5,7 @@ Una prueba por escenario de aceptación de spec.md, con el escenario y el FR en 
 
     python -m unittest tests.test_terreno_cazador -v
 """
+import copy
 import os
 import random
 import sys
@@ -28,8 +29,9 @@ from Logic.Mazmorra import CierrePuerta, Mazmorra  # noqa: E402
 from Service.ServicioAccionJugador import ServicioAccionJugador  # noqa: E402
 from Service.ServicioPartida import ServicioPartida  # noqa: E402
 from tests.TestValidacionDatos import CAZADOR, SIN_RANGO, api_con_cazador, api_con_costos  # noqa: E402
-from tests.Utilidades import ID_CRIPTA, fuente_red  # noqa: E402
-from tests.ayudas_terreno import (ID_CAZADOR_SIN_RANGO, LLAVE_FINAL, FuenteConFichaInvalida,  # noqa: E402
+from tests.Utilidades import ID_CRIPTA, ApiFalsa, fuente_red, pagina_real  # noqa: E402
+from tests.ayudas_terreno import (ID_CAZADOR_SIN_RANGO, ID_OBJETO_DURACION_INVALIDA, LLAVE_FINAL,  # noqa: E402
+                                  FuenteConFichaInvalida, FuenteConObjetoInvalido,
                                   cuadricula_con_costos, ficha_cazador, ficha_errante, ficha_rastreador,
                                   mazmorra_con_costos, motor_con, poner_enemigo, salida)
 
@@ -562,6 +564,60 @@ class TestDatosInvalidos(unittest.TestCase):
                 error = _no_inicia(self, api_con_cazador(1, rango))    # la sala 1 es la inicial de cripta-01
                 self.assertIn(CAZADOR, error)
                 self.assertIn("rango", error)
+
+    def test_h2_20_fr122_cierre_automatico_invalido_no_inicia(self):
+        """
+        Escenario H2-20 (FR-122, T056): un esqueleto con una salida cuyo `cierre_automatico` es 0, -5, "10" o true
+        no deja iniciar la partida; el error indica la sala, la dirección y el campo, y el programa no se cae.
+        La parte de `--forzar` (003 FR-323) se agrega cuando exista la spec 003, como en H3-7.
+        """
+        self.skipTest("pendiente de T055 (integrante 2): Data todavía no valida cierre_automatico")
+        for cierre in (0, -5, "10", True):
+            with self.subTest(cierre_automatico=cierre):
+                error = _no_inicia(self, _api_con_cierre_automatico(2, "N", cierre))
+                for texto in ("sala 2", "salida N", "cierre_automatico", repr(cierre)):
+                    self.assertIn(texto, error)
+
+    def test_h2_21_fr122_duracion_invalida_deja_la_sala_sin_contenido(self):
+        """
+        Escenario H2-21 (FR-122, T056): con FuenteConObjetoInvalido (una poción con `duracion` 0, -5, "10" o true en
+        la sala 2, que no es la inicial), la partida inicia y entrar a la sala 2 se rechaza con un mensaje que nombra
+        la ficha y el campo `duracion`; el jugador sigue en la sala 1, el reloj no avanza y la partida sigue.
+        """
+        self.skipTest("pendiente de T055 (integrante 2): Data todavía no valida la duracion de ObjetoDTO")
+        for duracion in (0, -5, "10", True):
+            with self.subTest(duracion=duracion):
+                fuente = FuenteConObjetoInvalido(3, sala_objeto=2, duracion=duracion)
+                acciones = ServicioAccionJugador()
+                with tempfile.TemporaryDirectory() as carpeta:
+                    partida = ServicioPartida(ConfiguracionDTO(), fuente=fuente,
+                                              carpeta_cache=os.path.join(carpeta, "cache"),
+                                              carpeta_logs=os.path.join(carpeta, "logs"))
+                    ctx = partida.iniciar_partida("cuadricula", "Ana", semilla=1)
+                    reloj = ctx.motor.reloj
+
+                    estado = acciones.ejecutar(ctx, AccionDTO("mover", direccion=E))
+                    mensaje = estado.resultado
+                    self.assertIsNotNone(mensaje)
+                    self.assertIn(ID_OBJETO_DURACION_INVALIDA, mensaje)
+                    self.assertIn("duracion", mensaje)
+                    self.assertFalse(mensaje.startswith("Sin conexión"))
+                    self.assertEqual(estado.sala.id, 1)
+                    self.assertEqual(estado.reloj, reloj)
+
+                    # La partida sigue: el jugador puede moverse a otra sala.
+                    estado = acciones.ejecutar(ctx, AccionDTO("mover", direccion=S))
+                    self.assertIsNone(estado.resultado)
+                    self.assertEqual(estado.sala.id, 4)
+
+
+def _api_con_cierre_automatico(id_sala: int, direccion: str, cierre):
+    """La cripta real con un `cierre_automatico` en la salida 'direccion' de la sala 'id_sala' (H2-20)."""
+    pagina = copy.deepcopy(pagina_real())
+    for sala in pagina["salas"]:
+        if sala["id"] == id_sala:
+            sala["salidas"][direccion]["cierre_automatico"] = cierre
+    return ApiFalsa(paginas={ID_CRIPTA: [pagina]})
 
 
 def _no_inicia(prueba: unittest.TestCase, api) -> str:
