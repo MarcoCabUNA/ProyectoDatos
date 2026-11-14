@@ -188,12 +188,12 @@ ninguna consulta reaplica más de K acciones.
 
 ### Pruebas de la historia 5 ⚠️
 
-- [ ] T049 [P] [US5] Escribir `tests/test_checkpoint_cada.py`: `test_h5_1_fr418_mismos_resumenes_con_k_1_5_y_50`, `test_h5_2_fr416_ninguna_consulta_reaplica_mas_de_k_acciones` (K = 10, usando `acciones_reaplicadas` de `ReconstructorEstado`), `test_h5_3_fr415_valores_invalidos` (`0`, `-2`, `abc`, `2.5`: `ErrorArgumentos` y código de salida 2), `test_h5_4_fr415_valor_por_defecto` (sin la bandera se usa `CHECKPOINT_POR_DEFECTO`), `test_fr415_checkpoint_por_defecto_provisional_es_20` (se actualiza en T062 si el bench cambia el valor).
+- [X] T049 [P] [US5] Escribir `tests/test_checkpoint_cada.py`: `test_h5_1_fr418_mismos_resumenes_con_k_1_5_y_50`, `test_h5_2_fr416_ninguna_consulta_reaplica_mas_de_k_acciones` (K = 10, usando `acciones_reaplicadas` de `ReconstructorEstado`), `test_h5_3_fr415_valores_invalidos` (`0`, `-2`, `abc`, `2.5`: `ErrorArgumentos` y código de salida 2), `test_h5_4_fr415_valor_por_defecto` (sin la bandera se usa `CHECKPOINT_POR_DEFECTO`), `test_fr415_checkpoint_por_defecto_provisional_es_20` (se actualiza en T062 si el bench cambia el valor).
 
 ### Implementación de la historia 5
 
-- [ ] T050 [US5] (FR-415) (confirmar con el integrante 2: `ConfiguracionDTO.py` y `LectorArgumentos.py` son de Derek; los cambios son campos y banderas nuevos al final) En `DTO/ConfiguracionDTO.py` el campo `checkpoint_cada` y la constante `CHECKPOINT_POR_DEFECTO = 20` (**provisional**, se confirma en T062) ya los creó T069; aquí queda la bandera: en `UIController/LectorArgumentos.py` la bandera `--checkpoint-cada` (entero ≥ 1; cualquier otro valor → `ErrorArgumentos`); en `Service/ServicioPartida.py` la línea ya usa `config.checkpoint_cada` desde T018, así que aquí solo se conecta la bandera. Hace pasar T049.
-- [ ] T051 [US5] Correr todas las pruebas y seguir [quickstart.md](quickstart.md) §5.
+- [X] T050 [US5] (FR-415) (confirmar con el integrante 2: `ConfiguracionDTO.py` y `LectorArgumentos.py` son de Derek; los cambios son campos y banderas nuevos al final) En `DTO/ConfiguracionDTO.py` el campo `checkpoint_cada` y la constante `CHECKPOINT_POR_DEFECTO = 20` (**provisional**, se confirma en T062) ya los creó T069; aquí queda la bandera: en `UIController/LectorArgumentos.py` la bandera `--checkpoint-cada` (entero ≥ 1; cualquier otro valor → `ErrorArgumentos`); en `Service/ServicioPartida.py` la línea ya usa `config.checkpoint_cada` desde T018, así que aquí solo se conecta la bandera. Hace pasar T049.
+- [X] T051 [US5] Correr todas las pruebas y seguir [quickstart.md](quickstart.md) §5.
 
 ---
 
