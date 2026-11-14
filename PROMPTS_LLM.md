@@ -1202,6 +1202,71 @@ Le pedí a Claude que me guiara con T002 y T052 de specs/001-terreno-cazador/tas
 **Uso de la respuesta:** se usó en `Data/ValidacionDatos.py` (nuevo: `ErrorDatos`, subclase de `ErrorRed`, y las reglas de FR-122), `Data/GestorEsqueleto.py` (`_validar_costos`: la partida no inicia), `Data/ResolvedorCatalogo.py` (una ficha inválida no se guarda ni se vuelve a pedir; `rechazo(id)`), `Data/GestorContenido.py` (estado `RECHAZADA` por sala: `asegurar_sala` vuelve a lanzar el mismo error sin otra solicitud y las demás salas del lote se cargan) y `tests/TestValidacionDatos.py` (20 pruebas). Revisé el cambio y corrí las pruebas: 460 OK (skipped=6) y 31/31 con la rama de Marco ya jalada; el replay de ejemplo sigue terminando en victoria con reloj 3625. También se usó para jalar la rama de Marco a derek (con PROMPTS_LLM.md resuelto a mano), para proponerle el cuerpo de las pruebas H2-17 a H2-19 y para las respuestas a su revisión.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+Lee .specify/memory/constitution.md y, en specs/001-terreno-cazador/tasks.md, T052 y T053. Implementa SOLO T053. En Service/ServicioAccionJugador.py, método ejecutar: agrega from Data.ValidacionDatos import ErrorDatos y, ANTES del except ErrorRed, agrega except ErrorDatos as error: que devuelva self._armador.armar_estado(contexto, str(error)) (ErrorDatos es subclase de ErrorRed, por eso va antes). El mensaje es el del propio error, sin el prefijo «Sin conexión con el servicio:». No cambies nada más de ese archivo. Justificación (Principio III): cambio indispensable para FR-122, escenario H2-9. Agrega una prueba corta en tests/test_servicios.py, siguiendo el estilo del archivo: con un contenido de prueba cuyo asegurar_sala lanza ErrorDatos, mover hacia esa sala devuelve un estado cuyo mensaje contiene el texto del error y no dice «Sin conexión», el jugador sigue en su sala, el reloj no avanza y la acción no queda en partida.log. Cita FR-122 y H2-9. NO toques tests/test_terreno_cazador.py ni quites el skip de T054 (la escribe el integrante 1), y no modifiques tasks.md. Corre python tests/correr_pruebas.py y reporta. Un solo commit: «feat(service): ServicioAccionJugador muestra el error de datos (T053, FR-122)».
+
+**Uso de la respuesta:** ServicioAccionJugador muestra el error de datos (T053, FR-122) con su prueba.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+Edita SOLO specs/004-linea-tiempo/spec.md y su checklist si aplica. Sin estructuras, clases ni módulos.
+
+1. P1 §2.11 dice que la reversión del pergamino no deshace los pergaminos recogidos o soltados durante el intervalo revertido. Agrégalo como requisito FR-424: «Los pergaminos de retroceso recogidos o soltados dentro de acciones revertidas conservan ese cambio: la línea de tiempo refleja la cantidad de pergaminos igual que la partida viva (P1 §2.11).» Agrega el escenario H3-5 (el jugador recoge un pergamino en la acción 4 y usa otro pergamino para revertirla; al consultar el instante actual, el inventario conserva el pergamino recogido y no tiene el consumido), con su fila de trazabilidad, citando FR-413, FR-419 y FR-424.
+2. Si en FR-419 o Suposiciones hay alguna nota que trate ese caso como excepción o límite, elimínala.
+3. Anota que FR-417 se integró en NFR-402 y que FR-422 se eliminó.
+4. Verifica que no queden referencias rotas y dime qué cambiaste.
+
+**Uso de la respuesta:** Se agregó FR-424 y el escenario H3-5 (pergaminos recogidos o soltados en acciones revertidas, P1 §2.11).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+Edita SOLO specs/004-linea-tiempo/plan.md, research.md, data-model.md, contracts/contrato-linea-tiempo.md y tasks.md. No escribas código ni cambies spec.md. Plan y modelo:
+
+1. H-2 ya no es una decisión pendiente: es regla de P1 §2.11 (FR-424). El marcador de pergamino se generaliza: posición + quitados (ids de pergaminos que salen del inventario) + agregados (pergaminos que quedan en el inventario aunque la acción que los trajo se revirtió). El descuento del pergamino usado es un «quitado». Actualiza data-model.md, el contrato (MarcadorPergaminoDTO, con su validación al leer) y R-.. de research.md.
+2. D1: la validación de rango (t entero ≥ 0 y no posterior al reloj; 1 ≤ k ≤ acciones del jugador) es regla de negocio: va en Logic/LineaTiempo, con métodos que lanzan ValueError con el motivo y el rango válido. ServicioLineaTiempo solo propaga (la constitución dice que Service no valida).
+3. I1: en «Cambios a código de la primera entrega», el dueño de ConfiguracionDTO.py y LectorArgumentos.py es «Integrante 3 (con visto bueno del integrante 2)».
+4. C2: agrega la fila de Service/BenchInventario.py (T061): cambio indispensable para exponer el bench nuevo sin tocar ServicioBench (del integrante 2); NFR-401.
+5. Nota: la 004 no toca Service/ServicioAccionJugador.py; el único cambio es T053 de la feature 001 (un except ErrorDatos, FR-122), que no afecta a la línea. Logic/PartidaGuardada.py y DTO/PartidaGuardadaDTO.py los extiende Derek para el mapa conocido (spec 002, FR-223); la 004 solo agrega linea.
+6. Los grabadores (resolvedor y contenido envueltos) delegan TODO lo que no es ficha() o asegurar_sala() al objeto original, incluidos rechazo() y resolver_contenido() (los usa GestorContenido, FR-122); un ErrorDatos propaga sin registrar nada.
+7. El mapa conocido (spec 002) será un campo de PartidaGuardadaDTO que actualiza el motor, así los puntos de control y la re-simulación lo reproducen. La línea no lo invierte: NFR-203 de la 002 habla de invertirlo; aclara en el plan que la 004 reconstruye hacia adelante. Tareas:
+8. I2: agrega T069 en la Fase 2, justo después de T010: crear CHECKPOINT_POR_DEFECTO = 20 y el campo checkpoint_cada en DTO/ConfiguracionDTO.py, con su prueba. T018 depende de T069; T050 queda con la bandera y el cableado.
+9. I3: T021 aplica los registros de carga básicos; T032 solo agrega la regla del prefijo por ordinal.
+10. H-2: T033 se escribe SIN skip (H3-5, FR-413, FR-424, FR-419). T034 pasa a ser tarea de implementación del marcador con quitados/agregados; ajusta T028, T030 y T031. Quita las menciones de «decisión pendiente» o de límite conocido en DECISIONES.
+11. D1: T007 y T008 incluyen la validación de rango en LineaTiempo; T025 solo propaga el error.
+12. C3: agrega «(FR-xxx)» a las tareas de 004 que no lo tienen (T001, T014, T018, T019, T021, T023, T028, T044, T053, T054, T056...). Ojo: el T053 de la 004 es de la interfaz, distinto del T053 de la 001.
+13. P1: T066 se hace en un commit spec(004) aparte.
+14. T004: la spec 002 ya existe; ajusta T004 a «coordinar con FR-223: el mapa conocido es campo de PartidaGuardadaDTO y se copia con PartidaGuardada.guardar, sin copy». Muestra los cambios.
+
+**Uso de la respuesta:** Se ajustaron el plan, el modelo y las tareas de la 004 tras el analyze (validación en Lógica, T069, dueños de archivos).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+Edita SOLO specs/002-niebla-ir-a/spec.md, en la sección reservada para «ir a» (FR-250 a FR-299, NFR-250 a NFR-299, SC-250 a SC-299). No modifiques los FR-201 a FR-249 de Derek. Lee antes la constitución, la spec completa, y de Proyecto II parte.pdf §3.4, §6.1, §7.3 y el Apéndice B «Niebla de guerra e ir a». Solo el QUÉ: sin estructuras, clases, módulos ni algoritmos. Reglas (§3.4): «ir a <sala>» lleva al jugador a una sala explorada mediante movimientos ordinarios. La ruta usa solo salas exploradas y solo salidas que el mapa recuerda abiertas (una puerta «sin observar» no cuenta como recordada abierta); minimiza la suma de costos y desempata igual que el cazador (primer paso hacia la vecina de menor id). Cada paso es una acción completa del jugador que consume tiempo según §3.1, y entre pasos ocurren los eventos del reloj. La ruta se recalcula antes de cada paso con el conocimiento vigente. El viaje se detiene si llega al destino, entra a una sala con enemigos (activos o dormidos), recibe daño o deja de haber ruta conocida; la interfaz muestra el motivo. No abre puertas aunque el jugador tenga la llave. Un destino no explorado se rechaza sin consumir tiempo. En partida.log cada paso es un movimiento y la orden se registra además como comentario. El pergamino revierte solo el último paso y el viaje no continúa. Cada paso cuenta como acción del jugador en la línea de tiempo (spec 004). Rendimiento: el cálculo de un paso tarda menos de 5 ms con el mapa conocido completo (§6.1). Escenarios: los casos del Apéndice B de «ir a»: (1) destino no explorado, (2) puerta recordada abierta que en realidad está cerrada: la ruta se recalcula y, si no queda ruta, el viaje se detiene sin consumir tiempo adicional (la parte de que el mapa se actualiza ya es de la historia 1 de Derek), (3) enemigos dormidos: se activan según P1 §2.4 y el viaje se detiene, (4) pergamino durante un viaje. Usa historias H5 y H6. Cada escenario con su FR en la tabla de trazabilidad. Reemplaza únicamente los marcadores «pendiente FR-25x» por los FR concretos. Verifica que no queden referencias rotas y dime qué cambiaste.
+
+**Uso de la respuesta:** Se escribieron FR-250 a FR-264 y las historias 6 y 7 de «ir a» en la spec 002, con los casos del Apéndice B.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+/speckit-analyze Enfócate en: (1) que cada FR y NFR tenga al menos una tarea; (2) que cada escenario de aceptación y cada caso del Apéndice B tenga una prueba que cite su FR; (3) que ninguna tarea ni el plan contradiga la constitución; (4) que ninguna tarea modifique código de otros integrantes sin marcarlo como «Coordinar»; (5) inconsistencias entre spec, plan y tasks.
+
+**Uso de la respuesta:** Segundo informe, sin hallazgos críticos; dejó ajustes de texto y la mejora del diseño del pergamino.
+
+-----------------------------------------------------------------------------------------------------------------------
 **Fecha:** Viernes 13 de noviembre 2026
 
 **Herramienta:** Claude Code
@@ -1222,6 +1287,187 @@ Correcciones a specs/003-resolubilidad/spec.md tras la revisión cruzada de Marc
 Al final decime exactamente qué cambiaste y confirmá: que no queda ninguna mención de las llaves distintas como error de datos; que FR-323 tiene al menos un escenario; que todos los FR del FR-301 al FR-323 tienen escenario; y que no hay ningún [NEEDS CLARIFICATION]. No hagas commit.
 
 **Uso de la respuesta:** se usó en `specs/003-resolubilidad/spec.md` y `specs/003-resolubilidad/checklists/requirements.md`, a partir de la revisión cruzada del integrante 1. Las llaves distintas en las dos caras de una puerta dejan de ser error de datos (cada cara se rige por lo que declara, como `Mazmorra._igualar_caras` de la primera parte): FR-302, FR-308, escenario H2-9 reescrito y aclaración en la Sesión 2026-11-12. Nuevo FR-323: un error de datos de 001 FR-122 en el esqueleto hace que la verificación no concluya (`--verificar` con código 1) y la partida no inicia ni con `--forzar` (escenarios H3-8 y H4-5); se ajustaron FR-312, FR-314, casos borde, supuestos, la tabla de cobertura y el checklist. Revisé con Claude el cambio contra el enunciado y el código de la primera parte antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Correcciones a specs/002-niebla-ir-a/spec.md, solo en la parte del integrante 2 (mapa conocido y antorcha: FR-201 a FR-249, NFR-201 a NFR-249, SC-201 a SC-249, historias 1 a 5), tras la revisión cruzada del integrante 1 y lo acordado con el integrante 3. NO modifiques la sección «Viaje automático «ir a»» (FR-250 a FR-299), ni las historias 6 y 7, ni sus filas de las tablas: son del integrante 3. Editá SOLO specs/002-niebla-ir-a/spec.md y su checklists/requirements.md; sin código y sin nombrar estructuras de datos, clases, métodos ni módulos. Todo en español. Antes de editar, leé .specify/memory/constitution.md (principios IX y X), specs/001-terreno-cazador/spec.md (FR-101), specs/003-resolubilidad/spec.md (FR-313) y specs/004-linea-tiempo/spec.md (cómo se reconstruye un instante), y la sección «ir a» de esta misma spec (FR-252 y FR-253).
+
+1. FR-225 (nuevo): el mapa conocido DEBE ofrecer a «ir a» exactamente lo que necesitan FR-252 y FR-253: para cada sala explorada, sus salidas hacia otras salas exploradas cuya puerta el mapa recuerda abierta (una puerta «sin observar» no cuenta, FR-212; una salida hacia una sala avistada o desconocida tampoco), cada una con su costo igualado según 001 FR-101; y cada sala identificada por su identificador real, para que el desempate por menor identificador de FR-253 dé el mismo resultado que la búsqueda del cazador aplicada a ese mismo conjunto de salas y salidas. No nombres operaciones ni estructuras: eso va en el plan. Agregá un escenario en la Historia 1 o la 2 que lo pruebe: salas exploradas A, B y C, con la puerta A–B recordada abierta y costo declarado 150 solo en la cara de B, la puerta A–C «sin observar» y una salida de A hacia una sala avistada D; el mapa ofrece A→B con costo 150 y no ofrece A→C ni A→D.
+
+2. FR-205 y FR-219: el costo de cada salida que se conoce y se muestra DEBE ser el costo igualado según 001 FR-101 (el mismo en los dos sentidos aunque solo una cara lo declare, y 100 si ninguna lo declara), no el declarado por una sola cara. Ajustá los escenarios que muestran costos si hace falta.
+
+3. FR-217: agregá una excepción explícita. El reporte de resolubilidad (spec 003, FR-313) DEBE mostrarse completo al iniciar la partida, como exige §7.3, aunque mencione salas, puertas o ubicaciones de llaves que el jugador no conoce; no es parte del mapa conocido, NO DEBE modificarlo (no explora ni avista ninguna sala ni cambia el estado recordado de ninguna puerta) y «ir a» no lo usa. Motivo: §3.3 dice que la vista solo muestra el conocimiento del jugador, pero §7.3 exige ver el reporte al iniciar, y el reporte de §3.5 nombra salas y llaves; el choque solo aparece cuando la cripta no es resoluble y se inicia con --forzar. Acordado con el integrante 3, dueña de la interfaz. Agregá un escenario en la Historia 5: con una cripta no resoluble iniciada con --forzar, el reporte nombra salas desconocidas y, después de mostrarlo, el mapa conocido sigue teniendo solo la sala inicial explorada y sus vecinas avistadas.
+
+4. NFR-203: las inversas son solo para el pergamino. Registrar un cambio del mapa conocido e invertirlo con el pergamino DEBE costar proporcionalmente a lo que cambió, no al tamaño del mapa conocido (§5.3). Para la línea de tiempo (feature 004), el mapa conocido NO necesita inversas: se reconstruye hacia adelante, porque forma parte del estado de la partida que se copia en cada punto de control y que la re-simulación reproduce (FR-221, FR-223, FR-224); esa copia cuesta proporcionalmente al tamaño del mapa conocido y se hace una vez por punto de control. Acordado con el integrante 3. Revisá que FR-222 y FR-223 sigan siendo coherentes con esto.
+
+5. Agregá una sección «Sesión 2026-11-13» en Clarificaciones con una pregunta y respuesta por cada uno de los puntos 1 a 4, indicando de dónde salen (revisión cruzada del integrante 1 o acuerdo con el integrante 3). No marques nada como «Reemplazada».
+
+6. Actualizá la tabla de trazabilidad y cobertura (solo tus filas y las filas nuevas), los casos borde si corresponde y el checklist. No cambies la numeración de los FR que ya existen ni la tabla del Apéndice B.
+
+Al final decime exactamente qué cambiaste y confirmá: que no tocaste nada de FR-250 a FR-299 ni de las historias 6 y 7; que FR-225 tiene al menos un escenario; que todos los FR del FR-201 al FR-225 tienen escenario; y que no hay ningún [NEEDS CLARIFICATION]. No hagas commit.
+
+Seguimiento en la misma conversación:
+
+Ajustes finales de texto en specs/002-niebla-ir-a/spec.md y specs/002-niebla-ir-a/checklists/requirements.md, sin cambiar ningún requisito ni escenario:
+1. En el encabezado, «Estado» ya no debe decir que la parte de «ir a» está pendiente: la escribió el integrante 3 (FR-250 a FR-264, historias 6 y 7).
+2. En «Reparto de la numeración», cambiá «que escribe el integrante 3 en otro commit» por «que escribió el integrante 3 en su propio commit».
+3. En «Fuera de alcance», quitá «el comando «ir a» (FR-250 a FR-299, integrante 3);» porque ahora es parte de esta spec. Lo demás de esa línea queda igual.
+4. En el checklist, cambiá la línea «La sección «ir a» (FR-250 a FR-299) queda pendiente a propósito: la escribe el integrante 3.» por una que diga que la sección «ir a» la escribió el integrante 3 en su propio commit.
+5. Sí, reacomodá la línea larga de FR-219 al mismo ancho que las demás, sin cambiar el texto.
+No toques nada más y mostrame exactamente qué líneas cambiaste. No hagas commit.
+
+Seguimiento en la misma conversación (puntos MEDIA y BAJA de la revisión cruzada del integrante 1):
+
+Segunda tanda de correcciones en specs/002-niebla-ir-a/spec.md y su checklist, con los puntos MEDIA y BAJA de la revisión cruzada del integrante 1 (los de prioridad ALTA ya están hechos). Mismas reglas: solo la parte del integrante 2; no toques FR-250 a FR-299, ni las historias 6 y 7, ni sus filas de las tablas; sin nombrar estructuras de datos, clases ni módulos; no renumeres FR ni escenarios existentes (los escenarios nuevos van al final de cada historia). Antes leé, solo para entender la primera parte, Logic/Mazmorra.py (_igualar_caras y abrir_puerta) y Logic/EventoPorg.py (__lt__), y specs/001-terreno-cazador/spec.md (FR-108, NFR-101 y SC-104).
+
+1. Caras con estados distintos (punto 4 de la 003 en la revisión). En la primera parte, las dos caras de una puerta pueden tener estados reales distintos: si ninguna declara llave y solo una está cerrada, o si las dos declaran llaves distintas, cada cara se rige por lo suyo (la 003 ya lo dice en FR-302). Hoy la 002 dice que las dos caras «son la misma puerta» con un solo estado. Corregilo así: en Convenciones, la puerta de una salida con vuelta tiene dos caras que normalmente tienen el mismo estado, pero pueden diferir según la primera parte; el estado recordado se guarda por cara; al observar una puerta (FR-207) el mapa registra el estado real de cada una de sus caras; y una salida cuenta como recordada abierta solo si se recuerda abierta la cara de la sala de la que sale (esto es lo que usa FR-225). Ajustá FR-207, FR-208, FR-225 y la entidad «Estado recordado de una puerta». Agregá un escenario al final de la Historia 2: la puerta A–B con la cara de A cerrada sin llave y la cara de B abierta; al observarla, el mapa recuerda A→B cerrada y B→A abierta, y a «ir a» solo se le ofrece B→A. Agregá la pregunta y la respuesta en la «Sesión 2026-11-13» que ya existe, indicando que surge de la revisión del integrante 1 y que es la regla de la primera parte.
+
+2. Punto 4: marcá «(decisión del grupo)» en la aclaración y en FR-207 sobre la observación de las salidas sin vuelta solo desde la sala de la que salen, citando que evita contradecir FR-206.
+
+3. Punto 5: agregá SC-207: «Con `--bench`, registrar e invertir con el pergamino la misma cantidad de cambios del mapa conocido varía menos de un factor 2 entre un mapa conocido pequeño y uno al menos 10 veces mayor *(decisión del grupo)*.»
+
+4. Punto 6: reescribí SC-202 para que sea comprobable: en cada acción de una partida de prueba de al menos 200 acciones *(decisión del grupo)*, con y sin antorcha, lo que la interfaz recibe para dibujar el mapa (vista, comando de ver el mapa y resumen de `historia`) no contiene el identificador, el nombre, las salidas ni el contenido de ninguna sala desconocida, ni más que la existencia de las avistadas; se comprueba automáticamente. Mantené la excepción del reporte de resolubilidad (FR-217).
+
+5. Punto 7: SC-206 debe usar la misma cripta de referencia que la 001 (NFR-101 y SC-104: una cripta sintética de 1 000 salas en cuadrícula con 30 cazadores activos), con la antorcha encendida *(decisión del grupo)*.
+
+6. Punto 8: reemplazá el caso borde «La antorcha se apaga en el mismo instante en que el jugador entra» por la regla concreta: los eventos con el mismo tiempo se atienden en el orden en que se programaron (la misma regla de 001 FR-108); si el fin de la antorcha se programó antes que la acción del jugador, la entrada ocurre con la antorcha apagada y no explora las vecinas; si se programó después, las explora. Agregalo también como escenario al final de la Historia 3.
+
+7. Punto 9: agregá un escenario para la parte del cazador de FR-218: un cazador que se mueve por salas desconocidas no cambia el estado de ninguna sala para el jugador ni el estado recordado de ninguna puerta.
+
+8. Punto 10: en «Fuera de alcance», agregá que la verificación de resolubilidad (003-resolubilidad) usa el esqueleto completo y no el mapa conocido, y que su reporte se muestra según la excepción de FR-217.
+
+9. Punto 11: marcá «(decisión del grupo)» en SC-203 y SC-204 (factor 2 y al menos 10 veces mayor), en NFR-204 (al menos tres tamaños) y en la aclaración sobre la sala avistada sin identificador.
+
+10. Punto 12: en NFR-205, la cita queda «P1 §5.2 y §6.1 de la Parte II».
+
+11. Punto 13: en «Fuente» agregá §3.4, §3.5, §3.6 y §7.3 de la Parte II, P1 §5.2 y la feature 001 (FR-101, FR-108 y FR-122).
+
+12. Punto 14: reacomodá las líneas cortadas de FR-204 y FR-214 al mismo ancho que las demás, sin cambiar el texto.
+
+13. Punto 15: en la tabla del Apéndice B el «#» 2 está repetido: cambialo por «2a» y «2b» (solo la etiqueta; no cambies el contenido de ninguna fila). La segunda tabla ya dice que sus escenarios no provienen del Apéndice B: dejala como está.
+
+14. Punto 17: en H1-6, unificá la cita en «(FR-203, FR-222)».
+
+Actualizá la tabla de trazabilidad (filas nuevas al final) y el checklist con una nota de esta tanda. Al final decime exactamente qué cambiaste y confirmá: que no tocaste FR-250 a FR-299, las historias 6 y 7 ni sus filas (salvo la etiqueta «2a/2b»); que todos los FR del FR-201 al FR-225 siguen teniendo escenario; y que no hay ningún [NEEDS CLARIFICATION]. No hagas commit.
+
+**Uso de la respuesta:** se usó en `specs/002-niebla-ir-a/spec.md` y `specs/002-niebla-ir-a/checklists/requirements.md` (solo la parte del integrante 2), a partir de la revisión cruzada del integrante 1 y de lo acordado con el integrante 3: nuevo FR-225 (lo que el mapa conocido ofrece a «ir a»: salidas entre salas exploradas con la cara recordada abierta, costo igualado e identificador real); FR-205 y FR-219 con el costo igualado de 001 FR-101; excepción explícita en FR-217 para el reporte de resolubilidad de 003 FR-313 y SC-202 reescrito; NFR-203 con inversas solo para el pergamino y FR-223 con la reconstrucción hacia adelante; estado recordado por cara (regla de caras de la primera parte); SC-207 nuevo; SC-206 con la cripta de referencia de la 001; la regla de eventos simultáneos para la antorcha; escenario del cazador para FR-218; decisiones del grupo marcadas; encabezado, fuente y formato al día. No se tocó la sección «ir a» del integrante 3. Revisé con Claude el cambio antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Segunda tanda de correcciones a specs/003-resolubilidad/spec.md y su checklist, con los puntos MEDIA y BAJA de la revisión cruzada del integrante 1. Los puntos ALTA ya están hechos; su punto 1 ALTA (tratar las llaves distintas como error) quedó descartado: cada cara se rige por su llave, como en la primera parte. Editá SOLO esos dos archivos; sin código y sin nombrar estructuras de datos, clases ni módulos; no renumeres FR ni escenarios existentes (los escenarios nuevos van al final de cada historia). Antes leé specs/002-niebla-ir-a/spec.md (FR-217 y su excepción) y specs/001-terreno-cazador/spec.md (FR-122 y NFR-101).
+ 
+1. Punto 2 (lo que falta): agregá en los supuestos que los errores de `rango` de 001 FR-122 no afectan la verificación, porque la verificación no descarga el contenido de las salas (FR-301); un cazador inválido en la sala inicial impide iniciar la partida por 001 FR-122, no por la verificación.
+
+2. Punto 3: en FR-313, decí que mostrar el reporte completo al iniciar es la excepción de 002 FR-217: el reporte no forma parte del mapa conocido ni lo modifica.
+
+3. Punto 4: agregá un escenario al final de la Historia 2 para una puerta cuyas caras tienen estados distintos sin llave: la puerta 3–7 con la cara de la sala 3 cerrada sin llave y la cara de la sala 7 abierta, la sala 3 alcanzable y la 7 sin otro acceso; la sala 7 no es alcanzable. Y si la sala 7 fuera alcanzable por otro camino, desde ella sí se llega a la 3 (FR-302).
+
+4. Punto 5: un escenario para cada uno: FR-308, una salida sin vuelta que va de una sala de afuera hacia la región alcanzable no aparece en la frontera bloqueada; FR-310, dos ciclos independientes aparecen los dos, cada uno con sus llaves dependientes, en un orden determinista; FR-314, `--verificar` junto con `--forzar` da el mismo resultado y el mismo código de salida que sin `--forzar`.
+
+5. Punto 6: reescribí SC-305: «En todas las criptas no resolubles de prueba, el reporte contiene, para cada llave no obtenible, su id y todas sus ubicaciones o «sin ubicación»; para cada puerta de la frontera, sus dos salas y su llave; y, si hay ciclo, la secuencia completa hasta volver a la primera llave. Se comprueba automáticamente.»
+
+6. Punto 7: en SC-307, cambiá «crece de forma claramente mayor» por un umbral concreto: el tiempo de la alternativa de repetir el recorrido por cada llave crece al menos el doble de lo que crece el de la verificación *(decisión del grupo)*. Actualizá el supuesto que explica SC-307.
+
+7. Punto 8: en NFR-301 y SC-306, «la cripta publicada más grande» pasa a «la cripta publicada más grande o, mientras no esté publicada, una cripta sintética determinista de 1 000 salas en cuadrícula con 100 llaves encadenadas *(decisión del grupo)*».
+
+8. Punto 9: FR-313 debe ser observable: el resultado se muestra antes de la primera acción del jugador.
+
+9. Punto 10: en H4-1, cambiá «ni se crea estado de partida» por «no se crea `partida.log` ni archivo de guardado y el reloj no avanza».
+
+10. Punto 11: en FR-310, «junto con el ciclo» pasa a «inmediatamente después del ciclo, indicando la llave del ciclo de la que dependen».
+
+11. Punto 12: marcá «(decisión del grupo)» en: los códigos de salida 0, 3 y 1 (aclaración y FR-314), el orden con todas las llaves obtenibles (FR-305), que «sin ubicación» no es error de datos (FR-321), las copias múltiples de una llave (FR-316), SC-303, SC-307 y NFR-304.
+
+12. Punto 13: en «Fuera de alcance», agregá que la verificación tampoco corre con `--replay … --hasta` de la feature 004 (FR-301).
+
+13. Punto 14: en H2-1, aclará que en ese escenario `sala_salida` es la 5 y la puerta 4–5 es la puerta de salida (así coincide con el caso del Apéndice B: «llave_salida está detrás de la única puerta que ella misma abre»), y no la puerta 8–9 de las Convenciones.
+
+14. Punto 16: cambiá el encabezado «Supuestos» por «Suposiciones», como en las specs 002 y 004.
+
+Actualizá la tabla de cobertura y el checklist. Al final decime exactamente qué cambiaste y confirmá: que todos los FR del FR-301 al FR-323 siguen teniendo escenario; y que no hay ningún [NEEDS CLARIFICATION]. No hagas commit.
+
+Seguimiento en la misma conversación:
+
+Dos ajustes más en specs/003-resolubilidad/spec.md (y en el checklist si corresponde), sin renumerar nada:
+1. En H4-5, cambiá «no se consume tiempo virtual ni se crea estado de partida» por la misma redacción de H4-1: «no se crea `partida.log` ni archivo de guardado y el reloj no avanza».
+2. FR-308: una salida cerrada sin llave que va de una sala de la región alcanzable hacia una sala fuera de ella también es parte de la frontera bloqueada, y en el reporte DEBE indicarse «sin llave: no se puede abrir» en lugar de una llave. Agregalo a FR-308 y completá H2-10: en el primer caso, la frontera bloqueada lista la puerta 3–7 con esa indicación. Actualizá el caso borde que corresponda y la tabla de cobertura (FR-308 suma H2-10).
+Decime exactamente qué líneas cambiaste. No hagas commit.
+
+Seguimiento en la misma conversación:
+
+Sí, en SC-305 cambiá «para cada puerta de la frontera, sus dos salas y su llave» por «para cada puerta de la frontera, sus dos salas y su llave o «sin llave: no se puede abrir»». No toques nada más y decime la línea que cambiaste. No hagas commit.
+
+**Uso de la respuesta:** se usó en `specs/003-resolubilidad/spec.md` y `specs/003-resolubilidad/checklists/requirements.md`, con los puntos MEDIA y BAJA de la revisión cruzada del integrante 1: suposición sobre los errores de `rango` de 001 FR-122; FR-313 observable y como excepción de 002 FR-217; escenarios nuevos H2-10 (caras con estados distintos sin llave), H2-11 (salida sin vuelta hacia adentro), H2-12 (dos ciclos independientes) y H3-9 (`--verificar` con `--forzar`); FR-308 y SC-305 con las puertas cerradas sin llave en la frontera («sin llave: no se puede abrir»); FR-310 más preciso; SC-305 y SC-307 medibles; cripta sintética de referencia en NFR-301 y SC-306; H4-1 y H4-5 observables; H2-1 con `sala_salida` 5 como en el Apéndice B; marcas «(decisión del grupo)»; «Suposiciones». El punto 1 ALTA (llaves distintas como error) quedó descartado. Revisé con Claude el cambio antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Correcciones de la segunda revisión del integrante 1 en specs/003-resolubilidad/spec.md y specs/002-niebla-ir-a/spec.md (y sus checklists). Mismas reglas de siempre: sin código y sin nombrar clases ni módulos; no renumeres FR ni escenarios; los escenarios nuevos van al final de su historia; en la 002 no toques el contenido de FR-250 a FR-299 ni de las historias 6 y 7. Antes leé, solo para entender la primera parte, Logic/Mazmorra.py (abrir_puerta, _igualar_caras y CierrePuerta) y Logic/motorJuego.py (dónde se declara la victoria), y §3.5 de «Proyecto II parte.pdf».
+
+Spec 003:
+1. FR-304: mantené la definición de §3.5, que es literal del enunciado, y precisá que la puerta por la que se llega a sala_salida debe estar cerrada y que llave_salida la pide la cara de la sala desde la que se entra a sala_salida (en la primera parte, la llave que vale al abrir es la de la cara desde la que se abre). Ajustá FR-322 de la misma forma.
+2. Agregá una «Sesión 2026-11-13» en Clarificaciones (revisión del integrante 1): el motor de la primera parte declara la victoria al entrar a sala_salida después de abrir cualquier puerta que pida llave_salida, aunque esa puerta no lleve a sala_salida; en cambio §3.5 y P1 §2.12 exigen llegar a sala_salida a través de una puerta que la requiere. La verificación sigue el enunciado (FR-304). La diferencia solo aparece en una cripta donde sala_salida se alcanza sin pasar por una puerta que pida llave_salida: ahí la verificación dice «no resoluble», con el motivo de FR-322, aunque el motor permitiría ganar. Queda como coordinación con el integrante 1 (alinear el motor con P1 §2.12 es decisión suya). Agregá el caso borde.
+3. FR-302, cierres automáticos: en la primera parte, abrir una puerta abre sus dos caras, y el cierre automático que se programa es el de la cara desde la que se abrió, y cierra las dos caras. Corregí FR-302 y la aclaración de la Sesión 2026-11-12 donde dice que cada cara se rige por «su cierre automático»: cada cara se rige por su llave y su estado cerrado; el cierre automático es el de la cara que se abre y afecta a las dos.
+4. El supuesto de §3.5 «los cierres automáticos no bloquean, porque una puerta puede volver a abrirse con la misma llave» se mantiene porque es del enunciado. Agregá un caso borde marcado *(decisión del grupo)*: con llaves distintas por cara, después de un cierre automático volver por esa puerta puede exigir la llave de la otra cara; la verificación igual aplica el supuesto de §3.5 y no lo considera un bloqueo.
+5. FR-321: agregá al escenario H2-7 que, con --verificar, el código de salida es 1.
+6. FR-313: quitá «DEBE quedar disponible para que la interfaz lo muestre» y dejá que el resultado DEBE mostrarse antes de la primera acción del jugador. Agregá qué pasa sin vista: el único modo sin vista que verifica es --verificar, que escribe el resultado en la salida estándar (FR-314); --replay y --bench no verifican (FR-301).
+
+Spec 002:
+7. En Convenciones («Puerta») y en la aclaración de la Sesión 2026-11-13 sobre las caras: las caras también pueden diferir si las dos declaran llave (la misma o distintas) con distinto estado cerrado, porque la primera parte no iguala dos caras que declaran llave. Dejalo así: «si ninguna declara llave y solo una está cerrada, o si las dos declaran llave (la misma o distintas) con distinto estado», alineado con 003 FR-302.
+8. FR-225: reacomodá la línea cortada («desconocida. Cada sala»), sin cambiar el texto.
+9. La segunda tabla de trazabilidad (escenarios adicionales) usa números que parecen casos del Apéndice B: cambiá su columna «#» por «Adicional» y numerá sus filas A1, A2… en el mismo orden. Incluye las filas del integrante 3: solo cambia la etiqueta, no el contenido.
+10. En el caso borde del reporte de resolubilidad con --forzar, la referencia «(003, escenario de --forzar)» pasa a «(003 H4-4)».
+
+Actualizá las tablas de cobertura y los checklists. Al final decime exactamente qué cambiaste en cada spec y confirmá: que no renumeraste FR ni escenarios; que no tocaste el contenido de FR-250 a FR-299 ni de las historias 6 y 7; y que no hay ningún [NEEDS CLARIFICATION]. No hagas commit.
+
+Seguimiento en la misma conversación:
+
+Ajuste en la aclaración de la Sesión 2026-11-13 de specs/003-resolubilidad/spec.md sobre el motor de la primera parte (y en su caso borde): el integrante 1 decidió mantener el motor como está, porque cambiarlo sería tocar la primera parte sin un FR que lo pida, y la diferencia va hacia el lado seguro: la verificación puede rechazar una cripta que el motor dejaría ganar (para eso está --forzar), pero nunca aprueba una que el motor no deje ganar. Queda registrado en DECISIONES.md como diferencia conocida entre la verificación y el motor. Reemplazá la frase de que alinear el motor es decisión del integrante 1 por esto. No toques nada más y decime qué líneas cambiaste. No hagas commit.
+
+**Uso de la respuesta:** se usó en `specs/003-resolubilidad/spec.md`, `specs/002-niebla-ir-a/spec.md` y sus checklists, con la segunda revisión cruzada del integrante 1. En la 003: FR-304 y FR-322 precisan que la puerta hacia `sala_salida` está cerrada y que `llave_salida` la pide la cara de la sala desde la que se entra; aclaración y caso borde sobre la diferencia con el motor de la primera parte (el integrante 1 decidió mantenerlo; va hacia el lado seguro); FR-302 corregido (el cierre automático es el de la cara que se abre y cierra las dos) y caso borde del supuesto de §3.5 con llaves distintas por cara; código 1 en H2-7; FR-313 observable y sin vista; FR-301 y FR-314 ajustados. En la 002: las caras también difieren con la misma llave y distinto estado; FR-225 reacomodado; tabla de escenarios adicionales con etiquetas A1 a A43; referencia «003 H4-4». No se tocó la sección «ir a» del integrante 3 salvo las etiquetas. Revisé con Claude el cambio antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-plan Plan de la feature 003-resolubilidad (integrante 2). Antes de planificar, leé: .specify/memory/constitution.md; specs/003-resolubilidad/spec.md completa; «Proyecto II parte.pdf» §3.5, §4.2, §4.3, §5.4, §6.1, §6.3 y §7.3; el plan y los contracts de specs/001-terreno-cazador y de specs/004-linea-tiempo, solo como modelo de formato; y el código real que vas a usar o tocar: Data/FuenteDatos.py, FuenteJson.py, FuenteRed.py, FuenteOffline.py, DescargadorPaquete.py, GestorEsqueleto.py, ValidacionDatos.py, AlmacenCatalogo.py y ClienteHttp.py; DTO/SalaDTO.py y DTO/CriptaDTO.py; Service/ServicioPartida.py, ServicioReplay.py y ServicioGuardado.py (para ver dónde NO se verifica); UIController/LectorArgumentos.py, DTO/ConfiguracionDTO.py y main.py (códigos de salida 0, 1 y 2); Estructuras/ (lo que ya existe); y la carpeta paquete/ (qué trae hoy cada cripta).
+
+El plan tiene que tomar y justificar estas decisiones (en research.md, cada una con la alternativa descartada y su complejidad):
+
+1. Contrato de datos de las llaves (entrega atrasada, era para el 9/11): el DTO de una ubicación de llave (id, sala, enemigo opcional, §4.2) y cómo se entrega la lista; el método nuevo de FuenteDatos para GET /criptas/{id}/llaves (cuenta en el presupuesto, FR-317); la validación de formato en FuenteJson; FuenteOffline leyendo las llaves del paquete y DescargadorPaquete descargándolas (FR-318), revisando si el paquete también tiene que traer costos y cazadores; la persistencia de la respuesta por versión de cripta con la validación de versión que ya existe (FR-317, FR-319); y la validación de FR-321 (sala inexistente) en Data con el esqueleto, usando ErrorDatos de Data/ValidacionDatos.py. Los errores de FR-323 ya los lanza GestorEsqueleto al cargar el esqueleto (T002 de la 001).
+
+2. El DTO del reporte de resolubilidad para el integrante 3 (vence hoy, 13/11): sus campos exactos, para que la interfaz lo muestre sin calcular nada: veredicto (resoluble, no resoluble o no concluyó), orden de llaves, llaves no obtenibles con sus ubicaciones o «sin ubicación», frontera bloqueada (dos salas y la llave o «sin llave: no se puede abrir»), ciclos y sus llaves dependientes, el motivo de FR-322 y el mensaje si no concluyó. Solo transporta datos; campos nuevos al final con valor por defecto. Escribilo en specs/003-resolubilidad/contracts/contrato-reporte-resolubilidad.md, y el contrato de las llaves en specs/003-resolubilidad/contracts/contrato-llaves.md.
+
+3. Dónde vive cada parte según la arquitectura de la constitución: el recorrido y el armado del reporte en Logic (no importa Data; recibe DTOs del esqueleto y de las ubicaciones); Data entrega y valida los datos; Service orquesta la verificación antes de crear partida.log solo al iniciar una partida nueva (cargar una partida y --replay no verifican, FR-301); UIController y main.py: --verificar <cripta> y --forzar, con los códigos 0, 3 y 1 (el 2 sigue siendo de argumentos). Coordinación con el integrante 3: ella agrega primero --hasta y --checkpoint-cada en ConfiguracionDTO y LectorArgumentos; los campos verificar y forzar van después de los suyos, y --verificar en el mismo grupo excluyente que --replay y --bench.
+
+4. El recorrido incremental (§5.4, NFR-302, NFR-303): cómo guardar la frontera bloqueada agrupada por llave sin dict ni set (por ejemplo, listas por llave en un array con un índice propio de llave), de modo que al obtener una llave se reabran solo las puertas que la esperaban; cada cara por separado (FR-302); el costo no afecta; la cola del recorrido es la de Estructuras/. Con la complejidad temporal y espacial.
+
+5. El orden determinista (FR-305, FR-306): la regla concreta de orden y desempate, y cómo ordenar sin sorted ni list.sort (con el Ordenador del equipo, si hace falta).
+
+6. Los ciclos (FR-310): cómo detectar de forma determinista los ciclos de dependencia entre llaves no obtenibles (llave → puerta que la encierra → llave que pide esa puerta), sin repetir ciclos, y cómo ubicar las llaves dependientes inmediatamente después de su ciclo.
+
+7. --bench (NFR-304, SC-306, SC-307): dónde va la medición y cómo se conecta con Service/ServicioBench.py; criptas sintéticas deterministas por semilla con llaves encadenadas en al menos tres tamaños, incluida la de 1 000 salas en cuadrícula con 100 llaves; la alternativa de repetir el recorrido por cada llave.
+
+8. Historial y línea de tiempo: la verificación no cambia el estado del juego, así que no registra nada en el historial de retroceso ni en la línea de tiempo. Dejalo escrito (es el riesgo principal del plan de trabajo).
+
+9. Pruebas: qué archivos de prueba en tests/ y que cada prueba cite su FR (Principio X).
+
+Restricciones: constitución v1.2.0 (sin dict ni set como índice o caché; sin heapq, bisect, collections, queue ni bibliotecas de grafos; sin sorted ni list.sort en lo evaluado; copy solo en tests). No escribas código: solo plan.md, research.md, data-model.md, contracts/ y quickstart.md dentro de specs/003-resolubilidad/. No modifiques archivos de otras features ni de otros integrantes; si algo de su código tiene que cambiar, listalo en el plan como coordinación. Si el script de setup modifica algún archivo fuera de specs/003-resolubilidad (por ejemplo, un archivo de contexto del agente), decime cuál. Todo en español. Al final resumí las decisiones, qué hay que coordinar con los integrantes 1 y 3, y si quedó algún NEEDS CLARIFICATION. No hagas commit.
+
+Seguimiento en la misma conversación (después del commit 45e959e de la spec):
+
+La spec de la 003 cambió después de generar el plan (segunda revisión del integrante 1): FR-302 (el cierre automático es el de la cara desde la que se abre y cierra las dos caras; cada cara se rige por su llave y su estado cerrado), FR-304 y FR-322 (la puerta hacia sala_salida debe estar cerrada y llave_salida la pide la cara de la sala desde la que se entra; una puerta que pide llave_salida pero no lleva a sala_salida no cuenta), FR-313 (se muestra antes de la primera acción; sin vista solo verifica --verificar, que escribe en la salida estándar), FR-301 (--bench no verifica como paso previo a una partida) y FR-314, más la aclaración de la Sesión 2026-11-13: el integrante 1 decidió mantener el motor de la primera parte como está y registrar la diferencia en DECISIONES.md. Leé de nuevo specs/003-resolubilidad/spec.md y alineá plan.md, research.md, data-model.md, quickstart.md y los dos contratos con esos cambios. En particular: cómo decide el recorrido si se llegó a sala_salida por una cara que pide llave_salida, el texto del motivo de FR-322, el hallazgo H-1 (ya no es solo informativo: quedó decidido y lo registra el integrante 1 en DECISIONES.md) y cualquier mención del cierre automático por cara. No toques la spec ni ningún archivo fuera de specs/003-resolubilidad. Al final decime exactamente qué cambiaste en cada archivo. No hagas commit.
+
+**Uso de la respuesta:** se usó para crear `specs/003-resolubilidad/plan.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/contrato-llaves.md` (UbicacionLlaveDTO, `FuenteDatos.obtener_llaves`, `AlmacenLlaves`, `GestorLlaves`, validación de FR-321 y `llaves.json` en el paquete) y `contracts/contrato-reporte-resolubilidad.md` (ReporteResolubilidadDTO para el integrante 3). Decisiones: recorrido incremental por oleadas con la frontera agrupada por llave en arreglos (sin `dict`), índice propio de llaves con el `Ordenador`, caras combinadas con la regla de `Mazmorra`, puerta de salida por la cara desde la que se entra, ciclos en O(K), `--bench` en `Service/BenchResolubilidad.py` y ningún registro en el historial ni en la línea de tiempo. El seguimiento alineó el plan con la segunda revisión de la spec. Revisé con Claude el plan antes del commit.
 
 -----------------------------------------------------------------------------------------------------------------------
 **Fecha:** Viernes 13 de noviembre 2026
@@ -1416,5 +1662,186 @@ Registrá en PROMPTS_LLM.md las tres consultas hechas por el puente (solo lectur
 Commit docs con la entrada; no hagas push.
 
 **Uso de la respuesta:** se agregaron las tres entradas anteriores. El texto de cada consulta se tomó del primer mensaje de su sesión (`.claude-bridge/sessions/<id>` da el id de la sesión de Claude Code) y el resumen, de su respuesta en `outbox`. Commit docs.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+Edita SOLO specs/004-linea-tiempo/spec.md y su checklist si aplica. Sin estructuras, clases ni módulos. Agrega el escenario H3-6 (FR-413, FR-419, FR-424): el jugador suelta un pergamino de retroceso en la acción 4, usa otro pergamino para revertir esa acción, y después recoge el pergamino que sigue en el suelo de la sala; cuando consulta el instante actual y los instantes posteriores, el resumen coincide con el de la partida viva (el pergamino soltado quedó fuera de la reversión, tanto en el inventario como en el suelo). Agrégalo a la tabla de trazabilidad. Verifica referencias y dime qué cambiaste.
+
+**Uso de la respuesta:** Se agregó el escenario H3-6 (pergamino soltado y vuelto a recoger tras revertir).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+Edita SOLO specs/004-linea-tiempo/plan.md, research.md, data-model.md, quickstart.md, contracts/contrato-linea-tiempo.md y tasks.md. No cambies spec.md ni escribas código.
+
+1.Cambia el diseño del pergamino (hallazgos C1 y E1 del analyze). Se elimina el marcador de pergamino (quitados/agregados). En su lugar, después de usar un pergamino, la línea quita la última acción, quita los puntos de control con más de c acciones, y toma un punto de control NUEVO en la posición c copiando el estado vivo con PartidaGuardada.guardar, reemplazando el que hubiera en c. Esa copia ya incluye inventario, suelo de las salas, azar y todo lo demás tal como quedó (en el motor, recoger y soltar un pergamino no se registran en el historial ni en el inventario ni en el suelo). Explica en research.md (R4) por qué es más simple y exacta que los marcadores, y que las consultas de instantes anteriores a c usan los puntos anteriores, que reflejan lo vivido en ese momento.
+2. Quita MarcadorPergamino y MarcadorPergaminoDTO del modelo y del contrato (también del bloque binario). La línea guardada lleva k, acciones, puntos, cargas y fichas. Mantén el campo linea y la versión 2. El contrato lo lee el integrante 2 (Derek): déjalo completo y claro.
+3. Tareas: T028 pasa a retroceder_una(estado_guardado) (quita la última acción y los puntos posteriores, y agrega o reemplaza el punto en c); T030 toma el estado con PartidaGuardada.guardar tras detectar −1 y llama a retroceder_una; T031 desaparece (el reconstructor no aplica marcadores); T034 pasa a ser «reemplazar el punto en c y verificar H3-5 y H3-6»; T010 quita el DTO de marcador. T033 incluye H3-5 y H3-6 sin skip. T007: la regla pasa a «nunca hay más de K acciones entre dos puntos consecutivos» (los puntos tras un pergamino pueden estar más cerca).
+4. E1: M6 y T060 miden el recorte más la copia del punto tras el pergamino, con historias de 100 a 5 000 acciones.
+5. Ajustes de texto: E2 (todo camino que ejecute acciones —comando manual, «ir a» de la spec 002, replay— usa ServicioLineaTiempo.ejecutar: anótalo en H-4 y en T053 de la 004); E3 (T023: si el estado trae el mapa conocido, el resumen lo copia); Q1 (quickstart §3 incluye H3-5 y H3-6); T1 (agrega FR a T037, T041, T046, T047, T050, T063 y T064 según tu tabla de cobertura); O1 (ya no aplica si T030/T034 cambian: revisa); I1 (en el plan, el dueño de motorJuego.py es «Integrante 3 (revisa Marco)»).
+6. Agrega una tarea con prueba: un escenario con un cazador comprueba que el estado reconstruido por la línea coincide con el de la partida viva (FR-419, FR-114); la búsqueda compartida del Motor aparte arranca vacía y decide igual que desde cero.
+7. DECISIONES.md ya existe (lo creó el integrante 1) con una sección «Integrante 3 — 004» vacía: T063 y T064 la completan; ajusta T063 para decir «completar» y no «crear».
+8. ConfiguracionDTO: el orden de campos es checkpoint_cada y después hasta; los de la 003 (verificar y forzar, del integrante 2) van detrás.
+9. ContextoPartida y ControladorBackend: la 004 agrega un campo y métodos al final con valor por defecto; la 003 también (resolubilidad, verificar). Anota que quien sube primero, el otro hace merge antes. --replay y --replay … --hasta no verifican la resolubilidad (FR-301 de la 003).
+10. «ir a» registra la orden como comentario «# ir a <sala>» en partida.log (formato acordado con el integrante 2). Anota que BitacoraReplayIO.leer debe ignorar esas líneas (tarea del integrante 2, spec 002) y que --replay … --hasta depende de ello. Muestra las líneas cambiadas y dime si algo de lo anterior no se pudo aplicar.
+
+**Uso de la respuesta:** Se cambió el diseño del pergamino a un punto de control nuevo tras cada uso y se ajustaron el contrato y las tareas.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+Edita SOLO tu sección de «ir a» en specs/002-niebla-ir-a/spec.md (FR-250 a FR-299). No modifiques los FR-201 a FR-249.
+
+1. FR-252 y donde corresponda: cambia «puerta recordada abierta» por «salida recordada abierta», el término de Convenciones (el mapa recuerda cada cara por separado: una salida cuenta como recordada abierta solo si se recuerda abierta la cara de la sala de la que sale; FR-208, FR-225, escenario H2-6).
+2. NFR-251: márcalo como decisión del grupo.
+3. NFR-250 y SC-252: cita que el «5 ms» sale de la tabla de §6.1 del enunciado.
+4. Actualiza la línea de Estado (línea 7) y el párrafo «Reparto de la numeración» para decir que «ir a» (FR-250 a FR-264, historias 6 y 7) ya está escrita por el integrante 3. No cambies ningún otro requisito ni escenario. Dime qué líneas cambiaste.
+
+**Uso de la respuesta:** Se ajustó la sección de «ir a» (salida recordada abierta, NFR-251, cita de §6.1) y su estado.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+/speckit-implement Ejecuta SOLO las Fases 1 y 2 de specs/004-linea-tiempo/tasks.md (ya actualizado: sin marcador de pergamino), en este orden: T001, T005, T006, T007, T008, T009, T010 y T069. T002, T003 y T004 son del integrante 2 («Coordinar»): no las implementes. Reglas: lee la constitución. Pruebas primero: escribe cada prueba, comprueba que falla y luego implementa hasta que pase. Todo código nuevo con type hints y docstring breve. Sin copy, bisect, heapq, collections, dict ni set como índice, ni sorted(). Logic no importa Data ni Service; Estructuras no importa ninguna capa. No modifiques archivos de otros integrantes ni de la primera entrega, salvo DTO/ConfiguracionDTO.py (T069: la constante CHECKPOINT_POR_DEFECTO y el campo checkpoint_cada, al final y con valor por defecto). Marca con [X] en tasks.md solo las tareas que completes. Al terminar la fase 2 corre python tests/correr_pruebas.py (en Windows, con PYTHONIOENCODING=utf-8) y reporta cuántas pasan. Haz un commit por fase: «feat(004): ayudantes de prueba» y «feat(004): búsqueda binaria, línea de tiempo en Lógica y DTOs». Para y reporta antes de la Fase 3.
+
+**Uso de la respuesta:** Se implementaron las fases 1 y 2 de la spec 004 (búsqueda binaria, línea de tiempo en Lógica y DTOs).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+/speckit-implement Ejecuta SOLO la lectura de argumentos de T037 y T050 de specs/004-linea-tiempo/tasks.md; el cableado a los servicios queda para después. No marques T037 ni T050 como completas.
+
+1. DTO/ConfiguracionDTO.py: después de checkpoint_cada (T069) agrega el campo hasta: int | None = None, al final y con valor por defecto (el integrante 2 agregará verificar y forzar detrás).
+2. UIController/LectorArgumentos.py: agrega --checkpoint-cada (entero ≥ 1) y --hasta (entero ≥ 0). --hasta solo se acepta junto con --replay; sin valor, con un valor que no es entero o negativo, o sin --replay, es un error de uso (código 2, igual que las demás banderas inválidas). --replay sin --hasta sigue reproduciendo la partida completa, como en la primera parte. Un --checkpoint-cada inválido también es error de uso (código 2).
+3. Pruebas en un archivo nuevo (por ejemplo tests/test_banderas_linea_tiempo.py), citando FR-410 y FR-415; no modifiques los archivos de prueba del integrante 2. Reglas: pruebas primero, type hints y docstring en todo lo nuevo, solo bibliotecas permitidas, sin tocar nada más. Corre python tests/correr_pruebas.py y reporta. Un solo commit: «feat(004): banderas --checkpoint-cada y --hasta (lectura de argumentos)». No hagas push: lo hago yo al revisar el reporte.
+
+**Uso de la respuesta:** Se agregaron --checkpoint-cada y --hasta (campos y lectura de argumentos) para que Derek agregue sus banderas detrás.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+Revision de codigo, SOLO LECTURA. Hace git fetch. Metodo nuevo Motor.avanzar_hasta(t) de la integrante 3 en origin/kris (Logic/motorJuego.py, T012) y sus pruebas tests/test_linea_tiempo_motor.py. Usa git show origin/kris:<archivo>.
+Responde con evidencia de codigo (archivo:linea):
+1. ColaEventos.ver_siguiente: descarta los eventos cancelados del tope igual que obtener_siguiente? Si devolviera un cancelado, el metodo compararia el tiempo del cancelado y despues obtener_siguiente sacaria OTRO evento distinto al que se activa (el codigo usa la variable evento de ver_siguiente, no lo que devuelve obtener_siguiente). Decime si ese caso puede pasar.
+2. Compara con avanzar_hasta_jugador (P1): el manejo del evento del jugador (Evento_pendiente = None, reloj, retorno) es igual? Alguna diferencia de comportamiento?
+3. El Motor aparte de la linea de tiempo: tiene historial None? RutasHaciaJugador._registrar_descarte y Mazmorra.observador_puertas (de origin/Marco) funcionan si el historial es None, o fallarian con un cazador?
+4. Orden de eventos con el mismo tiempo: respeta el desempate por secuencia de la cola?
+5. Las tres precisiones de FR-402: los cancelados no cuentan, si la partida termino en t el estado es el final, y no hay eventos con retraso 0.
+Salida: lo que esta bien y lo que hay que cambiar, con propuesta minima.
+
+**Uso de la respuesta:** consulta `1a1d6e7281b` (15:54), respuesta en `.claude-bridge/outbox/1a1d6e7281b.txt`. No se pudo revisar el método: a esa hora `origin/kris` (`d743186`) no tenía `avanzar_hasta` ni `tests/test_linea_tiempo_motor.py`, y T011 y T012 de la integrante 3 seguían sin marcar. Revisó el código del que va a depender: `ver_siguiente` descarta los cancelados igual que `obtener_siguiente`, así que el caso de la pregunta 1 no puede pasar (igual propone usar lo que devuelve `obtener_siguiente`); el método nuevo debe hacer lo mismo que `avanzar_hasta_jugador` al llegar el turno del jugador, incluido `_cerrar_intervalo()`; el historial del motor nunca es `None` (`RutasHaciaJugador` y el aviso de puertas lo comprueban, pero el rearme de trampas y el cierre de puertas de `Logic/Mazmorra.py` no, así que el motor aparte no debe ponerlo en `None`); el desempate por secuencia se respeta si los eventos se sacan uno por uno. Sobre FR-402 señaló que la suposición «no hay eventos con retraso 0» no se cumple del todo: `SalidaDTO.cierre_automatico` y `ObjetoDTO.duracion` no se validan como mayores que 0. Dejó una propuesta mínima de `avanzar_hasta` y una prueba más (cancelado en la raíz con tiempo ≤ `t` seguido de uno válido con tiempo > `t`). Se le pasa a la integrante 3 para comparar cuando suba el código; lo de la validación de retrasos, al integrante 2 (Data). No modificó nada (3 acciones bloqueadas por permisos).
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit.implement Fase 7 de specs/001-terreno-cazador/tasks.md (T042 a T051).
+
+Primero registrá en PROMPTS_LLM.md la consulta del puente 1a1d6e7281b (revisión de avanzar_hasta de la
+integrante 3; respuesta en C:\Users\Eli\.claude-bridge\outbox\1a1d6e7281b.txt).
+
+Bench (Logic/BenchRutas.py, corre sin vista, Principio V):
+- Las mediciones planificadas en plan.md y research.md: un cazador frente a muchos, rango pequeño (200)
+  frente a grande, búsqueda compartida frente a individual, reutilizar frente a recalcular con puertas
+  estables e inestables, cuadrícula de 1000 salas con 30 cazadores (NFR-101, SC-104), SC-105 (10× la
+  cripta no más que duplica el tiempo de decisión) y la agenda de eventos con la carga nueva (§5.6).
+- Usá _cuadricula_con_costos(lado, azar) y semillas fijas: los resultados deben ser reproducibles.
+- Quitá el skip de H3-8 cuando --bench exista.
+
+Documentación:
+- research.md: cada decisión con su medición y si cambió respecto al plan. En R4 va la evidencia de
+  FR-114 anotada en T046 (12 partidas, ~11 000 decisiones, reutilización > 90 %, pruebas de mutación).
+- DECISIONES.md: completá §5.1, §5.2 y §5.6 con el antes (Documento de Decisiones de P1) y el después,
+  con las cifras del bench. No toques la entrada de la diferencia verificación/motor ni las secciones
+  de los integrantes 2 y 3.
+- Tabla de trazabilidad del Apéndice B (T047) y el checklist de la spec: marcá solo lo que quede cubierto.
+  H3-7 sigue con skip hasta que exista la 003.
+
+Reglas: constitución v1.2.0, sin cambios a código de P1 fuera de la tabla del plan, un commit por tarea,
+suite en verde con uv run, PROMPTS_LLM.md, no hagas push.
+Al terminar: tabla de mediciones (con la máquina y la semilla), qué decisiones cambiaron y qué quedó abierto.
+
+**Uso de la respuesta:** se creó `Logic/BenchRutas.py` con siete mediciones (cola de prioridad, un cazador frente a muchos, `rango`, invalidación con puertas estables e inestables, ciclo con 10, 30 y 100 cazadores en 1 024 salas, agenda con la carga nueva incluidos sus dos límites, e historial) y `BenchLogica.medir()` las incluye (T043, T044). Las mediciones con cazadores comparan cada decisión con `paso_desde_cero`, y H3-8 corre sin `skip` (T042). Dos mediciones se corrigieron después de la primera corrida. En la de `rango`, el jugador siempre en el centro daba «NO cumple» en SC-105 por los costos alrededor del centro, no por la búsqueda; ahora se promedian 400 posiciones. La agenda con costos ponía los eventos nuevos antes que los pendientes, lo que favorecía al array; ahora la carga es como la del juego. Tabla de `--bench` en `specs/001-terreno-cazador/bench-2026-11-13.txt` (Ryzen 5 3600X, `SEMILLA = 2026`). Con 30 cazadores en 1 024 salas, el peor ciclo es de 5,4 a 7,9 ms; SC-105 da 1,68 y 1,09 veces. Ninguna decisión del plan cambió; solo dos mediciones. Se completaron `research.md` (T046), `DECISIONES.md` §5.1, §5.2 y §5.6 (T046), la tabla del Apéndice B (T047) y el checklist (solo «X»). T048 quedó parcial (`--replay`; faltan `--hasta` y `--verificar` de las specs 004 y 003). T049: sin coincidencias nuevas. Suite: 482 OK (skipped=1, H3-7) y 32/32 scripts. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Antes del push:
+1. research.md (R3 y la agenda): que muestren las dos mediciones de cada cambio de método (SC-105:
+   jugador en el centro 2,78× y promedio de 400 posiciones 1,09×; agenda: la carga anterior y la nueva),
+   con la causa y su evidencia (12 salas resueltas contra 4) y por qué la versión nueva mide mejor lo que
+   pide SC-105. Que no parezca que se ajustó la medición para que pase.
+2. La fila de P1 con 500 enemigos: medila en el último commit anterior a la feature 001 (usá un git
+   worktree aparte, sin tocar la rama). Compará con la medición actual en la misma máquina. Si la 001 la
+   empeoró, decime cuánto y por qué antes de cambiar nada. Si ya fallaba, anotalo así en DECISIONES.md.
+3. plan.md: la fila de BenchLogica.medir() con 2 líneas y el motivo del import dentro de la función.
+Commits aparte, suite en verde con uv run, PROMPTS_LLM.md, no hagas push.
+
+**Uso de la respuesta:** (1) En `research.md`, R3 y R6 muestran las dos mediciones de cada cambio de método, con la causa y la evidencia. En R3, el tiempo por sala resuelta es de 3,6 a 4,4 µs con los dos métodos, así que el 2,78× venía de las 12 salas resueltas contra 4. El método nuevo empeora la razón de 100 a 1 024 salas (de 0,76 a 1,68) por los bordes de la cuadrícula chica. En la agenda, con la carga anterior y 10 000 eventos, el array solo corría el 0,5 % de los pendientes (46) por evento; con la nueva corre el 69 % (6 926). Con las dos cargas gana el montículo. (2) La fila de 500 enemigos se midió en `83d15c5` (último commit anterior a la 001) con un `git worktree` aparte, ya borrado. Sola da lo mismo en los dos árboles (peor 11,7 a 16,2 ms antes y 12,3 a 17,0 ms ahora). En el `--bench` completo, antes dio 17,4, 20,7 y 16,5 ms y ahora 24,3, 25,0 y 24,0 ms. Con el mismo `BenchDatos` antes, el `Logic` de antes y el de ahora dan lo mismo, así que la diferencia no viene de la 001. El peor ciclo es un ciclo normal más una pasada de generación 2 del recolector de basura (10 a 20 ms); sin el recolector baja a 7 a 12 ms. Ya fallaba antes de la 001, y quedó anotado así en `DECISIONES.md` §5.6. (3) La fila de `BenchLogica.medir()` del `plan.md` ahora dice 2 líneas y explica el import circular. Suite: 482 OK (skipped=1) y 32/32 scripts. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code (spec-kit)
+
+/speckit-analyze
+
+**Uso de la respuesta:** análisis de solo lectura de `specs/001-terreno-cazador` después de la fase 7. Cubre las 54 tareas y los 32 requisitos (23 FR, 3 NFR y 6 SC), todos con al menos una tarea, y la constitución v1.2.0. Hallazgos:
+- C1 (Principio IX): la tabla del Apéndice B nombraba archivos de prueba (módulos), un error introducido en T047.
+- C2 (Principio X): H3-7 tiene su prueba con `skip` hasta que exista `--verificar` (spec 003).
+- G1: T048 cubre solo `--replay`, aunque el quickstart §6 prometía también `--hasta` y `--verificar`.
+- G2: faltan las pruebas de interfaz de H4 (T041, integrante 3).
+- I1: el plan decía «cerca y lejos»; se midieron dos escenarios de puertas inestables.
+- I2: el bench usa 1 024 salas, no 1 000.
+- I3: T044 decía «una línea».
+- I4: T043 no reflejaba los cambios de método de `medir_rango` y `medir_invalidacion`.
+- U1: varias tareas citaban FR-105, 107, 112, 113, 120 y 123 solo dentro de nombres de prueba.
+
+Sin duplicaciones ni ambigüedades. Lo que se aplicó está en la entrada siguiente.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Aplicá los hallazgos del analyze, sin cambios de código:
+1. spec(001): C1, quitá los nombres de archivo de la tabla del Apéndice B (spec.md:416-422).
+2. plan(001): I1 (los dos escenarios de puertas inestables, remitiendo a research.md R4) e
+   I2 ("1 024 salas (32 × 32), al menos 1 000").
+3. tasks(001): I3 (T044 con 2 líneas), I4 (nota en T043 que remita a research.md R3 y R4) y
+   U1 (citar FR-105, 107, 112, 113, 120 y 123 en el texto de T008, T018 y T019).
+4. docs(001): G1, en quickstart.md §6 aclarar que hoy solo se cubre --replay; --replay … --hasta y
+   --verificar llegan con las specs 004 y 003.
+C2: H3-7 se queda en la 001 con su skip (es de FR-118); no la muevas.
+Un commit por punto, suite en verde con uv run, registrá el analyze en PROMPTS_LLM.md, no hagas push.
+
+**Uso de la respuesta:** se hicieron cuatro commits, sin cambios de código:
+- `spec(001)` (C1): la tabla del Apéndice B solo nombra las funciones de prueba.
+- `plan(001)` (I1, I2): la fila de puertas inestables describe los dos escenarios y remite a `research.md` R4. Donde el plan dice 1 000 salas ahora dice «1 024 salas (32 × 32), al menos 1 000», con una nota de que las cuadrículas son cuadradas.
+- `tasks(001)` (I3, I4, U1): T044 dice 2 líneas y por qué el import va dentro de la función. T043 tiene una nota que remite a `research.md` R3 y R4. T008, T018 y T019 citan sus FR en el texto.
+- `docs(001)` (G1): el quickstart §6 dice que hoy solo se cubre `--replay`.
+
+H3-7 se queda en la 001 con su `skip` (C2). Suite: 482 OK (skipped=1) y 32/32 scripts. Sin push.
 
 -----------------------------------------------------------------------------------------------------------------------
