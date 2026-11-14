@@ -661,7 +661,27 @@ class TestModosSinVista(unittest.TestCase):
         Escenario H3-8 (FR-118): en `--bench`, con cuadrículas con costos y cazadores, cada decisión de cazador
         coincide con un cálculo desde cero y la medición corre sin vista.
         """
-        self.skipTest("pendiente de la fase 7 (T042 a T045): `Logic/BenchRutas.py` todavía no existe")
+        import re
+        import subprocess
+        from Logic import BenchRutas
+
+        # Las mediciones con cazadores comparan cada decisión con paso_desde_cero y fallan si alguna difiere.
+        ciclo = BenchRutas.medir_ciclo_cazadores((4,), lado=8, otros=2, ciclos=3, ciclos_comprobados=40)
+        for r in ciclo:
+            comprobadas = int(re.search(r"(\d+) decisiones de cazador comprobadas contra paso_desde_cero",
+                                        r.nota).group(1))
+            self.assertGreater(comprobadas, 0, r.nota)
+        for r in BenchRutas.medir_compartida((5,), lado=8, ciclos=10, repeticiones=1)[1:]:
+            self.assertIn("decisiones iguales a paso_desde_cero", r.nota)
+        for r in BenchRutas.medir_invalidacion(cazadores=5, lado=8, ciclos=20, repeticiones=1):
+            self.assertIn("decisiones iguales a recalcular siempre", r.nota)
+
+        # Sin vista: el bench de rutas no carga la Vista ni pygame (Principio V).
+        codigo = ("import sys; from Logic import BenchLogica, BenchRutas; "
+                  "BenchRutas.medir_ciclo_cazadores((2,), lado=6, otros=1, ciclos=2, ciclos_comprobados=2); "
+                  "print(any(m == 'pygame' or m.startswith(('pygame.', 'View')) for m in sys.modules))")
+        salida = subprocess.run([sys.executable, "-c", codigo], cwd=RAIZ, capture_output=True, text=True, check=True)
+        self.assertEqual(salida.stdout.strip(), "False")
 
 
 if __name__ == "__main__":

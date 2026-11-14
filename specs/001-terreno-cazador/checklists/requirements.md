@@ -32,7 +32,7 @@
 ## Constitución v1.2.0
 
 - [x] IX: no se nombran estructuras de datos, clases ni módulos; los requisitos usan FR-1xx / NFR-1xx.
-- [ ] X: los 7 casos del Apéndice B «Terreno y cazador» aparecen como escenarios (H1-4, H1-5, H2-1 a H2-4, H3-1) con tabla de trazabilidad.
+- [x] X: los 7 casos del Apéndice B «Terreno y cazador» aparecen como escenarios (H1-4, H1-5, H2-1 a H2-4, H3-1) con tabla de trazabilidad.
 - [x] IV: el uso del azar por el cazador queda definido en FR-115 y confirmado en «Clarificaciones».
 - [ ] V: FR-118 exige las mismas reglas en los modos sin vista.
 
@@ -45,3 +45,7 @@
   - «All acceptance scenarios are defined» y «X»: cada escenario (H1-9 a H1-11, H2-10 a H2-19, H3-7, H3-8) tiene su prueba corriendo sin `skip` y la tabla del Apéndice B nombra sus pruebas (T047). Hoy siguen con `skip` H2-9, H2-17 a H2-19 (T002, T052, T053), H3-7 (spec 003) y H3-8 (fase 7), y las pruebas de interfaz de H4 (T041).
   - «V»: hay pruebas de FR-118 en `--replay`, `--replay … --hasta`, `--verificar` y `--bench` (T048, specs 003 y 004).
   - «Feature meets measurable outcomes»: `--bench` respalda SC-104 y SC-105 (T042 a T045).
+- Fase 7 (integrante 1, 2026-11-13): se marcó «X»: los 7 casos tienen su prueba sin `skip` y la tabla del Apéndice B nombra cada una (T047). Siguen sin marcar:
+  - «All acceptance scenarios are defined»: H3-7 sigue con `skip` hasta que exista `--verificar` (spec 003) y faltan las pruebas de interfaz de H4 (T041, integrante 3). H2-9, H2-17 a H2-19 y H3-8 ya corren sin `skip`.
+  - «Feature meets measurable outcomes»: `--bench` ya respalda SC-104 (peor ciclo de 5,4 a 7,9 ms con 30 cazadores en 1 024 salas) y SC-105 (con `rango` 200, 1,68 y 1,09 veces al multiplicar por 10 el tamaño), ver `bench-2026-11-13.txt`; falta SC-106, que depende de T041.
+  - «V»: FR-118 ya tiene pruebas en `--replay` (T048) y en `--bench` (H3-8); faltan `--replay … --hasta` (spec 004) y `--verificar` (spec 003).

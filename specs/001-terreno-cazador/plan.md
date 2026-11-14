@@ -42,7 +42,7 @@ se reconstruye sola.
 **Tipo de proyecto**: juego de escritorio por eventos, MVC en n capas (Principio I).
 
 **Metas de rendimiento**: ciclo de eventos < 20 ms con 30 cazadores en una cuadrícula sintética de
-1 000 salas (NFR-101, SC-104). La decisión de un cazador con `rango` pequeño cuesta según la región
+1 024 salas (32 × 32), al menos 1 000 (NFR-101, SC-104). La decisión de un cazador con `rango` pequeño cuesta según la región
 dentro del `rango` (NFR-102): al multiplicar por 10 el tamaño de la cripta, no tarda más del doble
 (SC-105).
 
@@ -153,7 +153,7 @@ el después en `DECISIONES.md`.
 | `Logic/motorJuego.py` · `mover_jugador()` | `terminar_accion_jugador(salida.costo)` en lugar de `COSTO_MOVER` | Modificación (1 línea) | FR-102 | La regla de costo cambió. |
 | `Logic/motorJuego.py` · `turno_enemigo()` | Usar `decidir_paso()` y programar con su costo (100 si espera o ataca) | Modificación (unas 5 líneas) | FR-102, FR-103, FR-110, FR-121 | Hoy programa 100 fijo después de moverse. |
 | `Logic/Enemigo.py` | Redefinir `a_dto()` para incluir `comportamiento` (hecho: T040) | Extensión | FR-117 | — |
-| `Logic/BenchLogica.py` · `medir()` | Agregar `BenchRutas.medir()` a lo que devuelve | Modificación (1 línea) | NFR-103 | `ServicioBench` (del integrante 2) ya llama a `BenchLogica.medir`. Así no se edita su archivo. |
+| `Logic/BenchLogica.py` · `medir()` | Agregar `BenchRutas.medir()` a lo que devuelve, con `from Logic import BenchRutas` dentro de la función | Modificación (2 líneas: el import y el `return`) | NFR-103 | `ServicioBench` (del integrante 2) ya llama a `BenchLogica.medir`. Así no se edita su archivo. El import va dentro de `medir()` y no arriba del módulo porque `BenchRutas` importa de `BenchLogica` (`_cuadricula`, `_cronometrar`, `SEMILLA`…): arriba sería un import circular, y dentro de la función se resuelve al llamarla, cuando los dos módulos ya están cargados. |
 | `DTO/FichaEnemigoDTO.py` | Campo `rango`, `"rango"` en `_CAMPOS`, lectura y escritura | Extensión del DTO | FR-106 | Contrato de datos. Es del integrante 1. |
 | `DTO/SalaDTO.py` · `SalidaDTO` | Campo `costo` (declarado) | Extensión del DTO | FR-101 | Contrato de datos. **Lo hace el integrante 2.** |
 | `Service/ArmadorEstado.py` · `_sala_con_estado_actual` | Copiar `costo=viva.salidas[d].costo` junto a `cerrada` | Modificación (1 palabra) | FR-101, FR-116 | La vista debe ver el costo igualado, no el declarado. **Por acordar con el integrante 3.** |
@@ -183,16 +183,17 @@ tiene distancia < d y ya está resuelta. Ver R3.
 
 Todo vive en `Logic/BenchRutas.py` (Lógica, con el mismo cronómetro de `BenchLogica`). Las
 cuadrículas son sintéticas, con costos por salida sacados de `random.Random(SEMILLA)` entre 1 y
-300. Mismo formato `ResultadoBenchDTO`.
+300. Mismo formato `ResultadoBenchDTO`. Las cuadrículas son cuadradas (`_cuadricula(lado)`): el tamaño
+«1 000» es 1 024 salas (32 × 32) y «100» y «10 000» son exactos.
 
 | Subsistema | Caso | Tamaños | Qué se compara | Requisito |
 |---|---|---|---|---|
 | rutas del cazador | cola de prioridad | 100, 1 000, 10 000 salas | Montículo frente a recorrer un array (R1) | NFR-102 |
 | rutas del cazador | un cazador frente a muchos | 1, 10, 30, 100 cazadores | Búsqueda individual por cazador frente a compartida (R2) | NFR-101 |
 | rutas del cazador | `rango` pequeño frente a grande | `rango` 200, 600, 5 000 × 100, 1 000, 10 000 salas | Tiempo por decisión. Con `rango` 200, cada multiplicación por 10 del tamaño tarda como mucho el doble (SC-105). | NFR-102, SC-105 |
-| invalidación de rutas | puertas estables | 30 cazadores, 1 000 salas | Recalcular siempre / descartar ante cualquier puerta / descarte preciso (R4). Se cuentan las búsquedas reales por ciclo. | NFR-101 |
-| invalidación de rutas | puertas inestables | Ídem, con cierres automáticos frecuentes cerca y lejos del jugador | Ídem | NFR-101 |
-| ciclo de eventos | con cazadores | Cuadrícula de 1 000 salas con **30** cazadores (y 10 y 100 como comparación), más errantes y rastreadores, costos variables | Peor ciclo frente al límite de 20 ms; la nota dice si cumple | NFR-101, SC-104 |
+| invalidación de rutas | puertas estables | 30 cazadores, 1 024 salas (32 × 32), al menos 1 000 | Recalcular siempre / descartar ante cualquier puerta / descarte preciso (R4). Se cuentan las búsquedas reales por ciclo. | NFR-101 |
+| invalidación de rutas | puertas inestables | Ídem, en dos escenarios: una puerta al azar que se abre o se cierra en cada ciclo, y además una de la sala del jugador en cada ciclo (ver [research.md](research.md) R4: con una puerta junto al jugador, descartar ante cualquier puerta y el descarte preciso empatan) | Ídem | NFR-101 |
+| ciclo de eventos | con cazadores | Cuadrícula de 1 024 salas (32 × 32), al menos 1 000, con **30** cazadores (y 10 y 100 como comparación), más errantes y rastreadores, costos variables | Peor ciclo frente al límite de 20 ms; la nota dice si cumple | NFR-101, SC-104 |
 | agenda de eventos (§5.6) | repetición con la carga nueva | `medir_agenda_con_costos`: tiempos generados con costos entre 1 y 300 y velocidades distintas | Montículo frente a array ordenado, otra vez (Principio VIII) | §5.6 |
 | agenda de eventos (§5.6) | muchos eventos con el mismo tiempo | `medir_agenda_con_costos`: 100, 1 000, 10 000 eventos en un solo tiempo y en 10 tiempos | Montículo frente a array ordenado cuando el orden lo decide el desempate por secuencia (límite conocido del montículo con invalidación perezosa) | §5.6 |
 | agenda de eventos (§5.6) | muchas cancelaciones | `medir_agenda_con_costos`: 100, 1 000, 10 000 eventos con el 50 % y el 90 % cancelados | Montículo frente a array ordenado; la nota dice cuántas entradas canceladas se descartaron y el tamaño del arreglo antes y después (límite conocido de la invalidación perezosa) | §5.6 |

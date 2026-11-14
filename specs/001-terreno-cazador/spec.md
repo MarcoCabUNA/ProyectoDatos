@@ -413,15 +413,15 @@ que muestra la interfaz.
 
 | # | Caso del Apéndice B | Escenario | Requisitos | Prueba |
 |---|---|---|---|---|
-| 1 | Un cazador no tiene ruta abierta hacia el jugador: espera con costo 100 | H2-1 | FR-108, FR-109, FR-113 | Se define en `tasks.md` |
-| 2 | La ruta más barata del cazador cuesta más que su `rango`: espera con costo 100 | H2-2 | FR-108, FR-109 | Se define en `tasks.md` |
-| 3 | Ruta de menos salas y mayor costo frente a otra de más salas y menor costo: sigue la de menor costo | H2-3 | FR-108, FR-110 | Se define en `tasks.md` |
-| 4 | Dos vecinas inician rutas de costo mínimo: va a la de menor id | H2-4 | FR-111 | Se define en `tasks.md` |
-| 5 | Una puerta de la ruta se cierra entre dos turnos: decide como si calculara desde cero | H3-1 | FR-113, FR-114 | Se define en `tasks.md` |
-| 6 | Un actor de velocidad alta atraviesa una salida de costo 1: el intervalo es al menos 1 | H1-4 | FR-102 | Se define en `tasks.md` |
-| 7 | Cambia la velocidad de un actor que atraviesa una salida costosa: el restante se escala según P1 §2.3 | H1-5 | FR-102, FR-105 | Se define en `tasks.md` |
+| 1 | Un cazador no tiene ruta abierta hacia el jugador: espera con costo 100 | H2-1 | FR-108, FR-109, FR-113 | `test_h2_1_apendiceB_caso1_fr109_sin_ruta_abierta_espera` |
+| 2 | La ruta más barata del cazador cuesta más que su `rango`: espera con costo 100 | H2-2 | FR-108, FR-109 | `test_h2_2_apendiceB_caso2_fr109_d700_mayor_que_rango600_espera` |
+| 3 | Ruta de menos salas y mayor costo frente a otra de más salas y menor costo: sigue la de menor costo | H2-3 | FR-108, FR-110 | `test_h2_3_apendiceB_caso3_fr110_ruta_de_mas_salas_y_menor_costo` |
+| 4 | Dos vecinas inician rutas de costo mínimo: va a la de menor id | H2-4 | FR-111 | `test_h2_4_apendiceB_caso4_fr111_desempate_menor_id` |
+| 5 | Una puerta de la ruta se cierra entre dos turnos: decide como si calculara desde cero | H3-1 | FR-113, FR-114 | `test_h3_1_apendiceB_caso5_fr114_puerta_se_cierra_entre_turnos` |
+| 6 | Un actor de velocidad alta atraviesa una salida de costo 1: el intervalo es al menos 1 | H1-4 | FR-102 | `test_h1_4_apendiceB_caso6_fr102_intervalo_minimo_1` |
+| 7 | Cambia la velocidad de un actor que atraviesa una salida costosa: el restante se escala según P1 §2.3 | H1-5 | FR-102, FR-105 | `test_h1_5_apendiceB_caso7_fr105_cambio_de_velocidad` |
 
-Cada prueba citará el identificador del requisito que verifica (Principio X).
+Cada prueba cita en su nombre el caso del Apéndice B y el requisito que verifica (Principio X).
 
 ### Trazabilidad de los escenarios agregados en la revisión cruzada
 

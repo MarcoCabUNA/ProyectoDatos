@@ -82,8 +82,10 @@ Esperado: en la tabla aparecen los subsistemas `rutas del cazador`, `invalidaci�
 python tests/test_modos_sin_vista_terreno.py
 ```
 
-Esperado: una línea `OK: ...` al final. Con una cripta de prueba con costos y un cazador,
-`--replay`, `--replay … --hasta` y `--verificar` reproducen los mismos estados sin instanciar la vista.
+Esperado: una línea `OK: ...` al final. Con una cripta de prueba con costos y un cazador, `--replay`
+reproduce los mismos estados sin instanciar la vista. Hoy solo se cubre `--replay`: `--replay … --hasta`
+(spec 004) y `--verificar` (spec 003) todavía no existen; el script lo avisa con una línea `PENDIENTE`, y
+sus pruebas se agregan cuando lleguen esas specs (T048 sigue abierta, y H3-7 con `skip`).
 
 ## 7. Prueba manual en el juego
 

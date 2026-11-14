@@ -36,7 +36,8 @@ LIMITE_CICLO_MS = 20    # §5.2
 
 def medir() -> list[ResultadoBenchDTO]:
     """Todas las mediciones de Lógica, con los tamaños por defecto."""
-    return medir_agenda() + medir_ciclo()
+    from Logic import BenchRutas            # feature 001 (T044); aquí y no arriba: BenchRutas importa este módulo
+    return medir_agenda() + medir_ciclo() + BenchRutas.medir()
 
 
 # ====================================================================== 1. agenda de eventos

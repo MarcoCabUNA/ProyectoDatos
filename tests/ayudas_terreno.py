@@ -172,3 +172,41 @@ class FuenteConFichaInvalida(FuenteCuadricula):
     def obtener_catalogo(self, ids):
         self.catalogos.append(list(ids))
         return [ficha_cazador(None, id=ID_CAZADOR_SIN_RANGO) for i in ids if i == ID_CAZADOR_SIN_RANGO]
+
+
+ID_CAZADOR = "ent_cazador"
+ID_ERRANTE = "ent_errante"
+
+
+class FuenteCuadriculaConCazador(FuenteCuadricula):
+    """
+    FR-118 (T048): una cuadrícula de 4 × 4 con costos entre 1 y 300, iguales en los dos lados
+    (cuadricula_con_costos(4, random.Random(semilla))), un cazador en la sala 2 y un errante en la sala 5, con sus
+    fichas en el catálogo. Los dos están junto a la sala inicial (la 1), así que se activan pronto.
+    """
+
+    def __init__(self, semilla: int, rango: int = 600):
+        super().__init__(4)
+        self.semilla = semilla
+        self.rango = rango
+
+    def obtener_pagina_salas(self, id_cripta, pagina, version):
+        return cuadricula_con_costos(4, random.Random(self.semilla))
+
+    def obtener_contenido(self, id_cripta, ids_salas):
+        contenidos = super().obtener_contenido(id_cripta, ids_salas)
+        for c in contenidos:
+            if c.sala == 2:
+                c.enemigos.append(EnemigoEnSalaDTO("e-1", ID_CAZADOR))
+            elif c.sala == 5:
+                c.enemigos.append(EnemigoEnSalaDTO("e-2", ID_ERRANTE))
+        return contenidos
+
+    def obtener_catalogo(self, ids):
+        fichas = []
+        for id_ficha in ids:
+            if id_ficha == ID_CAZADOR:
+                fichas.append(ficha_cazador(self.rango, id=ID_CAZADOR, nombre="Cazador", vida_max=40))
+            elif id_ficha == ID_ERRANTE:
+                fichas.append(ficha_errante(id=ID_ERRANTE, nombre="Errante", vida_max=40))
+        return fichas
