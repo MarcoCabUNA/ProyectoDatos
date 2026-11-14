@@ -112,7 +112,7 @@ ReporteResolubilidadDTO(
 | Iniciar partida, resoluble o con `--forzar` | `ControladorBackend.iniciar(...)` guarda `contexto.resolubilidad` | `ControladorBackend.resolubilidad()` devuelve el DTO; la vista lo muestra **antes de la primera acción** (FR-313). Con `--forzar` y no resoluble, como advertencia (FR-312) |
 | Iniciar partida, no resoluble o no concluyó, sin `--forzar` | `ServicioResolubilidad` lanza `ErrorPartidaNoIniciada` (con `.reporte`) | `iniciar` lanza `ErrorOperacion` con un mensaje corto y `resolubilidad()` devuelve el reporte para mostrarlo completo (FR-311) |
 | Cargar partida, `--replay`, `--replay … --hasta` (con o sin `--forzar`) | — | Nada: no se verifica (FR-301) y `--forzar` no tiene efecto (FR-312). `resolubilidad()` devuelve `None` |
-| `--bench` | — | Nada: no inicia partidas ni verifica como paso previo (FR-301); solo mide la verificación sobre criptas sintéticas (NFR-304) |
+| `--bench` | — | Nada: no inicia partidas, no crea `partida.log` ni verifica como paso previo (FR-301); mide la verificación sobre criptas sintéticas (NFR-304) y, si el paquete local trae criptas con `llaves.json`, sobre la de más salas, leída sin red (NFR-301, SC-306) |
 
 Mostrar el reporte completo al iniciar es la excepción de 002 FR-217: no forma parte del mapa conocido ni lo
 modifica (FR-313).

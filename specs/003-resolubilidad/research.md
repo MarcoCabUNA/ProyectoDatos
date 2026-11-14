@@ -367,13 +367,16 @@ de FR-310 y no las otras (H2-13); el reporte igual las lista todas en la fronter
 patrón de la 001: como `Logic/BenchRutas.py`, vive en Logic porque mide Logic y reutiliza de `Logic/BenchLogica.py`
 el cronómetro (`_cronometrar`, `_mejor_y_mediana`: mejor y mediana, mismo método que `Service/Cronometro.py`, porque
 Logic no importa Service) y `SEMILLA`; importarlos no modifica `BenchLogica.py`, que **no se toca** (es del integrante 1
-y la feature 001 está cerrada). Se engancha en `Service/ServicioBench.py` (integrante 2), que importa
+y la feature 001 está cerrada). **Dependencia de la 001**: esos tres nombres son privados de `BenchLogica`; el
+integrante 1 confirmó el 14/11 que no les cambia el nombre ni la firma sin avisar: si cambian, el integrante 1 avisa
+antes. Se engancha en `Service/ServicioBench.py` (integrante 2), que importa
 `BenchResolubilidad` desde `Logic` igual que ya importa `BenchLogica`, y agrega `BenchResolubilidad.medir` a su lista
 por defecto, **después de `BenchLogica.medir`**. **Sin import circular**: `ServicioBench` → `BenchResolubilidad` →
 `BenchLogica`; `BenchLogica` solo importa `BenchRutas` dentro de `medir()`, y ninguno de los dos importa
 `BenchResolubilidad` ni `ServicioBench`. No instancia la vista. **`--bench` no verifica como paso previo a una partida** (FR-301): no inicia partidas, no
-llama a `ServicioResolubilidad` ni pide datos al API; llama directamente a `VerificadorResolubilidad` (Logic) con las
-criptas sintéticas que genera.
+crea `partida.log`, no llama a `ServicioResolubilidad` ni pide datos al API; llama directamente a
+`VerificadorResolubilidad` (Logic) con las criptas sintéticas que genera (B1 a B6) y, además, con la cripta del
+paquete local que se mide aparte (abajo, «Cripta del paquete»).
 
 **Criptas sintéticas** (`cripta_en_cuadricula(filas, columnas, semilla, resoluble)`), deterministas por semilla con
 `random.Random(semilla)`:
@@ -446,8 +449,14 @@ B5 en 10 000 salas, y la lista única de B6 en 3 000 dientes. B6 se queda en 3 0
 10 000 la lista única son unos 5·10⁷ pasos, varios segundos por repetición; el factor de crecimiento se sigue viendo
 entre 100 y 1 000.
 
-**Alternativa descartada**: medir con las criptas publicadas: la mayor tiene 50 salas (el paquete actual), demasiado
-chica para ver el crecimiento.
+**Cripta del paquete (medida aparte, NFR-301, SC-306)**: la tabla de §6.1 pone el límite de 200 ms sobre «la
+cripta publicada más grande» (spec, Sesión 2026-11-14). Además de B1 a B6, `Service/ServicioBench.py` (integrante 2)
+mide la verificación de la **cripta con más salas del paquete local**, elegida por cantidad de salas, sin nombrar ids
+(Principio VI), y leída sin red: Service orquesta `FuenteOffline`, `GestorEsqueleto`, `GestorLlaves` **sin almacén** y
+`VerificadorResolubilidad`, con el mismo cronómetro. `Logic/BenchResolubilidad.py` no lee Data. Si el paquete no trae
+criptas con `llaves.json`, la fila no se agrega y la nota lo dice; mientras tanto vale B1 a 1 000 salas. Esta fila
+**no sirve para ver el crecimiento** (la mayor cripta publicada hoy tiene 50 salas): la base de B1 a B6 sigue siendo la
+generación sintética por semilla.
 
 ---
 
@@ -457,7 +466,7 @@ chica para ver el crecimiento.
 |---|---|
 | **Data** | Entrega y valida: `obtener_llaves` (FuenteDatos/FuenteJson/LectorPaquete), `AlmacenLlaves`, `GestorLlaves`, `validar_ubicaciones` (FR-321), `DescargadorPaquete` |
 | **Logic** | Decide: `GrafoLlaves` (preparación), `RecorridoLlaves` (oleadas y fase hacia afuera), `CiclosLlaves`, `VerificadorResolubilidad` (arma el DTO); `BenchResolubilidad` (mediciones de `--bench`, R7). **No importa Data**: recibe `CriptaDTO`, `list[SalaDTO]` y `list[UbicacionLlaveDTO]` |
-| **Service** | Orquesta: `ServicioResolubilidad.verificar(id)` y `iniciar_partida_nueva(id, nombre, forzar)`. No valida: convierte los `ErrorRed` del paso de llaves en un reporte «no concluyó» |
+| **Service** | Orquesta: `ServicioResolubilidad.verificar(id)` y `iniciar_partida_nueva(id, nombre, forzar)`. No valida: convierte los `ErrorRed` del paso de llaves en un reporte «no concluyó». `ServicioBench` mide además la cripta con más salas del paquete local, con `FuenteOffline`, `GestorEsqueleto`, `GestorLlaves` sin almacén y `VerificadorResolubilidad` (R7) |
 | **UIController / main.py** | `--verificar <cripta>` y `--forzar`; códigos 0, 3 y 1 (el 2 sigue siendo de argumentos); `--verificar` escribe el resultado en la **salida estándar** (`print` de las líneas de `TextoResolubilidad`), que es el único modo sin vista que verifica (FR-313, FR-314) |
 | **View** | Muestra el reporte al iniciar, **antes de la primera acción** del jugador (FR-313); integrante 3 |
 
@@ -480,7 +489,8 @@ chica para ver el crecimiento.
 
 **FR-301**: `ServicioReplay` sigue llamando a `ServicioPartida.iniciar_partida` y `ServicioGuardado.cargar` a
 `abrir_datos`; ninguno pasa por `ServicioResolubilidad`, así que **no verifican ni se bloquean**. `--bench` tampoco:
-no inicia partidas (R7). Por lo mismo, `--forzar` con `--replay`, con `--bench` o al cargar una partida **no tiene
+no inicia partidas ni crea `partida.log`; solo mide la verificación sobre las criptas sintéticas y la cripta con más
+salas del paquete local, leída sin red (R7). Por lo mismo, `--forzar` con `--replay`, con `--bench` o al cargar una partida **no tiene
 efecto** y no es un error de argumentos (FR-312): `LectorArgumentos` lo acepta y esos caminos no leen
 `config.forzar`. La verificación no
 consume el generador aleatorio (la semilla se elige con `SystemRandom` en `ServicioPartida` y el motor se crea
@@ -531,7 +541,7 @@ entiende la notación de la spec («puerta 4–5 (B)»).
 | Archivo | Qué cubre |
 |---|---|
 | `tests/ayudas_resolubilidad.py` | Ayudante: arma `CriptaDTO`, `list[SalaDTO]` y ubicaciones desde la notación de la spec |
-| `tests/test_resolubilidad_logica.py` | H1-1 a H1-12 (veredicto, orden, caras, copias); validez del orden (SC-304); determinismo con entradas permutadas (FR-306); casos borde de la salida (FR-304, FR-322): `sala_salida` alcanzable por una salida abierta además de la puerta de salida (resoluble); la única puerta que pide `llave_salida` no lleva a `sala_salida` (no resoluble, con motivo; diferencia conocida con el motor, Sesión 2026-11-13); solo la cara de `sala_salida` hacia afuera pide `llave_salida` y la de la sala desde la que se entra pide otra llave (no cuenta); cierre automático en una puerta con llaves distintas por cara (no bloquea, FR-302) |
+| `tests/test_resolubilidad_logica.py` | H1-1 a H1-11 (veredicto, orden, caras, copias; H1-12 queda solo en `test_resolubilidad_reporte.py`); validez del orden (SC-304); determinismo con entradas permutadas (FR-306); casos borde de la salida (FR-304, FR-322): `sala_salida` alcanzable por una salida abierta además de la puerta de salida (resoluble); la única puerta que pide `llave_salida` no lleva a `sala_salida` (no resoluble, con motivo; diferencia conocida con el motor, Sesión 2026-11-13); solo la cara de `sala_salida` hacia afuera pide `llave_salida` y la de la sala desde la que se entra pide otra llave (no cuenta); cierre automático en una puerta con llaves distintas por cara (no bloquea, FR-302) |
 | `tests/test_resolubilidad_reporte.py` | H2-1 a H2-13 (no obtenibles, frontera, ubicaciones, ciclos, dependientes; H2-13: desempate de la puerta que bloquea, FR-310); ubicaciones idénticas una sola vez (H1-12, FR-309); cadena de más de 1 000 dependientes sin `RecursionError` (R6: `cripta_en_cuadricula` no resoluble con `filas = 2` y 3 000 columnas, 6 000 salas, unas 1 500 dependientes); SC-305 |
 | `tests/test_resolubilidad_datos.py` | `UbicacionLlaveDTO`; formato en `FuenteJson`; `LectorPaquete` y `DescargadorPaquete` con `llaves.json`; `AlmacenLlaves` (versión, dañado, id inseguro); `GestorLlaves` (presupuesto, sin repetir, FR-321); H2-7, H2-8, H3-4 a H3-7 |
 | `tests/test_resolubilidad_servicio.py` | `ServicioResolubilidad`: H4-1 a H4-5, H1-8, H1-9; R9 (historial, línea y log vacíos); cargar y replay no verifican (FR-301) |

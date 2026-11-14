@@ -26,6 +26,14 @@ uv run python -m unittest tests.test_resolubilidad_cli tests.test_resolubilidad_
 uv run python tests/correr_pruebas.py
 ```
 
+En Windows, `correr_pruebas.py` se corre con `PYTHONIOENCODING=utf-8`, como dice el README; si no, el script se cae
+al imprimir un carácter que la consola no puede mostrar:
+
+```powershell
+$env:PYTHONIOENCODING = "utf-8"; uv run python tests/correr_pruebas.py      # PowerShell
+PYTHONIOENCODING=utf-8 uv run python tests/correr_pruebas.py                # Git Bash
+```
+
 Esperado: todo pasa; cada prueba cita su FR (Principio X). Los cuatro casos del Apéndice B están en
 `test_resolubilidad_reporte` (caso 1, H2-1), `test_resolubilidad_logica` (casos 2 y 3, H1-4 y H1-5) y
 `test_resolubilidad_servicio` (caso 4, H4-1) (SC-301).
@@ -45,8 +53,9 @@ Esperado: todo pasa; cada prueba cita su FR (Principio X). Los cuatro casos del 
 | 9 | `uv run python main.py --verificar cripta-que-no-existe --offline --forzar` | «la verificación NO CONCLUYÓ» (falta la cripta en el paquete) y código **1**: `--forzar` no cambia nada (FR-314) |
 | 10 | `uv run python main.py --bench --forzar` | Las mismas filas que sin `--forzar` y el mismo código; no es error de uso (FR-312) |
 
-En ningún caso se abre una ventana ni se crea `partida.log` (FR-314, SC-308). Es el único modo sin vista que verifica:
-`--replay` y `--bench` no lo hacen (FR-301, FR-313).
+En ningún caso se abre una ventana ni se crea `partida.log` (FR-314, SC-308). Es el único modo sin vista que muestra el
+resultado de la verificación: `--replay` no verifica y `--bench` solo mide cuánto tarda la verificación, sin mostrar
+veredictos ni iniciar partidas (FR-301, FR-313).
 
 **Caso de la diferencia con el motor** (Sesión 2026-11-13 de la spec; research, H-1): con una cripta de prueba donde
 la única puerta que pide `llave_salida` no lleva a `sala_salida`, `--verificar` da «NO RESOLUBLE» con el motivo de
@@ -73,11 +82,16 @@ cripta publicada no resoluble o con un paquete temporal.
 uv run python main.py --bench
 ```
 
-`--bench` no inicia partidas ni verifica una cripta publicada (FR-301): no hace solicitudes para esta medición. Las
-filas de resolubilidad las agrega `Logic/BenchResolubilidad.py`, que `Service/ServicioBench.py` llama después de
-`BenchLogica.medir`. Buscar las filas del subsistema «resolubilidad»:
+`--bench` no inicia partidas, no crea `partida.log` ni verifica como paso previo a una partida (FR-301), y no hace
+solicitudes de red para estas mediciones. Las filas B1 a B6 las agrega `Logic/BenchResolubilidad.py`, que
+`Service/ServicioBench.py` llama después de `BenchLogica.medir`; además, `Service/ServicioBench.py` agrega la fila de
+la **cripta con más salas del paquete local** (elegida por cantidad de salas, leída sin red con `FuenteOffline`,
+`GestorEsqueleto` y `GestorLlaves` sin almacén). Buscar las filas del subsistema «resolubilidad»:
 
-- **B1** (incremental, resoluble) con 1 000 salas: mediana **< 200 ms** (SC-306).
+- **Cripta del paquete**: si el paquete trae criptas con `llaves.json`, mediana **< 200 ms** (SC-306, NFR-301). Si no,
+  la fila no aparece y la nota lo dice; entonces vale la fila siguiente.
+- **B1** (incremental, resoluble) con 1 000 salas: mediana **< 200 ms** (SC-306, mientras el paquete no traiga
+  criptas con `llaves.json`).
 - **B1**: la nota de 10 000 salas indica un crecimiento **≤ ×20** respecto de 1 000 (SC-307).
 - **B2** (repetir el recorrido por llave): su crecimiento es **al menos el doble** que el de B1 (SC-307).
 - **B3** (no resoluble: un ciclo de una llave y una cadena larga de dependientes) crece como B1: el reporte sale del

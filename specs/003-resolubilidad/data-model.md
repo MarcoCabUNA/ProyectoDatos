@@ -203,6 +203,6 @@ FR-302 y FR-303, FR-304, FR-305, FR-307 a FR-310, FR-316 (copias), FR-321 «sin 
 | Línea de tiempo (004) | Se crea en `iniciar_partida`, después; la verificación no es una acción |
 | `partida.log` | Se crea después, solo si la partida inicia |
 | Contenido de salas | No se descarga (FR-301) |
-| `--replay`, `--replay … --hasta`, `--bench` | No verifican como paso previo a una partida (FR-301); `--bench` solo llama a Logic con criptas sintéticas |
+| `--replay`, `--replay … --hasta`, `--bench` | No verifican como paso previo a una partida (FR-301); `--bench` llama a Logic con criptas sintéticas y, desde `ServicioBench`, con la cripta con más salas del paquete local, leída sin red (NFR-301) |
 | `Logic/motorJuego.py` (victoria con `salida_abierta`) | Se mantiene como está (decisión del integrante 1; research, H-1) |
 | `PartidaGuardada` | No guarda el reporte; cargar no verifica |

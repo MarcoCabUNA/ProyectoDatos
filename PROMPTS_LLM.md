@@ -1973,3 +1973,141 @@ No cambies nada más. Al final: la lista de archivos que tocaste, qué quedó en
 **Uso de la respuesta:** dos commits en `specs/003-resolubilidad/`. `spec(003)`: «lado seguro» solo en la regla de la puerta de salida y el cierre automático con llaves distintas por cara como suposición (dirección contraria); FR-310 con una sola puerta que bloquea a cada llave (decisión del grupo) y el escenario H2-13 con el ejemplo de Marco; FR-309 sin repetir ubicaciones idénticas (H1-12); `--forzar` sin efecto con `--replay`, `--bench` y al cargar; cripta inexistente con código 1; sesión nueva de Clarificaciones. `plan(003)`: dependientes iterativos (R6), generador no resoluble con una sola llave movida y `filas ≥ 2` (R7), bench en `Logic/BenchResolubilidad.py` enganchado en `Service/ServicioBench.py` sin tocar `BenchLogica.py`, mediciones B5 y B6 de las alternativas de R3 y R4 (B6 hasta 3 000 dientes, las cuadráticas con una repetición en el tamaño mayor), una sola condición para `--offline` en `ServicioPartida.fuente()`, `ErrorPartidaNoIniciada` definido en `ServicioResolubilidad`, precedente de 001 FR-122 y FR-319 con `AlmacenCatalogo`. Revisé el resultado contra el zip antes de cada commit.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-tasks Tareas de la feature 003-resolubilidad (integrante 2), a partir de specs/003-resolubilidad/spec.md, plan.md, research.md, data-model.md, quickstart.md y contracts/ (versión de los commits c2fb219 y del plan(003) siguiente, con la revisión del integrante 1). Usá como modelo de formato specs/004-linea-tiempo/tasks.md y specs/001-terreno-cazador/tasks.md: mismas secciones «Formato», «Reglas para todas las tareas (constitución v1.2.0)», «Responsable», dependencias, ejecución en paralelo y estrategia. Todo en español.
+
+1. Responsable: integrante 2. Las tareas que tocan archivos de otro integrante, según la tabla de cambios y la sección «Coordinación» del plan (del integrante 3: ServicioPartida —parámetro datos=None y el if de fuente() que elige también el almacén de llaves con almacen_llaves()—, ContextoPartida, ErroresServicio —solo importar ErrorPartidaNoIniciada y agregarlo a ERRORES_ESPERADOS—, ControladorBackend y la vista; del integrante 1: lo que el plan diga, si dice algo), van marcadas «(coordinar con el integrante 3)» o «(coordinar con el integrante 1)», con el cambio exacto que se le pide, y no las implementa el integrante 2 sin su visto bueno. Logic/BenchLogica.py NO se modifica (el bench se engancha en Service/ServicioBench.py, que es del integrante 2).
+2. Pruebas primero (Principio X): una prueba por escenario de la spec (H1-1 a H1-12, H2-1 a H2-13, H3-1 a H3-9 y H4-1 a H4-5) y por caso del Apéndice B, escrita antes del código, que falle primero y que cite su escenario y su FR en el nombre del método (por ejemplo test_h2_13_fr310_puerta_que_bloquea). Además, pruebas para lo que la spec decidió sin escenario: --forzar sin efecto con --replay, --bench y al cargar una partida (FR-312), --verificar con una cripta inexistente → código 1 (FR-314), y la cadena de más de 1 000 dependientes sin RecursionError (research R6/R7, cripta_en_cuadricula con filas = 2 y 3 000 columnas). Usá los archivos de prueba que define el plan.
+3. Orden de la ruta de desarrollo del plan: contrato de llaves (UbicacionLlaveDTO, FuenteDatos/FuenteJson/FuenteRed/FuenteOffline, AlmacenLlaves, GestorLlaves, validación de FR-321 en Data) → Logic (GrafoLlaves con las ubicaciones idénticas una sola vez, RecorridoLlaves con la fase hacia afuera según la regla de FR-310, CiclosLlaves iterativo, VerificadorResolubilidad) → ServicioResolubilidad (con ErrorPartidaNoIniciada) → --verificar (sin vista) y --forzar con los códigos 0, 3 y 1 → bench (Logic/BenchResolubilidad.py con B1 a B6 y los generadores de cuadrícula y peine, enganchado en Service/ServicioBench.py) → documentación. Cada tarea cita los FR que atiende.
+4. Banderas: --checkpoint-cada y --hasta del integrante 3 ya están en origin/derek (commit 1b53bc9). Las tareas de verificar y forzar en DTO/ConfiguracionDTO.py y UIController/LectorArgumentos.py van detrás de hasta, sin tocar las banderas de ella; --verificar en el mismo grupo excluyente que --replay y --bench. main.py: la rama --verificar sobre la versión con --hasta.
+5. Avisos a los otros integrantes como tareas explícitas: al terminar --verificar (y --verificar --offline), avisar al integrante 1 para que quite el skip de H3-7 y cierre su T048 de la 001; y avisar al integrante 3 cuando esté ServicioResolubilidad y el DTO del reporte, para que muestre el reporte antes de la primera acción (FR-313).
+6. Incluí una tarea para regenerar paquete/ con llaves.json (y los costos y rangos de la Parte II) cuando el API publique las criptas nuevas, avisando a los tres y en un commit propio (hallazgo H-3), y una tarea de verificación con --verificar --offline cuando el paquete esté regenerado.
+7. Cierre: --bench (B1 a B6 del plan, con las alternativas cuadráticas en el tamaño mayor con una sola repetición), la sección «Resolubilidad» (§5.4) de DECISIONES.md en la sección del integrante 2 (el archivo ya existe en la raíz, con secciones por integrante), incluyendo el límite conocido del cierre automático con llaves distintas por cara (la verificación puede decir «resoluble» y el jugador quedar encerrado); correr tests/correr_pruebas.py y el replay de ejemplo sin regresiones; y registrar los prompts en PROMPTS_LLM.md (Principio XI).
+
+Fuera de esta feature (no las incluyas como tareas de la 003, solo nombralas en una nota de dependencias si hace falta): T055 de specs/001-terreno-cazador/tasks.md (validación de cierre_automatico y duracion en Data) y T071 de specs/004-linea-tiempo/tasks.md (BitacoraReplayIO.leer ignora las líneas que empiezan con «#»).
+
+Solo escribí specs/003-resolubilidad/tasks.md; no escribas código ni modifiques ningún otro archivo. Al final decime cuántas tareas hay por fase, cuáles son de coordinación y si algún FR, NFR, escenario o caso del Apéndice B quedó sin tarea. No hagas commit.
+
+**Uso de la respuesta:** `specs/003-resolubilidad/tasks.md` con 69 tareas (T001 a T069) en 10 fases: preparación, contrato de llaves, historias 1 a 4, paquete de la Parte II, bench B1 a B6 y cierre. Las pruebas van primero y citan su escenario y su FR; las tareas que tocan archivos de los integrantes 1 y 3 están marcadas para coordinar; T055 de la 001 y T071 de la 004 quedan fuera de la feature. Al final hay una tabla de cobertura. Lo revisé contra la spec y el plan antes del analyze.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-analyze Análisis de consistencia de la feature 003-resolubilidad (integrante 2): specs/003-resolubilidad/spec.md (commit c2fb219), plan.md, research.md, data-model.md, quickstart.md y contracts/ (commit 7e685f4), y el tasks.md nuevo (todavía sin commit). Contra la constitución .specify/memory/constitution.md v1.2.0. Es solo lectura: no modifiques ningún archivo.
+
+Además de lo que el análisis revisa siempre (duplicados, ambigüedades, requisitos sin tareas, tareas sin requisito, contradicciones con la constitución), comprobá en particular:
+
+1. Que cada FR-301 a FR-323, NFR-301 a NFR-304, SC-301 a SC-308, escenario (H1-1 a H1-12, H2-1 a H2-13, H3-1 a H3-9, H4-1 a H4-5) y caso del Apéndice B tenga al menos una prueba y una tarea, y que el FR que cita cada prueba en su nombre sea el que la spec asigna a ese escenario en la tabla de trazabilidad.
+2. Que las pruebas vayan antes que el código que prueban en el orden de las tareas y del grafo de dependencias (Principio X), y que ninguna tarea dependa de otra posterior sin decirlo.
+3. Que las tareas marcadas «(coordinar con el integrante 3)» o «(coordinar con el integrante 1)» coincidan exactamente con la tabla de cambios y la sección «Coordinación» del plan, y que ninguna tarea sin esa marca toque un archivo de otro integrante (Logic/Mazmorra.py, Logic/BenchLogica.py, Service/ServicioPartida.py, Service/ContextoPartida.py, Service/ErroresServicio.py, UIController/ControladorBackend.py, UIController/ControladorPygame.py, View/).
+4. Que las decisiones de la revisión del integrante 1 estén iguales en spec, plan y tareas: «lado seguro» solo en la regla de la puerta de salida; el cierre automático con llaves distintas por cara como límite conocido; la regla de FR-310 (nivel, sala de origen, dirección; varias ubicaciones); dependientes sin recursión; ubicaciones idénticas una sola vez; --forzar sin efecto con --replay, --bench y al cargar; cripta inexistente con código 1; una sola condición para --offline en ServicioPartida.fuente(); ErrorPartidaNoIniciada definido en ServicioResolubilidad; el bench enganchado en ServicioBench sin tocar BenchLogica; generador con filas ≥ 2; B6 hasta 3 000 dientes y las cuadráticas con una sola repetición en el tamaño mayor.
+5. Referencias a tareas de otras features: el tasks.md nombra T055 de la 001 y T071 de la 004, y la 003 tiene su propio T055 (la vista). Señalá cualquier lugar donde la referencia pueda confundirse.
+6. T069 dice registrar los prompts «en la sección del integrante 2» de PROMPTS_LLM.md: comprobá en el archivo real si existe esa sección o si las entradas van al final en orden cronológico.
+7. Comandos de las tareas (uv run, python tests/correr_pruebas.py, python -m ...): que existan y coincidan con README.md y quickstart.md.
+
+Entregá el informe con la tabla de hallazgos (ID, categoría, severidad CRÍTICA/ALTA/MEDIA/BAJA, ubicación con archivo y línea, resumen, recomendación), la tabla de cobertura y las métricas. No propongas ni apliques ediciones: solo el informe.
+
+**Uso de la respuesta:** informe de solo lectura: 0 hallazgos críticos, 1 alto (la salida de `--verificar` con «→» en una consola cp1252 de Windows), 8 medios y 9 bajos; cobertura del 100 % de FR, NFR, SC, escenarios y casos del Apéndice B. Comprobé cada hallazgo contra los archivos y el enunciado, y los corregí con los prompts de la entrada siguiente.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Cuatro prompts en el mismo chat del analyze.
+
+Primero:
+
+Aplicá las correcciones del análisis, en dos partes separadas. Primero la parte A, que toca solo spec.md, porque la commiteo antes que las demás (Principio IX). Después la parte B, que toca tasks.md y, en tres detalles, plan.md, research.md y quickstart.md. No escribas código. No hagas commit. No renumeres ninguna tarea: si hace falta algo nuevo, va dentro de una tarea existente.
+
+PARTE A — spec.md
+
+A1 (S1). En FR-323, el paréntesis que dice qué errores de 001 FR-122 cuentan: agregá «o una salida con un cierre_automatico que no es un entero ≥ 1» (001 FR-122 lo incluye desde el commit a725e31 del integrante 1, escenario H2-20 de la 001). Revisá si otro lugar de la spec enumera esos errores (casos borde, Suposiciones, H3-8 o H4-5) y alinealo igual, sin cambiar nada más.
+
+A2 (T1). Alineá el texto de los escenarios con la tabla de cobertura de la spec: H2-6 agrega FR-308 a sus FR citados (la puerta 4–5 con C está en la frontera bloqueada), y H4-4 agrega FR-313 (al cargar y en --replay no se muestra reporte). No cambies la tabla.
+
+PARTE B — tasks.md (y tres detalles del plan)
+
+B1 (U1, ALTA). En una consola de Windows con la salida redirigida (por ejemplo, en un subprocess), print del carácter «→» lanza UnicodeEncodeError con cp1252, y --verificar no debe caerse (FR-314). T050: en la rama --verificar de main.py, antes de escribir, configurar la salida estándar en UTF-8 (sys.stdout.reconfigure(encoding="utf-8") solo si la salida tiene reconfigure, porque las pruebas que capturan la salida con StringIO o redirect_stdout no lo tienen; solo en esa rama, sin cambiar los otros modos). T046: agregar test_fr314_verificar_utf8_sin_pythonioencoding, que corre --verificar en otro proceso sin PYTHONIOENCODING, con una cripta no resoluble con ciclo (el texto tiene «→»), y lee la salida como UTF-8: código 3 y el «→» intacto. Las pruebas en otro proceso (SC-303, SC-308) leen la salida como UTF-8.
+
+B2 (I1). T069: las entradas de PROMPTS_LLM.md van al final del archivo, en orden cronológico, con el formato que ya usa el archivo (Fecha, Herramienta, el prompt textual, Uso de la respuesta y la línea de guiones). El archivo no tiene secciones por integrante. Incluí también el prompt de /speckit-tasks, el de /speckit-analyze y este.
+
+B3 (I2). En «Fuera de esta feature», T071 de la 004: copiá su redacción. BitacoraReplayIO.leer ignora, en la sección de acciones, las líneas de comentario «# ir a <sala>», sin confundirlas con el encabezado #CRIPTA-REPLAY ni con #ACCIONES.
+
+B4 (I3). Calificá cada número de tarea que pueda confundirse con otra feature: «T055 (vista)» para la propia; «T055 de la 001» y «T048 de la 001» para las del integrante 1 (en T051, T058 y la nota de dependencias); «T071 de la 004». Revisá el archivo completo, también el grafo y la tabla de cobertura.
+
+B5 (O1, O3). T029 es la prueba de recursión: se escribe antes que el generador y falla primero, y T030 la hace pasar. Corregí «T030 (generador) bloquea T029» en «Entre fases» y el grafo (T028, T029 ─► T030). Alineá además el grafo con «Entre fases»: T008 bloquea T011, no T009; la historia 2 sale de la fase 3, y el servicio de las fases 3 y 4.
+
+B6 (O2). T001 usa UbicacionLlaveDTO (ubic y FuenteConLlaves). Declarar que T001 depende de T006 y que paquete_temporal escribe el formato del contrato de llaves (no espera a T013). Reflejalo en «Entre fases» y en el grafo.
+
+B7 (S1). En T045 agregar test_fr323_fr314_cierre_automatico_invalido_codigo_1: un esqueleto con cierre_automatico 0 → --verificar termina con código 1, con el error con contexto (sala, dirección y campo) y sin veredicto. Depende de T055 de la 001 (validación en Data del integrante 2), que se hace antes que esta feature. En T036, lo mismo al iniciar: no inicia ni con --forzar. Actualizá la tabla de cobertura y la nota de «Fuera de esta feature», que hoy dice que no hace falta prueba.
+
+B8 (A1). NFR-301 y SC-306 piden medir «la cripta publicada más grande» cuando exista. En T062 y T063: si el paquete de la Parte II ya está regenerado (T057), Service/ServicioBench.py (integrante 2) agrega una fila que mide la verificación de la cripta con más salas del paquete. La cripta se elige por cantidad de salas, sin nombrar ids (Principio VI). Se lee con FuenteOffline y se mide con VerificadorResolubilidad (Service orquesta Data y Logic; BenchResolubilidad no lee Data). Si el paquete no trae llaves.json, la fila no se agrega y la nota lo dice. Mientras tanto vale la sintética de 1 000 salas. Agregá la prueba correspondiente a T059, con un paquete temporal, y actualizá la tabla de NFR y SC.
+
+B9 (T1). Agregá a los nombres de las pruebas los FR de la tabla de la spec: test_h2_6_fr307_fr308_fr309_fr321_…, test_h4_4_fr301_fr313_… y test_h2_13_fr306_fr307_fr308_fr310_puerta_que_bloquea. Actualizá la tabla de cobertura de tasks.md.
+
+B10 (T2). En T036, las dos pruebas de verificar (cripta inexistente y costo inválido) son de la historia 3: anotalo en la tarea con «(historia 3)».
+
+B11 (C1). En T064 agregar que DECISIONES.md deje escrita la interpretación del Principio I. Comprobar que la sala de una ubicación existe (FR-321) es integridad de los datos y va en Data, con el precedente de 001 FR-122.
+
+B12 (X2). En las Reglas o en T068, nombrar que en Windows correr_pruebas.py se corre con PYTHONIOENCODING=utf-8, como dice el README. En T052, aclarar que el paso 8 del quickstart §2 necesita red.
+
+B13 (D1, F1, F2, en el plan). research.md R10: H1-12 queda solo en test_resolubilidad_reporte.py. En T031, aclarar en el docstring que puerta_que_encierra[s] es «la puerta que bloquea» de FR-310. plan.md, «Escala»: mencionar que la prueba de recursión usa una cripta de 6 000 salas y unas 1 500 dependientes, por encima de la escala de las mediciones.
+
+No cambies nada más. Al final: la lista de archivos de la parte A y de la parte B por separado, qué quedó en cada punto y si encontraste algo que contradiga lo anterior. No hagas commit.
+
+Segundo:
+
+Tres cambios más, por las respuestas de los integrantes 1 y 3 del 14/11. Van en la parte B (tasks.md y plan.md); spec.md no se toca. No escribas código, no renumeres tareas y no hagas commit.
+
+E1. Confirmaciones. Marcá como hechas T002 («confirmado por el integrante 3 el 14/11: el contrato del reporte de 7e685f4 queda tal cual») y T003 («confirmado por el integrante 1 el 14/11: usar Mazmorra.cargar_esqueleto y salida sobre una instancia aparte, sin motor; avisará antes de cambiar _igualar_caras o lo que hace cargar_esqueleto al combinar caras»). Usá «- [x]», como en los tasks.md de la 001 y la 004. Quitá de las dependencias y del grafo los bloqueos que ya no aplican (T002 ya no bloquea T007).
+
+E2. Quién escribe los cambios en los archivos del integrante 3. El integrante 3 aceptó el 14/11 que el integrante 2 escriba T037 (ServicioPartida), T038 (ContextoPartida), T040 (ErroresServicio), T049 y T054 (ControladorBackend), con pruebas, sobre la versión de la rama del integrante 3. Ella los revisa antes del merge. Condiciones: ContextoPartida.resolubilidad va después de linea, los métodos nuevos de ControladorBackend van al final de la clase y quien suba segundo hace el merge. T055 (vista) sigue siendo del integrante 3. Cambiá esas cinco tareas de «Pedir…» a «Escribir… (acordado con el integrante 3 el 14/11; ella lo revisa antes del merge)», manteniendo la marca «(coordinar con el integrante 3)». Agregá al inicio de la fase 5 un paso explícito: antes de T037, hacer merge de origin/kris para trabajar sobre su versión de ServicioPartida (iniciar_partida con los grabadores y el punto 0), ContextoPartida (linea como último campo) y ControladorBackend, y correr todas las pruebas. Actualizá en el mismo sentido «Responsable», las dependencias, el grafo, la estrategia y «Commits sugeridos»: esos cambios los commitea el integrante 2 y los revisa el integrante 3. En plan.md, ajustá la tabla de cambios o la sección «Coordinación con el integrante 3» para decir quién los escribe.
+
+E3. Dependencia de la 001 en el bench. Logic/BenchResolubilidad.py reutiliza _cronometrar, _mejor_y_mediana y SEMILLA, que son privadas de Logic/BenchLogica.py (integrante 1, feature 001). El integrante 1 confirmó el 14/11 que no les cambia el nombre ni la firma sin avisar. Dejalo escrito en plan.md («Coordinación con el integrante 1» o una sección de dependencias), en research.md R7 y en T060 de tasks.md: «dependencia de la 001: si cambia, el integrante 1 avisa antes».
+
+Al final: los archivos que tocaste y qué quedó en cada punto. No hagas commit.
+
+Tercero:
+
+Decisión sobre la contradicción de B8: se queda B8 y se corrige la spec. El motivo es que el enunciado, en la tabla de §6.1, pone el límite de 200 ms de la verificación de resolubilidad sobre «la cripta publicada más grande». Si se quitara B8, ese requisito quedaría sin medir. Sigue habiendo dos partes: la A solo en spec.md y la B en los demás archivos. No escribas código, no renumeres tareas y no hagas commit.
+
+PARTE A — spec.md
+
+A3. En FR-301, cambiá la frase de --bench para que diga que --bench mide la verificación sobre criptas sintéticas deterministas (NFR-304) y, además, si el paquete local de --offline trae criptas con llaves.json, sobre la cripta del paquete con más salas, elegida por cantidad de salas, sin nombrar ids (Principio VI) y leída sin red. Debe seguir diciendo que no inicia partidas, no crea partida.log y no pasa por la verificación previa a una partida.
+
+A4. En NFR-301 y SC-306, «la cripta publicada más grande» se mide así: la cripta con más salas del paquete local, leída sin red (§6.1). «Mientras no esté publicada» pasa a ser «mientras el paquete local no traiga criptas con llaves.json»; en ese caso vale la cripta sintética de 1 000 salas con 100 llaves encadenadas (decisión del grupo).
+
+A5. Agregá en Clarificaciones una sesión «Sesión 2026-11-14 (análisis de consistencia)» con dos preguntas y respuestas:
+- qué es «la cripta publicada más grande» y cómo la mide --bench (A3 y A4, con la cita de §6.1);
+- que el paréntesis de FR-323 incluye cierre_automatico desde 001 FR-122 (a725e31).
+No cambies nada más de la spec.
+
+PARTE B — plan.md, research.md, data-model.md, quickstart.md, contracts/ y tasks.md
+
+B14. Alineá con A3 y A4 todo lo que hoy diga que --bench solo mide criptas sintéticas o que no verifica una cripta publicada: research R7 (pasa de «descartado» a «medida aparte»; la generación sintética sigue siendo la base de B1 a B6), R8, la fila de --bench del contrato del reporte, quickstart §4 y la fila de Service/ServicioBench.py en la tabla de cambios de plan.md. La medición de la cripta del paquete vive en Service/ServicioBench.py (integrante 2): Service orquesta FuenteOffline, GestorEsqueleto, GestorLlaves sin almacén y VerificadorResolubilidad, y Logic/BenchResolubilidad no lee Data. Comprobá que T059, T062 y T063 de tasks.md digan lo mismo.
+
+B15. quickstart.md §1: agregá que en Windows correr_pruebas.py se corre con PYTHONIOENCODING=utf-8, como dice el README.
+
+B16. plan.md, «Coordinación con el integrante 3», punto 1: el contrato del reporte quedó confirmado por el integrante 3 el 14/11, sin cambios (T002).
+
+Al final: los archivos de la parte A y de la parte B por separado, qué quedó en cada punto y si queda algún lugar que diga que --bench solo mide criptas sintéticas. No hagas commit.
+
+Cuarto:
+
+Última corrección, por la frase que señalaste. En la parte A, en spec.md, FR-313: cambiá «Sin vista, el único modo que verifica es `--verificar`, que escribe el resultado en la salida estándar (FR-314); `--replay` y `--bench` no verifican (FR-301).» por «Sin vista, el único modo que muestra el resultado de la verificación es `--verificar`, que lo escribe en la salida estándar (FR-314); `--replay` no verifica y `--bench` solo mide cuánto tarda la verificación, sin mostrar veredictos ni iniciar partidas (FR-301).»
+
+En la parte B, alineá con esa frase la fila V de la tabla de la constitución en plan.md (línea 79) y quickstart.md §2 (línea 57). No toques checklists/requirements.md: queda como registro del 11/11.
+
+No cambies nada más, no escribas código y no hagas commit. Al final: las líneas que cambiaste.
+
+**Uso de la respuesta:** dos commits. `spec(003)`: FR-323 incluye `cierre_automatico` (001 FR-122, `a725e31`); H2-6 cita FR-308 y H4-4 cita FR-313; FR-301, NFR-301 y SC-306 dicen que `--bench` mide, además de las criptas sintéticas, la cripta con más salas del paquete local, leída sin red (§6.1: «la cripta publicada más grande»); FR-313 aclara que `--bench` solo mide el tiempo; sesión de Clarificaciones del 14/11. `tasks(003)`: `tasks.md` corregido (salida UTF-8 en `--verificar`, PROMPTS al final, referencias a tareas de otras features calificadas, orden de T029 y T030, dependencia de T001, prueba de `cierre_automatico`, fila de la cripta del paquete en `ServicioBench`, nombres de pruebas con los FR de la tabla, T002 y T003 confirmados, T037, T038, T040, T049 y T054 escritos por el integrante 2 sobre `origin/kris` y revisados por el integrante 3) y el plan alineado (dependencia de `_cronometrar`, `_mejor_y_mediana` y `SEMILLA` de la 001, quién escribe los cambios en los archivos del integrante 3, el bench y `quickstart.md`). En el tercer prompt resolví a favor del enunciado una contradicción que mi segundo pedido había creado con FR-301. Revisé cada resultado en el zip antes de los commits.
+
+-----------------------------------------------------------------------------------------------------------------------
