@@ -50,12 +50,18 @@ Data: a un cazador no se le inventa un `rango`.
 | `rango` de una ficha con `comportamiento == "cazador"` | falta, es `null`, no es entero (incluido `bool`) o es negativo | id de la ficha, campo (`rango`), valor recibido |
 | `cierre_automatico` de una salida (`SalidaDTO`), si viene | no es entero (incluido `bool`), o es menor que 1 | sala, dirección, campo (`cierre_automatico`), valor recibido |
 | `duracion` de la ficha de un objeto (`ObjetoDTO`), si la trae | no es entero (incluido `bool`), o es menor que 1 | id de la ficha, campo (`duracion`), valor recibido |
+| `suelta` de la ficha de un enemigo (`FichaEnemigoDTO`) | alguna de sus fichas quedó rechazada (por ejemplo, un objeto con `duracion` inválida) | id de la ficha del enemigo, campo (`suelta`), id de la ficha rechazada |
 
 Las dos últimas filas las pidió el integrante 2 (T055, escenarios H2-20 y H2-21): los dos campos
 programan eventos en la agenda, y la feature 004 supone que ningún efecto se programa con retraso 0.
 `null` o ausente sigue siendo válido en los dos, como en P1. La `duracion` de `EfectoFichaDTO` queda
 **fuera**: P1 ya convierte las duraciones ≤ 0 en `None`, así que no programa eventos con retraso 0, y
 ese comportamiento no cambia.
+
+La fila de `suelta` también la pidió el integrante 2 (T057, escenario H2-22): si el enemigo muere y
+suelta un objeto cuya ficha se rechazó, el programa fallaría a mitad de partida. Por eso la ficha del
+enemigo cuenta como inválida desde que se integra su sala. No agrega solicitudes: `ResolvedorCatalogo`
+ya baja las fichas de `suelta` antes de integrar la sala, así que basta con consultar sus rechazos.
 
 Efecto: un error de datos con contexto, que se pueda distinguir de un error de red (hoy
 `FuenteDatos` usa `ErrorRed` para los dos; ver T052). El mensaje sigue el mismo formato en todos
@@ -64,7 +70,8 @@ ficha, más el valor recibido. El programa no se cae en ningún caso. Según de 
 
 - **Esqueleto** (costos y `cierre_automatico`): la partida no inicia, tampoco con `--forzar`
   (003 FR-323).
-- **Ficha de la sala inicial** (cazador con `rango` inválido u objeto con `duracion` inválida): se
+- **Ficha de la sala inicial** (cazador con `rango` inválido, objeto con `duracion` inválida o enemigo
+  con una ficha de `suelta` rechazada): se
   rechaza la ficha y la partida no inicia.
 - **Ficha de cualquier otra sala**, llegue antes o durante la partida: no se vuelve a pedir (Data
   recuerda el rechazo por sala) y solo esa sala queda como contenido no disponible; un cazador de

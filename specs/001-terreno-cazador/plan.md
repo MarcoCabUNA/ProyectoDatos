@@ -282,6 +282,12 @@ ninguna carpeta nueva.
 | `ArmadorEstado` copia el costo igualado, y pruebas de la vista para H4 | Integrante 3 | — | FR-116, SC-106 y el Principio X para H4-1 y H4-2 (T038, T041). |
 | El grafo del mapa conocido | Integrante 2 | Integrante 3 («ir a») | Nada de esta feature. |
 
+**Dependencias externas (código del integrante 1 que usan otras specs).** Las specs 002 y 003 reutilizan
+estos nombres de esta feature: `_cronometrar`, `_mejor_y_mediana` y `SEMILLA` de `Logic/BenchLogica.py`;
+`_cuadricula_con_costos`, `_motor_con_cazadores`, `_centro` y `_peor` de `Logic/BenchRutas.py`; y
+`Mazmorra._salida_inversa` de `Logic/Mazmorra.py`. Aunque empiecen con `_`, no se les cambia el nombre ni
+la firma sin avisar antes al integrante 2.
+
 ## Seguimiento de complejidad
 
 Sin violaciones de la constitución que justificar. Los cambios a código P1 están en su tabla, con
