@@ -68,8 +68,21 @@ Restricciones que Derek puede validar al leer:
 | Eventos cancelados | No cuentan: la cola los descarta |
 
 Devuelve `True` si se detuvo en una decisión del jugador, `False` en otro caso. **No** modifica
-`avanzar_hasta_jugador`. No añade nada al historial de retroceso del motor en el que se usa más allá
-de lo que ya registran los eventos al ejecutarse (en el motor aparte es irrelevante).
+`avanzar_hasta_jugador`. Antes de devolver `True` hace lo mismo que `avanzar_hasta_jugador` (registra el reloj
+y el evento pendiente del jugador en el historial y cierra el intervalo).
+
+**Regla que se implementó para un instante t** (`ReconstructorEstado.hasta_instante`, que usa este método):
+
+- `j` es la última acción con tiempo **estrictamente menor** que t. Si en t hay una decisión del jugador, esa
+  acción no se hace: el estado pedido es el de justo antes de ella (así `historia <t>` coincide con `historia #k`).
+- Se parte de un punto de control con `acciones_completadas == j` cuando ese punto ya está en la decisión de t
+  (su reloj es mayor o igual que t). **No** se llama a `avanzar_hasta(t)` en ese caso: correría los eventos de ese
+  instante que la cola ordena después de la decisión, y FR-402 pide el estado justo antes de ella.
+- Si no, se parte del último punto con `acciones_completadas <= j − 1`, se re-simulan las acciones hasta la
+  `j − 1`, se ejecuta la `j` y se llama a `avanzar_hasta(t)`.
+- Excepción: si la partida terminó y t es el reloj del final, la acción que cae en t **sí** se aplica (fue la que
+  terminó la partida): el estado de ese instante es el final, igual al vivo.
+
 
 ## 4. Comandos y banderas
 

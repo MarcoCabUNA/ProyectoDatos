@@ -406,8 +406,9 @@ Cada prueba citará el identificador del requisito que verifica (Principio X).
 - Los instantes son enteros del reloj virtual; no hay instantes fraccionarios.
 - Los eventos con igual tiempo se ordenan de forma determinista (Principio IV), de modo que el estado en un
   instante está bien definido (FR-402).
-- Ningún efecto se programa con retraso 0, así que al ejecutar los eventos de un instante t no aparecen
-  eventos nuevos en ese mismo t. Hoy se cumple (FR-402).
+- `SalidaDTO.cierre_automatico` y `ObjetoDTO.duracion` todavía no se validan como mayores que 0 (Data lo
+  validará: pendiente del integrante 2). Con 0 el bucle de `avanzar_hasta` funciona; con un valor negativo el
+  reloj retrocedería (FR-402).
 - El pergamino de retroceso (P1 §2.11) y su límite de 5 acciones no cambian.
 - `partida.log` ya existe como registro de las acciones de la partida; esta feature solo exige que permita
   reproducirla hasta un instante.

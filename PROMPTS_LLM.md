@@ -1729,6 +1729,20 @@ Edita SOLO tu sección de «ir a» en specs/002-niebla-ir-a/spec.md (FR-250 a FR
 **Uso de la respuesta:** Se agregaron --checkpoint-cada y --hasta (campos y lectura de argumentos) para que Derek agregue sus banderas detrás.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+/speckit-implement Correcciones antes de la Fase 4. Haz solo esto, en este orden, con un commit por punto y sin tocar nada más:
+1) Logic/motorJuego.py, Motor.avanzar_hasta(t) (revisión de Marco): usa el evento que devuelve obtener_siguiente() en vez de la variable de ver_siguiente(); y, antes de devolver True, haz lo mismo que avanzar_hasta_jugador (registrar reloj y Evento_pendiente en el historial y llamar a _cerrar_intervalo()). Agrega una prueba: un evento cancelado en la raíz con tiempo <= t seguido de uno válido con tiempo > t debe devolver False sin mover el reloj. Corre la suite completa; si falla alguna prueba de reconstrucción, para y reporta. Commit «fix(004): avanzar_hasta usa el evento extraído y cierra el intervalo (T012)».
+2) tests/test_grabadores_linea.py: las pruebas que instalan los grabadores a mano quedan doblemente envueltas porque iniciar_partida ya los instala. Haz que usen un contexto sin los grabadores de iniciar_partida (o que afirmen explícitamente el envoltorio único). Commit «test(004): grabadores sin doble envoltorio (T015)».
+3) Documentación (solo specs/004-linea-tiempo, commit aparte «spec(004): ...»): (a) en spec.md Suposiciones, reemplaza la frase «Ningún efecto se programa con retraso 0 …»: SalidaDTO.cierre_automatico y ObjetoDTO.duracion todavía no se validan como mayores que 0 (Data lo validará: pendiente del integrante 2); con 0 el bucle funciona, con un valor negativo el reloj retrocedería; (b) en contrato §3 y research.md deja escrita la regla que se implementó: j es la última acción con tiempo ESTRICTAMENTE menor que t, se parte de un punto con acciones_completadas == j, no se llama a avanzar_hasta(t) si ese punto ya está en la decisión de t, y si la acción en t terminó la partida sí se aplica. No cambies ningún FR.
+Para y reporta con los commits y el total de la suite. No hagas push.
+   
+**Uso de la respuesta:** Se aplicaron las observaciones de Marco a avanzar_hasta, se arregló el doble envoltorio de los grabadores y se documentó la regla de instante estrictamente menor y la suposición sobre retrasos.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
 
 **Fecha:** Viernes 13 de noviembre 2026
 
@@ -2405,3 +2419,10 @@ Salida: ALTA/MEDIA/BAJA con archivo y línea, y al principio lo que está bien. 
 **Uso de la respuesta:** revisión de solo lectura de `origin/derek` (`acd4196`); no se tocó ningún archivo de la 002. `tasks.md` de la 002 todavía no existe. Se contrastaron las anclas de la tabla con `Logic/motorJuego.py` (líneas 42-43, 58 y 124) y `Logic/PartidaGuardada.py` (29 y 87), y todas las escrituras de `cerrada` en Logic (solo `abrir_puerta` y `CierrePuerta` cambian puertas durante la partida, y las dos avisan). Bien: capas, estructuras, las 4 líneas del motor, el repartidor (orden fijo, sin pérdida, el pergamino revierte por casilla sin avisos), el grafo de FR-225 y el uso de las funciones privadas solo como lectura. Sin hallazgos ALTA. MEDIA: `PartidaGuardada.cargar` no son 2 líneas y el comportamiento con `mapa = None` se describe distinto en el plan y en el data-model; NFR-250 se da por cumplido sin medición; `observador_rutas` sin requisito que lo pida (YAGNI); H-5 reinterpreta un escenario en vez de aclararlo en la spec. BAJA: números del bench de la 001 sin el mapa, data-model de la 001 desactualizado (H-1), la variante de B8 con puerta que cambia, la prueba de SC-202 que depende del integrante 3 y las alternativas del repartidor y del formato binario sin medir. Sin push.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Herramienta:** Claude (Claude Code)
+
+/speckit-implement T027 a T035 y T070 (Fase 4, historia 3: retroceder con pergamino) de specs/004-linea-tiempo/tasks.md. Pruebas primero en cada par; luego implementa y marca [X] solo lo que completes.
+Reglas: constitución v1.2.0, MVC n-capas, solo estructuras y librerías permitidas, sin copy/deepcopy. El pergamino no es una acción y no deja marcador: después de usarlo toma un punto de control nuevo en c copiando el estado vivo con PartidaGuardada.guardar (reemplaza el que ya exista en c, quita la última acción y los puntos posteriores a c). T030: ServicioLineaTiempo.ejecutar debe registrar ese caso (hoy el pergamino deja la línea inconsistente). T033 con H3-5 y H3-6 sin skip. T070: prueba del cazador después de retroceder (decide igual que desde cero, con la búsqueda de RutasHaciaJugador de Marco; no modifiques código de Marco). Después de cada commit, suite completa con PYTHONIOENCODING=utf-8 python tests/correr_pruebas.py. No empieces la Fase 5 ni H2. Reporte final con tareas hechas, pruebas, decisiones y pendientes de Marco o Derek.
+
+**Uso de la respuesta:** Se implementa la historia de retroceder con pergamino (punto de control nuevo) y la prueba del cazador (T027 a T035 y T070).

@@ -18,7 +18,7 @@ rango de las consultas (FR-409) es regla de negocio y por eso vive aquí; Servic
 
 Costos: agregar_accion, agregar_punto y registrar_carga O(1) amortizado; ubicar_punto O(log P);
 ubicar_accion_por_tiempo O(log A); registrar_ficha y ficha O(F), con F las fichas vistas (pocas).
-(El recorte con el pergamino, retroceder_una, llega en la tarea T028.)
+retroceder_una (el pergamino) O(1 + r), con r los puntos de control que sobran: no recorre la historia (NFR-403).
 """
 from dataclasses import dataclass
 
@@ -101,6 +101,28 @@ class LineaTiempo:
         """El último punto con acciones_completadas <= `acciones`, o None si no hay. O(log P)."""
         posicion = ultimo_menor_o_igual(self.puntos, acciones, lambda p: p.acciones_completadas)
         return self.puntos[posicion] if posicion >= 0 else None
+
+    # ---------- Pergamino (FR-413, FR-424, NFR-403)
+
+    def retroceder_una(self, estado_guardado: tuple) -> None:
+        """Un pergamino revirtió la última acción: la quita y deja un punto de control NUEVO en c = las que quedan.
+
+        `estado_guardado` es lo que devuelve PartidaGuardada.guardar sobre el estado vivo ya revertido:
+        (PartidaGuardadaDTO, [SalaGuardadaDTO]). Quita la última acción y los puntos con c acciones o más (siempre los
+        últimos del arreglo: si había uno en c, queda uno solo, el nuevo) y agrega el punto de c. No se guardan
+        marcadores y NO se recortan las cargas ni las fichas (hallazgo H-1). O(1 + r), sin recorrer la historia.
+
+        Lanza ValueError, sin cambiar nada, si no hay acciones o si el estado no es el de c acciones hechas."""
+        if not self.acciones:
+            raise ValueError("No hay ninguna acción que retroceder")
+        c = len(self.acciones) - 1
+        partida, salas = estado_guardado
+        if partida.jugador.acciones != c:
+            raise ValueError(f"El estado guardado tiene {partida.jugador.acciones} acciones y la línea quedaría con {c}")
+        self.acciones.pop()
+        while self.puntos and self.puntos[-1].acciones_completadas >= c:
+            self.puntos.pop()
+        self.puntos.append(PuntoControl(c, partida, salas))
 
     # ---------- Registros de carga y fichas (R3, hallazgo H-1)
 

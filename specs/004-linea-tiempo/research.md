@@ -245,6 +245,17 @@ soltar un pergamino, ese efecto **persiste** en la partida viva aunque la acció
   el instante de la decisión k; si la partida terminó antes de ese instante, el reloj del final de la
   partida. El reloj interno del motor aparte puede quedar en el último evento ≤ t; `ArmadorResumen`
   muestra el valor de FR-405 y no el interno.
+**Regla que se implementó para un instante t** (`ReconstructorEstado.hasta_instante`):
+
+- `j` es la última acción con tiempo **estrictamente menor** que t. Si en t hay una decisión del jugador, esa
+  acción no se hace: el estado pedido es el de justo antes de ella (así `historia <t>` coincide con `historia #k`).
+- Se parte de un punto de control con `acciones_completadas == j` cuando ese punto ya está en la decisión de t
+  (su reloj es mayor o igual que t). **No** se llama a `avanzar_hasta(t)` en ese caso: correría los eventos de ese
+  instante que la cola ordena después de la decisión, y FR-402 pide el estado justo antes de ella.
+- Si no, se parte del último punto con `acciones_completadas <= j − 1`, se re-simulan las acciones hasta la
+  `j − 1`, se ejecuta la `j` y se llama a `avanzar_hasta(t)`.
+- Excepción: si la partida terminó y t es el reloj del final, la acción que cae en t **sí** se aplica (fue la que
+  terminó la partida): el estado de ese instante es el final, igual al vivo.
 - **Complejidad**: O(e log n), con e los eventos con tiempo ≤ t desde la última decisión.
 - **Prueba prevista**: los escenarios H1-2, H1-9 y H1-12 de la spec, y la coincidencia entre
   `historia <t>` e `historia #k`.

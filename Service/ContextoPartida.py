@@ -11,6 +11,8 @@ Solo agrupa referencias; no tiene lógica. No es un DTO: guarda objetos vivos de
     mensajes                            los últimos 20 mensajes (BufferCircular, §4.8)
     bitacora                            BitacoraReplayIO de esta partida, o None (por ejemplo al reproducir un replay)
     criterio_vista                      criterio de la vista del inventario: None (orden real), "peso", "valor" o "nombre"
+    linea                               LineaTiempo de la partida (feature 004), o None si no se lleva (p. ej. en las pruebas
+                                        que arman el contexto a mano). Siempre es el ÚLTIMO campo y tiene valor por defecto.
 """
 from dataclasses import dataclass
 
@@ -22,6 +24,7 @@ from Data.ResolvedorCatalogo import ResolvedorCatalogo
 from DTO.CriptaDTO import CriptaDTO
 from Estructuras.BufferCircular import BufferCircular
 from Logic.Inventario import Inventario
+from Logic.LineaTiempo import LineaTiempo
 from Logic.Mazmorra import Mazmorra
 from Logic.jugador import Jugador
 from Logic.motorJuego import Motor
@@ -43,3 +46,4 @@ class ContextoPartida:
     mensajes: BufferCircular
     bitacora: BitacoraReplayIO | None = None
     criterio_vista: str | None = None
+    linea: LineaTiempo | None = None

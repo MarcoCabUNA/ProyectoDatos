@@ -19,6 +19,10 @@ la misma fuente se usa antes y durante la partida.
 Orden de arranque (§2.4): el contenido de la sala inicial se carga ANTES de aceptar la primera acción;
 motor.iniciar() activa a sus enemigos en el instante 0.
 
+Línea de tiempo (feature 004): al iniciar se crea la LineaTiempo con config.checkpoint_cada, se instalan los grabadores
+sobre el contenido y el resolvedor ANTES de cargar la sala inicial (así queda su registro de carga) y, al terminar la
+primera avanzar_hasta_jugador, se toma el punto de control 0.
+
 Bitácora de replay: se crea con el encabezado (id y versión de la cripta, versión del catálogo y semilla) y
 se anexa cada acción. Con registrar_bitacora=False (al REPRODUCIR un log) no se escribe ninguna.
 """
@@ -38,11 +42,14 @@ from DTO.ReplayDTO import EncabezadoReplayDTO
 from DTO.ReporteDatosDTO import ReporteDatosDTO
 from Estructuras.BufferCircular import BufferCircular
 from Logic.Inventario import Inventario
+from Logic.LineaTiempo import LineaTiempo
 from Logic.Mazmorra import Mazmorra
 from Logic.jugador import Jugador
 from Logic.motorJuego import Motor
 from Service.ArmadorEstado import ArmadorEstado
 from Service.ContextoPartida import ContextoPartida
+from Service.GrabadoresLinea import ContenidoGrabador, ResolvedorGrabador
+from Service.ServicioLineaTiempo import ServicioLineaTiempo
 from Service.SincronizadorUsos import SincronizadorUsos
 
 MENSAJES_EN_PANTALLA = 20       # §4.8: la interfaz muestra los últimos 20 mensajes
@@ -101,6 +108,9 @@ class ServicioPartida:
         inventario = Inventario(cripta.inventario_max)               # la capacidad la define la cripta
         mensajes = BufferCircular(MENSAJES_EN_PANTALLA)
         motor = Motor(semilla, jugador, mazmorra, mensajes.agregar, inventario)
+        linea = LineaTiempo(self._config.checkpoint_cada)
+        contenido = ContenidoGrabador(contenido, linea, jugador)     # antes de cargar la sala inicial (ordinal 0)
+        resolvedor = ResolvedorGrabador(resolvedor, linea)
 
         mazmorra.cargar_contenido(contenido.asegurar_sala(cripta.sala_inicial), resolvedor.ficha)
         motor.iniciar()
@@ -110,7 +120,8 @@ class ServicioPartida:
         contexto = ContextoPartida(cripta=cripta, nombre_jugador=nombre_jugador, semilla=semilla,
                                    fuente=self.fuente(), resolvedor=resolvedor, esqueleto=esqueleto,
                                    contenido=contenido, mazmorra=mazmorra, jugador=jugador,
-                                   inventario=inventario, motor=motor, mensajes=mensajes)
+                                   inventario=inventario, motor=motor, mensajes=mensajes, linea=linea)
+        ServicioLineaTiempo.tomar_punto(contexto)                    # el punto de control 0
         self._sincronizador.sincronizar(contexto)
         if registrar_bitacora:
             bitacora = BitacoraReplayIO(self.nueva_ruta_de_log())
