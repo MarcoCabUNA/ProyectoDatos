@@ -19,9 +19,12 @@ Si el contexto no tiene línea (contexto armado a mano), `ejecutar` es igual a S
 """
 from DTO.AccionDTO import AccionDTO
 from DTO.EstadoJuegoDTO import EstadoJuegoDTO
+from DTO.ResumenHistoriaDTO import ResumenHistoriaDTO
 from Logic.LineaTiempo import PuntoControl
 from Logic.PartidaGuardada import PartidaGuardada
+from Service.ArmadorResumen import ArmadorResumen
 from Service.ContextoPartida import ContextoPartida
+from Service.ReconstructorEstado import ReconstructorEstado
 from Service.ServicioAccionJugador import ServicioAccionJugador
 
 
@@ -52,3 +55,15 @@ class ServicioLineaTiempo:
         partida, salas = PartidaGuardada.guardar(contexto.motor, contexto.cripta,
                                                  contexto.resolvedor.version_catalogo(), contexto.semilla)
         contexto.linea.agregar_punto(PuntoControl(contexto.jugador.acciones, partida, salas))
+
+    def consultar_por_instante(self, contexto: ContextoPartida, t: int) -> ResumenHistoriaDTO:
+        """`historia <t>`: el resumen del estado en el instante t. ValueError si t no está entre 0 y el reloj actual."""
+        contexto.linea.validar_instante(t, contexto.motor.reloj)
+        motor = ReconstructorEstado(contexto).hasta_instante(t)
+        return ArmadorResumen.armar(motor, contexto.esqueleto, t, False, False, getattr(motor, "mapa_conocido", None))
+
+    def consultar_por_accion(self, contexto: ContextoPartida, k: int) -> ResumenHistoriaDTO:
+        """`historia #k`: el resumen justo antes de la acción k. ValueError si k no está entre 1 y las acciones hechas."""
+        contexto.linea.validar_accion(k)
+        motor = ReconstructorEstado(contexto).hasta_accion(k)
+        return ArmadorResumen.armar(motor, contexto.esqueleto, k, True, False, getattr(motor, "mapa_conocido", None))
