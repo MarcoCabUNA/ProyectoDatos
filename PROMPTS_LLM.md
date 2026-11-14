@@ -2111,3 +2111,35 @@ No cambies nada más, no escribas código y no hagas commit. Al final: las líne
 **Uso de la respuesta:** dos commits. `spec(003)`: FR-323 incluye `cierre_automatico` (001 FR-122, `a725e31`); H2-6 cita FR-308 y H4-4 cita FR-313; FR-301, NFR-301 y SC-306 dicen que `--bench` mide, además de las criptas sintéticas, la cripta con más salas del paquete local, leída sin red (§6.1: «la cripta publicada más grande»); FR-313 aclara que `--bench` solo mide el tiempo; sesión de Clarificaciones del 14/11. `tasks(003)`: `tasks.md` corregido (salida UTF-8 en `--verificar`, PROMPTS al final, referencias a tareas de otras features calificadas, orden de T029 y T030, dependencia de T001, prueba de `cierre_automatico`, fila de la cripta del paquete en `ServicioBench`, nombres de pruebas con los FR de la tabla, T002 y T003 confirmados, T037, T038, T040, T049 y T054 escritos por el integrante 2 sobre `origin/kris` y revisados por el integrante 3) y el plan alineado (dependencia de `_cronometrar`, `_mejor_y_mediana` y `SEMILLA` de la 001, quién escribe los cambios en los archivos del integrante 3, el bench y `quickstart.md`). En el tercer prompt resolví a favor del enunciado una contradicción que mi segundo pedido había creado con FR-301. Revisé cada resultado en el zip antes de los commits.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Implementá T071 de specs/004-linea-tiempo/tasks.md (integrante 2), que viene de FR-261 y del escenario H7-8 de specs/002-niebla-ir-a/spec.md. Antes de escribir, leé: .specify/memory/constitution.md; T071, T039 y T041 en specs/004-linea-tiempo/tasks.md; FR-261 y el escenario 8 de la historia 7 de la spec 002; Data/BitacoraReplayIO.py completo; DTO/AccionDTO.py (a_linea y cómo se lee); tests/TestBitacoraReplayIO.py; y dónde se usa BitacoraReplayIO (Service/ServicioReplay.py, Service/ServicioPartida.py, Service/ServicioGuardado.py), para no romper a nadie.
+
+Qué hay que hacer (pruebas primero, Principio X):
+
+1. Pruebas en tests/TestBitacoraReplayIO.py, escritas antes del código. Primero comprobá que fallan. Cada nombre cita la tarea y el FR, por ejemplo test_t071_fr261_…:
+   a. Un log con líneas «# ir a 12» entre acciones: leer devuelve solo las acciones, en el mismo orden, como si el comentario no estuviera.
+   b. Un comentario como primera línea después de #ACCIONES y otro como última línea del archivo, con y sin salto de línea final: se ignoran, y ultima_linea_descartada se comporta igual que hoy.
+   c. Un log solo con comentarios en la sección de acciones: cero acciones, sin error.
+   d. El encabezado no cambia: #CRIPTA-REPLAY y #ACCIONES siguen siendo obligatorios y en su lugar. Un «#» antes de #ACCIONES sigue siendo un error de encabezado, como hoy.
+   e. anexar_comentario («ir a 12») escribe la línea «# ir a 12» y no cambia acciones_escritas(). Rechaza con ErrorBitacora un texto que no sea str, que esté vacío o que tenga salto de línea (\n o \r). Antes de iniciar() también lanza ErrorBitacora, igual que anexar.
+   f. anexar rechaza con ErrorBitacora una acción cuya a_linea() empiece con «#», porque al leerla se perdería como comentario. Usá un AccionDTO armado a propósito; si AccionDTO no permite producir esa línea, explicalo y no hagas esta prueba.
+   g. continuar_desde con un log que tiene comentarios: cuenta solo acciones (cantidad = acciones, no líneas), el log nuevo tiene las primeras N acciones y no copia los comentarios (son de depuración; documentalo).
+   h. Ida y vuelta: anexar, anexar_comentario y anexar, y después leer da las dos acciones.
+
+2. Código, solo en Data/BitacoraReplayIO.py:
+   - leer: en la sección de acciones (después de #ACCIONES), toda línea que empiece con «#» es un comentario y se ignora. Esto cubre «# ir a <sala>» de la 002. El encabezado no cambia.
+   - Método nuevo anexar_comentario(texto: str) -> None: escribe «# » + texto en una línea, con el mismo mecanismo de anexar (solo anexado). Valida lo de la prueba e. No cuenta como acción.
+   - anexar: la validación de la prueba f.
+   - Actualizá el docstring del módulo (el formato del archivo con un ejemplo de comentario y el uso de anexar_comentario) y los de leer y continuar_desde.
+   - Con type hints y docstring en lo nuevo. No cambies la firma de nada que ya exista. No toques archivos de otros integrantes: si algo de ellos tuviera que cambiar, avisame en vez de hacerlo. No modifiques specs/004-linea-tiempo/tasks.md (es del integrante 3: ella marca T071).
+
+3. Restricciones de la constitución v1.2.0: sin dict ni set como índice, sin collections, sin sorted ni list.sort, y sin copy fuera de tests/.
+
+4. Al final corré python tests/correr_pruebas.py y el replay de ejemplo (python main.py --replay ejemplos/partida_ejemplo.log --offline), que debe dar lo mismo que antes. Decime: los archivos que cambiaste; las pruebas nuevas, con su resultado antes (fallando) y después; el resultado de la suite; y si algún llamador de BitacoraReplayIO podría notar el cambio. No hagas commit.
+
+**Uso de la respuesta:** T071 de la 004 (FR-261 de la 002). Primero se escribieron 11 pruebas en `tests/TestBitacoraReplayIO.py`: 10 fallaban antes del código, y la que pasaba es la que comprueba que el encabezado no cambia. Después, `Data/BitacoraReplayIO.py`: `leer` ignora las líneas que empiezan con `#` en la sección de acciones; `anexar_comentario(texto)` escribe `# <texto>` sin contar como acción; `anexar` rechaza una acción cuya línea empiece con `#`; `continuar_desde` no copia los comentarios (documentado). Resultado: 536 OK (skipped=3) y 32/32 scripts; el replay de ejemplo es idéntico byte a byte. Revisé el diff antes del commit. Falta que el «ir a» del integrante 3 llame a `anexar_comentario`.
+
+-----------------------------------------------------------------------------------------------------------------------

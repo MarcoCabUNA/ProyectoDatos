@@ -339,6 +339,110 @@ class PruebasBitacoraReplayIO(unittest.TestCase):
             BitacoraReplayIO.continuar_desde(self.ruta, 1, self.ruta)  # la misma ruta: ya existe
         self.assertEqual(self.contenido(), antes)
 
+    # ------------------------------------------------------------ comentarios (T071, FR-261, escenario H7-8 de la 002)
+    def test_t071_fr261_leer_ignora_comentarios_entre_acciones(self):
+        self.escribir_a_mano(TEXTO_ESPERADO.replace("mover|0||\n", "mover|0||\n# ir a 12\n")
+                             + "# ir a 12\nesperar|||\n")
+        partida = BitacoraReplayIO.leer(self.ruta)
+        self.assertEqual(partida, PartidaReplayDTO(ENCABEZADO, [ACCIONES[0], ACCIONES[1], ACCIONES[2]],
+                                                   ultima_linea_descartada=False))
+
+    def test_t071_fr261_comentario_primero_y_ultimo(self):
+        cuerpo = TEXTO_ESPERADO.replace("#ACCIONES\n", "#ACCIONES\n# ir a 3\n")
+        # Último comentario con salto de línea final: completo, se ignora.
+        self.escribir_a_mano(cuerpo + "# ir a 12\n")
+        partida = BitacoraReplayIO.leer(self.ruta)
+        self.assertEqual((partida.acciones, partida.ultima_linea_descartada), (ACCIONES[:2], False))
+        # Sin salto final: igual que hoy, la última línea quedó a medio escribir y se descarta y avisa.
+        self.escribir_a_mano(cuerpo + "# ir a 12")
+        partida = BitacoraReplayIO.leer(self.ruta)
+        self.assertEqual((partida.acciones, partida.ultima_linea_descartada), (ACCIONES[:2], True))
+        # Con finales de línea de Windows también.
+        self.escribir_a_mano((cuerpo + "# ir a 12\n").replace("\n", "\r\n"))
+        partida = BitacoraReplayIO.leer(self.ruta)
+        self.assertEqual((partida.acciones, partida.ultima_linea_descartada), (ACCIONES[:2], False))
+
+    def test_t071_fr261_solo_comentarios_da_cero_acciones(self):
+        encabezado = TEXTO_ESPERADO.split("#ACCIONES\n")[0] + "#ACCIONES\n"
+        self.escribir_a_mano(encabezado + "# ir a 12\n# ir a 3\n#\n")
+        partida = BitacoraReplayIO.leer(self.ruta)
+        self.assertEqual((partida.encabezado, partida.acciones, partida.ultima_linea_descartada),
+                         (ENCABEZADO, [], False))
+
+    def test_t071_fr261_el_encabezado_no_cambia(self):
+        # Un '#' antes de #ACCIONES sigue siendo un error de encabezado.
+        self.falla_al_leer(TEXTO_ESPERADO.replace("semilla=12345\n", "semilla=12345\n# ir a 12\n"), "línea 6")
+        self.falla_al_leer(TEXTO_ESPERADO.replace("id_cripta=", "# hola\nid_cripta="), "línea 2")
+        # #CRIPTA-REPLAY sigue siendo obligatorio en la línea 1 (un comentario antes no vale).
+        self.falla_al_leer("# ir a 12\n" + TEXTO_ESPERADO, "no es un log")
+        # #ACCIONES sigue siendo obligatorio.
+        self.falla_al_leer(TEXTO_ESPERADO.replace("#ACCIONES\n", "# ir a 12\n"), "línea 6")
+        self.falla_al_leer(TEXTO_ESPERADO.split("#ACCIONES\n")[0], "incompleto")
+
+    def test_t071_fr261_anexar_comentario_escribe_la_linea_y_no_cuenta(self):
+        b = self.nueva()
+        b.anexar(ACCIONES[0])
+        antes = self.contenido()
+        b.anexar_comentario("ir a 12")
+        self.assertEqual(self.contenido(), antes + "# ir a 12\n")
+        self.assertEqual(b.acciones_escritas(), 1)
+
+    def test_t071_fr261_anexar_comentario_rechaza_textos_invalidos(self):
+        b = self.nueva()
+        antes = self.contenido()
+        for malo in (None, 12, b"ir a 12", "", "ir a\n12", "ir a\r12", "ir a 12\n"):
+            with self.assertRaises(ErrorBitacora, msg=repr(malo)):
+                b.anexar_comentario(malo)                         # type: ignore[arg-type]
+        self.assertEqual((self.contenido(), b.acciones_escritas()), (antes, 0))
+
+    def test_t071_fr261_anexar_comentario_antes_de_iniciar(self):
+        with self.assertRaises(ErrorBitacora):
+            BitacoraReplayIO(self.ruta).anexar_comentario("ir a 12")
+        self.assertFalse(os.path.exists(self.ruta))
+
+    def test_t071_fr261_anexar_comentario_si_borraron_el_archivo(self):
+        b = self.nueva()
+        os.remove(self.ruta)
+        with self.assertRaises(ErrorBitacora):
+            b.anexar_comentario("ir a 12")
+        self.assertFalse(os.path.exists(self.ruta))               # no crea un log sin encabezado
+
+    def test_t071_fr261_anexar_rechaza_accion_que_se_leeria_como_comentario(self):
+        b = self.nueva()
+        antes = self.contenido()
+        accion = AccionDTO("#mover", direccion=0)
+        self.assertTrue(accion.a_linea().startswith("#"))          # AccionDTO sí permite esa línea
+        with self.assertRaises(ErrorBitacora):
+            b.anexar(accion)
+        self.assertEqual((self.contenido(), b.acciones_escritas()), (antes, 0))
+
+    def test_t071_fr261_continuar_desde_cuenta_acciones_y_no_copia_comentarios(self):
+        b = self.nueva()
+        b.anexar_comentario("ir a 12")
+        b.anexar(ACCIONES[0])
+        b.anexar_comentario("ir a 3")
+        b.anexar(ACCIONES[1])
+        b.anexar_comentario("ir a 7")
+        b.anexar(ACCIONES[2])
+        self.assertEqual(b.acciones_escritas(), 3)
+        nueva = BitacoraReplayIO.continuar_desde(self.ruta, 2, os.path.join(self.temp, "copia.log"), ENCABEZADO)
+        self.assertEqual(nueva.acciones_escritas(), 2)
+        with open(nueva.ruta(), encoding="utf-8", newline="") as f:
+            self.assertEqual(f.read(), TEXTO_ESPERADO)           # las 2 primeras acciones, sin comentarios
+        todas = BitacoraReplayIO.continuar_desde(self.ruta, 3, os.path.join(self.temp, "todas.log"))
+        self.assertEqual(BitacoraReplayIO.leer(todas.ruta()).acciones, ACCIONES[:3])
+        with self.assertRaises(ErrorBitacora):                     # 6 líneas, pero solo 3 acciones
+            BitacoraReplayIO.continuar_desde(self.ruta, 4, os.path.join(self.temp, "x.log"))
+
+    def test_t071_fr261_ida_y_vuelta_con_comentario(self):
+        b = self.nueva()
+        b.anexar(ACCIONES[0])
+        b.anexar_comentario("ir a 12")
+        b.anexar(ACCIONES[1])
+        self.assertEqual(self.contenido(), TEXTO_ESPERADO.replace("mover|0||\n", "mover|0||\n# ir a 12\n"))
+        partida = BitacoraReplayIO.leer(self.ruta)
+        self.assertEqual(partida, PartidaReplayDTO(ENCABEZADO, ACCIONES[:2], ultima_linea_descartada=False))
+
     # ------------------------------------------------------------ DTOs
     def test_dtos_inmutables(self):
         with self.assertRaises(dataclasses.FrozenInstanceError):
