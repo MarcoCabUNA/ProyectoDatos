@@ -2621,3 +2621,85 @@ con una nota de que se repitió como 1a1dc8137f6 por los comandos bloqueados. No
 **Uso de la respuesta:** se registró la consulta `1a1dc8137f6` y se agregó a la entrada de `1a1dc7afa4b` la nota de que se repitió como `1a1dc8137f6`. Solo cambia `PROMPTS_LLM.md`, así que no se corrió la suite. Sin push.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Dos prompts en un chat nuevo.
+
+Primero:
+
+Documentación de la feature 002-niebla-ir-a, sin código y sin commit. Son dos partes que van en dos commits separados (los hago yo): la A primero, porque T005 dice que los cambios del contrato van en un commit plan(002) propio antes de las tareas; la B después. No toques spec.md, ningún archivo de código ni la sección «Viaje automático «ir a» (integrante 3)» de plan.md (es del integrante 3). No renumeres T001 a T099.
+
+PARTE A — contracts/contrato-mapa-conocido.md y data-model.md (y plan.md o research.md solo si alguna frase de la parte del integrante 2 queda contradiciendo lo nuevo)
+
+Respuestas del integrante 3 del 14/11 (D-2, D-3, D-6 y su pedido sobre el grafo). Reflejalas así:
+
+A1. MapaConocido.es_explorada(sala: int) -> bool: True solo si el estado de la sala es EXPLORADA; O(1); no cambia nada, no consume tiempo ni registra en el historial. La usa ArmadorEstado del integrante 3 para el H-2 (opción A). Agregala al contrato (en (c) o en una sección corta propia) y a la tabla de métodos de MapaConocido del data-model.
+
+A2. buscar_exploradas(nombre): un nombre vacío o de solo espacios devuelve [] (después de strip() no coincide con ninguna sala); un nombre que no es str (None, un número, bytes) lanza ValueError, porque es un error de programación del que llama. Agregalo al contrato (c) y al data-model.
+
+A3. Garantías de GrafoMapaConocido que pidió el integrante 3 (la búsqueda de la 001 crea arreglos de tamaño cantidad_salas() e indexa por id):
+- cantidad_salas() es el total de la cripta, len(Mazmorra.salas), con ids de 0 a cantidad_salas() - 1, igual que GrafoEsqueleto.
+- Coherencia: (v, c) está en salidas(u) si y solo si (u, c) está en entradas(v).
+- Una sala no explorada no tiene salidas ni entradas.
+- La posición 0 puede no ser una sala (lo dice GrafoEsqueleto.cantidad_salas): salidas(0) y entradas(0) devuelven [] sin error, porque el estado se mira antes de leer mazmorra.salas[u]. Lo mismo para cualquier hueco.
+
+A4. Costo de armar el grafo: el constructor es O(1) y el índice inverso del esqueleto (_inversa) se arma en la primera llamada a entradas, O(S + E), como en GrafoEsqueleto. Hoy el contrato (a) dice «una vez por partida (o por viaje)». El plan del integrante 3 (I3-8) lo arma en cada paso. Cambiá el texto para que admita por partida, por viaje o por paso, y diga que armarlo en cada paso suma ese O(S + E) a cada paso, que es justo lo que mide B11 (armar el grafo y un paso_desde_cero); sin afirmar el resultado antes de medir.
+
+A5. Contrato (d) dice que «ir a» no debe usar el esqueleto (Mazmorra, GrafoEsqueleto, GestorEsqueleto) para rutas (FR-252). El plan del integrante 3 (D-1, decidir_paso) traduce la vecina que eligió el grafo a una dirección leyendo Mazmorra.salida sobre las cuatro direcciones de la sala actual. Aclará en (d) que eso no es usar el esqueleto para la ruta: la ruta sale solo del grafo, la sala actual está explorada y la vecina ya la eligió el grafo (acordado con el integrante 3, D-1).
+
+A6. H-2 quedó decidido por el integrante 3 el 14/11 (opción A): ArmadorEstado pone sala_destino = SIN_EXPLORAR (-1) en las salidas hacia salas no exploradas y sala_salida = None mientras la sala de salida no esté explorada, usando es_explorada. La constante SIN_EXPLORAR se define en DTO/EstadoJuegoDTO.py (del integrante 3), NO en DTO/MapaConocidoDTO.py, que no cambia (D-6). Actualizá en el contrato la garantía de (b) que dice «Si se agrega a EstadoJuegoDTO… Decide el integrante 3» y la mención del H-2 en (d), y lo que diga lo mismo en el data-model o en la parte del integrante 2 del plan.
+
+PARTE B — tasks.md
+
+B1. T005: marcala [x] y anotá en la línea que el integrante 3 confirmó el contrato el 14/11, con es_explorada, los dos casos de buscar_exploradas y las garantías del grafo de A3, que quedaron en el contrato en el commit plan(002) de la parte A.
+
+B2. T006: actualizá la anotación con la decisión de A6 (opción A, SIN_EXPLORAR en DTO/EstadoJuegoDTO.py del integrante 3, es_explorada). Sigue sin marcar hasta que ella lo suba; la prueba de SC-202 sobre EstadoJuegoDTO (T045) sigue en skip hasta entonces.
+
+B3. T026: agregá estas pruebas a tests/test_grafo_mapa_conocido.py, con el FR en el nombre:
+- test_fr225_entradas_es_la_inversa_de_salidas: en varias criptas con el mapa a medias (salas exploradas, avistadas y desconocidas, caras abiertas, cerradas y sin observar, incluida la de H2-6), para toda sala u y toda (v, c) de salidas(u), (u, c) está en entradas(v), y al revés; las no exploradas no tienen salidas ni entradas.
+- test_fr225_posicion_cero_y_huecos_dan_listas_vacias: con la Mazmorra de tests/ayudas_mapa.py (salas 1..n, la posición 0 no es una sala), salidas(0) y entradas(0) devuelven [] sin error, y cantidad_salas() == len(Mazmorra.salas).
+- test_fr204_fr217_es_explorada_solo_para_exploradas: True para exploradas; False para avistadas, desconocidas y la posición 0; no cambia el estado ni registra nada en el historial.
+- test_fr251_buscar_exploradas_vacio_o_espacios_da_lista_vacia ("" y "   ").
+- test_fr251_buscar_exploradas_no_str_es_value_error (None, 5 y b"x").
+
+B4. T027 y T028: que T027 diga que salidas y entradas miran el estado de la sala antes de leer mazmorra.salas, y cómo se arma _inversa (A4); que T028 incluya es_explorada (O(1)) y la validación de buscar_exploradas de A2. Agregá las pruebas nuevas a la tabla de cobertura.
+
+B5. T030: el aviso también dice que es_explorada está lista, para el H-2.
+
+B6. Sección reservada del integrante 3: el integrante 3 pidió el 14/11 que el integrante 2 genere sus tareas desde T100, y las revisa ella antes de implementarlas. Cambiá la nota en cursiva de la sección para que diga eso (ya no «El integrante 2 no la edita»). Generá sus tareas a partir de SU sección del plan («Viaje automático «ir a» (integrante 3)», commits 29caa4a y 44265bc), sin agregar reglas ni decisiones que el plan no tenga:
+- Numeración consecutiva desde T100, con el mismo formato que las del integrante 2: [P] cuando se puede hacer en paralelo, [US6] o [US7], los FR entre paréntesis, pruebas antes del código que prueban y cada prueba con el escenario o caso y el FR en el nombre, según su tabla «Pruebas previstas» y la tabla de trazabilidad de la spec.
+- Componentes: DTO/ViajeDTO.py, Logic/ViajeAutomatico.py, Service/ServicioIrA.py, ir_a y dar_paso_viaje al final de ControladorBackend, la opción A del H-2 en Service/ArmadorEstado.py con SIN_EXPLORAR en DTO/EstadoJuegoDTO.py (A6; su plan todavía dice MapaConocidoDTO, eso lo corrige ella en su sección) y tests/test_estado_sin_filtrar.py, Logic/BenchViaje.py, su parte de DECISIONES.md (con los límites de H-3: sin tildes ni espacios internos, I3-9) y su registro en PROMPTS_LLM.md.
+- Agregá una tarea suya para que ServicioLineaTiempo pase motor.mapa.a_dto() a ArmadorResumen (no motor.mapa, y no el nombre mapa_conocido que lee hoy), que depende del aviso de a_dto (T049); referenciala desde T008.
+- Dependencias con las tareas del integrante 2: T030 (GrafoMapaConocido, buscar_exploradas, es_explorada y tests/ayudas_mapa.py), T033 (contexto.motor.mapa en el motor) y T049 (a_dto). Las pruebas de Logic pura pueden empezar con T030; las del servicio y el motor, con T033.
+- Marcá «(coordinar con el integrante 2)» la que toca Service/ServicioBench.py (D-5: quien suba segundo hace el merge) y cualquier otra que toque un archivo del integrante 1 o del integrante 2.
+- Donde su plan deja algo abierto (por ejemplo la señal de daño, I3-3 y M-2, o lo que dependa de las respuestas M-1 a M-3), no lo decidas: escribí la tarea como dice el plan y marcala «(confirmar con el integrante 3)».
+- Agregá al final de su sección su propia tabla de cobertura: FR-250 a FR-264, NFR-250, NFR-251, SC-250 a SC-253, H6-1 a H6-10, H7-1 a H7-9, los casos 1, 2b, 3 y 6 y A24 a A37, cada uno con su prueba y su tarea.
+- Restricciones de la constitución v1.2.0 en lo que proponen las tareas: sin dict ni set como índice, sin collections, heapq ni bisect, sin sorted ni list.sort, sin copy fuera de tests/, y Logic no importa Data ni Service.
+- En «Dependencias» y en el grafo de «Entrega incremental», solo agregá que sus tareas dependen de T030, T033 y T049.
+
+Al final decime:
+- los archivos de la parte A y de la parte B por separado;
+- las líneas que cambiaste del contrato y del data-model;
+- la lista de T100 en adelante, con su título corto;
+- si encontraste algo del plan del integrante 3 que choque con el contrato, con la spec o con la constitución (no lo arregles: decímelo);
+- cualquier elemento de la cobertura que quede sin prueba o sin tarea.
+No hagas commit.
+
+Segundo:
+
+Tres ajustes chicos en specs/002-niebla-ir-a/tasks.md, sin código y sin commit. No toques ningún otro archivo.
+
+1. T042: la guarda dice que hace skipTest si no existe Service/ArmadorResumen.py, pero ese archivo ya existe (T023 de la 004), así que la prueba fallaría en vez de saltarse hasta T118. Cambiala a: si el ResumenHistoriaDTO.mapa_conocido que devuelve historia #4 es None, self.skipTest("pendiente: T118 del integrante 3 (ServicioLineaTiempo pasa motor.mapa.a_dto())"). T050 la quita.
+
+2. T050 dice «Cuando el integrante 3 termine T023 de la 004 y H-2». Que diga «cuando el integrante 3 termine T118 y T116 (aviso en T117)». Y en T008, la última frase («La prueba H4-4 (T042) queda en skip hasta que exista T023 de la 004») tiene que decir que queda en skip hasta T118.
+
+3. En la nota en cursiva de la sección del integrante 3, la primera frase todavía dice «Esta sección la completa el integrante 3 en su propio commit», y contradice lo que sigue. Que diga que la generó el integrante 2 a pedido del integrante 3 (14/11), con el resto de la nota como está (ella las revisa y puede corregirlas en su propio commit).
+
+No cambies nada más. Al final: las líneas que cambiaste, con el texto antes y después.
+
+**Uso de la respuesta:** dos commits. `plan(002)`: el contrato del mapa queda confirmado por el integrante 3 (T005) con `es_explorada(sala)` O(1) para el H-2, los dos casos de `buscar_exploradas` (vacío o solo espacios → `[]`; no `str` → `ValueError`), las garantías del grafo (total de salas, coherencia entre `salidas` y `entradas`, sala no explorada sin listas, posición 0 y huecos → `[]`), el costo de armarlo por paso (`_inversa` en la primera llamada a `entradas`, lo mide B11), la aclaración de D-1 (traducir la vecina a una dirección con `Mazmorra.salida` no es usar el esqueleto para la ruta) y el H-2 decidido (opción A, `SIN_EXPLORAR` en `DTO/EstadoJuegoDTO.py`); data-model, una frase del plan y dos de research alineadas. `tasks(002)`: T005 marcada; T006, T008, T026 a T028, T030, T042 y T050 actualizadas (cinco pruebas nuevas en T026; la guarda de H4-4 espera a T118); y las tareas de «ir a» del integrante 3, T100 a T127, generadas desde su sección del plan a su pedido, con lo abierto marcado «confirmar con el integrante 3» y su tabla de cobertura. En T050 corregí a mano «la guarda de T023 de la 004» por «la guarda de T118». No se tocaron spec.md, el código ni la sección del integrante 3 en plan.md. Revisé el resultado en el zip antes de cada commit.
+
+-----------------------------------------------------------------------------------------------------------------------
