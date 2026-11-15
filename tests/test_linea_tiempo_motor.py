@@ -138,6 +138,35 @@ class PruebasAvanzarHasta(unittest.TestCase):
         self.assertEqual(nuevo.azar.getstate(), clasico.azar.getstate())
         self.assertIsNone(nuevo.jugador.Evento_pendiente)
 
+    def test_t12_fr402_avanzar_hasta_deja_el_mismo_historial_que_avanzar_hasta_jugador(self):
+        """Propuesta de Marco: los dos caminos cierran el mismo intervalo y deshacer los deja en el mismo estado."""
+        def preparar() -> Motor:
+            motor = _escenario(semilla=7)
+            motor.esperar()                                           # una acción del jugador: acciones >= 1
+            self.assertGreaterEqual(motor.jugador.acciones, 1)
+            _enemigo_en(motor, 50)                                    # un enemigo ataca antes de la próxima decisión
+            return motor
+
+        clasico, nuevo = preparar(), preparar()
+        decision = clasico.jugador.Evento_pendiente.tiempo            # cuándo le vuelve a tocar al jugador
+        self.assertEqual(nuevo.jugador.Evento_pendiente.tiempo, decision)
+        vida_antes, reloj_antes = clasico.jugador.vida, clasico.reloj
+        self.assertTrue(clasico.avanzar_hasta_jugador())
+        self.assertTrue(nuevo.avanzar_hasta(decision))                # hasta la decisión del jugador
+        self.assertLess(clasico.jugador.vida, vida_antes)             # el intervalo no es trivial
+        self.assertEqual(nuevo.historial.cantidad(), clasico.historial.cantidad())
+        self.assertGreaterEqual(nuevo.historial.cantidad(), 1)
+        self.assertTrue(clasico.historial.deshacer())
+        self.assertTrue(nuevo.historial.deshacer())
+        self.assertEqual(nuevo.reloj, clasico.reloj)
+        self.assertEqual(nuevo.reloj, reloj_antes)
+        self.assertEqual(nuevo.jugador.vida, clasico.jugador.vida)
+        self.assertEqual(nuevo.jugador.vida, vida_antes)
+        self.assertEqual(nuevo.historial.cantidad(), clasico.historial.cantidad())
+        # deshacer vuelve a antes de la acción: el jugador tiene el control y no tiene evento pendiente, en los dos
+        self.assertIsNone(clasico.jugador.Evento_pendiente)
+        self.assertIsNone(nuevo.jugador.Evento_pendiente)
+
     def test_fr402_cancelado_en_la_raiz_y_valido_posterior_no_mueve_el_reloj(self):
         motor = _escenario()
         motor.programar_accion(motor.jugador, 900)
