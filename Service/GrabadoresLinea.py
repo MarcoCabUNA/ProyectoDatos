@@ -13,7 +13,8 @@ lo que la partida viva ya pidió, al primer uso (research.md R3):
 Los dos delegan TODO lo demás al objeto original, incluidos `rechazo()` y `resolver_contenido()`; así se
 comportan igual que el original y no agregan solicitudes. Si el original lanza ErrorDatos (o cualquier
 error), el error sale igual y NO se registra nada. Se instalan en los dos únicos puntos donde se arma un
-ContextoPartida (ServicioPartida.iniciar_partida y ServicioGuardado.cargar).
+ContextoPartida: ServicioPartida.iniciar_partida y ServicioGuardado.cargar (este último solo si el archivo trae línea,
+FR-420: el resolvedor se envuelve antes de armar el motor y el contenido después, cuando el jugador ya existe).
 """
 from Logic.LineaTiempo import LineaTiempo
 from Data.GestorContenido import GestorContenido

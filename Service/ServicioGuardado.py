@@ -11,6 +11,13 @@ Une tres piezas que no se conocen entre sí:
 
 Se guarda y se carga cuando el control lo tiene el jugador, es decir, entre dos acciones.
 
+La línea de tiempo (feature 004, FR-420) SÍ se guarda: acciones vigentes, puntos de control, registros de carga y
+fichas, con su K, dentro del mismo archivo (formato versión 2). Al cargar se arma con `LineaTiempo.desde_guardada`, se
+CONSERVA el K guardado aunque la configuración pida otro, y se instalan los grabadores (ContenidoGrabador y
+ResolvedorGrabador) sobre el contenido y el resolvedor de la partida cargada, para que siga registrando lo que cargue
+desde ahí. Así `historia <t>` e `historia #k` responden lo mismo antes de guardar y después de cargar. Si el archivo no trae
+línea (largo 0), la partida cargada no lleva línea (`contexto.linea` es None), como un contexto armado a mano.
+
 Qué NO se guarda (decisiones del equipo):
     - El historial de retroceso: una partida cargada empieza sin nada que deshacer, hasta su primera acción.
     - Los mensajes en pantalla: el buffer empieza con el aviso de que se cargó la partida.
@@ -27,12 +34,16 @@ sigue anexando ahí; reproducirlo da toda la partida, desde el principio. Es lo 
 para no dejar un log suelto si algo falla antes. Si el log anterior se borró o es de otra partida, la carga
 falla con el ErrorBitacora de Datos: una partida que no se puede reproducir rompería la garantía del replay.
 """
+from dataclasses import replace
+
 from Data import GuardadoBinario
 from Data.BitacoraReplayIO import BitacoraReplayIO
 from DTO.ReplayDTO import EncabezadoReplayDTO
 from Estructuras.BufferCircular import BufferCircular
+from Logic.LineaTiempo import LineaTiempo
 from Logic.PartidaGuardada import PartidaGuardada
 from Service.ContextoPartida import ContextoPartida
+from Service.GrabadoresLinea import ContenidoGrabador, ResolvedorGrabador
 from Service.ServicioPartida import MENSAJES_EN_PANTALLA, ServicioPartida
 from Service.SincronizadorUsos import SincronizadorUsos
 
@@ -54,6 +65,8 @@ class ServicioGuardado:
             contexto.motor, contexto.cripta, contexto.resolvedor.version_catalogo(), contexto.semilla,
             None if bitacora is None else bitacora.ruta(),
             0 if bitacora is None else bitacora.acciones_escritas())
+        if contexto.linea is not None:                               # FR-420: la línea viaja en el mismo archivo
+            partida = replace(partida, linea=contexto.linea.a_guardada())
         return GuardadoBinario.guardar(ruta, partida, salas)
 
     def cargar(self, ruta: str, nombre_jugador: str) -> ContextoPartida:
@@ -64,14 +77,19 @@ class ServicioGuardado:
         if problemas:
             raise ErrorCarga("No se puede continuar esa partida: " + "; ".join(problemas) + ".")
 
+        linea = None if partida.linea is None else LineaTiempo.desde_guardada(partida.linea)   # conserva el K guardado
+        if linea is not None:
+            resolvedor = ResolvedorGrabador(resolvedor, linea)       # antes de armar el motor: registra las fichas que pida
         mensajes = BufferCircular(MENSAJES_EN_PANTALLA)
         motor = PartidaGuardada.cargar(partida, salas, cripta,
                                        [esqueleto.obtener_sala(i) for i in esqueleto.ids_salas()],
                                        resolvedor.ficha, mensajes.agregar)
+        if linea is not None:                                        # el jugador ya existe: da el ordinal de cada carga nueva
+            contenido = ContenidoGrabador(contenido, linea, motor.jugador)
         contexto = ContextoPartida(cripta=cripta, nombre_jugador=nombre_jugador, semilla=partida.semilla,
                                    fuente=self._partida.fuente(), resolvedor=resolvedor, esqueleto=esqueleto,
                                    contenido=contenido, mazmorra=motor.mazmorra, jugador=motor.jugador,
-                                   inventario=motor.inventario, motor=motor, mensajes=mensajes)
+                                   inventario=motor.inventario, motor=motor, mensajes=mensajes, linea=linea)
         motor.mensaje(f"Partida cargada: estás en {motor.mazmorra.sala(motor.jugador.Sala_Actual).nombre}")
         self._sincronizador.sincronizar(contexto)
         contexto.bitacora = self._continuar_log(partida)             # lo último: lo único que crea un archivo
