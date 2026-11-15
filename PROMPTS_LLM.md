@@ -3025,3 +3025,54 @@ uv run, PROMPTS_LLM.md, no push.
 **Uso de la respuesta:** (1) En `specs/001-terreno-cazador/plan.md`, la línea de T033 es la fila de `Logic/motorJuego.py · __init__` de la tabla de cambios; la nota va al final de esa fila, en la última celda, para no cortar la tabla. El resto del plan no cambia. (2) T057 ya estaba marcada `[X]` en `tasks.md` (lo hizo `38861c6`); se agregó «Hecha en `38861c6` (integrante 2): la prueba de H2-22 ya no tiene `skipTest`» al final de la tarea y la misma aclaración en la nota de H2-22 de la sección de pruebas. Se comprobó que `test_h2_22_fr122_botin_invalido_deja_la_sala_sin_contenido` no tiene `skipTest` (el único que queda en `tests/test_terreno_cazador.py` es el de la 003). Suite con `uv run`: 830 pruebas OK (4 omitidas), 31 de 31 scripts. Un commit, sin push.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+perfecto haz el push
+
+**Uso de la respuesta:** `git push origin Marco`: `4c4307b..e9038d6`, 72 commits (el avance rápido de `origin/derek` y los cinco commits de Marco del 15 de noviembre). Esta entrada queda sin commit, para el próximo.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Nueva tarea de la 001 (FR-122): validar todo el contenido de una sala en Data antes de que Logic lo cargue.
+
+Problema: con una caché vieja (de antes de T055/T057) en disco, GestorContenido.asegurar_sala entrega la sala
+como CARGADA porque solo mira los rechazos en memoria; la ficha inválida aparece recién dentro de
+Mazmorra.cargar_contenido (vía ficha() → revalidación de disco). Resultado: sala a medio cargar (enemigos
+anteriores agregados, contadores_tipo avanzados, incluido el del rechazado), sala sigue CARGADA, y si la falla
+es ErrorRed, al reintentar se duplican los enemigos.
+
+Arreglo acordado con el integrante 2 (el archivo es suyo, lo hacemos en mi rama; NO tocar Logic/Mazmorra.py):
+en Data/GestorContenido.asegurar_sala, antes de devolver la sala, pedir resolvedor.ficha(tipo,
+contar_acierto=False) de cada enemigo, cada trampa y cada objeto del suelo. Con ErrorDatos: _rechazar(id_sala,
+error) y relanzar. Con ErrorRed: dejarlo propagar sin marcar nada. Verificá primero que ficha() acepte
+contar_acierto y que trampas y objetos se resuelvan con ficha(); si no, pará y explicame antes de cambiar nada.
+
+Orden de trabajo (spec-kit, un commit por paso, suite en verde con uv run antes de cada commit, no push):
+1) tasks.md de la 001: agregá T058 con la descripción, el FR-122 y los escenarios de prueba. Si GestorContenido
+   es código de P1, agregá la fila en la tabla «Cambios a código de la primera entrega» de plan.md. Commit.
+2) Pruebas (citan FR-122): caché vieja escrita a mano en un directorio temporal con
+   (a) un enemigo cuya suelta está rechazada, en la sala 3: al intentar entrar se rechaza con el mensaje, la
+       sala 3 queda sin enemigos, contadores_tipo no cambia, el movimiento no consume tiempo ni se registra, y
+       la sala queda marcada como contenido no disponible desde el primer intento;
+   (b) lo mismo con un objeto del suelo con duracion inválida;
+   (c) variante ErrorRed durante la validación y reintento con red buena: sin enemigos duplicados y
+       contadores correctos.
+   Confirmá que (a) y (c) fallan sin el arreglo. Commit.
+3) El arreglo en GestorContenido.asegurar_sala, con type hints; si es código de P1, sin docstrings nuevos
+   (comentario si hace falta) y con antes/después en mi sección de DECISIONES.md. Verificá que no cambien las
+   solicitudes de red en el caso normal (caché válida). Commit.
+4) PROMPTS_LLM.md con este pedido.
+
+Al final decime: el diff de GestorContenido (líneas), los resultados de la suite y si alguna prueba existente
+cambió de comportamiento.
+
+**Uso de la respuesta:** Verificación previa: `ResolvedorCatalogo.ficha(id_ficha, contar_acierto=True)` existe y revalida lo que lee del disco (suelta incluida); las trampas se resuelven con `fn_ficha` en `cargar_contenido`; los objetos del suelo no pasan por `ficha()` ahí, pero `ficha()` valida cualquier id, así que no hubo que parar. `ErrorDatos` es subclase de `ErrorRed`, por eso se atrapa solo `ErrorDatos`. `GestorContenido` es de P1 (`855a6da`). Cuatro commits: (1) `80b0c56`, T058 en `tasks.md` y fila en «Cambios a código de la primera entrega» de `plan.md`. (2) `43fe72e`, `tests/test_cache_vieja.py` con la caché escrita a mano (`cache/v/VERSION` y `<id>.json`): (a) enemigo con suelta rechazada, (b) objeto del suelo con `duracion` 0, (c) `ErrorRed` al validar y reintento, (d) caché válida sin pedidos al catálogo. Sin el arreglo, (a) y (c) fallan (un enemigo a medio cargar; en (c) el reintento deja `e-1` dos veces con número 2) y (b) da ERROR: el movimiento se hace y `SincronizadorUsos` lanza el `ErrorDatos` sin atrapar. Se commitearon con `skipTest` hasta el arreglo, como H2-22, para que la suite quedara en verde. (3) `a27b859`, +14 líneas en `asegurar_sala` (comentario, sin docstring), sin `skipTest`, T058 marcada y antes/después en `DECISIONES.md` §5.6. Las solicitudes de red no cambian: partida con el API falso (6 y 4 solicitudes, 2 y 0 de catálogo, antes y después) y replay de ejemplo (los mismos 2 lotes de contenido, 0 de catálogo). Solo cambia el reporte de la caché cuando la ficha sale del disco (3 aciertos en lugar de 1). Suite: 834 pruebas OK (4 omitidas, las de antes), 31 de 31 scripts; ninguna prueba existente cambió de resultado. (4) Este registro. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
