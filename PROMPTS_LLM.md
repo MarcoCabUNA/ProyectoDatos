@@ -2875,3 +2875,49 @@ seguí
 **Uso de la respuesta (parte 2):** fase 9 de la 002 (T035 segundo momento, T037 y T040 a T044), en dos commits. (a) `a_guardado` y `restaurar` en `Logic/MapaConocido.py`: `restaurar` valida los largos (`ValueError`) y nunca registra en el historial; con `None` arma el mapa inicial desde la sala del jugador, con el historial en `None` mientras lo arma (try/finally). Se corrigió a mano la fila de `restaurar` del data-model §2, que decía que con `None` lo registrado quedaba en el intervalo abierto. (b) En `Logic/PartidaGuardada.py`, que revisa el integrante 1, solo `mapa=motor.mapa.a_guardado()` en `guardar` y `motor.mapa.restaurar(partida.mapa)` en `cargar`, sin `if`. Pruebas: las seis de T035 y las tres de T040 fallaron primero; T041 (replay y `--hasta` con líneas `# ir a`, y misma partida mismo mapa) es la excepción documentada y se comprobó que falla con `restaurar` anulado; T042 queda en skip hasta T118 del integrante 3 (y necesitará `a_dto`, T046). Suite: 778 pruebas OK (3 skip), 31 de 31 scripts; replay byte a byte igual; grep limpio. Revisé el zip y el diff de `PartidaGuardada.py` antes de los commits.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Un prompt en un chat nuevo y una respuesta a una pregunta de Claude Code durante T055.
+
+Prompt:
+
+/speckit-implement Feature 002-niebla-ir-a, parte del integrante 2. Cuarto y último lote: las fases 10, 11 y 12 de specs/002-niebla-ir-a/tasks.md. Las fases 1 a 9 ya están hechas y en origin/derek (T001 a T044, salvo T004 y T006, que son coordinación). Hacé solo estas tareas, en este orden y como dice cada una:
+
+1. Fase 10: T045 (las pruebas primero; comprobá que fallan, salvo las que tienen guarda), T046 (a_dto) y T047.
+   - T048 y T049 son avisos al integrante 3 y T050 espera al integrante 3: no los hagas ni los marques.
+2. Fase 11: T051 (comprobá que fallan), T052, T053, T054, T055 y T056.
+   - Para correr el bench usá el Python del proyecto (python main.py --bench, con PYTHONIOENCODING=utf-8 en Windows; uv solo si está instalado) y guardá la tabla en specs/002-niebla-ir-a/bench-<fecha de hoy>.txt con la máquina y la versión de Python, como specs/001-terreno-cazador/bench-2026-11-13.txt.
+   - En T056: si algún criterio NO se cumple (SC-203, SC-204, SC-206, SC-207, NFR-205, o B11 con 1 024 salas por encima de 5 ms), PARÁ ahí y decímelo con los números: no cambies umbrales, ni el diseño, ni la spec. Si se cumplen, corregí la frase de research R5 y del contrato (a) con el número medido de B11, como dice la tarea.
+3. Fase 12: T057, T058, T059 y T060.
+   - T057: en DECISIONES.md, reemplazá el «(pendiente)» de la sección «## Integrante 2 — 002 y 003» por los enlaces a la spec, el plan y la investigación de la 002 (como hacen las otras secciones) y un apartado «### §5.3 Mapa conocido». El plan de trabajo del curso numera así: §5.3 mapa conocido (compartido con el integrante 3, que escribe la parte de «ir a») y §5.4 resolubilidad. Agregá al principio del apartado una línea que diga que la parte de «ir a» de §5.3 la escribe el integrante 3 en su sección, y dejá «§5.4 Resolubilidad» como «(pendiente: 003)». Además de todo lo que pide T057, incluí en los límites conocidos el de las dos salidas de una sala hacia la misma vecina: Mazmorra._salida_inversa (del integrante 1, solo lectura) da solo la primera cara de vuelta, así que la segunda cara de la vecina no se observa (es la misma regla que abrir_puerta; fuera de las criptas publicadas). No toques las secciones de los integrantes 1 y 3, ni la introducción del archivo.
+   - T058: solo las filas de esta parte en la tabla «Trazabilidad del Apéndice B» de spec.md, con los nombres reales de las pruebas que existen hoy en tests/ (buscalos, no los supongas).
+   - T059: todos los grep de la tarea, más git diff de Logic/motorJuego.py y Logic/PartidaGuardada.py contra el commit 0f71f15 (antes de la feature), que debe mostrar solo las líneas de T033 y T040.
+   - T060: la suite y el replay. Del quickstart, hacé §1, §3, §4 y §5; §2 es con el integrante 3. NO marques T060: queda abierta hasta que pase la parte del EstadoJuegoDTO de test_sc202 (H-2 del integrante 3), como dice la tarea.
+   - T061: NO la hagas: los prompts los registro yo en PROMPTS_LLM.md. No toques ese archivo.
+
+Reglas:
+- Constitución v1.2.0 y las «Reglas para todas las tareas» de tasks.md: sin dict ni set como índice o caché (tampoco en el bench), sin collections, heapq ni bisect, sin sorted ni list.sort, sin copy fuera de tests/, y Logic no importa Data ni Service.
+- Logic/BenchLogica.py y Logic/BenchRutas.py no se modifican (solo se importan sus funciones, como dicen las tareas). B8 avisa por motor.mazmorra.observador_puertas, nunca con BenchRutas._cambiar_puerta.
+- Archivos permitidos: Logic/MapaConocido.py, Logic/BenchMapaConocido.py (nuevo), Service/ServicioBench.py (solo el import y la entrada de la lista), tests/test_mapa_conocido_vista.py (nuevo), tests/test_bench_mapa.py (nuevo), tests/ayudas_mapa.py (solo ayudantes nuevos), specs/002-niebla-ir-a/bench-<fecha>.txt (nuevo), specs/002-niebla-ir-a/research.md y contracts/contrato-mapa-conocido.md (solo la frase de B11 de T056), specs/002-niebla-ir-a/spec.md (solo las filas de T058), DECISIONES.md (solo la sección del integrante 2) y specs/002-niebla-ir-a/tasks.md (para marcar). Si otro archivo tuviera que cambiar, avisame en vez de cambiarlo.
+- Marcá con [x] en tasks.md solo lo que quedó completo.
+
+Al final decime:
+- los archivos de cada grupo, para cuatro commits: (1) fase 10: T045 a T047; (2) fase 11: T051 a T056 con el archivo del bench; (3) spec(002): T058; (4) docs: T057, la frase de B11 en research y el contrato, y tasks.md;
+- las pruebas nuevas, con su resultado antes y después del código, y cuáles quedaron con guarda y por qué;
+- la tabla del bench y, por cada criterio de T056, si se cumple, con el número;
+- el resultado de la suite, de los scripts, del replay y de cada grep de T059;
+- cualquier diferencia con tasks.md, el data-model o el contrato.
+No hagas commit.
+
+Pregunta de Claude Code: T055 rompe `tests/TestServicioBench.py:132`, que compara la lista por defecto de `ServicioBench` exactamente con [BenchDatos.medir, BenchLogica.medir, BenchInventario.medir]. ¿Qué hago?
+
+Respuesta:
+
+Cambiala: en tests/TestServicioBench.py, solo la aserción de la línea 132 (y su import), para que espere [BenchDatos.medir, BenchLogica.medir, BenchMapaConocido.medir, BenchInventario.medir]. En Service/ServicioBench.py, además del import y la lista, actualizá el docstring de __init__, que dice «las de los tres integrantes, en orden: Datos, Lógica, Inventario», para que nombre también el mapa conocido. El nombre de la prueba no lo cambies. Los dos archivos son míos. Seguí con T056 y la fase 12.
+
+**Uso de la respuesta:** último lote de la 002 (fases 10 a 12), en cuatro commits. (1) `MapaConocido.a_dto()` (solo exploradas, costo igualado, estado recordado y `destino = None` para las avistadas) con `tests/test_mapa_conocido_vista.py`: las 10 pruebas fallaron primero; H5-7 queda en skip hasta la 003 y la parte del `EstadoJuegoDTO` de SC-202 hasta el H-2 del integrante 3. (2) `Logic/BenchMapaConocido.py` (B1 a B11), `BenchMapaConocido.medir` en `ServicioBench` después de `BenchLogica.medir` (con la aserción de `TestServicioBench` actualizada) y la tabla `bench-2026-11-15.txt`: se cumplen SC-203 (×1,10 y ×1,09), SC-204 (×1,03), SC-207 (×0,99), NFR-205 / SC-206 (peor ciclo 5,7 ms < 20 ms) y B11 con 1 024 salas (armar el grafo + un paso: 4,52 ms < 5 ms, con poco margen; la búsqueda es 3,8 ms y armar el grafo 0,9 ms). (3) `spec(002)`: la trazabilidad del Apéndice B de la parte del integrante 2 con los nombres reales de las pruebas. (4) `DECISIONES.md` «§5.3 Mapa conocido» (R0 a R5 con su evidencia, decisiones por diseño, límites conocidos, antes y después del binario), la frase de B11 en research y el contrato con el número medido, y las tareas marcadas (T004, T030, T048, T049 y T061 a mano, después de los avisos). Suite: 822 pruebas OK (5 skip), 31 de 31 scripts; replay igual que antes de la feature; greps de T059 limpios. T050 y T060 quedan abiertas hasta el H-2 y T118 del integrante 3. Revisé el zip antes de los commits.
+
+-----------------------------------------------------------------------------------------------------------------------

@@ -58,14 +58,16 @@ vivo, responde lo mismo en los tres casos. El constructor es O(1) y no recorre n
 (`_inversa`, pares origen y dirección por sala) se arma en la **primera llamada a `entradas`**, en O(S + E), como en
 `GrafoEsqueleto`, y queda en ese objeto (depende solo del esqueleto, que no cambia en la partida). Armar el grafo en
 cada paso, como prevé el plan del integrante 3 (I3-8), suma ese O(S + E) a cada paso: es justo lo que mide B11 (armar el
-grafo y un `paso_desde_cero`), y si entra en los 5 ms de NFR-250 no se afirma antes de medir.
+grafo y un `paso_desde_cero`). Medido el 15/11 con 1 024 salas y el mapa completo
+([bench-2026-11-15.txt](../bench-2026-11-15.txt)): 4.518 ms de mediana (0.941 ms el grafo y 3.788 ms el paso), por debajo
+de los 5 ms de NFR-250, con poco margen.
 
 **Búsqueda nueva por paso** (regla 3 de la 001: «o empieza una búsqueda nueva»). El grafo **no avisa** a una búsqueda
 guardada cuando cambia una salida utilizable. Como el viaje recalcula antes de cada paso (FR-255) y el conocimiento
 solo cambia entre un paso y el siguiente, «ir a» empieza una búsqueda nueva en cada paso (`paso_desde_cero`, o
-`BusquedaCostoMinimo.reiniciar`): da por construcción el mismo paso que «calcular desde cero» (FR-255, SC-251). Si armar
-el grafo y dar un paso entra en los 5 ms de NFR-250 se comprueba con B11 del bench (research, R7), sin afirmarlo antes
-de medir. Si la medición de NFR-251 llega a pedir reutilizar la búsqueda
+`BusquedaCostoMinimo.reiniciar`): da por construcción el mismo paso que «calcular desde cero» (FR-255, SC-251). Armar
+el grafo y dar un paso con 1 024 salas tarda 4.518 ms de mediana en B11 del bench (research, R7), por debajo de los 5 ms
+de NFR-250. Si la medición de NFR-251 llega a pedir reutilizar la búsqueda
 entre pasos, el aviso se agrega en ese momento, con su prueba y avisando antes (research, R5).
 
 (El aviso `puerta_cambio` que el mapa **recibe** de la `Mazmorra` por medio de `RepartidorAvisosPuertas`, para volver a

@@ -301,8 +301,9 @@ El detalle (firmas, reglas, ejemplos y lo que no se ofrece) está en
   explorados, de los que el jugador conoce todas sus salidas (FR-205), así que no filtra nada del esqueleto.
   **Sin aviso a una búsqueda guardada**: como el viaje recalcula **antes de cada paso** (FR-255) y el conocimiento solo
   cambia entre pasos, «ir a» empieza una búsqueda nueva por paso (`paso_desde_cero` o `reiniciar`), que la regla 3 de
-  la 001 admite («o empieza una búsqueda nueva»). Si eso entra en los 5 ms de NFR-250 (armar el grafo y dar un paso)
-  **no se afirma antes de medir**: se comprueba con B11 (R7), en la cuadrícula de 1 024 salas con el mapa completo.
+  la 001 admite («o empieza una búsqueda nueva»). **Medido con B11** (R7; [bench-2026-11-15.txt](bench-2026-11-15.txt)),
+  en la cuadrícula de 1 024 salas con el mapa completo: armar el grafo y dar un paso de esquina a esquina tarda 4.518 ms
+  de mediana (mejor 4.358 ms), por debajo de los 5 ms de NFR-250, con poco margen (0.941 ms el grafo y 3.788 ms el paso).
   *Alternativa descartada*: que el mapa avise con `puerta_cambio(a, b)` a una búsqueda guardada entre pasos cada vez
   que cambia una salida utilizable. Ningún requisito lo pide y nadie lo usaría (YAGNI, Principio III). Si la medición de
   NFR-251 del integrante 3 llega a pedir reutilizar la búsqueda, el aviso se agrega en ese momento, con su prueba y

@@ -212,7 +212,242 @@ Mediciones: `python -m Service.ServicioBench` (`Logic/BenchRutas.py`), tabla com
 
 ## Integrante 2 — 002 y 003
 
-(pendiente)
+Spec: [specs/002-niebla-ir-a/spec.md](specs/002-niebla-ir-a/spec.md) ·
+Plan: [specs/002-niebla-ir-a/plan.md](specs/002-niebla-ir-a/plan.md) ·
+Investigación: [specs/002-niebla-ir-a/research.md](specs/002-niebla-ir-a/research.md)
+
+### §5.3 Mapa conocido
+
+La parte de «ir a» de §5.3 (el viaje automático que usa este mapa) la escribe el integrante 3 en su sección. Aquí va
+la parte del mapa conocido: los tres estados de cada sala, la memoria de puertas por cara, la antorcha, el pergamino,
+el guardado y lo que el mapa le ofrece a «ir a» (FR-201 a FR-225, NFR-201 a NFR-205). Detalle en
+[research.md](specs/002-niebla-ir-a/research.md) R0 a R7 y en
+[contrato-mapa-conocido.md](specs/002-niebla-ir-a/contracts/contrato-mapa-conocido.md).
+
+**Revisión de las estructuras existentes (R0).** Se usa tal cual `HistorialRetroceso` (registrar O(1), deshacer
+O(cambios del intervalo)) para el pergamino. La `Mazmorra` se usa **solo para leer** (nombres, salidas, costo
+igualado, emparejamiento de caras con `_salida_inversa`); tiene un solo `observador_puertas`, ocupado por las rutas
+del cazador. `GrafoEsqueleto` no sirve para «ir a» (su «utilizable» es «abierta ahora», no «recordada abierta»), pero
+se copia su idea de adyacencia inversa armada una vez. `BusquedaCostoMinimo` sirve sin cambios porque recibe el grafo
+como parámetro. Ninguna estructura de `Estructuras/` ofrece acceso directo por id, y los ids ya son enteros seguidos,
+así que no se usan ni se agrega nada a `Estructuras/`. `PartidaGuardada` y `GuardadoBinario` se extienden (decisión 4).
+
+#### 1. Representación: dos arreglos, por sala y por cara (R1)
+
+**Problema.** Tres estados por sala (desconocida, avistada, explorada; FR-201), el estado recordado de cada puerta
+**por cara** (abierta, cerrada o sin observar; FR-207, FR-208, FR-212), separado del esqueleto (FR-218), con
+consultas que no dependan del tamaño (NFR-201, SC-203) y sin `dict` ni `set`.
+
+**Alternativas.** `set` o `dict` de exploradas (O(1) promedio, prohibido); una lista de ids explorados recorrida en
+cada consulta (O(X)); atributos nuevos en `SalaViva` y `SalidaViva` (O(1), pero mezcla esqueleto y conocimiento y
+modifica código P1 del integrante 1); un grafo propio con copia de las salas conocidas (duplica el esqueleto);
+`bytearray` (O(1), fuera de los tipos acordados).
+
+**Decisión.** `Logic/MapaConocido.py`, estado de la partida que vive en el motor (`motor.mapa`), con dos `list[int]`:
+`estado[sala]` (largo S) y `caras[sala*4 + dirección]` (largo 4·S). Lo que se sabe de una explorada (nombre,
+salidas, costo igualado) no se copia: se lee del esqueleto solo si está explorada. «Avistada» se mantiene al
+explorar (cada destino desconocido de sus salidas pasa a avistado), sin contadores, porque entre dos pergaminos las
+exploradas solo crecen. Ninguna operación baja un estado (FR-203).
+
+**Complejidad.** `estado_sala` y `estado_cara`: O(1). Memoria: 5 casillas por sala, O(S).
+
+**Evidencia** (B1 a B3, 100 / 1 024 / 10 000 salas, un tercio en cada estado):
+
+| Medición | Resultado |
+|---|---|
+| B1 `estado_sala`, 100 000 consultas | 0,044 / 0,048 / 0,048 µs por consulta: 10 000 contra 100, 1,10 veces; **SC-203 se cumple** |
+| B2 `estado_cara`, 100 000 consultas | 0,092 / 0,101 / 0,100 µs por consulta: 1,09 veces; **SC-203 se cumple** |
+| B3 listas de ids recorridas (descartada) | 0,87 / 7,6 / 102,7 µs por consulta: 20, 158 y 2 138 veces B1 |
+
+**¿Coincide con el plan?** Sí.
+
+#### 2. Tres puntos de entrada y el repartidor del aviso de puertas (R2)
+
+**Problema.** Explorar al entrar, con y sin antorcha (FR-202, FR-203, FR-210 a FR-216), volver a observar las
+puertas de la sala del jugador cuando cambian (FR-207, FR-209), con costo proporcional a lo revelado (NFR-202,
+SC-204), dentro del ciclo de 20 ms (NFR-205, SC-206) y sin que la precarga, el esqueleto o el cazador toquen el mapa
+(FR-218).
+
+**Alternativas.** Actualizar el mapa en Service después de cada movimiento (las reglas quedarían en Service y la
+re-simulación de la 004 tendría que repetirlo); re-observar la sala del jugador al final de cada evento (O(1) por
+evento, en todos, y toca el bucle de P1); recalcular «avistadas» recorriendo todo el mapa después de cada entrada
+(O(S + X·g)); un segundo observador en la `Mazmorra`; que el mapa reenvíe el aviso a las rutas (cadena).
+
+**Decisión.** Solo tres puntos escriben el mapa: `iniciar` (desde `Motor.iniciar`), `entrar(sala, antorcha)` (desde
+`Motor.mover_jugador`, justo después de cambiar la sala; el booleano es `efectos.tiene(jugador, "antorcha")` en ese
+instante, así que el mapa no conoce los efectos y H3-8 sale sin código especial) y `puerta_cambio` (el aviso de la
+001, que re-observa todas las puertas de la sala del jugador, porque el aviso no identifica una puerta sin vuelta).
+Más `restaurar` al cargar. Todo pasa por `_poner_estado` y `_poner_cara`. Para que el aviso llegue a las rutas del
+cazador y al mapa sin modificar la `Mazmorra`, el motor asigna `RepartidorAvisosPuertas([rutas, mapa])` como
+`observador_puertas` (hallazgo H-1; las líneas de `Logic/motorJuego.py` las escribió el integrante 2 y las revisó el
+integrante 1).
+
+**Complejidad.** `iniciar` y `entrar` sin antorcha: O(g). Con antorcha: O(1 + Σ g de las vecinas que pasan a
+exploradas), a lo sumo 5 salas y 20 salidas. `puerta_cambio`: O(1). El repartidor: O(observadores) por aviso.
+
+**Evidencia** (B4, B5 y B8; la entrada al centro con la antorcha revela siempre 5 salas y 8 caras):
+
+| Medición | Resultado |
+|---|---|
+| B4 entrada con antorcha, resto del mapa explorado | 13,1 / 13,3 / 13,5 µs: el mayor contra el menor, 1,03 veces; **SC-204 se cumple** |
+| B5 entrada + recalcular «avistadas» (descartada) | 49 / 400 / 4 844 µs: crece con S |
+| B8 ciclo con antorcha, 1 024 salas, 30 cazadores y 20 errantes y rastreadores, el jugador se mueve | peor ciclo 5,71 ms (mediana 0,43 ms): **NFR-205 y SC-206 se cumplen** |
+| B8, además una puerta de la sala del jugador cambia en cada ciclo, avisada por `motor.mazmorra.observador_puertas` | peor ciclo 5,50 ms (mediana 0,47 ms): **se cumplen** |
+
+Antes de cronometrar B8 se juegan 30 ciclos de cada variante comparando, casilla por casilla, el mapa del motor
+medido (aviso por el repartidor) con el de un motor de control (aviso a las rutas y al mapa por separado), y en la
+sala del jugador cada cara recordada con la real: son iguales.
+
+**¿Coincide con el plan?** Sí.
+
+#### 3. Pergamino: reversión por casilla en el historial (R3)
+
+**Problema.** El pergamino debe dejar el mapa exactamente como antes de la acción, incluidas las salas de la
+antorcha y las puertas observadas (FR-222), con registro e inversión proporcionales a lo que cambió (NFR-203,
+SC-207).
+
+**Alternativas.** Copiar el mapa entero al empezar cada acción y restaurarlo (O(S) por acción); una sola función de
+reversión por entrada con la lista de casillas (misma complejidad, más difícil de explicar); inversas también para
+la línea de tiempo (no hacen falta: la 004 reconstruye hacia adelante).
+
+**Decisión.** `_poner_estado` y `_poner_cara` no hacen nada si el valor no cambia; si cambia, registran en el
+`HistorialRetroceso` existente una función que devuelve **esa casilla** a su valor anterior (índice y valor ligados) y
+después escriben. Como deshacer recorre el intervalo de atrás hacia adelante, una casilla que cambió dos veces en la
+acción vuelve al primer valor. El conocimiento inicial se descarta con la preparación del motor y no se deshace.
+
+**Complejidad.** Registrar: O(1) por casilla cambiada. Deshacer: O(casillas cambiadas en el intervalo); una entrada
+con antorcha cambia a lo sumo 5 estados de exploración, 16 de avistamiento y 8 caras. No depende de S ni de X.
+
+**Evidencia** (B6 y B7, las mismas 13 casillas en los tres tamaños):
+
+| Medición | Resultado |
+|---|---|
+| B6 entrar con antorcha, cerrar el intervalo y deshacer | 15,9 / 25,8 / 15,7 µs (el mejor, 16 µs en los tres): el mayor contra el menor, 0,99 veces; **SC-207 se cumple** |
+| B7 copiar el mapa entero y restaurarlo (descartada) | 10,7 / 24,9 / 159,9 µs: crece con S |
+
+**¿Coincide con el plan?** Sí.
+
+#### 4. Copia por punto de control y bloque propio en el binario versión 2 (R4)
+
+**Problema.** Guardar y cargar el mapa idéntico (FR-221), que cada punto de control de la línea de tiempo lleve el
+mapa de ese instante (FR-223) y que `--replay` dé el mismo mapa (FR-224), sin `copy` y con una copia proporcional al
+tamaño del mapa una vez por punto (NFR-203).
+
+**Alternativas.** Para el archivo: el mapa dentro del bloque global; solo las exploradas y las caras observadas
+(lista de pares, O(X)); una copia por casilla dentro del bloque de cada sala; reconstruir el mapa al cargar
+re-simulando. Para cargar un DTO sin mapa: lanzar `ValueError` (rompe unas 109 construcciones en 11 archivos de
+prueba de otros integrantes sin proteger ningún archivo real) o un `if` en `PartidaGuardada.cargar`.
+
+**Decisión.** `MapaConocidoGuardadoDTO(estado_salas, caras)` como campo `mapa` de `PartidaGuardadaDTO`, antes de
+`linea`, que sigue siendo el último. `a_guardado` copia los dos arreglos con `list(...)` y `restaurar` los vuelve a
+copiar (si no, la re-simulación de la 004 escribiría dentro del punto de control), comprueba los largos (si no
+coinciden con la `Mazmorra`, `ValueError`) y **reemplaza** el mapa en curso sin registrar en el historial (H-8).
+`restaurar(None)` arma el mapa inicial desde la sala del jugador, como FR-202, así `PartidaGuardada.cargar` suma una
+sola línea, sin `if`. En el archivo, el mapa va en un **bloque propio**: 1 byte de estado y 1 byte con las 4 caras
+(2 bits cada una) por sala; el mismo codificador sirve para el mapa de cada punto de control dentro del bloque de la
+línea (T003 de la 004).
+
+**Antes y después del formato binario** (cambia una decisión de la primera parte; el antes es el formato del archivo
+de partida del Documento de Decisiones de la primera entrega y de P1 §4.10):
+
+- *Antes*: versión 1; cabecera con magia `CRPT`, versión, offset y largo del bloque global, offset del índice,
+  entradas e id mínimo; bloque global, bloques de sala e índice al final.
+- *Después*: versión 2, definida una sola vez con los dos bloques nuevos (el del mapa de esta feature y el de la línea
+  de T003 de la 004): la cabecera pasa a 58 bytes (`<4sHQIQIIQIQI>`) con offset y largo del mapa y de la línea; el
+  bloque global, los bloques de sala y el índice no cambian, y `cargar_sala` sigue sin leer ni el mapa ni la línea.
+  Un archivo de la versión 1 se rechaza con la versión leída y la esperada, sin cargar nada (FR-421 de la 004).
+
+**Complejidad.** Copiar para guardar o para un punto de control: O(S) en tiempo y memoria (5 casillas por sala en
+memoria, 2 bytes por sala en el archivo). Cargar: O(S).
+
+**Evidencia** (B9, con el mapa completo):
+
+| Medición | Resultado |
+|---|---|
+| B9 `a_guardado` + `restaurar` | 2,6 / 16,3 / 145,7 µs (26, 16 y 15 ns por sala): crece en forma lineal con S, una vez por punto de control |
+
+**¿Coincide con el plan?** Sí. `restaurar(None)` en lugar de un error se decidió en el plan el 14/11 (riesgo R-9),
+antes de implementar.
+
+#### 5. Lo que el mapa le ofrece al integrante 3 (R5)
+
+**Problema.** «Ir a» y la interfaz solo pueden usar lo que el jugador conoce (FR-217, FR-225), con el desempate de
+la búsqueda de la 001 (FR-253).
+
+**Alternativas.** Para el grafo: que el mapa avise a una búsqueda guardada entre pasos (nadie lo usaría: YAGNI); una
+segunda búsqueda propia de «ir a» (la 001 ya decidió compartirla). Para la vista: mantener una lista de exploradas
+para armar el DTO en O(X) (más estado que revertir y guardar). Para el nombre: un índice ordenado con búsqueda
+binaria (O(log S), pero hay que mantenerlo con cada exploración y cada pergamino, y la búsqueda ocurre una vez por
+orden).
+
+**Decisión.** `GrafoMapaConocido(mapa)` con la interfaz exacta de la 001 (`cantidad_salas`, `salidas`, `entradas`):
+una salida es utilizable si sus dos salas están exploradas y la cara de la sala de origen se recuerda abierta; costo
+igualado; ids reales; lee el mapa en vivo. «Ir a» empieza una búsqueda nueva por paso. `MapaConocido.a_dto()` arma el
+`MapaConocidoDTO` en Logic (solo exploradas, por id creciente; destino `None` para una avistada; nunca una
+desconocida ni el contenido). `buscar_exploradas(nombre)` compara `strip().casefold()` solo contra exploradas
+(H-3). `es_explorada(sala)` sirve al integrante 3 para el H-2.
+
+**Complejidad.** `salidas(u)`: O(4); `entradas(x)`: O(grado de entrada), más O(S + E) la primera vez (índice inverso
+del esqueleto); constructor O(1). `a_dto` y `buscar_exploradas`: O(S).
+
+**Evidencia** (B10 y B11, con el mapa completo):
+
+| Medición | Resultado |
+|---|---|
+| B10 `a_dto` | 0,28 / 3,04 / 39,7 ms (2,8, 3,0 y 4,0 µs por sala) |
+| B10 `buscar_exploradas` | 11 / 194 / 1 247 µs (109, 190 y 125 ns por sala) |
+| B11 armar el grafo (constructor + índice inverso) | 0,08 / 0,94 / 13,6 ms |
+| B11 un `paso_desde_cero` de esquina a esquina con el grafo armado | 0,27 / 3,79 / 50,5 ms |
+| B11 armar el grafo + un paso (búsqueda nueva por paso) | 0,56 / **4,52** / 65,0 ms: con 1 024 salas queda **por debajo de 5 ms** (NFR-250 del integrante 3) |
+
+**¿Coincide con el plan?** Sí. El plan no afirmaba si «armar el grafo + un paso» entraba en 5 ms; ahora está medido,
+y la frase de research R5 y del contrato (a) dice el número.
+
+#### Decisiones tomadas por diseño, sin medición
+
+- **El `RepartidorAvisosPuertas`**, frente a un solo observador o a que la `Mazmorra` avise a dos observadores: es una
+  cuestión de responsabilidades y de no modificar la `Mazmorra` (código P1 del integrante 1), no de rendimiento. Las
+  tres opciones cuestan O(1) por aviso; el repartidor deja a las rutas y al mapa con una sola responsabilidad cada
+  uno, y el orden de la lista no cambia ningún resultado (el mapa no cambia puertas y las rutas no leen el mapa).
+- **El bloque propio del mapa en el binario**, frente a meter el mapa en el bloque global: es formato y
+  compatibilidad, con el mismo costo O(S). El bloque global lo reutiliza cada punto de control de la línea (que va con
+  `linea = None`) y `cargar_sala` no debe leer conocimiento.
+
+#### Límites conocidos y hallazgos
+
+- **Dos salidas de una sala hacia la misma vecina** (H-4). El mapa empareja las caras con
+  `Mazmorra._salida_inversa` (del integrante 1, solo lectura), que da solo la **primera** cara de vuelta. Con dos
+  salidas de x hacia la misma vecina v, la segunda cara de v hacia x no queda emparejada y no se observa desde x. Es la
+  misma regla que usan `abrir_puerta` y `CierrePuerta`, y queda fuera de las criptas publicadas, que no tienen salidas
+  repetidas (H-1 de la 001).
+- **Dependencia de `_salida_inversa`** (H-7), que es privada de la `Mazmorra`, como ya la usa `PartidaGuardada`. Si
+  el integrante 1 cambia esa regla o su nombre, avisa antes (está en su lista de funciones privadas usadas por la 002
+  y la 003); las pruebas H2-6 y A16 lo detectan.
+- **`observador_puertas` del motor** (H-1): ahora es el repartidor, no `self.rutas`. `Logic/BenchRutas.py` lo reasigna
+  en dos mediciones; en esas dos el mapa deja de escuchar, sin efecto en lo que miden. El data-model de la 001 dice
+  `observador_puertas = self.rutas` y quedó desactualizado.
+- **Lectura de H2-5** (H-5): si el jugador estuviera en A, la puerta A–C no podría estar «sin observar»; el escenario
+  se reescribió en la spec (el jugador está en B y A y C se exploraron con la antorcha) y la prueba se arma así.
+- **Cuadrícula de 1 024 salas** (H-6): SC-206 dice «1 000 salas»; B8 usa la cuadrícula de 32 × 32 del bench de la 001,
+  para medir en la misma cripta.
+- **Cargar reemplaza el mapa** (H-8): una partida guardada puede tener menos salas exploradas que el mapa vivo; no
+  contradice FR-203 (es otra partida), y FR-221 lo dice desde la Sesión 2026-11-14.
+- **Margen de B11**: con 1 024 salas, «armar el grafo + un paso» tarda 4,52 ms de mediana: cumple, pero con poco
+  margen (casi 3,8 ms son la búsqueda, que recorre toda la cripta de esquina a esquina). Lo usa el integrante 3 para
+  NFR-250.
+- **Alcance de B8**: el jugador va y viene entre dos salas, así que después del primer ciclo la antorcha casi no
+  revela salas nuevas; el costo de una entrada que sí revela está en B4 (13 µs) y es despreciable frente a los 20 ms.
+- **`a_dto` con 10 000 salas** cuesta 4,0 µs por sala frente a 2,8 y 3,0 con mapas menores (crea 5 objetos por sala);
+  sigue siendo O(S) y se llama una vez por consulta del mapa, no por paso.
+
+Mediciones: `python main.py --bench` (`Logic/BenchMapaConocido.py`), tabla completa en
+[bench-2026-11-15.txt](specs/002-niebla-ir-a/bench-2026-11-15.txt). Máquina: AMD Ryzen 5 5500, 32 GB, Windows 11 Pro,
+Python 3.14.7. Semilla `SEMILLA = 2026`: los conteos son reproducibles; los tiempos son medianas y dependen de la
+máquina.
+
+### §5.4 Resolubilidad
+
+(pendiente: 003)
 
 ---
 
