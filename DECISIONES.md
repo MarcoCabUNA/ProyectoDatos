@@ -459,8 +459,8 @@ y la frase de research R5 y del contrato (a) dice el número.
   el integrante 1 cambia esa regla o su nombre, avisa antes (está en su lista de funciones privadas usadas por la 002
   y la 003); las pruebas H2-6 y A16 lo detectan.
 - **`observador_puertas` del motor** (H-1): ahora es el repartidor, no `self.rutas`. `Logic/BenchRutas.py` lo reasigna
-  en dos mediciones; en esas dos el mapa deja de escuchar, sin efecto en lo que miden. El data-model de la 001 dice
-  `observador_puertas = self.rutas` y quedó desactualizado.
+  en dos mediciones y, desde `c22202d` (integrante 1), también ahí a un `RepartidorAvisosPuertas([rutas, mapa])`: el
+  mapa sigue escuchando. El data-model de la 001 ya dice que el `Motor` asigna el repartidor (integrante 1, 15/11).
 - **Lectura de H2-5** (H-5): si el jugador estuviera en A, la puerta A–C no podría estar «sin observar»; el escenario
   se reescribió en la spec (el jugador está en B y A y C se exploraron con la antorcha) y la prueba se arma así.
 - **Cuadrícula de 1 024 salas** (H-6): SC-206 dice «1 000 salas»; B8 usa la cuadrícula de 32 × 32 del bench de la 001,
