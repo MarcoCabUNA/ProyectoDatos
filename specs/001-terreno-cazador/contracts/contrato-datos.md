@@ -63,6 +63,10 @@ suelta un objeto cuya ficha se rechazó, el programa fallaría a mitad de partid
 enemigo cuenta como inválida desde que se integra su sala. No agrega solicitudes: `ResolvedorCatalogo`
 ya baja las fichas de `suelta` antes de integrar la sala, así que basta con consultar sus rechazos.
 
+`AlmacenCatalogo` solo guarda fichas válidas, botín incluido; `ficha()` revalida al leer del disco.
+Un enemigo con botín rechazado no se guarda ni en disco ni en memoria, y la regla vale también
+en otra partida. (Confirmado por el integrante 2; se implementa en T057.)
+
 Efecto: un error de datos con contexto, que se pueda distinguir de un error de red (hoy
 `FuenteDatos` usa `ErrorRed` para los dos; ver T052). El mensaje sigue el mismo formato en todos
 los casos: sala y dirección si el dato es del esqueleto, o id de la ficha y campo si es de una

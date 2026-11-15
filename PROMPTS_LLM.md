@@ -1742,7 +1742,6 @@ Para y reporta con los commits y el total de la suite. No hagas push.
 **Uso de la respuesta:** Se aplicaron las observaciones de Marco a avanzar_hasta, se arregló el doble envoltorio de los grabadores y se documentó la regla de instante estrictamente menor y la suposición sobre retrasos.
 
 -----------------------------------------------------------------------------------------------------------------------
-**Fecha:** Viernes 13 de noviembre 2026
 
 **Fecha:** Viernes 13 de noviembre 2026
 
@@ -2558,5 +2557,67 @@ Al final decime:
 No hagas commit.
 
 **Uso de la respuesta:** primer lote de la 002, con las pruebas primero. Las 24 pruebas nuevas fallaban antes del código. Se hicieron T001 (`tests/ayudas_mapa.py`); la fase 2, con T009 a T013 (`DTO/MapaConocidoDTO.py` y el núcleo de `Logic/MapaConocido.py`: dos arreglos, escrituras que registran su reversión en el historial); y el guardado adelantado: T036 (`PartidaGuardadaDTO` con `mapa` antes de `linea` e import local, T002 de la 004), T038 y T039 (`GuardadoBinario` versión 2 con cabecera de 58 bytes y bloques propios del mapa y de la línea, la versión 1 rechazada sin tocar la partida actual; T003 y T047 de la 004). En `tests/TestGuardadoBinario.py` cambiaron tres aserciones de versión. T035 queda abierta hasta las pruebas de `restaurar`. Resultado: 641 OK (skipped=2) y 32/32 scripts; el replay de ejemplo es idéntico, y guardar y cargar una partida real funciona con la versión 2. Revisé el diff antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+SOLO LECTURA, con archivo:linea. Hace git fetch.
+A) Revision linea por linea de origin/kris commit 2753a53 (git show 2753a53): Motor.avanzar_hasta(t) en Logic/motorJuego.py y tests/test_linea_tiempo_motor.py. Verifica: 1) usa el evento que devuelve obtener_siguiente; 2) cuando le toca al jugador hace exactamente lo mismo que avanzar_hasta_jugador (registrar reloj y Evento_pendiente, _cerrar_intervalo, devolver True); 3) si el siguiente evento es > t se detiene sin extraerlo ni mover el reloj; 4) se detiene si terminado; 5) la prueba del cancelado en la raiz con tiempo <= t seguido de uno valido > t existe y comprueba False sin mover el reloj; 6) avanzar_hasta_jugador no cambio. Mira tambien por encima los cambios de origin/kris en ControladorBackend._ejecutar y ServicioPartida.iniciar_partida: rompen algo de la 001 o el determinismo?
+B) Preguntas de la integrante 3 para el plan de ir a:
+M-1. Logic/BusquedaCostoMinimo.py paso_desde_cero con limite=None: guarda algo entre llamadas que cambie el resultado? El desempate es por la vecina de menor id del primer paso (no entre rutas completas)?
+M-2. En P1 hay curacion o regeneracion que pueda ocurrir dentro de un mismo paso del jugador (efectos, pulsos, objetos)? Existe un contador o evento de dano recibido mas fiable que comparar la vida antes y despues?
+M-3. motor.enemigos_vivos (o equivalente) incluye a los enemigos dormidos que se activan al entrar a la sala? Cuando se agregan?
+Salida: A con lo que esta bien y lo que hay que cambiar; B con respuesta corta y evidencia.
+
+**Uso de la respuesta:** consulta `1a1dc7afa4b`, respuesta en `.claude-bridge/outbox/1a1dc7afa4b.txt`. La consulta terminó **sin respuesta**: la sección «Respuesta» quedó vacía y 7 acciones quedaron bloqueadas por permisos (`git show`/`git diff` de `origin/main`, `HEAD` y `origin/kris` con `awk` y `grep`, `git log origin/main..origin/kris`, `git ls-tree` de `origin/kris`, y extraer `origin/kris` con `git archive` para correr `tests.test_linea_tiempo_motor`). No hay revisión de `2753a53` ni respuestas a M-1, M-2 y M-3; hay que repetir la consulta con esos permisos. No modificó nada. **Nota:** se repitió como `1a1dc8137f6` (registrada más abajo), con reglas de comandos que no se bloquean.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+1. plan(001): en contracts/contrato-datos.md, sección "Validación (FR-122)", agregá:
+   "AlmacenCatalogo solo guarda fichas válidas, botín incluido; ficha() revalida al leer del disco.
+   Un enemigo con botín rechazado no se guarda ni en disco ni en memoria, y la regla vale también
+   en otra partida." (confirmado por el integrante 2, se implementa en T057).
+2. test(001): a test_h2_22 agregale un subcaso de segunda partida: la primera partida guarda en caché
+   la ficha del enemigo; en la segunda, con la misma carpeta de caché, su sala tiene que quedar
+   igual de rechazada. Sigue con skip hasta T057.
+3. docs: registrá en PROMPTS_LLM.md la consulta del puente 1a1dc7afa4b (revisión de avanzar_hasta de
+   la integrante 3, commit 2753a53, y sus preguntas M-1 a M-3 para «ir a»). La respuesta va a estar en
+   C:\Users\Eli\.claude-bridge\outbox\1a1dc7afa4b.txt cuando el puente termine; si todavía no está,
+   registrá solo el pedido y completá el resumen después.
+Suite en verde con uv run, no hagas push.
+
+**Uso de la respuesta:** (1) `plan(001)`: el párrafo va en «Validación (FR-122)» de `contracts/contrato-datos.md`, después del de la fila de `suelta`. (2) `test(001)`: `test_h2_22` tiene un subcaso «segunda partida»: dos `ServicioPartida` con la misma carpeta de caché (y logs aparte); en las dos, entrar a la sala 2 se rechaza con el mismo mensaje, sin mover al jugador ni el reloj. Sigue con `skipTest` hasta T057; sin el skip falla igual que el subcaso de la sala no inicial (ya en la partida 1), sin errores de otro tipo. (3) La consulta `1a1dc7afa4b` se registró arriba; el puente terminó sin respuesta (7 acciones bloqueadas por permisos), así que no hay resumen que completar hasta repetirla. Suite: 549 OK (skipped=2: H3-7 y H2-22). Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+SOLO LECTURA. REGLAS DE COMANDOS: un solo comando git por llamada a Bash, sin pipes, sin ;, sin &&, sin for, sin awk ni grep en Bash (para buscar usa Read/Grep sobre archivos locales). Comandos permitidos: git fetch, git show <ref>:<archivo>, git show <commit>, git diff <a> <b> -- <archivo>, git log. NO ejecutes pruebas ni codigo: si algo requiere correrlo, decilo y lo corro yo aparte.
+A) Revision de origin/kris commit 2753a53 (git show 2753a53): Motor.avanzar_hasta(t) en Logic/motorJuego.py y tests/test_linea_tiempo_motor.py. Verifica con archivo:linea: 1) usa el evento que devuelve obtener_siguiente; 2) cuando le toca al jugador hace lo mismo que avanzar_hasta_jugador (registrar reloj y Evento_pendiente, _cerrar_intervalo, devolver True); 3) si el siguiente evento es > t se detiene sin extraerlo ni mover el reloj; 4) se detiene si terminado; 5) existe la prueba del cancelado en la raiz con tiempo <= t seguido de uno valido > t y comprueba False sin mover el reloj; 6) avanzar_hasta_jugador no cambio. Mira por encima git diff origin/Marco origin/kris -- Controller/ControladorBackend.py y Service/ServicioPartida.py (ajusta las rutas si son otras): rompen algo de la 001 o el determinismo?
+B) Confirma o corrige lo que concluyo la integrante 3: M-2) todo dano al jugador pasa por ActorBase.Recibir_Dannio y dentro de un paso solo la Regeneracion (Efectos.py) puede subir la vida. M-3) mover_jugador activa los dormidos de la sala de llegada en el mismo paso y Mazmorra.enemigos_vivos los cuenta. Y M-1) paso_desde_cero con limite=None: guarda algo entre llamadas que cambie el resultado? desempate por la vecina de menor id del primer paso?
+Salida: A con lo que esta bien y lo que hay que cambiar; B con respuesta corta y evidencia.
+
+**Uso de la respuesta:** consulta `1a1dc8137f6`, respuesta en `.claude-bridge/outbox/1a1dc8137f6.txt`. Repite `1a1dc7afa4b` con reglas de comandos que no se bloquean. (A) `Motor.avanzar_hasta(t)` en `origin/kris` (`2753a53`) cumple los seis puntos: usa el evento de `obtener_siguiente` (`Logic/motorJuego.py:119`); el turno del jugador repite las líneas 96 a 102 de `avanzar_hasta_jugador` (líneas 120 a 126); devuelve `False` sin extraer ni mover el reloj si el siguiente es > `t` (117-118); se detiene con `terminado` (115); la prueba del cancelado está en `tests/test_linea_tiempo_motor.py:141-150`, y `avanzar_hasta_jugador` no cambió. A cambiar: esa prueba también pasaba antes de `2753a53` (no distingue el arreglo), y falta una que compruebe el registro en el historial y `_cerrar_intervalo` con `acciones >= 1`. Se propuso una: dos motores, `avanzar_hasta_jugador()` frente a `avanzar_hasta(t)`, y comparar `historial.cantidad()` y el estado después de `deshacer()`. Los cambios en `UIController/ControladorBackend.py` y `Service/ServicioPartida.py` no rompen la 001 ni el determinismo. Quedan dos detalles: `ServicioGuardado.cargar` no instala la línea (aunque el docstring de `GrabadoresLinea.py` dice que sí) y `ServicioReplay` no la llena. (B) M-2 confirmado con un matiz: la poción (`usar`) también sube la vida si el paso incluye la acción del jugador, y deshacer y cargar cambian la vida fuera de un paso. M-3 confirmado con una corrección: los dormidos se activan en el mismo paso, pero su primera acción es en `reloj + intervalo`, y `Mazmorra.enemigos_vivos` (`Logic/Mazmorra.py:131-136`) cuenta vivos sin mirar `activo`, así que también cuenta a los dormidos. M-1: `paso_desde_cero` no guarda estado entre llamadas (solo la caché de estructura de `GrafoEsqueleto._inversa`), y el desempate es por la vecina de menor id del primer paso, apoyado en costos ≥ 1 (`Data/ValidacionDatos.py:46-48`). Se le pasa a la integrante 3. No corrió nada ni modificó nada.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+docs: registrá en PROMPTS_LLM.md la consulta del puente 1a1dc8137f6 (revisión de 2753a53 y M-1 a M-3;
+respuesta en C:\Users\Eli\.claude-bridge\outbox\1a1dc8137f6.txt) y completá la entrada de 1a1dc7afa4b
+con una nota de que se repitió como 1a1dc8137f6 por los comandos bloqueados. No hagas push.
+
+**Uso de la respuesta:** se registró la consulta `1a1dc8137f6` y se agregó a la entrada de `1a1dc7afa4b` la nota de que se repitió como `1a1dc8137f6`. Solo cambia `PROMPTS_LLM.md`, así que no se corrió la suite. Sin push.
 
 -----------------------------------------------------------------------------------------------------------------------
