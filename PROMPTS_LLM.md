@@ -3204,3 +3204,49 @@ No hagas commit. Al final, los dos grupos de archivos definitivos.
 **Uso de la respuesta:** el worktree temporal se creó suelto (`--detach`, sin rama) en el scratchpad y se borró; `git worktree list` muestra solo la carpeta del proyecto y no hay ramas nuevas. T052 quedó marcada con la nota del paso 8, que corrí yo con red: `--verificar cripta-que-no-existe` da «NO CONCLUYÓ» (404) y código 1. Grupos definitivos para los dos commits.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Feature 003-resolubilidad. Solo documentación de la spec, sin código ni pruebas, sin commit. Contexto: el 15/11 el API publica cripta-02 a cripta-06 (cripta-01 ya no está: responde 404) y el catálogo pasó a la versión 4b9e75a42be5. Con el integrante 1 acordamos cómo armar el paquete. Antes de hacerlo, la spec tiene que decirlo (Principio IX).
+
+1. specs/003-resolubilidad/tasks.md:
+   a. Marcar [x] T041 y agregar al final: «Hecho (15/11): aviso dado al integrante 3.»
+   b. Marcar [x] T051 y agregar al final: «Hecho (15/11): el integrante 1 quitó el skipTest de H3-7 y cerró la T048 de la 001.»
+   c. Reemplazar el texto de T057 (sigue sin marcar) por:
+   «T057 (FR-318) Paquete de la Parte II (acordado con el integrante 1 el 15/11). **Avisar antes a los integrantes 1 y 3** (cambia archivos que usan sus pruebas). (1) Descargar con python -m Data.DescargadorPaquete <id> <carpeta> cada cripta publicada (el 15/11: cripta-02 a cripta-06) en una carpeta **fuera** del proyecto y compararla con el paquete actual; el reporte queda en specs/003-resolubilidad/paquete-2026-11-15.md (fichas que cambian, fichas que usa cripta-01, criptas que cambian, veredictos de T058). (2) Armar paquete/: cripta-01/ queda **byte idéntica** (el API ya no la publica: es la única cripta sin llaves.json, excepción documentada); criptas.json es la lista del API con cripta-01 al principio; catalogo.json y catalogo_version.json son los del API (el catálogo es uno solo para todas las criptas, así que cripta-01 usa las fichas nuevas); cripta-02 a cripta-06 son las descargadas. (3) Comprobar que cada cripta publicada trae llaves.json, que hay salidas con costo y que los cazadores traen rango (001 FR-122). (4) Las pruebas de la primera parte del integrante 2 que suponían que catalogo.json son solo las fichas de cripta-01 pasan a usar solo esas: tests/Utilidades.catalogo_real() devuelve las fichas que usa cripta-01 (tipos de sus enemigos y trampas, sus objetos, la llave de salida y lo que sueltan sus enemigos) y test_formato_en_disco busca la rata por id y no por posición. (5) Regrabar ejemplos/partida_ejemplo.log jugando la cripta-02 nueva con --offline hasta ganar, y comprobar que el replay termina igual. (6) Correr python tests/correr_pruebas.py; si alguna prueba de otro integrante cambia de resultado por los datos nuevos, avisarle y esperar su arreglo antes del commit. Commit **propio** con paquete/, ejemplos/partida_ejemplo.log, el reporte y esos dos archivos de pruebas (por ejemplo datos: paquete de la Parte II con llaves.json, costos y rangos), y avisar a los tres cuando esté subido.»
+   d. En T058 (sigue sin marcar), reemplazar «Ninguna debe terminar con código 1 (la 1 es para datos que faltan); cada una con 0 o 3 y el mismo texto que en línea con la misma versión (quickstart §2, pasos 1 a 4 y 7).» por «Las criptas publicadas terminan con 0 o 3 y el mismo texto que en línea con la misma versión (quickstart §2, pasos 1 a 4 y 7); cripta-01 termina con código 1 y «falta el archivo … llaves.json» (FR-320), porque ya no está publicada (T057).»
+2. specs/003-resolubilidad/quickstart.md, §2: en los pasos 1, 2, 3, 4 y 7 cambiar cripta-01 por cripta-02 (en el paso 3, la ruta queda cache/llaves/cripta-02.json). En el «Esperado» del paso 1, «Con el paquete regenerado: el reporte y código 0 o 3» pasa a «Con el paquete regenerado: RESOLUBLE y código 0 (T058)». El resto del paso 1 no cambia. Debajo de la tabla, agregar: «cripta-01 ya no está publicada (el API responde 404): con --offline termina con código 1 porque el paquete no tiene su llaves.json (T057).»
+3. No toques nada más. Buscá además cripta-01 en el resto de quickstart.md, spec.md y plan.md de la 003 y decime dónde aparece, sin cambiarlo, para decidir si hace falta.
+
+Al final: el diff completo de los dos archivos y la lista del punto 3.
+
+**Uso de la respuesta:** antes de regenerar el paquete (Principio IX), la spec de la 003 dice cómo se arma, como lo acordé con el integrante 1: el API del 15/11 publica `cripta-02` a `cripta-06` (con `cripta-05` no resoluble) y ya no `cripta-01` (404), y el catálogo pasó a `4b9e75a42be5`. T057 queda con los pasos (descarga fuera del proyecto, reporte, `cripta-01` byte idéntica como excepción sin `llaves.json`, catálogo y criptas del API, ajuste de `catalogo_real()` en las pruebas de la primera parte, regrabar el log de ejemplo, avisar a los otros dos) y T058 acepta el código 1 de `cripta-01`. En el quickstart §2, los pasos 1 a 4 y 7 pasan a `cripta-02`. Marqué T041 y T051 (avisos dados; el integrante 1 quitó el skip de H3-7). Claude Code señaló además el comando de los requisitos previos, el paso 6 y el commit sugerido de la línea 389, que se arreglan en el prompt siguiente. Revisé el diff y el zip: solo cambian `tasks.md` y `quickstart.md`.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Agregá además en T057, después del punto (6) y antes de «Commit **propio**»: «(7) Documentar en DECISIONES.md (sección del integrante 2, apartado «§5.4 Resolubilidad», que T064 completa) la excepción de cripta-01: queda byte idéntica pero ya no está publicada; usa el catálogo nuevo, así que sus ratas traen "vida": 12 y la ficha nueva tiene vida_max 8 (empiezan con 12/8; aceptado por el integrante 1 el 15/11, porque evitarlo tocaría la primera parte sin FR o inventaría datos); y --verificar cripta-01 --offline termina con código 1 porque no tiene llaves.json.» En el «Commit **propio** con …», agregá DECISIONES.md a la lista.
+
+**Uso de la respuesta:** punto (7) de T057, pedido por el integrante 1: documentar en `DECISIONES.md` §5.4 la excepción de `cripta-01` (ratas que empiezan con 12/8 por el catálogo nuevo, aceptado por él, y código 1 de `--verificar`), en el mismo commit del paquete.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Bien. Arreglá también lo que encontraste, sin tocar nada más y sin commit:
+1. quickstart.md, requisitos previos (líneas 13 a 17): el texto queda «Para las pruebas con paquete: el paquete de la Parte II (T057). Para regenerarlo, bajar cada cripta publicada a una carpeta fuera del proyecto y armar `paquete/` como dice T057 (`cripta-01` ya no está publicada):», y el bloque de código pasa a `uv run python -m Data.DescargadorPaquete cripta-02 ../paquete-nuevo`.
+2. quickstart.md, paso 6: `cripta-01` por `cripta-02`.
+3. tasks.md, línea 389: «`datos: paquete de la Parte II` (T057, solo `paquete/`)» pasa a «`datos: paquete de la Parte II` (T057: `paquete/`, el log de ejemplo, el reporte, `DECISIONES.md` y los dos archivos de pruebas)».
+4. La cripta-02 nueva ya se verificó con el paquete armado fuera del proyecto: RESOLUBLE, código 0, así que el paso 1 queda como está. T052 queda como está (es el registro de una corrida pasada).
+Al final, el diff de estos cambios.
+
+**Uso de la respuesta:** el comando de los requisitos previos del quickstart usa la forma `<id> <carpeta>` y `cripta-02`, el paso 6 pasa a `cripta-02` y el commit sugerido de T057 lista todo lo que lleva. El paso 1 espera RESOLUBLE porque ya verifiqué la `cripta-02` nueva con el paquete armado fuera del proyecto. Solo documentación: no hace falta correr la suite.
+
+-----------------------------------------------------------------------------------------------------------------------

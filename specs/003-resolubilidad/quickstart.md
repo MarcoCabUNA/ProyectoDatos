@@ -10,11 +10,11 @@ las estructuras, en [data-model.md](data-model.md).
 
 - Python 3.11 o superior con las dependencias del proyecto (`uv sync`).
 - Desde la raíz del repositorio. En PowerShell, el código de salida se lee con `$LASTEXITCODE`.
-- Para las pruebas con paquete: **regenerar el paquete** con las versiones de la Parte II (el actual es de la primera
-  parte y no trae `llaves.json`; research, hallazgo H-3):
+- Para las pruebas con paquete: el paquete de la Parte II (T057). Para regenerarlo, bajar cada cripta publicada a una
+  carpeta fuera del proyecto y armar `paquete/` como dice T057 (`cripta-01` ya no está publicada):
 
 ```powershell
-uv run python -m Data.DescargadorPaquete cripta-01
+uv run python -m Data.DescargadorPaquete cripta-02 ../paquete-nuevo
 ```
 
 ## 1. Pruebas automatizadas
@@ -42,16 +42,19 @@ Esperado: todo pasa; cada prueba cita su FR (Principio X). Los cuatro casos del 
 
 | Paso | Comando | Esperado |
 |---|---|---|
-| 1 | `uv run python main.py --verificar cripta-01 --offline` | Con el paquete regenerado: el reporte y código 0 o 3. Con el paquete actual: «la verificación NO CONCLUYÓ … falta el archivo … llaves.json» y código **1** (FR-320) |
-| 2 | `uv run python main.py --verificar cripta-01` | Mismo resultado que el paso 1 si la versión coincide (FR-306); hace la solicitud de llaves (FR-317) |
-| 3 | Repetir el paso 2 | No repite la solicitud de llaves: queda en `cache/llaves/cripta-01.json` (FR-317, H3-5) |
-| 4 | `uv run python main.py --verificar cripta-01 --forzar` | Mismo resultado y código que el paso 2 (H3-9) |
+| 1 | `uv run python main.py --verificar cripta-02 --offline` | Con el paquete regenerado: RESOLUBLE y código 0 (T058). Con el paquete actual: «la verificación NO CONCLUYÓ … falta el archivo … llaves.json» y código **1** (FR-320) |
+| 2 | `uv run python main.py --verificar cripta-02` | Mismo resultado que el paso 1 si la versión coincide (FR-306); hace la solicitud de llaves (FR-317) |
+| 3 | Repetir el paso 2 | No repite la solicitud de llaves: queda en `cache/llaves/cripta-02.json` (FR-317, H3-5) |
+| 4 | `uv run python main.py --verificar cripta-02 --forzar` | Mismo resultado y código que el paso 2 (H3-9) |
 | 5 | `uv run python main.py --verificar` | Error de uso, código 2 |
-| 6 | `uv run python main.py --verificar cripta-01 --replay x.log` | Error de uso (grupo excluyente), código 2 |
-| 7 | `uv run python main.py --verificar cripta-01 --offline > reporte.txt` | El reporte completo queda en `reporte.txt`: se escribe en la salida estándar (FR-314) |
+| 6 | `uv run python main.py --verificar cripta-02 --replay x.log` | Error de uso (grupo excluyente), código 2 |
+| 7 | `uv run python main.py --verificar cripta-02 --offline > reporte.txt` | El reporte completo queda en `reporte.txt`: se escribe en la salida estándar (FR-314) |
 | 8 | `uv run python main.py --verificar cripta-que-no-existe` | «la verificación NO CONCLUYÓ» con el error del servicio (404) y código **1**, sin caerse (FR-314) |
 | 9 | `uv run python main.py --verificar cripta-que-no-existe --offline --forzar` | «la verificación NO CONCLUYÓ» (falta la cripta en el paquete) y código **1**: `--forzar` no cambia nada (FR-314) |
 | 10 | `uv run python main.py --bench --forzar` | Las mismas filas que sin `--forzar` y el mismo código; no es error de uso (FR-312) |
+
+`cripta-01` ya no está publicada (el API responde 404): con `--offline` termina con código 1 porque el paquete no tiene
+su `llaves.json` (T057).
 
 En ningún caso se abre una ventana ni se crea `partida.log` (FR-314, SC-308). Es el único modo sin vista que muestra el
 resultado de la verificación: `--replay` no verifica y `--bench` solo mide cuánto tarda la verificación, sin mostrar
