@@ -1742,7 +1742,6 @@ Para y reporta con los commits y el total de la suite. No hagas push.
 **Uso de la respuesta:** Se aplicaron las observaciones de Marco a avanzar_hasta, se arregló el doble envoltorio de los grabadores y se documentó la regla de instante estrictamente menor y la suposición sobre retrasos.
 
 -----------------------------------------------------------------------------------------------------------------------
-
 **Fecha:** Viernes 13 de noviembre 2026
 
 **Herramienta:** Claude Code (consulta por el puente, solo lectura)
@@ -2500,7 +2499,7 @@ Reglas: constitución v1.2.0, MVC n-capas, solo estructuras y librerías permiti
 -----------------------------------------------------------------------------------------------------------------------
 **Fecha:** Sábado 14 de noviembre 2026
 
-**Herramienta:** Claude Code
+**Herramienta:** (Claude Code)
 
 /speckit-implement T063, T064, T065 y T067 de specs/004-linea-tiempo/tasks.md (documentación y revisión de restricciones). Solo documentos, salvo el comentario de ConfiguracionDTO.py. No toques T066, T068 ni H4.
 1) T063 y T064: completa en DECISIONES.md la sección «Integrante 3 — 004» (§5.3, §5.5 y §5.6) con las decisiones reales de la implementación: diseño A de reconstrucción hacia adelante con un Motor aparte, pergamino sin marcador con punto de control nuevo en c, regla de la consulta (j = última acción con tiempo estrictamente menor que t), T032 no necesaria, grabadores con registros de carga y ordinal, DespachoAcciones propio, validación de t y k en Logic, línea de comandos con Enter y Esc, el error de hasta_instante que se corrigió con la prueba de regresión, y las mediciones de specs/004-linea-tiempo/bench-tabla.txt (K = 20 con 0,62 ms; sin puntos 147 ms; búsqueda binaria contra recorrido lineal; costo por acción con y sin línea; costo de una copia).
@@ -2514,7 +2513,7 @@ Dos commits: «docs(004): decisiones, README y K confirmado» y, si T067 encuent
 -----------------------------------------------------------------------------------------------------------------------
 **Fecha:** Sábado 14 de noviembre 2026
 
-**Herramienta:** Claude Code
+**Herramienta:** (Claude Code)
 
 Solo lectura, no cambies ni crees archivos. Lee Logic/ (motorJuego.py, jugador.py, ActorBase.py, Enemigo.py, Efectos.py, GestorEfectos.py, Mazmorra.py) y responde con archivo y línea:
 (a) M-2: ¿en qué lugares baja jugador.vida (ataques de enemigos, veneno, trampas, otros)? ¿Existe un único punto por el que pase todo daño al jugador? ¿Hay algo que SUBA jugador.vida dentro de un mismo paso del jugador (regeneración pasiva, poción, efecto)? Si comparar jugador.vida antes y después del paso puede ocultar un daño, dime un caso concreto y propón la señal más simple y fiable (por ejemplo un contador o bandera que ya exista) sin crear estructuras nuevas.
@@ -2701,6 +2700,92 @@ Tres ajustes chicos en specs/002-niebla-ir-a/tasks.md, sin código y sin commit.
 No cambies nada más. Al final: las líneas que cambiaste, con el texto antes y después.
 
 **Uso de la respuesta:** dos commits. `plan(002)`: el contrato del mapa queda confirmado por el integrante 3 (T005) con `es_explorada(sala)` O(1) para el H-2, los dos casos de `buscar_exploradas` (vacío o solo espacios → `[]`; no `str` → `ValueError`), las garantías del grafo (total de salas, coherencia entre `salidas` y `entradas`, sala no explorada sin listas, posición 0 y huecos → `[]`), el costo de armarlo por paso (`_inversa` en la primera llamada a `entradas`, lo mide B11), la aclaración de D-1 (traducir la vecina a una dirección con `Mazmorra.salida` no es usar el esqueleto para la ruta) y el H-2 decidido (opción A, `SIN_EXPLORAR` en `DTO/EstadoJuegoDTO.py`); data-model, una frase del plan y dos de research alineadas. `tasks(002)`: T005 marcada; T006, T008, T026 a T028, T030, T042 y T050 actualizadas (cinco pruebas nuevas en T026; la guarda de H4-4 espera a T118); y las tareas de «ir a» del integrante 3, T100 a T127, generadas desde su sección del plan a su pedido, con lo abierto marcado «confirmar con el integrante 3» y su tabla de cobertura. En T050 corregí a mano «la guarda de T023 de la 004» por «la guarda de T118». No se tocaron spec.md, el código ni la sección del integrante 3 en plan.md. Revisé el resultado en el zip antes de cada commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** (Claude Code)
+
+Actualiza SOLO mi sección del plan de «ir a» en specs/002-niebla-ir-a/plan.md (commit «plan(002): señal de daño, SIN_EXPLORAR y requisitos del grafo»; sin código ni tasks):
+1) I3-3 y R-I3-7: la señal de daño queda como «jugador.vida < vida_antes, o hay Regeneración activa antes o después del paso (motor.efectos.tiene(jugador, "regeneracion"))», evaluada en Service sin tocar Logic. Es conservadora: con Regeneración activa el viaje se detiene tras cada paso. Antes de escribirlo, revisa si el buffer de mensajes del motor registra cada daño recibido con un texto fiable que Service pueda contar; si existe, propónlo como señal exacta alternativa (sin implementarla) y dime cuál recomiendas. Agrega la prueba nueva: viaje con Regeneración activa que se detiene.
+2) D-6: SIN_EXPLORAR vive en DTO/EstadoJuegoDTO.py (no en MapaConocidoDTO); ArmadorEstado usa mapa.es_explorada(sala), que Derek agrega al contrato.
+3) Requisito de contrato (M-1): GrafoMapaConocido.cantidad_salas() devuelve el total de salas (ids de 0 a n-1) y entradas/salidas son coherentes entre sí.
+4) D-4: después de PartidaGuardada.cargar, «ir a» y el reconstructor vuelven a tomar contexto.motor (el mapa es un objeto nuevo). Revisa si ReconstructorEstado ya lo hace.
+Reporta el commit. No hagas push.
+
+**Uso de la respuesta:** Se actualiza el plan de «ir a» con la señal de daño por regeneración, la ubicación de SIN_EXPLORAR y los requisitos del grafo del mapa.
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement Feature 002-niebla-ir-a, parte del integrante 2. Primer lote, según «Estrategia» y «Entrega incremental» de specs/002-niebla-ir-a/tasks.md: solo estas tareas y en este orden.
+
+1. T001: tests/ayudas_mapa.py.
+2. Fase 2: T009 y T010 (las pruebas primero; comprobá que fallan), después T011 y T012, y T013 (la suite completa en verde).
+3. Guardado adelantado:
+   - las cuatro primeras pruebas de T035 (DTO y linea). Las de restaurar NO, esas van con T037 en otro lote;
+   - T036: PartidaGuardadaDTO con mapa antes de linea, con el import local de LineaTiempoGuardadaDTO. Es T002 de la 004;
+   - T038: las pruebas del binario, que también son las de T003 y T047 de la 004. Comprobá que fallan;
+   - T039: GuardadoBinario versión 2. Es T003 de la 004.
+   El formato v2 se implementa con el diseño de data-model.md §6 y research R4 (cabecera de 58 bytes, bloque propio del mapa y de la línea, y el orden de los bloques de cada punto de control). El integrante 3 todavía no actualizó el texto del §1 y del §2 de su contrato de la 004 (T007), pero aceptó ese diseño el 14/11. Si encontrás algo de su contrato de la 004 que contradiga el diseño, avisame en vez de elegir uno.
+
+Después de T039, PARÁ. No hagas T037, T040 ni nada de las fases 3 en adelante.
+
+Reglas:
+- Constitución v1.2.0: sin dict ni set como índice, sin heapq, bisect ni collections, sin sorted ni list.sort, sin copy fuera de tests/, y Logic no importa Data.
+- Pruebas primero, con el FR en el nombre, como dice cada tarea.
+- Solo archivos del integrante 2: tests/ayudas_mapa.py, tests/test_guardado_mapa.py, tests/test_mapa_conocido_estados.py, DTO/MapaConocidoDTO.py, Logic/MapaConocido.py, DTO/PartidaGuardadaDTO.py, Data/GuardadoBinario.py y tests/TestGuardadoBinario.py (solo la aserción de la versión). No toques archivos de otros integrantes; si alguno tuviera que cambiar, avisame.
+- Marcá con [x] en tasks.md solo las tareas que quedaron completas. T035 queda sin marcar, porque le faltan las pruebas de restaurar; anotalo en la tarea.
+- Antes de terminar corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8 en Windows) y el replay de ejemplo (python main.py --replay ejemplos/partida_ejemplo.log --offline), que debe dar lo mismo que antes. Comprobá también que guardar y cargar una partida real con ServicioGuardado sigue funcionando con la versión 2. La versión 1 ahora se rechaza: decime si eso afecta algún archivo guardado del repositorio (partidas/, ejemplos/ o tests/).
+
+Al final decime:
+- los archivos de cada grupo, separados para dos commits: (a) T001 y la fase 2, y (b) el guardado adelantado;
+- las pruebas nuevas, con su resultado antes y después;
+- el resultado de la suite y del replay;
+- cualquier diferencia con el plan.
+No hagas commit.
+
+**Uso de la respuesta:** primer lote de la 002, con las pruebas primero. Las 24 pruebas nuevas fallaban antes del código. Se hicieron T001 (`tests/ayudas_mapa.py`); la fase 2, con T009 a T013 (`DTO/MapaConocidoDTO.py` y el núcleo de `Logic/MapaConocido.py`: dos arreglos, escrituras que registran su reversión en el historial); y el guardado adelantado: T036 (`PartidaGuardadaDTO` con `mapa` antes de `linea` e import local, T002 de la 004), T038 y T039 (`GuardadoBinario` versión 2 con cabecera de 58 bytes y bloques propios del mapa y de la línea, la versión 1 rechazada sin tocar la partida actual; T003 y T047 de la 004). En `tests/TestGuardadoBinario.py` cambiaron tres aserciones de versión. T035 queda abierta hasta las pruebas de `restaurar`. Resultado: 641 OK (skipped=2) y 32/32 scripts; el replay de ejemplo es idéntico, y guardar y cargar una partida real funciona con la versión 2. Revisé el diff antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement T043 a T048 (H4: guardado con línea) de specs/004-linea-tiempo/tasks.md. Antes: confirma que la rama incluye origin/derek (T002: PartidaGuardadaDTO con mapa antes de linea; T003: VERSION_FORMATO = 2) y que la suite pasa. Marca T002 y T003 como [X] en tasks.md solo si verificas que están hechas y con sus pruebas (TestGuardadoBinario.py: ida y vuelta con línea, línea vacía y archivo de versión 1 rechazado). T047 es del integrante 2: verifica que esas pruebas existen y marca [X] solo si es así.
+Pruebas primero (T043, T045), luego implementa (T044, T046). Reglas: constitución v1.2.0, MVC n-capas, solo estructuras y librerías permitidas, sin copy. T044: LineaTiempo.a_guardada() y desde_guardada(dto) con copia manual. T046: ServicioGuardado.guardar incluye la línea; ServicioGuardado.cargar crea la línea desde el archivo y INSTALA los grabadores (hoy el docstring de GrabadoresLinea lo afirma pero ServicioGuardado.cargar no lo hace). Una partida cargada debe poder responder historia <t> e historia #k con los mismos resúmenes que antes de guardar (H4-1). Después de PartidaGuardada.cargar, toma contexto.motor otra vez (el mapa es un objeto nuevo). El mapa conocido todavía no tiene a_dto(): el resumen sigue omitiéndolo (no inventes el campo). T048: corre la suite y el quickstart §4. Arregla el docstring de GrabadoresLinea si hace falta. Commits: uno por bloque, «feat(004): ...». No empieces H2 ni «ir a». Reporte con tareas, pruebas, decisiones y pendientes de Marco o Derek.
+
+**Uso de la respuesta:** Se implementa el guardado de la línea de tiempo en el archivo de partida (T043 a T048) sobre el formato versión 2 de Derek.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Corrige SOLO mi sección del plan de «ir a» (specs/002-niebla-ir-a/plan.md) y mis tareas T100 a T127 (specs/002-niebla-ir-a/tasks.md), en un commit «plan(002): correcciones tras la revisión de Derek». Sin código. Cambios:
+1) I3-8: el constructor de GrafoMapaConocido es O(1), pero la primera llamada a entradas arma el índice inverso del esqueleto en O(S+E), igual que GrafoEsqueleto; como el grafo se arma en cada paso, cada paso paga eso. Corrige el texto.
+2) decidir_paso: además de que el destino sea la vecina y el costo coincida, exige que la cara de la sala actual se recuerde ABIERTA (mapa.estado_cara(sala, d)) para no elegir una cara recordada cerrada con menor número de dirección (H-4). Recibe el mapa y la mazmorra como argumentos explícitos (no grafo.mapa.mazmorra). Ajusta T104 y su prueba.
+3) T100: anota M-1 a M-3 como resueltas por lectura del código y confirmadas por Marco, y márcala [X]. T103: los DTO de ViajeDTO son @dataclass(frozen=True) y resolver_destino vive en Logic/ViajeAutomatico.py. T114: la señal de daño es el contador exacto (no la señal con Regeneración); reescríbela. T120: usa una cripta sintética de tamaño equivalente (SC-252) y mide un PASO COMPLETO, incluido armar el grafo.
+4) Pruebas que faltaban en «Pruebas previstas» y en T101 a T114: PASO_RECHAZADO (I3-6), TERMINADA junto con DANO o LLEGO (I3-7), el controlador descarta el viaje ante otra orden (R-I3-4), y viaje que se detiene por daño con Regeneración activa.
+5) Agrega una tarea nueva ANTES de T111 para el contador: «ActorBase.danio_recibido: entero que sube en Recibir_Dannio cuando el daño final es > 0; no va al historial ni a PartidaGuardada; con type hint y docstring; prueba que fija que Cant ya es el daño final; fila en la tabla de cambios a la primera entrega; antes/después en DECISIONES.md; revisión del integrante 1».
+6) Principio III: la frase que dice que no se modifica ServicioLineaTiempo debe decir que T118 sí lo modifica (es mi archivo).
+7) Supuesto de la 004: --replay sin --hasta es headless (sin ventana ni línea de comandos) y no alimenta la línea, así que historia no es alcanzable ahí. Anótalo en specs/004-linea-tiempo/spec.md (Suposiciones) en un commit aparte «spec(004): supuesto sobre --replay sin --hasta», y en DECISIONES.md de mi sección.
+No hagas push. Reporta los commits y cualquier cosa que no hayas podido aplicar.
+
+**Uso de la respuesta:** Se corrigen el plan y las tareas de «ir a» tras la revisión de Derek, se agrega la tarea del contador de daño y se documenta el supuesto del replay
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement Dos cosas, un commit por punto y suite completa después de cada una (PYTHONIOENCODING=utf-8 python tests/correr_pruebas.py), sin push:
+1) Mutación de Marco: revierte TEMPORALMENTE en Logic/motorJuego.py el registro de reloj y Evento_pendiente y la llamada a _cerrar_intervalo() dentro de avanzar_hasta, corre test_t12_fr402_avanzar_hasta_deja_el_mismo_historial_que_avanzar_hasta_jugador y confirma que FALLA; luego restaura el archivo exactamente (git diff debe quedar vacío). Si la prueba pasa igual, refuérzala hasta que falle con la mutación. Commit solo si cambia la prueba: «test(004): la prueba de historial de avanzar_hasta detecta la mutación (T012)».
+2) T046, prueba nueva en tests/test_linea_tiempo_guardado.py: guardar una partida con un pergamino en el inventario, cargarla, usar el pergamino y comprobar que historia <t> e historia #k siguen coincidiendo con el estado vivo (H3 sobre una partida cargada). Commit «test(004): cargar y luego retroceder con la línea (T046)».
+3) Contador de daño (la tarea nueva del plan de «ir a», antes de T111): ActorBase.danio_recibido, entero inicial 0 en __init__, que sube en Recibir_Dannio solo cuando Cant > 0. Verifica primero en el código que Cant ya es el daño final (después de defensa u otros ajustes) y dime dónde se calcula. No va al historial, no va a PartidaGuardada, no toques nada más de ActorBase. Con type hint y docstring. Pruebas primero: ataque de enemigo, veneno y trampa lo hacen subir; un daño de 0 no; una curación no lo baja; un pergamino no lo cambia el resultado de la comparación antes y después de un paso. Anota el antes/después en DECISIONES.md. Commit «feat(002): contador de daño recibido en ActorBase para ir a (primera entrega, revisión del integrante 1)». Reporta archivo y línea.
+
+**Uso de la respuesta:** Se verifica con una mutación la prueba de avanzar_hasta, se prueba cargar y retroceder con la línea y se implementa el contador de daño recibido para «ir a».
 
 -----------------------------------------------------------------------------------------------------------------------
 

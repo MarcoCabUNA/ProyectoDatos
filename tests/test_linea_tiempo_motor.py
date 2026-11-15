@@ -46,6 +46,12 @@ def _puerta(motor: Motor) -> list:
     return [motor.mazmorra.sala(1).salidas[2], motor.mazmorra.sala(2).salidas[3]]
 
 
+
+def _cambios_del_ultimo_intervalo(motor: Motor) -> int:
+    """Cuántas funciones de reversión tiene el último intervalo cerrado (lee el buffer del historial, solo en pruebas)."""
+    h = motor.historial
+    return len(h._cerrados[(h._primero + h._cantidad - 1) % h.MAX_ACCIONES])
+
 class PruebasAvanzarHasta(unittest.TestCase):
 
     def test_h1_2_apendiceB_caso3_fr402(self):
@@ -136,6 +142,38 @@ class PruebasAvanzarHasta(unittest.TestCase):
         self.assertTrue(nuevo.avanzar_hasta(500))                     # el nuevo llega al mismo estado
         self.assertEqual((nuevo.reloj, nuevo.jugador.vida), (clasico.reloj, clasico.jugador.vida))
         self.assertEqual(nuevo.azar.getstate(), clasico.azar.getstate())
+        self.assertIsNone(nuevo.jugador.Evento_pendiente)
+
+    def test_t12_fr402_avanzar_hasta_deja_el_mismo_historial_que_avanzar_hasta_jugador(self):
+        """Propuesta de Marco: los dos caminos cierran el mismo intervalo y deshacer los deja en el mismo estado."""
+        def preparar() -> Motor:
+            motor = _escenario(semilla=7)
+            motor.esperar()                                           # una acción del jugador: acciones >= 1
+            self.assertGreaterEqual(motor.jugador.acciones, 1)
+            _enemigo_en(motor, 50)                                    # un enemigo ataca antes de la próxima decisión
+            return motor
+
+        clasico, nuevo = preparar(), preparar()
+        decision = clasico.jugador.Evento_pendiente.tiempo            # cuándo le vuelve a tocar al jugador
+        self.assertEqual(nuevo.jugador.Evento_pendiente.tiempo, decision)
+        vida_antes, reloj_antes = clasico.jugador.vida, clasico.reloj
+        self.assertTrue(clasico.avanzar_hasta_jugador())
+        self.assertTrue(nuevo.avanzar_hasta(decision))                # hasta la decisión del jugador
+        self.assertLess(clasico.jugador.vida, vida_antes)             # el intervalo no es trivial
+        self.assertEqual(nuevo.historial.cantidad(), clasico.historial.cantidad())
+        self.assertGreaterEqual(nuevo.historial.cantidad(), 1)
+        # el mismo número de cambios registrados en el intervalo: el reloj, el evento pendiente y el azar (la mutación que
+        # quita el registro del evento pendiente no cambia el estado final tras deshacer, solo este número)
+        self.assertEqual(_cambios_del_ultimo_intervalo(nuevo), _cambios_del_ultimo_intervalo(clasico))
+        self.assertTrue(clasico.historial.deshacer())
+        self.assertTrue(nuevo.historial.deshacer())
+        self.assertEqual(nuevo.reloj, clasico.reloj)
+        self.assertEqual(nuevo.reloj, reloj_antes)
+        self.assertEqual(nuevo.jugador.vida, clasico.jugador.vida)
+        self.assertEqual(nuevo.jugador.vida, vida_antes)
+        self.assertEqual(nuevo.historial.cantidad(), clasico.historial.cantidad())
+        # deshacer vuelve a antes de la acción: el jugador tiene el control y no tiene evento pendiente, en los dos
+        self.assertIsNone(clasico.jugador.Evento_pendiente)
         self.assertIsNone(nuevo.jugador.Evento_pendiente)
 
     def test_fr402_cancelado_en_la_raiz_y_valido_posterior_no_mueve_el_reloj(self):

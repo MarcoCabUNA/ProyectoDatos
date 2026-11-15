@@ -387,6 +387,13 @@ guarda 0,90 MB y K = 1 guarda 16,6 MB (unas 18 veces más). Las acciones pesan u
 escribe `GuardadoBinario` (versión 1) por cada punto (un archivo por punto, con su cabecera de unos 34 bytes) más las
 acciones; las cargas y las fichas se cuentan, pero no se pesan.
 
+**Supuesto: `--replay` sin `--hasta`.** Es headless (sin ventana ni línea de comandos) y no alimenta la línea de tiempo,
+porque `ServicioReplay` ejecuta las acciones con `ServicioAccionJugador` directo. Por eso `historia` no es alcanzable en ese
+modo y no se agregó código para él (YAGNI). Si se llamara a pesar de todo, el contexto del replay tiene una línea con solo
+el punto 0 y respondería un estado del instante 0, que engaña; la defensa mínima, que **no** se aplicó por ser inalcanzable,
+es `contexto.linea = None` en `ServicioReplay.reproducir`, para que salga el mensaje claro «Esta partida no tiene línea de
+tiempo que consultar». Anotado como supuesto en la spec de la 004 (Suposiciones).
+
 ### §5.6 Revisión de decisiones de la primera parte
 
 Las decisiones de la primera entrega que esta feature toca se volvieron a medir con la carga nueva (Principio VIII).
@@ -414,3 +421,45 @@ iguales dentro del ruido de la medición; la decisión de la primera parte sigue
 
 **Pendiente de la sección.** Cuando exista el guardado con línea (T044 a T048), se agregará el tamaño real del archivo
 versión 2 y se revisará si ese valor cambia la elección de K.
+
+### Contador de daño recibido (`ActorBase.danio_recibido`, para «ir a» de la 002)
+
+Cambio a la primera entrega (Principio III), propuesto por el integrante 3 y **pendiente de la revisión del integrante 1**.
+
+**Problema.** «Ir a» debe detenerse cuando el jugador recibe daño (spec 002 FR-258 c, §3.4). Comparar `jugador.vida` antes y
+después de un paso no basta: una Regeneración (`Logic/Efectos.py`, +vida por pulso) puede devolver la vida dentro del mismo
+paso y ocultar el daño (R-I3-7).
+
+**Alternativas.** (1) Comparar la vida y detenerse también si hay Regeneración activa, sin tocar Logic: no cambia la primera
+entrega, pero detiene el viaje tras cada paso aunque no haya daño. (2) Contar los mensajes de daño del buffer: el buffer
+guarda solo los últimos 20, no tiene contador total y el texto de la trampa no nombra a la víctima. (3) Un contador entero
+en el único punto por el que pasa todo daño: **elegida**.
+
+**Antes.**
+```python
+def Recibir_Dannio(self, Cant):
+    if Cant <= 0:
+        return
+    self._registrar_vida()
+    ...
+```
+**Después** (`Logic/ActorBase.py`: campo en `__init__` y una línea en `Recibir_Dannio`):
+```python
+self.danio_recibido: int = 0                 # en __init__
+
+def Recibir_Dannio(self, Cant):
+    """..."""
+    if Cant <= 0:
+        return
+    self.danio_recibido += Cant              # la línea nueva
+    self._registrar_vida()
+    ...
+```
+
+**Por qué es seguro.** `Cant` ya es el daño final en los cuatro sitios que llaman a `Recibir_Dannio`: el ataque
+(`Logic/motorJuego.py:256`, `max(1, ataque + azar - defensa_efectiva)`), la trampa (`:289`, `dano_al_activarse()`) y el veneno
+(`Logic/Efectos.py:33`, su valor por pulso); la defensa se resta antes de llamar, no dentro. La guarda `Cant <= 0` sigue
+primero, así que un daño de 0 no sube el contador. El contador **no** va al historial (deshacer con un pergamino no lo baja,
+así que el pergamino no parece daño en la comparación de un paso) ni a `PartidaGuardada` (solo importa la diferencia dentro
+de un paso; cargar una partida interrumpe el viaje). Los enemigos también lo tienen porque comparten `ActorBase`; nadie lo
+lee. Costo: O(1). Pruebas: `tests/test_danio_recibido.py` (9).
