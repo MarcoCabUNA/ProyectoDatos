@@ -2358,7 +2358,7 @@ Reglas: constitución v1.2.0, MVC n-capas, solo estructuras y librerías permiti
 -----------------------------------------------------------------------------------------------------------------------
 **Fecha:** Sábado 14 de noviembre 2026
 
-**Herramienta:** Claude Code
+**Herramienta:** (Claude Code)
 
 /speckit-implement T063, T064, T065 y T067 de specs/004-linea-tiempo/tasks.md (documentación y revisión de restricciones). Solo documentos, salvo el comentario de ConfiguracionDTO.py. No toques T066, T068 ni H4.
 1) T063 y T064: completa en DECISIONES.md la sección «Integrante 3 — 004» (§5.3, §5.5 y §5.6) con las decisiones reales de la implementación: diseño A de reconstrucción hacia adelante con un Motor aparte, pergamino sin marcador con punto de control nuevo en c, regla de la consulta (j = última acción con tiempo estrictamente menor que t), T032 no necesaria, grabadores con registros de carga y ordinal, DespachoAcciones propio, validación de t y k en Logic, línea de comandos con Enter y Esc, el error de hasta_instante que se corrigió con la prueba de regresión, y las mediciones de specs/004-linea-tiempo/bench-tabla.txt (K = 20 con 0,62 ms; sin puntos 147 ms; búsqueda binaria contra recorrido lineal; costo por acción con y sin línea; costo de una copia).
@@ -2372,7 +2372,7 @@ Dos commits: «docs(004): decisiones, README y K confirmado» y, si T067 encuent
 -----------------------------------------------------------------------------------------------------------------------
 **Fecha:** Sábado 14 de noviembre 2026
 
-**Herramienta:** Claude Code
+**Herramienta:** (Claude Code)
 
 Solo lectura, no cambies ni crees archivos. Lee Logic/ (motorJuego.py, jugador.py, ActorBase.py, Enemigo.py, Efectos.py, GestorEfectos.py, Mazmorra.py) y responde con archivo y línea:
 (a) M-2: ¿en qué lugares baja jugador.vida (ataques de enemigos, veneno, trampas, otros)? ¿Existe un único punto por el que pase todo daño al jugador? ¿Hay algo que SUBA jugador.vida dentro de un mismo paso del jugador (regeneración pasiva, poción, efecto)? Si comparar jugador.vida antes y después del paso puede ocultar un daño, dime un caso concreto y propón la señal más simple y fiable (por ejemplo un contador o bandera que ya exista) sin crear estructuras nuevas.
@@ -2381,6 +2381,20 @@ Solo lectura, no cambies ni crees archivos. Lee Logic/ (motorJuego.py, jugador.p
 Responde en una tabla corta. Al final, indica si el plan de «ir a» (specs/002-niebla-ir-a/plan.md, mi sección) necesita cambiar algo por tus respuestas.
 
 **Uso de la respuesta:** Se resuelven con el código las preguntas M-1 a M-3 del plan de «ir a» (detección de daño y enemigos dormidos).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** (Claude Code)
+
+Actualiza SOLO mi sección del plan de «ir a» en specs/002-niebla-ir-a/plan.md (commit «plan(002): señal de daño, SIN_EXPLORAR y requisitos del grafo»; sin código ni tasks):
+1) I3-3 y R-I3-7: la señal de daño queda como «jugador.vida < vida_antes, o hay Regeneración activa antes o después del paso (motor.efectos.tiene(jugador, "regeneracion"))», evaluada en Service sin tocar Logic. Es conservadora: con Regeneración activa el viaje se detiene tras cada paso. Antes de escribirlo, revisa si el buffer de mensajes del motor registra cada daño recibido con un texto fiable que Service pueda contar; si existe, propónlo como señal exacta alternativa (sin implementarla) y dime cuál recomiendas. Agrega la prueba nueva: viaje con Regeneración activa que se detiene.
+2) D-6: SIN_EXPLORAR vive en DTO/EstadoJuegoDTO.py (no en MapaConocidoDTO); ArmadorEstado usa mapa.es_explorada(sala), que Derek agrega al contrato.
+3) Requisito de contrato (M-1): GrafoMapaConocido.cantidad_salas() devuelve el total de salas (ids de 0 a n-1) y entradas/salidas son coherentes entre sí.
+4) D-4: después de PartidaGuardada.cargar, «ir a» y el reconstructor vuelven a tomar contexto.motor (el mapa es un objeto nuevo). Revisa si ReconstructorEstado ya lo hace.
+Reporta el commit. No hagas push.
+
+**Uso de la respuesta:** Se actualiza el plan de «ir a» con la señal de daño por regeneración, la ubicación de SIN_EXPLORAR y los requisitos del grafo del mapa.
 -----------------------------------------------------------------------------------------------------------------------
 **Fecha:** Sábado 14 de noviembre 2026
 
