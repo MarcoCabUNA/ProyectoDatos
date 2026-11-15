@@ -3011,3 +3011,17 @@ Luego, un commit por paso, suite en verde con uv run antes de cada commit, no pu
 **Uso de la respuesta:** `git merge origin/derek` fue un avance rápido sin conflictos: además de `ed0da17` y `4aac926` trajo lo posterior de `origin/derek` hasta `38861c6` (T045 a T059 de la 002 y T057 de la 001). Un commit por paso, suite en verde con `uv run` antes de cada uno (830 pruebas de unittest OK, 4 omitidas; 31 de 31 scripts): (1) `c22202d`, `Logic/BenchRutas.py`: `medir_ciclo_cazadores` (motor comprobado) y `medir_historial` (caso sin registrar) asignan `RepartidorAvisosPuertas([<rutas>, <motor>.mapa])`, sin cambiar nombres ni firmas. (2) `2bcdc2b`, `Logic/Mazmorra.py`: el comentario de `observador_puertas` describe el repartidor. (3) `4c8d5e4`: 3 corridas del `--bench` completo (93 a 96 s) en `specs/001-terreno-cazador/bench-2026-11-15.txt`; los conteos son los mismos que el 13 de noviembre (solo crece 0,1 KB el guardado de 2000 salas, por la versión 2). Con 30 cazadores en 1 024 salas el peor ciclo es de 5,5 a 17,6 ms: **NFR-101 y SC-104 se cumplen**. Con 100 cazadores y el jugador moviéndose (fuera de NFR-101) dio 19,6 / 20,0 / 22,4 ms; medido aparte, alternando `4c4307b` (sin mapa) y `2bcdc2b`, da 7,2 a 9,4 ms en los dos con medianas iguales, así que el mapa no encarece el ciclo y el pico depende de lo que corre antes en el proceso. Se actualizaron `research.md` (R6), `DECISIONES.md` §5.6 y `data-model.md` de la 001. (4) Este registro. Sin push.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+En specs/001-terreno-cazador: (1) en plan.md, junto a la línea de T033 donde observador_puertas = self.rutas,
+agregá una nota de una línea: «Desde ed0da17 (002, integrante 2) es RepartidorAvisosPuertas([self.rutas,
+self.mapa]); ver data-model.md y DECISIONES.md §5.6». No reescribas el plan original. (2) En tasks.md marcá
+T057 como hecha (38861c6, integrante 2) y anotá que H2-22 ya no tiene skip. Un commit, suite en verde con
+uv run, PROMPTS_LLM.md, no push.
+
+**Uso de la respuesta:** (1) En `specs/001-terreno-cazador/plan.md`, la línea de T033 es la fila de `Logic/motorJuego.py · __init__` de la tabla de cambios; la nota va al final de esa fila, en la última celda, para no cortar la tabla. El resto del plan no cambia. (2) T057 ya estaba marcada `[X]` en `tasks.md` (lo hizo `38861c6`); se agregó «Hecha en `38861c6` (integrante 2): la prueba de H2-22 ya no tiene `skipTest`» al final de la tarea y la misma aclaración en la nota de H2-22 de la sección de pruebas. Se comprobó que `test_h2_22_fr122_botin_invalido_deja_la_sala_sin_contenido` no tiene `skipTest` (el único que queda en `tests/test_terreno_cazador.py` es el de la 003). Suite con `uv run`: 830 pruebas OK (4 omitidas), 31 de 31 scripts. Un commit, sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
