@@ -38,7 +38,7 @@ Estado de la partida. Lo crea el motor (`motor.mapa`); lo escriben solo `iniciar
 |---|---|---|---|
 | `iniciar(sala: int) -> None` | `_explorar(sala)` y `_observar_puertas(sala)` | O(g) | FR-202, FR-207 |
 | `entrar(sala: int, antorcha: bool) -> None` | `_explorar(sala)`; si `antorcha`, `_explorar(v)` para cada destino v de una salida de `sala` (abierta o cerrada); `_observar_puertas(sala)` | O(1 + Σ g de las que pasan a exploradas) | FR-203, FR-207, FR-210 a FR-214 |
-| `puerta_cambio(a: int, b: int) -> None` | `_observar_puertas(jugador.Sala_Actual)`; `a` y `b` no se usan | O(1) | FR-207, FR-209 |
+| `puerta_cambio(a: int, b: int) -> None` | `_observar_puertas(jugador.Sala_Actual)`; `a` y `b` no se usan | O(g), g ≤ 4 | FR-207, FR-209 |
 | `estado_sala(sala: int) -> int` | Lectura de `estado` | O(1) | NFR-201 |
 | `estado_cara(sala: int, direccion: int) -> int` | Lectura de `caras` | O(1) | NFR-201 |
 | `es_explorada(sala: int) -> bool` | `True` solo si `estado[sala] == EXPLORADA` (`False` para avistadas, desconocidas y posiciones que no son salas, como la 0). No cambia nada, no consume tiempo ni registra en el historial. La usa `ArmadorEstado` del integrante 3 para el H-2, opción A (contrato (c)) | O(1) | FR-204, FR-217, NFR-201 |

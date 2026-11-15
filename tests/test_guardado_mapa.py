@@ -410,6 +410,34 @@ class PruebasBinarioVersion2(unittest.TestCase):
                 self.assertIn("versión 1", str(ctx.exception))         # la leída
                 self.assertIn("versión 2", str(ctx.exception))         # la esperada
 
+    def test_t047_de_la_004_fr421_archivo_v1_dice_formato_viejo(self):
+        from Data.GuardadoBinario import ErrorGuardado, cargar
+        self.archivo_v1()
+        with self.assertRaises(ErrorGuardado) as ctx:
+            cargar(self.ruta)
+        mensaje = str(ctx.exception)
+        self.assertIn("formato viejo", mensaje)
+        self.assertNotIn("más nuevo", mensaje)
+        self.assertIn("versión 1", mensaje)
+        self.assertIn("versión 2", mensaje)
+
+    def test_t047_de_la_004_fr421_archivo_de_version_mayor_dice_formato_mas_nuevo(self):
+        from Data.GuardadoBinario import VERSION_FORMATO, ErrorGuardado, cargar, cargar_sala, guardar
+        guardar(self.ruta, self.partida(mapa=mapa_guardado_de_ejemplo()), self.salas)
+        datos = self.bytes_del_archivo()
+        struct.pack_into("<H", datos, 4, VERSION_FORMATO + 1)            # el resto del archivo no se toca
+        self.escribir_bytes(datos)
+        for nombre, funcion in (("cargar", lambda: cargar(self.ruta)),
+                                ("cargar_sala", lambda: cargar_sala(self.ruta, 4))):
+            with self.subTest(funcion=nombre):
+                with self.assertRaises(ErrorGuardado) as ctx:
+                    funcion()
+                mensaje = str(ctx.exception)
+                self.assertIn("formato más nuevo", mensaje)
+                self.assertNotIn("viejo", mensaje)
+                self.assertIn(f"versión {VERSION_FORMATO + 1}", mensaje)
+                self.assertIn(f"versión {VERSION_FORMATO}", mensaje)
+
     def test_t047_de_la_004_archivo_v1_deja_intacta_la_partida_actual(self):
         carpeta_tests = os.path.join(RAIZ, "tests")
         if carpeta_tests not in sys.path:

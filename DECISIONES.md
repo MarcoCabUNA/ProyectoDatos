@@ -280,10 +280,11 @@ instante, así que el mapa no conoce los efectos y H3-8 sale sin código especia
 Más `restaurar` al cargar. Todo pasa por `_poner_estado` y `_poner_cara`. Para que el aviso llegue a las rutas del
 cazador y al mapa sin modificar la `Mazmorra`, el motor asigna `RepartidorAvisosPuertas([rutas, mapa])` como
 `observador_puertas` (hallazgo H-1; las líneas de `Logic/motorJuego.py` las escribió el integrante 2 y las revisó el
-integrante 1).
+integrante 1). El cambio a `Logic/motorJuego.py` quedó en el commit `ed0da17` (revisado y aprobado por el integrante 1
+el 15/11).
 
 **Complejidad.** `iniciar` y `entrar` sin antorcha: O(g). Con antorcha: O(1 + Σ g de las vecinas que pasan a
-exploradas), a lo sumo 5 salas y 20 salidas. `puerta_cambio`: O(1). El repartidor: O(observadores) por aviso.
+exploradas), a lo sumo 5 salas y 20 salidas. `puerta_cambio`: O(g), g ≤ 4. El repartidor: O(observadores) por aviso.
 
 **Evidencia** (B4, B5 y B8; la entrada al centro con la antorcha revela siempre 5 salas y 8 caras):
 
@@ -343,7 +344,9 @@ prueba de otros integrantes sin proteger ningún archivo real) o un `if` en `Par
 copiar (si no, la re-simulación de la 004 escribiría dentro del punto de control), comprueba los largos (si no
 coinciden con la `Mazmorra`, `ValueError`) y **reemplaza** el mapa en curso sin registrar en el historial (H-8).
 `restaurar(None)` arma el mapa inicial desde la sala del jugador, como FR-202, así `PartidaGuardada.cargar` suma una
-sola línea, sin `if`. En el archivo, el mapa va en un **bloque propio**: 1 byte de estado y 1 byte con las 4 caras
+sola línea, sin `if`. El cambio a `Logic/PartidaGuardada.py` quedó en el commit `4aac926`, junto con T041 a T044 (el
+integrante 1 aceptó no rehacerlo como commit propio; aprobado el 15/11); el comentario se reordenó después en el
+commit de los ajustes de su revisión. En el archivo, el mapa va en un **bloque propio**: 1 byte de estado y 1 byte con las 4 caras
 (2 bits cada una) por sala; el mismo codificador sirve para el mapa de cada punto de control dentro del bloque de la
 línea (T003 de la 004).
 

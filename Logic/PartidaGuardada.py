@@ -84,8 +84,8 @@ class PartidaGuardada:
             _cargar_evento(motor, evento_guardado, efectos)
         motor.cola.siguiente_secuencia = partida.siguiente_secuencia
 
-        # El historial no se guarda: se empieza vacío, como justo después de cerrar un intervalo
         motor.mapa.restaurar(partida.mapa)
+        # El historial no se guarda: se empieza vacío, como justo después de cerrar un intervalo
         motor.historial.descartar_intervalo_abierto()
         motor._registrar_azar()
         return motor

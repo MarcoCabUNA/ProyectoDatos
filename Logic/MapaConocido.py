@@ -62,7 +62,7 @@ class MapaConocido:
         Aviso de la Mazmorra (por RepartidorAvisosPuertas) de que cambió una puerta: vuelve a observar las puertas de
         la sala del jugador (FR-207, FR-209). 'a' y 'b' no se usan: el aviso no identifica la puerta sin vuelta
         (research R2). Invariante: mientras el jugador está en x, el recordado de cada cara de cada puerta con cara
-        en x es el real. Un aviso de una puerta lejana no cambia ni registra nada. O(1).
+        en x es el real. Un aviso de una puerta lejana no cambia ni registra nada. O(g), g ≤ 4.
         """
         self._observar_puertas(self.jugador.Sala_Actual)
 
