@@ -296,7 +296,8 @@ El detalle (firmas, reglas, ejemplos y lo que no se ofrece) está en
   igualado por Logic (001 FR-101); los ids son los reales del esqueleto (`cantidad_salas() = len(Mazmorra.salas)`), así
   que el desempate por menor id de `BusquedaCostoMinimo` da lo mismo que FR-253. Lee el mapa **en vivo** en cada
   llamada (regla 2 del contrato de la 001). `salidas(u)`: O(4). `entradas(x)`: O(grado de entrada de x), con una
-  adyacencia inversa del esqueleto armada una vez en O(S + E), como `GrafoEsqueleto`; solo devuelve orígenes
+  adyacencia inversa del esqueleto armada en la primera llamada a `entradas`, en O(S + E), como `GrafoEsqueleto` (el
+  constructor es O(1); armar el grafo en cada paso suma ese O(S + E) a cada paso, y lo mide B11); solo devuelve orígenes
   explorados, de los que el jugador conoce todas sus salidas (FR-205), así que no filtra nada del esqueleto.
   **Sin aviso a una búsqueda guardada**: como el viaje recalcula **antes de cada paso** (FR-255) y el conocimiento solo
   cambia entre pasos, «ir a» empieza una búsqueda nueva por paso (`paso_desde_cero` o `reiniciar`), que la regla 3 de
@@ -415,9 +416,10 @@ Ninguno bloquea el plan. No se cambió la spec.
 - **H-2 (SC-202 y FR-204, integrante 3)**: hoy `EstadoJuegoDTO.sala` es el `SalaDTO` del esqueleto con las puertas
   actuales, y sus `SalidaDTO.sala_destino` traen el **id real** de los destinos, también de los avistados. La vista los
   usa (`View/EscenaJuego.py`, líneas 59, 112 y 318). Con eso la interfaz recibe la identidad de salas avistadas y podría
-  saber que dos salidas llevan a la misma (FR-204, H5-5), y la prueba automática de SC-202 fallaría. Lo decide el
-  integrante 3 en `ArmadorEstado` (por ejemplo, `sala_destino = None` para destinos no explorados y un dato aparte para
-  la puerta final y la de llegada). Las puertas de la sala actual sí pueden seguir mostrando el estado real, porque es
+  saber que dos salidas llevan a la misma (FR-204, H5-5), y la prueba automática de SC-202 fallaría. Lo decidió el
+  integrante 3 el 14/11 (opción A de su sección del plan): `ArmadorEstado` pone `sala_destino = SIN_EXPLORAR` (−1,
+  constante en `DTO/EstadoJuegoDTO.py`) hacia destinos no explorados y `sala_salida = None` mientras la sala de salida no
+  esté explorada, con `MapaConocido.es_explorada` (contrato (c)). Las puertas de la sala actual sí pueden seguir mostrando el estado real, porque es
   igual al recordado (invariante de R2).
 - **H-3 (FR-251; resuelto)**: la spec no dice si el nombre de «ir a <sala>» se compara distinguiendo mayúsculas o
   espacios. Confirmado por el integrante 3 el 14/11: se compara `nombre.strip().casefold()` con el nombre de la sala
