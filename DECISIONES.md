@@ -201,6 +201,29 @@ se aisló qué parte. Queda para revisarla con el equipo; esta feature no cambia
 
 Mediciones: `python -m Service.ServicioBench` (`Logic/BenchRutas.py`), tabla completa en [bench-2026-11-13.txt](specs/001-terreno-cazador/bench-2026-11-13.txt) y, con el mapa conocido conectado, en [bench-2026-11-15.txt](specs/001-terreno-cazador/bench-2026-11-15.txt). Máquina: AMD Ryzen 5 3600X, 32 GB, Windows 11 Pro, Python 3.12.10. Semilla `SEMILLA = 2026`: los conteos son reproducibles; los tiempos son medianas y dependen de la máquina.
 
+**Contenido de una sala con una caché vieja en disco (cambia, T058, FR-122).**
+
+- *Antes* (P1, `Data/GestorContenido.asegurar_sala`, con lo de T052): la sala se entregaba como cargada si ninguna
+  de sus fichas estaba entre los rechazos **en memoria**. Con una caché escrita antes de T055/T057 (un enemigo
+  guardado sin su `suelta`, o un objeto con `duracion` 0), la ficha inválida aparecía recién dentro de
+  `Mazmorra.cargar_contenido`, cuando `ResolvedorCatalogo.ficha()` la volvía a validar al leerla del disco. La
+  sala quedaba a medio cargar: los enemigos anteriores agregados, `contadores_tipo` avanzado (incluido el del
+  rechazado) y la sala todavía cargada para Data. Con un `ErrorRed` a mitad, el reintento duplicaba los enemigos
+  (en la prueba (c), `e-1` dos veces y los números en 2). Un objeto del suelo inválido ni siquiera se detectaba al
+  entrar: el movimiento se hacía y el error salía después, sin atrapar, en `SincronizadorUsos`.
+- *Después*: antes de devolver la sala, `asegurar_sala` pide `resolvedor.ficha(tipo, contar_acierto=False)` de
+  cada enemigo, cada trampa y cada objeto del suelo. Con `ErrorDatos`, la sala queda rechazada (`_rechazar`) y el
+  error sale; con `ErrorRed`, sale sin marcar nada y la sala se vuelve a validar en el próximo intento. Lógica
+  recibe la sala solo si todas sus fichas son válidas; `Logic/Mazmorra.py` no cambia.
+- *Costo*: O(enemigos + trampas + objetos) consultas a `ficha()` por sala que se entra. Las fichas ya están en
+  memoria o en disco (las bajó `resolver_contenido`), así que no hay solicitudes nuevas: en una partida con el API
+  falso, sin caché y con caché, las solicitudes (6 y 4) y los pedidos de catálogo (2 y 0) son los mismos antes y
+  después, y el replay de ejemplo pide los mismos 2 lotes de contenido. Lo que cambia es el reporte de la caché:
+  si una ficha se lee del disco aquí, la lectura de `cargar_contenido` que sigue cuenta como acierto (en la
+  partida con caché, 3 aciertos en lugar de 1; los fallos y las lecturas de disco no cambian).
+- *Acuerdo*: con el integrante 2, dueño del archivo; el cambio lo hizo el integrante 1. Pruebas en
+  `tests/test_cache_vieja.py`.
+
 ### Diferencia conocida entre la verificación y el motor de P1
 
 - **Qué pasa**: la verificación de resolubilidad (003 FR-304) sigue al pie de la letra §3.5 y P1 §2.12:

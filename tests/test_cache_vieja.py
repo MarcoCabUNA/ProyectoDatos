@@ -136,7 +136,6 @@ class TestCacheVieja(unittest.TestCase):
 
     def test_t058_fr122_a_cache_vieja_con_enemigo_de_botin_rechazado(self):
         """(a) La caché vieja tiene al enemigo pero no su suelta, que llega inválida: la sala 3 se rechaza entera."""
-        self.skipTest("pendiente de T058: GestorContenido.asegurar_sala todavía no valida las fichas de la sala")
         fuente = FuenteSala3(enemigos=[("e-1", ERRANTE.id), ("e-2", BOTIN_INVALIDO.id)],
                              fichas=[ERRANTE, BOTIN_INVALIDO, OBJETO_INVALIDO])
         ctx = self._partida_en_la_sala_2(fuente, cache_vieja=[ERRANTE, BOTIN_INVALIDO])
@@ -144,7 +143,6 @@ class TestCacheVieja(unittest.TestCase):
 
     def test_t058_fr122_b_cache_vieja_con_objeto_del_suelo_invalido(self):
         """(b) La caché vieja tiene una poción del suelo con `duracion` 0: la sala 3 se rechaza entera."""
-        self.skipTest("pendiente de T058: GestorContenido.asegurar_sala todavía no valida las fichas de la sala")
         fuente = FuenteSala3(enemigos=[("e-1", ERRANTE.id)], objetos=[OBJETO_INVALIDO.id],
                              fichas=[ERRANTE, OBJETO_INVALIDO])
         ctx = self._partida_en_la_sala_2(fuente, cache_vieja=[ERRANTE, OBJETO_INVALIDO])
@@ -156,7 +154,6 @@ class TestCacheVieja(unittest.TestCase):
         falla por la red: el movimiento se rechaza sin cargar nada. Con la red buena, el reintento entra y la
         sala 3 tiene cada enemigo una sola vez, con su número 1.
         """
-        self.skipTest("pendiente de T058: GestorContenido.asegurar_sala todavía no valida las fichas de la sala")
         fuente = FuenteSala3(enemigos=[("e-1", ERRANTE.id), ("e-2", CON_POCION.id)],
                              fichas=[ERRANTE, CON_POCION, POCION], fallas_catalogo=1)
         ctx = self._partida_en_la_sala_2(fuente, cache_vieja=[ERRANTE, CON_POCION])
