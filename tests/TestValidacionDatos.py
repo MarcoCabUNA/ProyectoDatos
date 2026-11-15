@@ -11,6 +11,9 @@ El escenario H2-9 completo (el movimiento rechazado en Servicios) es la prueba T
 
 T055 (escenarios H2-20 y H2-21): cierre_automatico de una salida y duracion de la ficha de un objeto, los dos
 enteros >= 1 si vienen (0, -5, "10" y true son inválidos). La duracion de un efecto de ficha no cambia.
+
+T057 (escenario H2-22): un enemigo con una ficha de su suelta rechazada cuenta como inválido, sin solicitudes
+extra; AlmacenCatalogo no lo guarda y ficha() rechaza el que una caché vieja tenga en disco.
 """
 import copy
 import os
@@ -19,6 +22,7 @@ import tempfile
 import unittest
 
 import Data.ValidacionDatos as validacion
+from Data.AlmacenCatalogo import AlmacenCatalogo
 from Data.ClienteHttp import ErrorRed
 from Data.FuenteJson import FuenteJson
 from Data.GestorContenido import GestorContenido
@@ -111,8 +115,45 @@ def api_con_cierre(id_sala: int, direccion: str, cierre) -> ApiFalsa:
     return ApiFalsa(paginas={ID_CRIPTA: [pagina]})
 
 
+# ---- T057: botín (suelta) con una ficha rechazada
+ERRANTE_BOTIN = "ent_errante_botin_prueba"
+
+
+def ficha_errante_botin() -> dict:
+    """Un errante válido que suelta la poción de prueba (cuya ficha decide cada prueba)."""
+    return {"id": ERRANTE_BOTIN, "nombre": "Errante de prueba", "clase": "enemigo", "vida_max": 10, "ataque": 3,
+            "defensa": 1, "velocidad": 100, "comportamiento": "errante", "suelta": [POCION]}
+
+
+def api_con_botin(sala: int, duracion) -> ApiFalsa:
+    """El contenido real de cripta-01 con el errante de prueba en esa sala; la poción no está en ningún suelo."""
+    contenido = copy.deepcopy(contenido_real())
+    for c in contenido:
+        if c["sala"] == sala:
+            c.setdefault("enemigos", []).append({"instancia": "e-998", "tipo": ERRANTE_BOTIN, "vida": 10})
+    return ApiFalsa(contenidos={ID_CRIPTA: contenido},
+                    catalogo=catalogo_real() + [ficha_errante_botin(), ficha_pocion(duracion)])
+
+
+def lotes_de_catalogo(api: ApiFalsa) -> list[list[str]]:
+    """Los ids de cada solicitud a /catalogo, en orden."""
+    return [dict(parametros)["ids"].split(",") for ruta, parametros in api.pedidos if ruta == "catalogo"]
+
+
 class PruebasReglas(unittest.TestCase):
     """ValidacionDatos por sí solo."""
+
+    def test_t057_fr122_error_de_suelta(self):
+        enemigo = FichaEnemigoDTO.desde_diccionario(ficha_errante_botin())
+        rechazada = ErrorDatos(f"ficha {POCION}", "duracion inválida", id_ficha=POCION)
+        error = validacion.error_de_suelta(enemigo, lambda i: rechazada if i == POCION else None)
+        self.assertIsInstance(error, ErrorDatos)
+        self.assertEqual(error.id_ficha, ERRANTE_BOTIN)
+        for texto in (ERRANTE_BOTIN, "suelta", POCION):
+            self.assertIn(texto, str(error))
+        self.assertIsNone(validacion.error_de_suelta(enemigo, lambda i: None))
+        sin_botin = FichaEnemigoDTO.desde_diccionario(dict(ficha_errante_botin(), suelta=[]))
+        self.assertIsNone(validacion.error_de_suelta(sin_botin, lambda i: rechazada))
 
     def test_fr122_el_error_de_datos_es_un_error_de_red_que_se_puede_distinguir(self):
         error = ErrorDatos("ficha x", "detalle", id_ficha="x")
@@ -400,6 +441,118 @@ class PruebasFichas(unittest.TestCase):
                 self.assertTrue(contenido.contenido_disponible(3))
                 self.assertIsNone(resolvedor.rechazo(POCION))
                 shutil.rmtree(self.carpeta)
+
+
+class PruebasBotin(unittest.TestCase):
+    """
+    T057 (FR-122, H2-22) en Datos: un enemigo cuya suelta trae una ficha rechazada cuenta como inválido. Lo que la
+    prueba de H2-22 no mira: las solicitudes, el disco, una caché vieja y un fallo de red a mitad.
+    """
+
+    def setUp(self):
+        self.temp = tempfile.mkdtemp()
+        self.carpeta = os.path.join(self.temp, "cache", "catalogo")
+
+    def tearDown(self):
+        shutil.rmtree(self.temp)
+
+    def crear(self, api: ApiFalsa, carpeta: str | None = None) -> tuple[ResolvedorCatalogo, GestorContenido]:
+        fuente = fuente_red(api)
+        resolvedor = ResolvedorCatalogo.crear(fuente, 25, carpeta or self.carpeta)
+        esqueleto = GestorEsqueleto(fuente)
+        esqueleto.cargar(fuente.obtener_datos_generales(ID_CRIPTA))
+        return resolvedor, GestorContenido(fuente, esqueleto, resolvedor=resolvedor)
+
+    def en_disco(self, resolvedor: ResolvedorCatalogo, id_ficha: str) -> bool:
+        return os.path.isfile(os.path.join(self.carpeta, resolvedor.version_catalogo(), id_ficha + ".json"))
+
+    def test_t057_fr122_botin_invalido_deja_solo_esa_sala_sin_contenido_sin_solicitudes_extra(self):
+        for duracion in VALORES_INVALIDOS:
+            with self.subTest(duracion=duracion):
+                api_valida = api_con_botin(3, 1)                      # el mismo escenario con la poción válida
+                control = os.path.join(self.temp, "control", str(duracion))
+                self.crear(api_valida, control)[1].asegurar_sala(1)
+                api = api_con_botin(3, duracion)
+                resolvedor, contenido = self.crear(api)
+                contenido.asegurar_sala(1)
+                self.assertEqual(lotes_de_catalogo(api), lotes_de_catalogo(api_valida))   # mismos lotes
+                error = resolvedor.rechazo(ERRANTE_BOTIN)
+                self.assertIsInstance(error, ErrorDatos)
+                for texto in (ERRANTE_BOTIN, "suelta", POCION):
+                    self.assertIn(texto, str(error))
+                for id_sala in (1, 2, 4, 5, 6):
+                    self.assertTrue(contenido.contenido_disponible(id_sala), id_sala)
+                self.assertFalse(contenido.contenido_disponible(3))
+                antes = api.solicitudes_realizadas
+                for _ in range(2):                                    # recordado, sin otra solicitud
+                    with self.assertRaises(ErrorDatos) as ctx:
+                        contenido.asegurar_sala(3)
+                    self.assertEqual(str(ctx.exception), str(error))
+                    with self.assertRaises(ErrorDatos):
+                        resolvedor.ficha(ERRANTE_BOTIN)
+                self.assertEqual(api.solicitudes_realizadas, antes)
+                shutil.rmtree(self.carpeta)
+
+    def test_t057_fr122_el_almacen_no_guarda_el_enemigo_con_botin_rechazado(self):
+        resolvedor, contenido = self.crear(api_con_botin(3, 0))
+        contenido.asegurar_sala(1)
+        self.assertFalse(self.en_disco(resolvedor, ERRANTE_BOTIN))
+        self.assertFalse(self.en_disco(resolvedor, POCION))
+        self.assertTrue(self.en_disco(resolvedor, "ent_rata_gigante"))     # las demás fichas sí
+        shutil.rmtree(self.carpeta)
+        resolvedor, contenido = self.crear(api_con_botin(3, 1))             # con la poción válida, las dos
+        contenido.asegurar_sala(1)
+        self.assertTrue(self.en_disco(resolvedor, ERRANTE_BOTIN))
+        self.assertTrue(self.en_disco(resolvedor, POCION))
+        self.assertTrue(contenido.contenido_disponible(3))
+        self.assertEqual(resolvedor.ficha(ERRANTE_BOTIN).suelta, [POCION])
+
+    def test_t057_fr122_enemigo_de_una_cache_vieja_se_rechaza_al_leerlo(self):
+        # Una caché escrita antes de T057: el errante quedó en disco y la poción, rechazada, no.
+        api = api_con_botin(3, 0)
+        resolvedor = ResolvedorCatalogo.crear(fuente_red(api), 25, self.carpeta)
+        AlmacenCatalogo(resolvedor.version_catalogo(), self.carpeta).guardar(
+            FichaEnemigoDTO.desde_diccionario(ficha_errante_botin()))
+        antes = len(lotes_de_catalogo(api))
+        with self.assertRaises(ErrorDatos) as ctx:
+            resolvedor.ficha(ERRANTE_BOTIN)
+        for texto in (ERRANTE_BOTIN, "suelta", POCION):
+            self.assertIn(texto, str(ctx.exception))
+        self.assertEqual(lotes_de_catalogo(api)[antes:], [[POCION]])      # solo la suelta que faltaba, un lote
+        self.assertIsNotNone(resolvedor.rechazo(ERRANTE_BOTIN))
+        solicitudes = api.solicitudes_realizadas
+        with self.assertRaises(ErrorDatos):                               # recordado: sin disco ni red
+            resolvedor.ficha(ERRANTE_BOTIN)
+        self.assertEqual(api.solicitudes_realizadas, solicitudes)
+
+    def test_t057_fr122_enemigo_en_disco_con_su_botin_en_disco_no_pide_nada(self):
+        resolvedor, contenido = self.crear(api_con_botin(3, 1))
+        contenido.asegurar_sala(1)
+        api = api_con_botin(3, 1)
+        otro = ResolvedorCatalogo.crear(fuente_red(api), 25, self.carpeta)     # otra partida, misma carpeta
+        antes = api.solicitudes_realizadas
+        self.assertEqual(otro.ficha(ERRANTE_BOTIN).id, ERRANTE_BOTIN)
+        self.assertEqual(api.solicitudes_realizadas, antes)
+
+    def test_t057_fr122_fallo_de_red_antes_de_la_suelta_no_guarda_el_enemigo(self):
+        # El lote con la poción falla: el errante no se da por válido (ni en disco ni rechazado). Al entrar a la
+        # sala 3, asegurar_sala lo vuelve a pedir con su suelta y rechaza la sala antes de que Lógica la cargue.
+        prueba = api_con_botin(3, 0)
+        self.crear(prueba, os.path.join(self.temp, "control"))[1].asegurar_sala(1)
+        indice = [i for i in range(len(prueba.pedidos))
+                  if prueba.pedidos[i][0] == "catalogo" and POCION in dict(prueba.pedidos[i][1])["ids"]][0]
+        api = api_con_botin(3, 0)
+        api.falla_en = indice                   # pedidos[i] es la solicitud número i (0 = versión del catálogo)
+        resolvedor, contenido = self.crear(api)
+        with self.assertRaises(ErrorRed) as ctx:
+            contenido.asegurar_sala(1)
+        self.assertNotIsInstance(ctx.exception, ErrorDatos)
+        self.assertFalse(self.en_disco(resolvedor, ERRANTE_BOTIN))
+        self.assertIsNone(resolvedor.rechazo(ERRANTE_BOTIN))
+        with self.assertRaises(ErrorDatos) as ctx:
+            contenido.asegurar_sala(3)
+        self.assertIn("suelta", str(ctx.exception))
+        self.assertFalse(contenido.contenido_disponible(3))
 
 
 class PruebasInicioDePartida(unittest.TestCase):

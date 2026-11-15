@@ -618,7 +618,6 @@ class TestDatosInvalidos(unittest.TestCase):
         En una segunda partida con la misma carpeta de caché, la sala 2 queda igual de rechazada: AlmacenCatalogo
         no guarda al enemigo con botín rechazado, y ficha() revalida lo que lee del disco.
         """
-        self.skipTest("pendiente de T057 (integrante 2): Data todavía no rechaza un enemigo por su suelta")
         acciones = ServicioAccionJugador()
         for duracion in (0, -5, "10", True):
             with self.subTest(sala="no inicial", duracion=duracion):
