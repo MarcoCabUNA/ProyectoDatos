@@ -37,6 +37,7 @@ from DTO.EstadoJuegoDTO import EstadoJuegoDTO
 from DTO.InventarioDTO import InventarioDTO
 from DTO.PuntajeDTO import PuntajeDTO
 from DTO.ReporteDatosDTO import ReporteDatosDTO
+from DTO.ReporteResolubilidadDTO import ReporteResolubilidadDTO
 from DTO.ResultadoBenchDTO import ResultadoBenchDTO
 from DTO.ResultadoReplayDTO import ResultadoReplayDTO
 from DTO.ResumenHistoriaDTO import ResumenHistoriaDTO
@@ -49,6 +50,7 @@ from Service.ServicioPartida import ServicioPartida
 from Service.ServicioPuntajes import ServicioPuntajes
 from Service.ServicioReplay import ServicioReplay
 from Service.ServicioReplayHasta import ServicioReplayHasta
+from Service.ServicioResolubilidad import ServicioResolubilidad
 
 # Criterios que existen. Son tuplas (no dict, §7) y públicas: la Interfaz las recorre para pasar de uno al siguiente.
 CRITERIOS_INVENTARIO = (None, "peso", "valor", "nombre")  # None = orden real del inventario
@@ -270,3 +272,10 @@ class ControladorBackend:
             raise
         except ValueError as error:                      # el rango lo valida Logic (LineaTiempo): el mensaje va tal cual
             raise ErrorOperacion(str(error)) from error
+
+    # ================================================================== feature 003 (resolubilidad)
+    def verificar(self, id_cripta: str) -> ReporteResolubilidadDTO:
+        """--verificar CRIPTA (feature 003, FR-314, FR-315): el reporte de resolubilidad, sin vista ni partida. Nunca
+        lanza por datos ni por red: esos fallos llegan como un reporte NO_CONCLUYO con el mensaje."""
+        id_cripta = self._texto(id_cripta, "Falta indicar la cripta.")
+        return ServicioResolubilidad(self._partida).verificar(id_cripta)

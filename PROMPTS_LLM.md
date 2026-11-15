@@ -2993,3 +2993,72 @@ No hagas commit.
 **Uso de la respuesta:** primer lote de la 003 (T001 a T034), en dos commits. (a) Contrato de llaves y DTO del reporte: `UbicacionLlaveDTO`, `ReporteResolubilidadDTO`, `obtener_llaves` en `FuenteDatos` (no abstracto: por defecto `ErrorRed`), `FuenteJson` (con validación de formato), `FuenteOffline` (`llaves.json`) y `DescargadorPaquete`, `AlmacenLlaves` por versión, `validar_ubicaciones` (FR-321) y `GestorLlaves`; se ajustaron `tests/Utilidades.py` (la `ApiFalsa` sirve llaves) y los conteos de `tests/TestDescargadorPaquete.py` por la solicitud nueva. T008 confirmada con el Swagger del 15/11 (`GET /v1/criptas/{dungeon_id}/llaves` → `{"llaves": [{"id", "sala", "enemigo"}]}`), sin cambios al contrato. (b) Verificación en Logic: `GrafoLlaves` (caras combinadas con una `Mazmorra` aparte, índice propio de llaves y ubicaciones ordenadas sin repetir con el `Ordenador`), `RecorridoLlaves` (oleadas incrementales con la `Cola`: cada sala y cada cara una vez; frontera y fase hacia afuera por niveles, sin recursión), `CiclosLlaves` iterativo, `VerificadorResolubilidad` y el generador de cuadrícula de `BenchResolubilidad`. 66 pruebas nuevas; cada grupo falló primero (dos pruebas que pasaban con reportes vacíos se reforzaron). La prueba de 1 500 dependientes no usa recursión. Suite: 896 pruebas OK (4 skip), 31 de 31 scripts; replay igual; grep de T067 limpio. Revisé el zip antes de los commits.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement Feature 003-resolubilidad, segundo lote: las fases 5, 6 y 7 de specs/003-resolubilidad/tasks.md, en este orden y como dice cada tarea. Las fases 1 a 4 (T001 a T034) ya están hechas y en origin/derek. .specify/feature.json ya apunta a specs/003-resolubilidad.
+
+Paso previo de la fase 5: ya está hecho. La rama derek tiene todo lo de origin/kris (lo comprobé hoy), así que no hagas ningún merge; solo corré python tests/correr_pruebas.py antes de tocar nada y anotá el resultado como línea base.
+
+1. Fase 5: T035 y T036 (las pruebas primero; comprobá que fallan), T037 (primero sus pruebas), T038 (primero su prueba), T039, T040 (primero su prueba) y T042 (parar y validar: el caso 4 del Apéndice B pasa y el replay de ejemplo sigue igual). T041 es un aviso: no lo hagas ni lo marques.
+2. Fase 6: T043 a T046 (comprobá que fallan), T047, T048, T049 y T050; T052 (la suite y el quickstart §2, pasos 5, 6, 9 y 10; el paso 8 necesita red, saltalo y decímelo; con el paquete actual, el paso 1 tiene que terminar con código 1 y «falta el archivo … llaves.json»). T051 es un aviso: no lo hagas ni lo marques.
+3. Fase 7: T053 (comprobá que fallan) y T054. T055 es del integrante 3 y T056 se hace con ella: no las hagas ni las marques.
+
+Después de T054, PARÁ. No hagas la fase 8 (paquete) ni las siguientes.
+
+Archivos del integrante 3 que este lote toca, solo con lo que dice cada tarea, al final y con valores por defecto, sin cambiar nada de lo suyo (ella los revisa antes del merge): Service/ServicioPartida.py (T037), Service/ContextoPartida.py (T038), Service/ErroresServicio.py (T040), UIController/ControladorBackend.py (T049 y T054, métodos nuevos al final de la clase). También DTO/ConfiguracionDTO.py y UIController/LectorArgumentos.py (T047, detrás de hasta, sin tocar --checkpoint-cada ni --hasta) y main.py (T050, solo la rama --verificar). Ningún otro archivo de los integrantes 1 y 3.
+
+MUY IMPORTANTE (T054): al hacer que ControladorBackend.iniciar pase por ServicioResolubilidad.iniciar_partida_nueva, una partida nueva sin --forzar no inicia si la verificación no concluye, y una FuenteDatos que no redefine obtener_llaves da NO_CONCLUYO. Puede que pruebas existentes de los integrantes 1 o 3 (test_controlador_backend.py, test_main.py, test_servicios.py, las de la 004 o de la 001, o los scripts) inicien partidas con fuentes falsas que no sirven llaves, o con --offline sobre el paquete actual, que no tiene llaves.json. Si eso pasa: NO cambies esas pruebas ni sus fuentes falsas, NO agregues un atajo que se saltee la verificación, y NO cambies la regla de FR-311. PARÁ antes de T054 (o deshacé solo T054) y decime exactamente qué pruebas fallan, por qué y qué opciones ves, para decidirlo con el equipo. Lo mismo si jugar normal con --offline deja de iniciar con el paquete actual: decímelo.
+
+Reglas:
+- Las «Reglas para todas las tareas» de tasks.md y la constitución v1.2.0 (sin copy fuera de tests/, sin bisect, heapq, collections, dict o set como índice o caché, sin sorted ni list.sort; Logic no importa Data ni Service). Una sola condición para --offline: el if de ServicioPartida.fuente(); ni GestorLlaves ni ServicioResolubilidad leen config.offline.
+- Sin import circular: ServicioResolubilidad no importa ErroresServicio.
+- Pruebas primero, con el escenario y el FR en el nombre. Las pruebas que corren en otro proceso leen la salida como UTF-8.
+- Marcá con [x] en tasks.md solo lo que quedó completo.
+- Antes de terminar corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8 en Windows), el replay de ejemplo (python main.py --replay ejemplos/partida_ejemplo.log --offline), que debe dar lo mismo que antes, y el grep de restricciones de T067 sobre los archivos nuevos.
+
+Al final decime:
+- los archivos de cada grupo, para dos commits: (a) fase 5, el servicio (T035 a T040); (b) fases 6 y 7, --verificar, --forzar y el controlador (T043 a T054), con tasks.md en el (b);
+- el diff exacto de cada archivo del integrante 3 y de main.py;
+- las pruebas nuevas, con su resultado antes y después del código;
+- el resultado de la suite (comparado con la línea base), de los scripts, del replay, del grep y de los pasos del quickstart;
+- qué pasa hoy al jugar normal (sin --forzar) en línea y con --offline con el paquete actual;
+- cualquier diferencia con tasks.md, el data-model, los contratos o la spec.
+No hagas commit.
+
+**Uso de la respuesta:** segundo lote de la 003, fases 5 a 7 (T035 a T053), en dos commits. (a) El servicio: `ServicioResolubilidad` (`verificar`, que nunca lanza por datos ni por red y da NO_CONCLUYO con el mensaje, e `iniciar_partida_nueva`, que sin `--forzar` no inicia una cripta que no es resoluble o que no se pudo verificar y lanza `ErrorPartidaNoIniciada` con el reporte; con los mismos datos de `abrir_datos`, sin pedirlos dos veces), y en los archivos del integrante 3, solo al final y con valores por defecto: `ServicioPartida` (el mismo `if` de `fuente()` elige el almacén de llaves: ninguno con `--offline`), `ContextoPartida.resolubilidad` después de `linea`, `ErrorPartidaNoIniciada` en `ERRORES_ESPERADOS`, y `verificar`/`forzar` en `ConfiguracionDTO` detrás de `hasta`. (b) La línea de comandos: `--verificar CRIPTA` (en el grupo de `--replay` y `--bench`) y `--forzar` en `LectorArgumentos`, `TextoResolubilidad.lineas_reporte` con el formato del contrato, `ControladorBackend.verificar` (T049, al final de la clase) y la rama `--verificar` de `main.py` (salida en UTF-8; códigos 0 resoluble, 3 no resoluble, 1 no concluyó). T054 (`iniciar` pasando por la verificación) se deshizo, como pedía el prompt: con el paquete actual, cripta-01 no tiene `llaves.json`, así que 6 pruebas de `test_controles_historia.py` y 15 scripts del integrante 3 que la inician con `--offline` ya no arrancaban; se decide con el integrante 3. 52 pruebas nuevas; cada grupo falló primero. El paso 8 del quickstart (con red) lo corrí yo. Revisé el zip antes de los commits.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Gracias, paraste donde correspondía. T054 queda pendiente hasta que el integrante 3 decida qué hacen sus pruebas que inician cripta-01 con --offline (cripta-01 ya no está en la API, así que nunca va a tener llaves.json). Mientras tanto, la suite tiene que quedar en verde para poder commitear. Solo esto, sin commit:
+
+1. En tests/test_resolubilidad_cli.py, clase PruebasControlador (las 4 pruebas de T053): en setUp, si ControladorBackend no tiene el atributo resolubilidad, self.skipTest("pendiente de T054: el integrante 3 decide cómo inician sus pruebas con cripta-01 sin llaves.json"). No cambies las pruebas en sí. T053 queda marcada (las pruebas están escritas); T054 sigue sin marcar.
+2. En specs/003-resolubilidad/tasks.md, al final de T054, una nota: «Pendiente (15/11): con T054, 6 pruebas de test_controles_historia.py y 15 scripts del integrante 3 no inician cripta-01 con --offline (paquete sin llaves.json; cripta-01 ya no está publicada). El parche está listo; se aplica cuando el integrante 3 decida cómo inician esas pruebas. Las pruebas de T053 tienen una guarda hasta entonces.»
+3. Corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8): tiene que dar todo en verde, con 7 skips (los 3 de antes y los 4 de T053).
+4. Reagrupá los dos commits: DTO/ConfiguracionDTO.py va en el (a), porque test_fr312_forzar_al_cargar_sin_efecto (del grupo a) necesita config.forzar. Confirmá que con solo los archivos del grupo (a) ninguna prueba del grupo (a) queda en rojo.
+
+Al final: las líneas que cambiaste, el resultado de la suite, los dos grupos de archivos y la ruta completa del parche de T054.
+
+**Uso de la respuesta:** mientras se decide T054, las 4 pruebas de T053 llevan una guarda en `setUp` (`skipTest` si `ControladorBackend` todavía no tiene `resolubilidad`), sin cambiar las pruebas, y `tasks.md` tiene la nota de T054 pendiente. `DTO/ConfiguracionDTO.py` pasó al commit (a) porque una prueba del servicio necesita `config.forzar`; Claude Code lo comprobó en un worktree temporal con solo los archivos del (a): 918 pruebas OK (3 skip), 31 de 31 scripts. Suite completa: 948 pruebas OK (7 skip), 31 de 31 scripts.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+¿Dónde creaste el worktree temporal y lo borraste? Confirmame con git worktree list que solo queda la carpeta del proyecto, y con git branch que no se creó ninguna rama nueva. Si quedó algo, borralo con git worktree remove y git worktree prune.
+
+Además: el paso 8 del quickstart §2 lo corrí yo con red. python main.py --verificar cripta-que-no-existe imprimió «Cripta cripta-que-no-existe: la verificación NO CONCLUYÓ» y «Falló 'datos generales de cripta-que-no-existe': Not found: dungeon 'cripta-que-no-existe' (HTTP 404)», y salió con código 1. Marcá T052 en specs/003-resolubilidad/tasks.md con esa nota (paso 8 corrido por el integrante 2 el 15/11, con red). T052 va en el grupo (b).
+
+No hagas commit. Al final, los dos grupos de archivos definitivos.
+
+**Uso de la respuesta:** el worktree temporal se creó suelto (`--detach`, sin rama) en el scratchpad y se borró; `git worktree list` muestra solo la carpeta del proyecto y no hay ramas nuevas. T052 quedó marcada con la nota del paso 8, que corrí yo con red: `--verificar cripta-que-no-existe` da «NO CONCLUYÓ» (404) y código 1. Grupos definitivos para los dos commits.
+
+-----------------------------------------------------------------------------------------------------------------------
