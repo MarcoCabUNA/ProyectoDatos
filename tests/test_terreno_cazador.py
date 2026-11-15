@@ -776,7 +776,6 @@ class TestModosSinVista(unittest.TestCase):
         de datos de FR-122 (costo inválido o distinto entre caras), la verificación no concluye y el programa
         termina con código 1, sin caerse ni instanciar la vista.
         """
-        self.skipTest("pendiente de la spec 003-resolubilidad: `--verificar` todavía no existe")
 
     def test_h3_8_fr118_bench_aplica_las_mismas_reglas(self):
         """
