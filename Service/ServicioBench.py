@@ -19,7 +19,7 @@ O directamente, desde la raíz del proyecto:
     python -m Service.ServicioBench
 """
 from DTO.ResultadoBenchDTO import ResultadoBenchDTO
-from Logic import BenchLogica
+from Logic import BenchLogica, BenchMapaConocido
 from Service import BenchDatos, BenchInventario
 
 _COLUMNAS = ["subsistema", "caso", "tamaño", "mejor ms", "mediana ms", "nota"]
@@ -30,10 +30,11 @@ class ServicioBench:
     def __init__(self, mediciones=None):
         """
         mediciones: funciones sin argumentos que devuelven list[ResultadoBenchDTO].
-        Por defecto, las de los tres integrantes, en orden: Datos, Lógica, Inventario.
+        Por defecto, las de los tres integrantes, en orden: Datos, Lógica, mapa conocido (feature 002), Inventario.
         """
         self._mediciones = (mediciones if mediciones is not None
-                            else [BenchDatos.medir, BenchLogica.medir, BenchInventario.medir])
+                            else [BenchDatos.medir, BenchLogica.medir, BenchMapaConocido.medir,
+                                  BenchInventario.medir])
 
     def ejecutar(self, al_avanzar=None) -> list[ResultadoBenchDTO]:
         """
