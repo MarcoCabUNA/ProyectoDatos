@@ -372,7 +372,7 @@ spec no cambia):
 |---|---|---|---|
 | I. MVC en n capas | Reglas en Logic (`ViajeAutomatico`); orquestación en Service (`ServicioIrA`); el Controlador solo valida la forma (texto no vacío) y traduce los motivos a mensajes; la vista no llama a Logic. DTO nuevos solo con datos | ✅ | ✅ |
 | II. Estructuras | Listas y enteros; el grafo del mapa es el de Derek y la búsqueda es la de Marco; sin `dict`, `set`, `copy`, `sorted`, `heapq` ni `collections`. Nada nuevo en `Estructuras/` | ✅ | ✅ |
-| III. KISS y Abierto/Cerrado | Dos clases nuevas (una de Logic, una de Service) y tres DTO; no se modifica `Motor`, `ServicioAccionJugador`, `ServicioLineaTiempo`, `BusquedaCostoMinimo` ni `MapaConocido`; **única excepción**: un contador entero nuevo en `ActorBase.Recibir_Dannio` (ver «Cambios a código de la primera entrega»). Se descarta guardar el estado del viaje en el servicio (YAGNI) | ✅ | ✅ |
+| III. KISS y Abierto/Cerrado | Dos clases nuevas (una de Logic, una de Service) y tres DTO; no se modifica `Motor`, `ServicioAccionJugador`, `BusquedaCostoMinimo` ni `MapaConocido`; **sí se modifica `ServicioLineaTiempo`** (T118: es mi archivo de la 004 y lee el mapa como `motor.mapa.a_dto()`); **única excepción**: un contador entero nuevo en `ActorBase.Recibir_Dannio` (ver «Cambios a código de la primera entrega»). Se descarta guardar el estado del viaje en el servicio (YAGNI) | ✅ | ✅ |
 | IV. Determinismo | El paso depende solo del mapa y de la sala; sin azar ni reloj real; mismas acciones, mismo log, mismo viaje (FR-255, SC-253) | ✅ | ✅ |
 | V. Modos sin vista | `ServicioIrA` no importa pygame ni `View/`; las pruebas lo usan sin ventana | ✅ | ✅ |
 | VI. Sin datos de una cripta | Ningún nombre ni id en el código; las pruebas arman criptas a mano con la notación de la spec | ✅ | ✅ |
@@ -386,7 +386,7 @@ spec no cambia):
 
 | Archivo | Cambio | Motivo | Quién |
 |---|---|---|---|
-| `Logic/ActorBase.py` · `Recibir_Dannio` | Campo entero `danio_recibido = 0` en `__init__` y **una línea** de incremento (`self.danio_recibido += Cant`) después de la guarda `Cant <= 0` (es decir, **sube solo cuando `Cant > 0`**). **No** se registra en el historial de retroceso y **no** va a `PartidaGuardada`. `ActorBase` también lo usan los enemigos (el contador solo cuenta en ellos y nadie lo lee) | §3.4: «el viaje se detiene cuando recibe daño» (FR-258 c). Es la única señal exacta con un cambio de una línea: por `Recibir_Dannio` pasa todo daño al jugador (ataque de enemigo, veneno y trampa) y la comparación de `jugador.vida` no ve un daño compensado por una Regeneración en el mismo paso. No va al historial ni al guardado porque solo importa la diferencia dentro de **un** paso (un pergamino o cargar una partida interrumpen el viaje antes: `acciones_esperadas`, FR-262) | Integrante 3 propone; **revisión del integrante 1** |
+| `Logic/ActorBase.py` · `Recibir_Dannio` | Campo entero `danio_recibido = 0` en `__init__` y **una línea** de incremento (`self.danio_recibido += Cant`) después de la guarda `Cant <= 0` (es decir, **sube solo cuando `Cant > 0`**). **No** se registra en el historial de retroceso y **no** va a `PartidaGuardada`. `ActorBase` también lo usan los enemigos (el contador solo cuenta en ellos y nadie lo lee) | §3.4: «el viaje se detiene cuando recibe daño» (FR-258 c). Es la única señal exacta con un cambio de una línea: por `Recibir_Dannio` pasa todo daño al jugador (ataque de enemigo, veneno y trampa) y la comparación de `jugador.vida` no ve un daño compensado por una Regeneración en el mismo paso. No va al historial ni al guardado porque solo importa la diferencia dentro de **un** paso (un pergamino o cargar una partida interrumpen el viaje antes: `acciones_esperadas`, FR-262) | Integrante 3 propone; **revisión del integrante 1**. Tarea **T110A**: `Cant` ya es el daño final (la defensa se resta antes, en `Motor.atacar`), con una prueba que lo fija (`tests/test_danio_recibido.py`), type hint y docstring, y antes/después en `DECISIONES.md` |
 | `Service/ServicioLineaTiempo.py` · `consultar_por_instante`, `consultar_por_accion` (código de la 004, no de la primera entrega) | Leer el mapa del motor aparte como `motor.mapa.a_dto()` en lugar de `getattr(motor, "mapa_conocido", None)` (líneas 68 y 74). **Cambio pendiente**: se hace con T023 de la 004, cuando exista `a_dto()` | El mapa se lee solo como `motor.mapa` (FR-223, T023); hoy el `getattr` devuelve `None` y el resumen sale sin mapa | Integrante 3 |
 
 ### Componentes
@@ -411,12 +411,16 @@ UIController/
     para avistada, desconocida e inexistente: no hay forma de distinguirlas, FR-251); `[id]` igual a la sala actual →
     `YA_AQUI`; `[id]` → `OK`; dos o más → `AMBIGUO`. Un `nombre` que no es `str` es un error de programación
     (`ValueError`); uno vacío o de solo espacios es `DESTINO_INVALIDO`.
-  - `decidir_paso(grafo, sala_actual, destino) -> (direccion, vecina, costo) | None`: llama a
-    `paso_desde_cero(grafo, destino, sala_actual, None)` y devuelve `None` si no hay ruta (FR-259). La **dirección**
-    se obtiene recorriendo las cuatro de la sala actual con `Mazmorra.salida(sala_actual, d)` (solo lectura) y tomando
-    la primera, por número de dirección, cuyo destino es la vecina y cuyo costo es el del paso. Solo se mira una sala
-    **explorada** (la actual) y una vecina que el grafo ya eligió, así que no se usa nada que el jugador no conozca
-    (FR-252); la elección de la ruta sigue saliendo solo del mapa. Decisión D-1: no se pide nada a Derek.
+  - `decidir_paso(grafo, mapa, mazmorra, sala_actual, destino) -> (direccion, vecina, costo) | None`: llama a
+    `paso_desde_cero(grafo, destino, sala_actual, None)` y devuelve `None` si no hay ruta (FR-259). `mapa` y
+    `mazmorra` son **argumentos explícitos** (no se leen de `grafo.mapa.mazmorra`). La **dirección** se obtiene
+    recorriendo las cuatro de la sala actual y tomando la primera, por número, que cumple las **tres** condiciones:
+    `mazmorra.salida(sala_actual, d)` lleva a la vecina, su costo es el del paso **y `mapa.estado_cara(sala_actual, d)
+    == ABIERTA`** (la cara se recuerda abierta; `ABIERTA` es de `DTO/MapaConocidoDTO.py`). La tercera evita, con dos
+    salidas a la misma vecina (H-4), elegir una cara recordada **cerrada** que tenga menor número de dirección: el
+    grafo no la ofrece (solo ofrece caras recordadas abiertas, FR-252) y `mover` toparía con la puerta. Solo se mira
+    una sala **explorada** (la actual) y una vecina que el grafo ya eligió, así que no se usa nada que el jugador
+    no conozca (FR-252). Decisión D-1: no se pide nada a Derek.
   - `motivos_de_parada(sala_actual, destino, hay_enemigos, recibio_dano, terminada) -> list[str]`: los que apliquen,
     siempre en el mismo orden (`LLEGO`, `ENEMIGOS`, `DANO`, `TERMINADA`); lista vacía si el viaje sigue (FR-258, FR-260).
 - **`Service/ServicioIrA.py`** (no guarda estado; recibe el contexto en cada llamada):
@@ -449,8 +453,8 @@ UIController/
 1. Si contexto.jugador.acciones != viaje.acciones_esperadas        → parar con INTERRUMPIDO (un pergamino u otra orden
                                                                      tocó la partida: el viaje no continúa, FR-262)
 2. Si la partida terminó                                            → parar con TERMINADA
-3. grafo = GrafoMapaConocido(contexto.motor.mapa)                   (se arma en cada paso: es barato y no se guarda)
-   paso  = ViajeAutomatico.decidir_paso(grafo, sala_actual, viaje.destino)
+3. grafo = GrafoMapaConocido(contexto.motor.mapa)                   (se arma en cada paso y no se guarda; su primera `entradas` paga O(S + E), I3-8)
+   paso  = ViajeAutomatico.decidir_paso(grafo, motor.mapa, motor.mazmorra, sala_actual, viaje.destino)
    si paso es None                                                  → parar con SIN_RUTA, sin tiempo (FR-256, FR-259)
 4. danio_antes = jugador.danio_recibido                                                 (I3-3)
    estado = ServicioLineaTiempo.ejecutar(contexto, AccionDTO("mover", direccion))      (FR-254, FR-263, FR-264)
@@ -531,13 +535,15 @@ Como el viaje no guarda estado, no hay nada que «reanudar» tras el pergamino n
 ### Rendimiento (NFR-250, NFR-251, SC-252)
 
 Un paso cuesta un `paso_desde_cero`: una búsqueda de costo mínimo desde el destino sobre las salas **exploradas** (a lo
-sumo las de la cripta, 50 en las publicadas) más `GrafoMapaConocido` en vivo (`salidas` O(4), `entradas` O(grado)). No
+sumo las de la cripta, 50 en las publicadas) más armar el `GrafoMapaConocido` (constructor O(1); la primera `entradas` arma el índice inverso del esqueleto en
+O(S + E) y, como el grafo se arma en cada paso, **cada paso paga ese costo**, I3-8) y consultarlo en vivo (`salidas`
+O(4), `entradas` O(grado)). No
 depende de cuánto dure el viaje ni de la longitud de `partida.log`.
 
 `Logic/BenchViaje.py` (dueño: integrante 3, mismo patrón que `BenchMapaConocido`) mide, con cuadrículas sintéticas por
-semilla de 100, 1 024 y 10 000 salas, **un paso completo** (`decidir_paso`) con el mapa conocido completo, y reutiliza
-`_cronometrar` y `_mejor_y_mediana` de `BenchLogica` sin modificarlos. El criterio de NFR-250 se comprueba con la
-cripta de referencia (< 5 ms); los tamaños grandes quedan como evidencia y no son criterio. Se engancha en
+semilla de 100, 1 024 y 10 000 salas, **un paso completo** (armar el grafo y `decidir_paso`) con el mapa conocido completo, y reutiliza
+`_cronometrar` y `_mejor_y_mediana` de `BenchLogica` sin modificarlos. El criterio de NFR-250 se comprueba con una
+**cripta sintética de tamaño equivalente** al de la de referencia (SC-252 lo admite; < 5 ms); los tamaños grandes quedan como evidencia y no son criterio. Se engancha en
 `Service/ServicioBench.py` después de `BenchMapaConocido` (lo toca también Derek: pregunta D-5). La alternativa
 descartada, reutilizar la búsqueda con `observador_rutas`, **se mide solo si** la medición de arriba no cabe en 5 ms;
 mientras quepa no se implementa (YAGNI, Principio VIII).
@@ -589,8 +595,9 @@ con un id real; el 1 y el 4 son los que filtran.
 
 | Archivo | Cubre |
 |---|---|
-| `tests/test_viaje_logica.py` | `resolver_destino` (H6-1, H6-8, ambiguo, H-3 con mayúsculas y espacios), `decidir_paso` (H6-2, H6-3, H6-4, H6-5, H6-6, H2-6) y `motivos_de_parada` (H7-3 a H7-6) en Logic pura, con criptas a mano (`ayudas_mapa`) |
-| `tests/test_servicio_ir_a.py` | H6-1 a H6-9 y H7-1 a H7-6 por el servicio y el motor reales: tiempo por paso (A24, H6-2), eventos entre pasos (A29, H6-7), antorcha y enemigos (A31, H6-9), recálculo y parada (H7-1, H7-2), daño por veneno (H7-5), **daño compensado por una Regeneración en el mismo paso que detiene el viaje** (R-I3-7; el jugador con Regeneración de +5, un enemigo que le pega 3 y un pulso que lo vuelve a topar en `vida_max`: la vida no baja, pero `danio_recibido` sí sube), y el caso contrario: **con Regeneración activa y sin daño el viaje sigue** |
+| `tests/test_viaje_logica.py` | `resolver_destino` (H6-1, H6-8, ambiguo, H-3 con mayúsculas y espacios), `decidir_paso` (H6-2, H6-3, H6-4, H6-5, H6-6, H2-6, y H-4: con dos salidas a la misma vecina y la de menor dirección recordada cerrada, elige la abierta) y `motivos_de_parada` (H7-3 a H7-6) en Logic pura, con criptas a mano (`ayudas_mapa`) |
+| `tests/test_servicio_ir_a.py` | H6-1 a H6-9 y H7-1 a H7-6 por el servicio y el motor reales: tiempo por paso (A24, H6-2), eventos entre pasos (A29, H6-7), antorcha y enemigos (A31, H6-9), recálculo y parada (H7-1, H7-2), daño por veneno (H7-5), **paso rechazado** (I3-6: un doble de prueba que rechaza el `mover`; el viaje para con `PASO_RECHAZADO` sin tiempo ni comentario), **`TERMINADA` junto con `DANO` o con `LLEGO`** (I3-7: el jugador muere en el paso, o llega a la salida y la partida termina), **el controlador descarta el viaje ante otra orden** (R-I3-4: `ControladorBackend.dar_paso_viaje` después de un pergamino, un `esperar` o un `mover` a mano), **daño compensado por una Regeneración en el mismo paso que detiene el viaje** (R-I3-7; el jugador con Regeneración de +5, un enemigo que le pega 3 y un pulso que lo vuelve a topar en `vida_max`: la vida no baja, pero `danio_recibido` sí sube), y el caso contrario: **con Regeneración activa y sin daño el viaje sigue** |
+| `tests/test_danio_recibido.py` | El contador `danio_recibido` (T110A): sube con el daño final de un ataque, de una trampa y del veneno; no sube con `Cant <= 0`; un golpe absorbido por la defensa (daño final 0) no lo sube; no va al historial (`deshacer` no lo baja) ni a `PartidaGuardada` |
 | `tests/test_ir_a_pergamino.py` | H7-7 (caso 6): viaje de 4 pasos, pergamino tras el 3.º; quedan 2, el mapa vuelve, `dar_paso` para con `INTERRUMPIDO` |
 | `tests/test_ir_a_registro.py` | H7-8 (A36): `partida.log` con 3 movimientos y un comentario; `--replay` da la partida y el mapa iguales, y el comentario no cambia nada (SC-253); orden sin pasos: **sin** comentario. H7-9 (A37): 3 acciones en la línea; `historia #k` de cada una; la orden no cuenta |
 | `tests/test_bench_viaje.py` | NFR-251 con tamaños chicos; A32 (SC-252) con la cripta de referencia en `--bench` |
@@ -606,7 +613,7 @@ Ninguno bloquea; la spec no se modifica.
 - **I3-1** (dirección del paso) — **resuelto, sin pedido a Derek**: `paso_desde_cero` devuelve `(vecina, costo)` y
   `GrafoMapaConocido.salidas(u)` devuelve `(destino, costo)` sin la dirección. La dirección se obtiene con
   `Mazmorra.salida` sobre la sala actual, que está explorada (ver `decidir_paso`). Con salidas repetidas hacia la
-  misma vecina (H-4, fuera de las criptas publicadas) se toma la de menor número de dirección con ese costo.
+  misma vecina (H-4, fuera de las criptas publicadas) se toma la de menor número de dirección con ese costo **y recordada abierta** (`mapa.estado_cara`).
 - **I3-2** (consulta del estado de una sala): `ArmadorEstado` necesita `mapa.es_explorada(sala)`, O(1), para la opción A
   del H-2; Derek lo agrega al contrato (pregunta D-2).
 - **I3-3** (daño) — **decidido**: P1 sí tiene una curación que puede caer dentro de un paso `mover`, la Regeneración (`Logic/Efectos.py:71-85`); la poción solo actúa en `usar` y «ir a» solo usa `mover`. Todo daño pasa por `ActorBase.Recibir_Dannio`. La señal es un **contador entero nuevo** `danio_recibido` en esa función (una línea, sube cuando `Cant > 0`, fuera del historial y de `PartidaGuardada`), que Service compara antes y después de cada paso. Justificación: §3.4, «el viaje se detiene cuando recibe daño». Es un cambio a la primera entrega (Principio III), anotado en su tabla, **con revisión del integrante 1**. La señal conservadora con Regeneración y el conteo de mensajes quedan como alternativas descartadas.
@@ -622,8 +629,13 @@ Ninguno bloquea; la spec no se modifica.
 - **I3-7** (motivos internos) — **decidido**: `INTERRUMPIDO`, `TERMINADA` y `PASO_RECHAZADO` no están en FR-258 ni
   FR-260 y **no son mensajes nuevos de la spec**: son motivos internos del servicio. La interfaz puede no mostrar nada
   para `INTERRUMPIDO`. Si el jugador muere o gana durante el paso, `TERMINADA` acompaña a `DANO` o a `LLEGO`.
-- **I3-8** (identidad del grafo): se arma un `GrafoMapaConocido` por paso. No se guarda entre pasos porque el
-  pergamino, `restaurar` y cargar una partida cambian el mapa; armarlo es O(1).
+- **I3-8** (identidad del grafo): se arma un `GrafoMapaConocido` por paso y no se guarda entre pasos, porque el
+  pergamino, `restaurar` y cargar una partida cambian el mapa. **Costo**: el constructor es O(1), pero la **primera
+  llamada a `entradas` arma el índice inverso del esqueleto en O(S + E)** (S salas, E salidas), igual que
+  `GrafoEsqueleto` (`Logic/GrafoEsqueleto.py`, `_armar_inversa`). Como el grafo es nuevo en cada paso, **cada paso paga
+  ese O(S + E)**, además de la búsqueda. Con 50 salas es poco; por eso `BenchViaje` mide el paso completo, grafo
+  incluido (NFR-250). Si no cupiera en 5 ms, la salida es guardar el índice y reconstruirlo solo cuando cambie el
+  esqueleto, no volver a un grafo compartido que el pergamino pueda dejar viejo.
 - **D-4** (referencias al motor y al mapa) — **decidido**: `PartidaGuardada.cargar` arma un `Motor` nuevo y su mapa es
   un **objeto nuevo**. Por eso «ir a» toma `contexto.motor` (y de ahí el mapa) en cada llamada a `dar_paso` y no guarda
   ninguna referencia entre pasos. `ReconstructorEstado` (004) ya se comporta así: lee `contexto.motor` solo en su
@@ -656,7 +668,7 @@ Ninguno bloquea; la spec no se modifica.
   otro valor; lee `entradas(x)` y `salidas(u)` del grafo en cada llamada. El desempate es el de menor id de vecina entre
   **todas** las rutas de costo mínimo (`paso_hacia_origen`, `:78-95`; FR-253). Mi servicio la llama con
   `origen = destino` del viaje y `u = sala actual`. Requisito de contrato para `GrafoMapaConocido` en «Componentes».
-- **M-2** (cambio de una línea, a revisión): la señal de daño es un contador entero `danio_recibido` en `ActorBase.Recibir_Dannio` (sube cuando `Cant > 0`; no va al historial ni a `PartidaGuardada`; los enemigos también lo tienen porque comparten `ActorBase`). ¿Estás de acuerdo con el nombre y el sitio? Detalle en «Cambios a código de la primera entrega».
+- ~~**M-2**~~ (resuelta por lectura del código y confirmada por Marco): la señal de daño es un contador entero `danio_recibido` en `ActorBase.Recibir_Dannio` (sube cuando `Cant > 0`; no va al historial ni a `PartidaGuardada`; los enemigos también lo tienen porque comparten `ActorBase`). La revisión del cambio de código queda en T110A. Detalle en «Cambios a código de la primera entrega».
 - ~~**M-3**~~ (confirmada leyendo el código): `Mazmorra.enemigos_vivos(id_sala)` recorre solo los enemigos de esa sala y filtra por `Vivo()`, así que después de `mover_jugador` incluye a los dormidos recién activados (`Logic/motorJuego.py:150`). El plan la llama con la sala de llegada (`jugador.Sala_Actual` después del paso).
 
 ### Riesgos de esta sección
@@ -666,7 +678,7 @@ Ninguno bloquea; la spec no se modifica.
 | R-I3-1 | **La dirección del paso** no sale del grafo (I3-1) | Se obtiene con `Mazmorra.salida` sobre la sala actual, explorada; prueba con dos rutas de igual costo (H6-3) |
 | R-I3-2 | **Filtrar el id de salas no exploradas por `EstadoJuegoDTO`** (H-2) | Opción A y prueba de 200 acciones; SC-202 de Derek |
 | R-I3-3 | **El paso no cabe en 5 ms** con la cripta de referencia | `BenchViaje` lo mide antes de cerrar; si falla, se mide la búsqueda reutilizada con `observador_rutas` |
-| R-I3-4 | **El pergamino deja un viaje activo** en el Controlador | `acciones_esperadas` en el `ViajeDTO`: el servicio para aunque el Controlador no descarte el viaje |
+| R-I3-4 | **El pergamino deja un viaje activo** en el Controlador | `acciones_esperadas` en el `ViajeDTO`: el servicio para aunque el Controlador no descarte el viaje; prueba del controlador que descarta el viaje ante otra orden |
 | R-I3-5 | **Un viaje que abre puertas o usa llaves** | `ServicioIrA` solo construye acciones `mover`; prueba H6-4 con llave en el inventario |
 | R-I3-6 | **Se revela información al rechazar** | Un solo código y un solo mensaje para destino no explorado o inexistente; la prueba H6-1 compara los tres textos |
 | R-I3-7 | **El daño no se detecta** si la vida del jugador baja y sube en el mismo paso (una Regeneración la vuelve a subir): comparar `jugador.vida` antes y después no ve el daño compensado (FR-258 c) | Contador entero `danio_recibido` en `ActorBase.Recibir_Dannio` (una línea; cambio a la primera entrega con revisión del integrante 1). Pruebas: H7-5 con veneno, el daño compensado por una Regeneración que detiene el viaje, y el viaje con Regeneración y sin daño que sigue |
