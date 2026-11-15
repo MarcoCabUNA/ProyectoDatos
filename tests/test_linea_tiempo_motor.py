@@ -46,6 +46,12 @@ def _puerta(motor: Motor) -> list:
     return [motor.mazmorra.sala(1).salidas[2], motor.mazmorra.sala(2).salidas[3]]
 
 
+
+def _cambios_del_ultimo_intervalo(motor: Motor) -> int:
+    """Cuántas funciones de reversión tiene el último intervalo cerrado (lee el buffer del historial, solo en pruebas)."""
+    h = motor.historial
+    return len(h._cerrados[(h._primero + h._cantidad - 1) % h.MAX_ACCIONES])
+
 class PruebasAvanzarHasta(unittest.TestCase):
 
     def test_h1_2_apendiceB_caso3_fr402(self):
@@ -156,6 +162,9 @@ class PruebasAvanzarHasta(unittest.TestCase):
         self.assertLess(clasico.jugador.vida, vida_antes)             # el intervalo no es trivial
         self.assertEqual(nuevo.historial.cantidad(), clasico.historial.cantidad())
         self.assertGreaterEqual(nuevo.historial.cantidad(), 1)
+        # el mismo número de cambios registrados en el intervalo: el reloj, el evento pendiente y el azar (la mutación que
+        # quita el registro del evento pendiente no cambia el estado final tras deshacer, solo este número)
+        self.assertEqual(_cambios_del_ultimo_intervalo(nuevo), _cambios_del_ultimo_intervalo(clasico))
         self.assertTrue(clasico.historial.deshacer())
         self.assertTrue(nuevo.historial.deshacer())
         self.assertEqual(nuevo.reloj, clasico.reloj)
