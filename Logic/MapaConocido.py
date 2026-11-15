@@ -15,10 +15,10 @@ Solo escriben el mapa iniciar, entrar y puerta_cambio (research R2), más restau
 historial. Ninguna operación baja un estado (FR-203). Las direcciones se recorren siempre en el orden N, S, E, O (0 a 3).
 
 Costos: estado_sala, estado_cara y es_explorada O(1); _poner_estado y _poner_cara O(1); iniciar y puerta_cambio O(g);
-entrar O(1 + Σ g de las salas que pasan a exploradas); buscar_exploradas, a_guardado y restaurar O(S).
+entrar O(1 + Σ g de las salas que pasan a exploradas); a_dto, buscar_exploradas, a_guardado y restaurar O(S).
 """
-from DTO.MapaConocidoDTO import (ABIERTA, AVISTADA, CERRADA, DESCONOCIDA, EXPLORADA, SIN_OBSERVAR,
-                                 MapaConocidoGuardadoDTO)
+from DTO.MapaConocidoDTO import (ABIERTA, AVISTADA, CERRADA, DESCONOCIDA, EXPLORADA, SIN_OBSERVAR, MapaConocidoDTO,
+                                 MapaConocidoGuardadoDTO, SalaConocidaDTO, SalidaConocidaDTO)
 
 
 class MapaConocido:
@@ -98,6 +98,32 @@ class MapaConocido:
             if self.estado[sala] == EXPLORADA and self.mazmorra.salas[sala].nombre.strip().casefold() == clave:
                 encontradas.append(sala)
         return encontradas
+
+    # ---------- vista (FR-217, FR-219, FR-220; contrato (b))
+
+    def a_dto(self) -> MapaConocidoDTO:
+        """
+        El mapa para la vista, el comando de ver el mapa y el resumen de historia: las salas EXPLORADAS en orden
+        creciente de id (se recorren los ids en orden, sin ordenar), cada una con su nombre y sus 4 salidas. Cada
+        salida lleva el costo igualado (SalidaViva.costo, 001 FR-101), el estado RECORDADO de la cara de esta sala
+        (nunca el real) y el id del destino si está explorado, o None si está avistado (FR-204). No lee el contenido de
+        ninguna sala, no consume tiempo, no registra nada en el historial ni cambia estado (FR-220). O(S).
+        """
+        salas = []
+        for sala in range(len(self.estado)):
+            if self.estado[sala] != EXPLORADA:
+                continue
+            viva = self.mazmorra.salas[sala]
+            salidas: list[SalidaConocidaDTO | None] = []
+            for d in range(4):
+                s = viva.salidas[d]
+                if s is None or not self._existe(s.destino):
+                    salidas.append(None)
+                    continue
+                destino = s.destino if self.estado[s.destino] == EXPLORADA else None
+                salidas.append(SalidaConocidaDTO(s.costo, self.caras[sala * 4 + d], destino))
+            salas.append(SalaConocidaDTO(sala, viva.nombre, salidas))
+        return MapaConocidoDTO(salas)
 
     # ---------- guardado (FR-221, FR-223)
 

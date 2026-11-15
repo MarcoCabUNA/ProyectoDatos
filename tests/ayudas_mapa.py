@@ -14,6 +14,9 @@ Se apoyan en tests/ayudas_terreno.py (salida, salida_sin_vuelta, mazmorra_con_co
 - casillas_distintas(antes, despues): cuántas casillas cambiaron entre dos estados(mapa).
 - motor_con_inventario(mazmorra, sala_jugador, objetos=()): (motor, mensajes) de motor_con con un Inventario
   enlazado al historial y los objetos dados ya recogidos, sin llamar a iniciar (T031).
+- cuadricula_mapa(lado, semilla): (Mazmorra, salas) de una cuadrícula sintética de lado × lado con costos sacados
+  por semilla (cuadricula_con_costos de tests/ayudas_terreno.py), con todo el contenido marcado como cargado (T045).
+- EsqueletoPrueba(salas): lo único que ArmadorResumen y ArmadorEstado leen del esqueleto, obtener_sala(id) (T045).
 
 Ninguna cripta de ejemplo usa datos de una cripta publicada (Principio VI): todas se arman aquí con letras.
 """
@@ -95,3 +98,33 @@ def motor_con_inventario(mazmorra, sala_jugador: int, objetos=()):
     for objeto in objetos:
         inventario.recoger(objeto)
     return motor, mensajes
+
+
+def cuadricula_mapa(lado: int, semilla: int):
+    """
+    (Mazmorra, salas): una cuadrícula sintética de lado × lado salas (ids 1..lado², conectadas N, S, E, O) con un costo
+    entre 1 y 300 por par de salas sacado de random.Random(semilla), todo el contenido cargado y la salida en la última
+    sala, con la llave de tests/ayudas_terreno.py. 'salas' son los SalaDTO del esqueleto, en orden de id.
+    """
+    import random
+    from Logic.Mazmorra import Mazmorra
+    from tests.ayudas_terreno import LLAVE_FINAL, cuadricula_con_costos
+    salas = cuadricula_con_costos(lado, random.Random(semilla))
+    mazmorra = Mazmorra(sala_salida=lado * lado, llave_salida=LLAVE_FINAL)
+    mazmorra.cargar_esqueleto(salas)
+    for id_sala in range(1, lado * lado + 1):
+        mazmorra.sala(id_sala).contenido_cargado = True
+    return mazmorra, salas
+
+
+class EsqueletoPrueba:
+    """Lo único que ArmadorResumen y ArmadorEstado leen del esqueleto: obtener_sala(id), sobre los SalaDTO dados."""
+
+    def __init__(self, salas):
+        self._salas = list(salas)
+
+    def obtener_sala(self, id_sala: int):
+        for sala in self._salas:
+            if sala.id == id_sala:
+                return sala
+        raise KeyError(id_sala)
