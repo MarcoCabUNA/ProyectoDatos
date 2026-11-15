@@ -724,40 +724,40 @@ la 7. Cuando se dice «el mapa» se entiende el mapa conocido del jugador (FR-21
 | # | Caso del Apéndice B | Escenario | Requisitos | Prueba |
 |---|---|---|---|---|
 | 1 | `ir a` hacia una sala no explorada: se rechaza y no consume tiempo | H6-1 | FR-251 | Se define en `tasks.md` |
-| 2a | El mapa recuerda abierta una puerta que en realidad está cerrada: al observarla, el mapa se actualiza… | H2-1 (parte del mapa) | FR-207, FR-209 | Se define en `tasks.md` |
+| 2a | El mapa recuerda abierta una puerta que en realidad está cerrada: al observarla, el mapa se actualiza… | H2-1 (parte del mapa) | FR-207, FR-209 | `test_h2_1_apendiceB_caso2a_fr207_fr209_puerta_recordada_abierta_se_actualiza` (`tests/test_mapa_conocido_puertas.py`) |
 | 2b | …y la ruta se recalcula; si no queda ruta, el viaje se detiene sin consumir tiempo adicional | H7-1, H7-2 | FR-255, FR-256, FR-259, FR-260 | Se define en `tasks.md` |
 | 3 | `ir a` entra a una sala con enemigos dormidos: se activan según P1 §2.4 y el viaje se detiene | H7-3 | FR-258, FR-260 | Se define en `tasks.md` |
-| 4 | Con la antorcha encendida, entrar a una sala explora sus vecinas sin activar sus enemigos ni sus trampas | H3-1 | FR-210, FR-211 | Se define en `tasks.md` |
-| 5 | Un pergamino revierte una entrada con antorcha encendida: las salas exploradas por la antorcha vuelven a su estado anterior | H4-1 | FR-222 | Se define en `tasks.md` |
+| 4 | Con la antorcha encendida, entrar a una sala explora sus vecinas sin activar sus enemigos ni sus trampas | H3-1 | FR-210, FR-211 | `test_h3_1_apendiceB_caso4_fr210_fr211_antorcha_explora_vecinas` (`tests/test_mapa_conocido_antorcha.py`), `test_h3_1_apendiceB_caso4_fr210_fr211_motor_antorcha_no_despierta` (`tests/test_mapa_conocido_antorcha.py`), `test_h5_3_a22_fr211_fr212_fr219_explorada_por_antorcha_sin_contenido_y_sin_observar` (`tests/test_mapa_conocido_vista.py`) |
+| 5 | Un pergamino revierte una entrada con antorcha encendida: las salas exploradas por la antorcha vuelven a su estado anterior | H4-1 | FR-222 | `test_h4_1_apendiceB_caso5_fr222_pergamino_revierte_entrada_con_antorcha` (`tests/test_mapa_conocido_partida.py`), `test_h4_1_apendiceB_caso5_fr222_motor_leer_pergamino` (`tests/test_mapa_conocido_partida.py`) |
 | 6 | Un pergamino durante un viaje: revierte solo el último paso y el viaje no continúa | H7-7 | FR-222, FR-262 | Se define en `tasks.md` |
 
 Escenarios adicionales (no provienen del Apéndice B):
 
 | Adicional | Comportamiento | Escenario | Requisitos | Prueba |
 |---|---|---|---|---|
-| A1 | Sala inicial explorada en el instante 0 y sus vecinas avistadas | H1-1 | FR-201, FR-202, FR-204, FR-205, FR-206 | Se define en `tasks.md` |
-| A2 | Entrar a una sala la explora y deja avistados los destinos de sus salidas | H1-2, H1-6 | FR-203 | Se define en `tasks.md` |
-| A3 | Precarga y esqueleto no cambian el conocimiento | H1-5 | FR-217, FR-218 | Se define en `tasks.md` |
-| A4 | Puerta con cierre automático figura abierta y está cerrada | H2-2 | FR-208 | Se define en `tasks.md` |
-| A5 | La antorcha explora a través de una salida cerrada | H3-2 | FR-210 | Se define en `tasks.md` |
-| A6 | Con la antorcha apagada no se exploran las vecinas | H3-3 | FR-214 | Se define en `tasks.md` |
-| A7 | Guardar y cargar conserva el mapa | H4-3 | FR-221 | Se define en `tasks.md` |
-| A8 | El pergamino revierte la observación de una puerta | H4-2 | FR-222 | Se define en `tasks.md` |
-| A9 | `historia` muestra el mapa conocido de ese instante | H4-4 | FR-223 | Se define en `tasks.md` |
-| A10 | `--replay` produce el mismo mapa | H4-5 | FR-224 | Se define en `tasks.md` |
-| A11 | El comando de ver el mapa no muestra salas desconocidas | H5-1 | FR-219 | Se define en `tasks.md` |
-| A12 | Ver el mapa no altera la partida | H5-4 | FR-220 | Se define en `tasks.md` |
-| A13 | Una salida sin vuelta que sale de una sala explorada deja avistado su destino | H1-3 | FR-204 | Se define en `tasks.md` |
-| A14 | Una sala avistada solo muestra su existencia | H1-4 | FR-204, FR-217 | Se define en `tasks.md` |
-| A15 | Una puerta que cambia mientras el jugador está en su sala se observa en ese momento | H2-3 | FR-207 | Se define en `tasks.md` |
-| A16 | La puerta de una salida sin vuelta se observa solo desde la sala de la que sale; la sala de origen de una salida sin vuelta hacia una sala explorada sigue desconocida | H2-4 | FR-204, FR-207 | Se define en `tasks.md` |
-| A17 | La antorcha deja avistados, sin explorarlos, los destinos de las salidas de las vecinas | H3-4 | FR-213 | Se define en `tasks.md` |
-| A18 | Entrar después a una sala explorada con la antorcha revela su contenido y aplica P1 | H3-5 | FR-216 | Se define en `tasks.md` |
-| A19 | Las puertas nunca observadas de una vecina explorada con la antorcha figuran «sin observar» | H3-6 | FR-205, FR-207, FR-212 | Se define en `tasks.md` |
-| A20 | Encender la antorcha estando ya en una sala no cambia el mapa | H3-7 | FR-210, FR-215 | Se define en `tasks.md` |
-| A21 | El comando de ver el mapa muestra el estado recordado, no el real | H5-2 | FR-208, FR-219 | Se define en `tasks.md` |
-| A22 | El comando muestra una sala explorada con la antorcha sin contenido y con sus puertas «sin observar» | H5-3 | FR-211, FR-212, FR-219 | Se define en `tasks.md` |
-| A23 | Dos salidas hacia la misma sala avistada se muestran por separado, sin identificador, hasta explorarla | H5-5 | FR-204, FR-219 | Se define en `tasks.md` |
+| A1 | Sala inicial explorada en el instante 0 y sus vecinas avistadas | H1-1 | FR-201, FR-202, FR-204, FR-205, FR-206 | `test_h1_1_a1_fr201_fr202_fr204_fr205_fr206_sala_inicial_explorada` (`tests/test_mapa_conocido_estados.py`) |
+| A2 | Entrar a una sala la explora y deja avistados los destinos de sus salidas | H1-2, H1-6 | FR-203 | `test_h1_2_a2_fr203_entrar_explora_y_avista` (`tests/test_mapa_conocido_estados.py`), `test_h1_6_a2_fr203_volver_no_baja_el_estado` (`tests/test_mapa_conocido_estados.py`) |
+| A3 | Precarga y esqueleto no cambian el conocimiento | H1-5 | FR-217, FR-218 | `test_h1_5_a3_fr217_fr218_precarga_y_esqueleto_no_cambian_el_mapa` (`tests/test_mapa_conocido_estados.py`) |
+| A4 | Puerta con cierre automático figura abierta y está cerrada | H2-2 | FR-208 | `test_h2_2_a4_fr208_cierre_automatico_lejos_sigue_abierta` (`tests/test_mapa_conocido_puertas.py`), `test_h2_2_a4_fr208_motor_cierre_automatico` (`tests/test_mapa_conocido_puertas.py`) |
+| A5 | La antorcha explora a través de una salida cerrada | H3-2 | FR-210 | `test_h3_2_a5_fr210_explora_a_traves_de_una_puerta_cerrada` (`tests/test_mapa_conocido_antorcha.py`) |
+| A6 | Con la antorcha apagada no se exploran las vecinas | H3-3 | FR-214 | `test_h3_3_a6_fr214_antorcha_apagada_solo_avista` (`tests/test_mapa_conocido_antorcha.py`) |
+| A7 | Guardar y cargar conserva el mapa | H4-3 | FR-221 | `test_h4_3_a7_fr221_guardar_y_cargar_conserva_el_mapa` (`tests/test_mapa_conocido_partida.py`) |
+| A8 | El pergamino revierte la observación de una puerta | H4-2 | FR-222 | `test_h4_2_a8_fr222_pergamino_revierte_la_observacion` (`tests/test_mapa_conocido_partida.py`) |
+| A9 | `historia` muestra el mapa conocido de ese instante | H4-4 | FR-223 | `test_h4_4_a9_fr223_historia_muestra_el_mapa_de_ese_instante` (`tests/test_mapa_conocido_partida.py`) |
+| A10 | `--replay` produce el mismo mapa | H4-5 | FR-224 | `test_h4_5_a10_fr224_replay_da_el_mismo_mapa` (`tests/test_mapa_conocido_partida.py`) |
+| A11 | El comando de ver el mapa no muestra salas desconocidas | H5-1 | FR-219 | `test_h5_1_a11_fr219_muestra_exploradas_y_avistadas_sin_desconocidas` (`tests/test_mapa_conocido_vista.py`) |
+| A12 | Ver el mapa no altera la partida | H5-4 | FR-220 | `test_h5_4_a12_fr220_ver_el_mapa_no_altera_la_partida` (`tests/test_mapa_conocido_vista.py`), `test_h5_4_a12_fr220_motor_reloj_sin_cambios` (`tests/test_mapa_conocido_vista.py`) |
+| A13 | Una salida sin vuelta que sale de una sala explorada deja avistado su destino | H1-3 | FR-204 | `test_h1_3_a13_fr204_salida_sin_vuelta_avista_su_destino` (`tests/test_mapa_conocido_estados.py`) |
+| A14 | Una sala avistada solo muestra su existencia | H1-4 | FR-204, FR-217 | `test_h1_4_a14_fr204_fr217_avistada_solo_muestra_su_existencia` (`tests/test_mapa_conocido_vista.py`) |
+| A15 | Una puerta que cambia mientras el jugador está en su sala se observa en ese momento | H2-3 | FR-207 | `test_h2_3_a15_fr207_cambio_con_el_jugador_en_la_sala` (`tests/test_mapa_conocido_puertas.py`), `test_h2_3_a15_fr207_motor_aviso_por_el_repartidor` (`tests/test_mapa_conocido_puertas.py`) |
+| A16 | La puerta de una salida sin vuelta se observa solo desde la sala de la que sale; la sala de origen de una salida sin vuelta hacia una sala explorada sigue desconocida | H2-4 | FR-204, FR-207 | `test_h2_4_a16_fr204_fr207_salida_sin_vuelta_solo_desde_su_origen` (`tests/test_mapa_conocido_puertas.py`) |
+| A17 | La antorcha deja avistados, sin explorarlos, los destinos de las salidas de las vecinas | H3-4 | FR-213 | `test_h3_4_a17_fr213_no_explora_mas_alla_de_las_vecinas` (`tests/test_mapa_conocido_antorcha.py`) |
+| A18 | Entrar después a una sala explorada con la antorcha revela su contenido y aplica P1 | H3-5 | FR-216 | `test_h3_5_a18_fr216_entrar_despues_revela_y_aplica_p1` (`tests/test_mapa_conocido_antorcha.py`) |
+| A19 | Las puertas nunca observadas de una vecina explorada con la antorcha figuran «sin observar» | H3-6 | FR-205, FR-207, FR-212 | `test_h3_6_a19_fr205_fr207_fr212_puertas_de_la_vecina_sin_observar` (`tests/test_mapa_conocido_antorcha.py`) |
+| A20 | Encender la antorcha estando ya en una sala no cambia el mapa | H3-7 | FR-210, FR-215 | `test_h3_7_a20_fr210_fr215_encender_sin_moverse_no_cambia` (`tests/test_mapa_conocido_antorcha.py`) |
+| A21 | El comando de ver el mapa muestra el estado recordado, no el real | H5-2 | FR-208, FR-219 | `test_h5_2_a21_fr208_fr219_muestra_el_recordado_no_el_real` (`tests/test_mapa_conocido_vista.py`) |
+| A22 | El comando muestra una sala explorada con la antorcha sin contenido y con sus puertas «sin observar» | H5-3 | FR-211, FR-212, FR-219 | `test_h5_3_a22_fr211_fr212_fr219_explorada_por_antorcha_sin_contenido_y_sin_observar` (`tests/test_mapa_conocido_vista.py`) |
+| A23 | Dos salidas hacia la misma sala avistada se muestran por separado, sin identificador, hasta explorarla | H5-5 | FR-204, FR-219 | `test_h5_5_a23_fr204_fr219_dos_salidas_a_la_misma_avistada` (`tests/test_mapa_conocido_vista.py`) |
 | A24 | El viaje toma la ruta de menor costo y cada paso consume el tiempo de su salida | H6-2 | FR-253, FR-254 | Se define en `tasks.md` |
 | A25 | Con rutas de igual costo, el primer paso va a la vecina de menor identificador | H6-3 | FR-253 | Se define en `tasks.md` |
 | A26 | El viaje no abre puertas aunque el jugador tenga la llave | H6-4 | FR-252, FR-257, FR-259 | Se define en `tasks.md` |
@@ -772,12 +772,12 @@ Escenarios adicionales (no provienen del Apéndice B):
 | A35 | El viaje se detiene al llegar y la interfaz lo indica | H7-6 | FR-258, FR-260 | Se define en `tasks.md` |
 | A36 | `partida.log` registra cada paso como movimiento y la orden como comentario; `--replay` da el mismo resultado | H7-8 | FR-261 | Se define en `tasks.md` |
 | A37 | Cada paso cuenta como acción en la línea de tiempo; la orden no | H7-9 | FR-263 | Se define en `tasks.md` |
-| A38 | El mapa conocido ofrece a «ir a» solo las salidas entre salas exploradas con puerta recordada abierta, con costo igualado e identificador real | H2-5 | FR-205, FR-212, FR-225 | Se define en `tasks.md` |
-| A39 | El costo de cada salida que se conoce y se muestra es el igualado según 001 FR-101 | H5-6 | FR-205, FR-219 | Se define en `tasks.md` |
-| A40 | El reporte de resolubilidad se muestra completo con `--forzar` y no cambia el mapa conocido | H5-7 | FR-202, FR-217 | Se define en `tasks.md` |
-| A41 | Un cazador que se mueve por salas desconocidas no cambia el mapa conocido | H1-7 | FR-218 | Se define en `tasks.md` |
-| A42 | Las caras de una puerta con estados distintos se recuerdan por separado; a «ir a» solo se ofrece la salida cuya cara de origen se recuerda abierta | H2-6 | FR-207, FR-208, FR-225 | Se define en `tasks.md` |
-| A43 | Si la antorcha se apaga en el mismo instante de la entrada, decide el orden en que se programaron los eventos | H3-8 | FR-210, FR-214 | Se define en `tasks.md` |
+| A38 | El mapa conocido ofrece a «ir a» solo las salidas entre salas exploradas con puerta recordada abierta, con costo igualado e identificador real | H2-5 | FR-205, FR-212, FR-225 | `test_h2_5_a38_fr205_fr212_fr225_ofrece_solo_utilizables_con_costo_igualado` (`tests/test_grafo_mapa_conocido.py`) |
+| A39 | El costo de cada salida que se conoce y se muestra es el igualado según 001 FR-101 | H5-6 | FR-205, FR-219 | `test_h5_6_a39_fr205_fr219_costo_igualado` (`tests/test_mapa_conocido_vista.py`) |
+| A40 | El reporte de resolubilidad se muestra completo con `--forzar` y no cambia el mapa conocido | H5-7 | FR-202, FR-217 | `test_h5_7_a40_fr202_fr217_reporte_con_forzar_no_cambia_el_mapa` (`tests/test_mapa_conocido_vista.py`) |
+| A41 | Un cazador que se mueve por salas desconocidas no cambia el mapa conocido | H1-7 | FR-218 | `test_h1_7_a41_fr218_cazador_no_cambia_el_mapa` (`tests/test_mapa_conocido_estados.py`) |
+| A42 | Las caras de una puerta con estados distintos se recuerdan por separado; a «ir a» solo se ofrece la salida cuya cara de origen se recuerda abierta | H2-6 | FR-207, FR-208, FR-225 | `test_h2_6_a42_fr207_fr208_caras_distintas_se_recuerdan_por_separado` (`tests/test_mapa_conocido_puertas.py`), `test_h2_6_a42_fr208_fr225_solo_la_cara_de_origen_abierta_se_ofrece` (`tests/test_grafo_mapa_conocido.py`) |
+| A43 | Si la antorcha se apaga en el mismo instante de la entrada, decide el orden en que se programaron los eventos | H3-8 | FR-210, FR-214 | `test_h3_8_a43_fr210_fr214_entrar_con_y_sin_antorcha_en_el_mismo_instante` (`tests/test_mapa_conocido_antorcha.py`), `test_h3_8_a43_fr210_fr214_fin_programado_antes_que_la_entrada` (`tests/test_mapa_conocido_antorcha.py`), `test_h3_8_a43_fr210_fr214_fin_programado_despues_de_la_entrada` (`tests/test_mapa_conocido_antorcha.py`) |
 
 Cada prueba citará el identificador del requisito que verifica (Principio X).
 
