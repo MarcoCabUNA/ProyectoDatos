@@ -10,6 +10,8 @@ Se apoyan en tests/ayudas_terreno.py (salida, salida_sin_vuelta, mazmorra_con_co
 - JugadorPrueba(sala): un objeto con Sala_Actual, para usar MapaConocido sin motor.
 - mapa_de_prueba(mazmorra, sala_jugador, historial=None): (MapaConocido, JugadorPrueba).
 - estados(mapa): (list(mapa.estado), list(mapa.caras)), para comparar casilla por casilla.
+- entrar_a(mapa, jugador, sala, antorcha=False): mueve al jugador de prueba y llama a mapa.entrar, como el motor.
+- casillas_distintas(antes, despues): cuántas casillas cambiaron entre dos estados(mapa).
 
 Ninguna cripta de ejemplo usa datos de una cripta publicada (Principio VI): todas se arman aquí con letras.
 """
@@ -60,3 +62,19 @@ def mapa_de_prueba(mazmorra, sala_jugador: int, historial=None):
 def estados(mapa) -> tuple[list[int], list[int]]:
     """Copia de los dos arreglos del mapa: (estado de cada sala, estado recordado de cada cara)."""
     return list(mapa.estado), list(mapa.caras)
+
+
+def entrar_a(mapa, jugador, sala: int, antorcha: bool = False) -> None:
+    """Lo que hace el motor al mover al jugador: primero cambia Sala_Actual y después llama a mapa.entrar."""
+    jugador.Sala_Actual = sala
+    mapa.entrar(sala, antorcha)
+
+
+def casillas_distintas(antes: tuple[list[int], list[int]], despues: tuple[list[int], list[int]]) -> int:
+    """Cuántas casillas (de estado y de caras) difieren entre dos resultados de estados(mapa)."""
+    distintas = 0
+    for i in range(2):
+        for j in range(len(antes[i])):
+            if antes[i][j] != despues[i][j]:
+                distintas += 1
+    return distintas

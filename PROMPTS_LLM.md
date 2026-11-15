@@ -2703,3 +2703,38 @@ No cambies nada más. Al final: las líneas que cambiaste, con el texto antes y 
 **Uso de la respuesta:** dos commits. `plan(002)`: el contrato del mapa queda confirmado por el integrante 3 (T005) con `es_explorada(sala)` O(1) para el H-2, los dos casos de `buscar_exploradas` (vacío o solo espacios → `[]`; no `str` → `ValueError`), las garantías del grafo (total de salas, coherencia entre `salidas` y `entradas`, sala no explorada sin listas, posición 0 y huecos → `[]`), el costo de armarlo por paso (`_inversa` en la primera llamada a `entradas`, lo mide B11), la aclaración de D-1 (traducir la vecina a una dirección con `Mazmorra.salida` no es usar el esqueleto para la ruta) y el H-2 decidido (opción A, `SIN_EXPLORAR` en `DTO/EstadoJuegoDTO.py`); data-model, una frase del plan y dos de research alineadas. `tasks(002)`: T005 marcada; T006, T008, T026 a T028, T030, T042 y T050 actualizadas (cinco pruebas nuevas en T026; la guarda de H4-4 espera a T118); y las tareas de «ir a» del integrante 3, T100 a T127, generadas desde su sección del plan a su pedido, con lo abierto marcado «confirmar con el integrante 3» y su tabla de cobertura. En T050 corregí a mano «la guarda de T023 de la 004» por «la guarda de T118». No se tocaron spec.md, el código ni la sección del integrante 3 en plan.md. Revisé el resultado en el zip antes de cada commit.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement Feature 002-niebla-ir-a, parte del integrante 2. Segundo lote: las fases 3 a 7 de specs/002-niebla-ir-a/tasks.md, de T014 a T029, en este orden y como dice cada tarea. El primer lote (T001, la fase 2, T036, T038 y T039) ya está hecho y en origin/derek.
+
+1. Fase 3 (historia 1): T014 (las pruebas primero; comprobá que fallan), T015 y T016.
+2. Fase 4 (historia 2): T017 (comprobá que fallan), T018 y T019.
+3. Fase 5 (historia 3): T020 (comprobá que fallan), T021 y T022.
+4. Fase 6 (pergamino en Logic): T023, T024 y T025. Ojo con la excepción documentada de T023: esas pruebas cubren código que ya llegó (T012, T015 y T021) y pueden pasar desde que se escriben. Si pasan, decímelo y no cambies nada en T024. Si alguna falla, T024 corrige SOLO _poner_estado / _poner_cara.
+5. Fase 7 (contrato para el integrante 3): T026 con TODAS sus pruebas, incluidas las cinco que se agregaron hoy (coherencia de entradas y salidas, posición 0 y huecos, es_explorada, y los dos casos de buscar_exploradas); comprobá que fallan. Después T027, T028 y T029.
+
+Después de T029, PARÁ. T030 es un aviso sin código: no lo hagas, lo mando yo. No hagas T031 ni nada de las fases 8 en adelante: no toques Logic/motorJuego.py, Logic/PartidaGuardada.py ni ningún archivo del integrante 1 o del integrante 3.
+
+Reglas:
+- Constitución v1.2.0 y las «Reglas para todas las tareas» de tasks.md: sin dict ni set como índice o caché, sin collections, heapq ni bisect, sin sorted ni list.sort, sin copy fuera de tests/, y Logic no importa Data ni Service. Las direcciones siempre en orden 0 a 3.
+- Toda escritura del mapa pasa por _poner_estado / _poner_cara; ninguna operación baja un estado.
+- Mazmorra._salida_inversa es del integrante 1: solo se lee, no se modifica (está en su nota de dependencias).
+- H2-5 se lee como está escrito hoy en la spec (el jugador está en otra sala; por eso la cara A–C sigue «sin observar»).
+- Archivos permitidos: Logic/MapaConocido.py, Logic/GrafoMapaConocido.py (nuevo), tests/test_mapa_conocido_estados.py, tests/test_mapa_conocido_puertas.py, tests/test_mapa_conocido_antorcha.py, tests/test_mapa_conocido_partida.py, tests/test_grafo_mapa_conocido.py (nuevos los cuatro últimos), tests/ayudas_mapa.py (solo si hace falta un ayudante nuevo, sin cambiar los que ya existen) y specs/002-niebla-ir-a/tasks.md (solo para marcar). Si otro archivo tuviera que cambiar, avisame en vez de cambiarlo.
+- Marcá con [x] en tasks.md solo las tareas que quedaron completas, de T014 a T029.
+- Antes de terminar corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8 en Windows) y el replay de ejemplo (python main.py --replay ejemplos/partida_ejemplo.log --offline), que debe dar lo mismo que antes. Corré también el grep de restricciones de T059 sobre Logic/MapaConocido.py y Logic/GrafoMapaConocido.py.
+
+Al final decime:
+- los archivos nuevos y los modificados;
+- las pruebas nuevas de cada fase, con su resultado antes y después del código (y cuáles de T023 pasaron desde el principio);
+- el resultado de la suite, de los scripts y del replay;
+- el resultado del grep de restricciones;
+- cualquier diferencia con tasks.md, el data-model o el contrato, y cualquier cosa del contrato que no se haya podido cumplir tal cual.
+No hagas commit.
+
+**Uso de la respuesta:** segundo lote de la 002 (T014 a T029), en un commit. `Logic/MapaConocido.py`: `iniciar`, `entrar` con y sin antorcha, `puerta_cambio`, `es_explorada` y `buscar_exploradas` (con `strip().casefold()`, `[]` para un nombre vacío y `ValueError` si no es `str`); toda escritura por `_poner_estado` / `_poner_cara`. `Logic/GrafoMapaConocido.py` nuevo, con la interfaz de la 001: constructor O(1), `_inversa` en la primera llamada a `entradas`, lectura en vivo del mapa, `entradas` inversa de `salidas` y `[]` para la posición 0 y los huecos. 44 pruebas nuevas en cinco archivos; cada fase falló primero, salvo las cinco del pergamino (T023), que pasaron desde el principio por la excepción documentada, y algunas que ya cubría la observación de T015. Tres pruebas de la antorcha que pasaban sin probar nada se reforzaron. En NFR-202 se acota el total de registros (5 + 16 + 8), porque una vecina avistada y explorada en la misma entrada registra dos cambios, como manda el orden del data-model. Límite anotado para DECISIONES: con dos salidas de una sala hacia la misma vecina, `Mazmorra._salida_inversa` (del integrante 1, solo lectura) da solo la primera cara de vuelta. Suite: 753 pruebas OK (2 skip), 31 de 31 scripts; replay igual que antes; grep de restricciones limpio. Revisé el zip antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
