@@ -12,6 +12,8 @@ Se apoyan en tests/ayudas_terreno.py (salida, salida_sin_vuelta, mazmorra_con_co
 - estados(mapa): (list(mapa.estado), list(mapa.caras)), para comparar casilla por casilla.
 - entrar_a(mapa, jugador, sala, antorcha=False): mueve al jugador de prueba y llama a mapa.entrar, como el motor.
 - casillas_distintas(antes, despues): cuántas casillas cambiaron entre dos estados(mapa).
+- motor_con_inventario(mazmorra, sala_jugador, objetos=()): (motor, mensajes) de motor_con con un Inventario
+  enlazado al historial y los objetos dados ya recogidos, sin llamar a iniciar (T031).
 
 Ninguna cripta de ejemplo usa datos de una cripta publicada (Principio VI): todas se arman aquí con letras.
 """
@@ -78,3 +80,18 @@ def casillas_distintas(antes: tuple[list[int], list[int]], despues: tuple[list[i
             if antes[i][j] != despues[i][j]:
                 distintas += 1
     return distintas
+
+
+def motor_con_inventario(mazmorra, sala_jugador: int, objetos=()):
+    """
+    (motor, mensajes) de motor_con, con un Inventario de 5 lugares enlazado al historial del motor y los objetos
+    (ObjetoDTO) ya recogidos. No llama a iniciar: lo recogido antes de la primera acción no se puede deshacer.
+    """
+    from Logic.Inventario import Inventario
+    motor, mensajes = motor_con(mazmorra, sala_jugador)
+    inventario = Inventario(5)
+    inventario.historial = motor.historial
+    motor.inventario = inventario
+    for objeto in objetos:
+        inventario.recoger(objeto)
+    return motor, mensajes

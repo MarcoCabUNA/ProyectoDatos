@@ -9,7 +9,9 @@ from Logic.GestorEfectos import GestorEfectos
 from Logic.GrafoEsqueleto import GrafoEsqueleto
 from Logic.HistorialRetroceso import HistorialRetroceso
 from Estructuras.Ordenador import Ordenador
+from Logic.MapaConocido import MapaConocido
 from Logic.RastroSalas import RastroSalas
+from Logic.RepartidorAvisosPuertas import RepartidorAvisosPuertas
 from Logic.RutasHaciaJugador import RutasHaciaJugador
 
 
@@ -40,7 +42,8 @@ class Motor:
         self.mazmorra.historial = self.historial
         self.grafo = GrafoEsqueleto(mazmorra)             # rutas del cazador sobre el esqueleto (FR-112)
         self.rutas = RutasHaciaJugador(self.grafo, self.historial)   # búsqueda compartida (FR-114)
-        self.mazmorra.observador_puertas = self.rutas
+        self.mapa = MapaConocido(mazmorra, jugador, self.historial)
+        self.mazmorra.observador_puertas = RepartidorAvisosPuertas([self.rutas, self.mapa])
         self.inventario = inventario
         if inventario is not None:
             inventario.historial = self.historial
@@ -56,6 +59,7 @@ class Motor:
     def iniciar(self):
         self.jugador.Evento_pendiente = self.cola.programar(EventoProgramado(0, "accion_actor", self.jugador))
         self.rastro.marcar(self.jugador.Sala_Actual, 0)
+        self.mapa.iniciar(self.jugador.Sala_Actual)
         self.activar_enemigos(self.mazmorra.enemigos_dormidos(self.jugador.Sala_Actual))
 
     def activar_enemigos(self, enemigos):
@@ -146,6 +150,7 @@ class Motor:
             return "pendiente"
         self.historial.registrar_atributo(self.jugador, "Sala_Actual", self.jugador.Sala_Actual)
         self.jugador.Sala_Actual = destino
+        self.mapa.entrar(destino, self.efectos.tiene(self.jugador, "antorcha"))
         self.mensaje(f"Entras a {self.mazmorra.sala(destino).nombre}")
         self.activar_enemigos(self.mazmorra.enemigos_dormidos(destino))
         self._activar_trampas(destino)

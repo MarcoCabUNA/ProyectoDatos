@@ -3,6 +3,8 @@ Pruebas del núcleo de Logic/MapaConocido.py (feature 002, integrante 2): los do
 dos únicas escrituras (_poner_estado / _poner_cara), que registran su reversión en el historial (research R1, R3).
 
 Hasta T012 fallan al importar Logic.MapaConocido (dentro de mapa_de_prueba): es el fallo esperado.
+
+T031: la variante con el motor de la historia 1 (H1-7, el cazador no cambia el mapa); falla hasta T033.
 """
 import os
 import sys
@@ -15,7 +17,8 @@ if RAIZ not in sys.path:
 from DTO.SalaDTO import SalaDTO  # noqa: E402
 from Logic.HistorialRetroceso import HistorialRetroceso  # noqa: E402
 from tests.ayudas_mapa import (A, B, C, D, E, ESTE, F, G, H, NORTE, OESTE, SUR, casillas_distintas,  # noqa: E402
-                               cripta_mapa, entrar_a, estados, mapa_de_prueba, salida, salida_sin_vuelta)
+                               cripta_mapa, entrar_a, estados, mapa_de_prueba, motor_con, salida, salida_sin_vuelta)
+from tests.ayudas_terreno import ficha_cazador, poner_enemigo  # noqa: E402
 
 # Constantes del mapa con sus valores de data-model §1 (las pruebas no las importan para no depender de T011).
 DESCONOCIDA, AVISTADA, EXPLORADA = 0, 1, 2
@@ -232,6 +235,30 @@ class PruebasHistoria1(unittest.TestCase):
         entrar_a(self.mapa, self.jugador, A)
         self.assertEqual(self.mapa.estado_sala(H), DESCONOCIDA)
         self.assertEqual(self.mapa.estado_cara(H, ESTE), SIN_OBSERVAR)
+
+
+class PruebasHistoria1ConMotor(unittest.TestCase):
+    """T031, historia 1 con el motor: lo que hacen los enemigos no cambia el mapa (FR-218)."""
+
+    def test_h1_7_a41_fr218_cazador_no_cambia_el_mapa(self):
+        # A –E– B –E– C –E– D –E– E –E– F. El jugador en A solo observa la puerta A–B; el cazador sale de E y pasa
+        # por D y C (desconocidas) y por las puertas E–D y D–C, que el jugador nunca observó.
+        mazmorra = cripta_mapa(6, [salida(A, ESTE, B), salida(B, ESTE, C), salida(C, ESTE, D), salida(D, ESTE, E),
+                                   salida(E, ESTE, F)])
+        motor, _ = motor_con(mazmorra, A)
+        motor.iniciar()
+        motor.avanzar_hasta_jugador()
+        antes = estados(motor.mapa)
+        cazador = poner_enemigo(motor, E, ficha_cazador(10000))
+        recorridas = [cazador.Sala_Actual]
+        for _ in range(2):
+            self.assertEqual(motor.esperar(), "ok")
+            motor.avanzar_hasta_jugador()
+            recorridas.append(cazador.Sala_Actual)
+        self.assertEqual(recorridas, [E, D, C])                   # sí se movió por salas desconocidas
+        for sala in (C, D, E):
+            self.assertEqual(motor.mapa.estado_sala(sala), DESCONOCIDA)
+        self.assertEqual(estados(motor.mapa), antes)
 
 
 if __name__ == "__main__":

@@ -2738,3 +2738,43 @@ No hagas commit.
 **Uso de la respuesta:** segundo lote de la 002 (T014 a T029), en un commit. `Logic/MapaConocido.py`: `iniciar`, `entrar` con y sin antorcha, `puerta_cambio`, `es_explorada` y `buscar_exploradas` (con `strip().casefold()`, `[]` para un nombre vacío y `ValueError` si no es `str`); toda escritura por `_poner_estado` / `_poner_cara`. `Logic/GrafoMapaConocido.py` nuevo, con la interfaz de la 001: constructor O(1), `_inversa` en la primera llamada a `entradas`, lectura en vivo del mapa, `entradas` inversa de `salidas` y `[]` para la posición 0 y los huecos. 44 pruebas nuevas en cinco archivos; cada fase falló primero, salvo las cinco del pergamino (T023), que pasaron desde el principio por la excepción documentada, y algunas que ya cubría la observación de T015. Tres pruebas de la antorcha que pasaban sin probar nada se reforzaron. En NFR-202 se acota el total de registros (5 + 16 + 8), porque una vecina avistada y explorada en la misma entrada registra dos cambios, como manda el orden del data-model. Límite anotado para DECISIONES: con dos salidas de una sala hacia la misma vecina, `Mazmorra._salida_inversa` (del integrante 1, solo lectura) da solo la primera cara de vuelta. Suite: 753 pruebas OK (2 skip), 31 de 31 scripts; replay igual que antes; grep de restricciones limpio. Revisé el zip antes del commit.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Un prompt en dos partes, en un chat nuevo (la parte 2 empieza cuando se le escribe «seguí»):
+
+/speckit-implement Feature 002-niebla-ir-a, parte del integrante 2. Tercer lote: las fases 8 y 9 de specs/002-niebla-ir-a/tasks.md. Los lotes 1 y 2 (T001, fase 2, T014 a T029, T036, T038 y T039) ya están hechos. Son dos partes, con una parada en medio, porque T033 y T040 van cada una en su commit propio y el integrante 1 las revisa antes del merge.
+
+PARTE 1 — fase 8: T031, T032 y T033, en ese orden.
+1. T031: todas sus pruebas, como dice la tarea, sin skipTest. Comprobá que las del repartidor fallan porque falta Logic/RepartidorAvisosPuertas.py y las del motor porque falta motor.mapa.
+2. T032: Logic/RepartidorAvisosPuertas.py. Las dos primeras pruebas de T031 pasan.
+3. T033: en Logic/motorJuego.py, EXACTAMENTE los cinco cambios de la tarea y nada más: los dos imports; self.mapa = MapaConocido(mazmorra, jugador, self.historial) después de self.rutas = ...; reemplazar self.mazmorra.observador_puertas = self.rutas por el RepartidorAvisosPuertas([self.rutas, self.mapa]); self.mapa.iniciar(self.jugador.Sala_Actual) en iniciar() después de self.rastro.marcar(...); y self.mapa.entrar(destino, self.efectos.tiene(self.jugador, "antorcha")) en mover_jugador() justo después de self.jugador.Sala_Actual = destino. Sin type hints, docstrings ni comentarios nuevos en ese archivo, sin reordenar ni reformatear nada. Es un archivo del integrante 1: él revisa el diff, así que tiene que ser mínimo.
+4. Después de T033: las pruebas del motor de T031 pasan, y tests/test_terreno_cazador.py, tests/test_rutas_equivalencia.py y las pruebas de la 003 y de la 004 siguen en verde. Si en tests/test_guardado_mapa.py la prueba test_t047_de_la_004_archivo_v1_deja_intacta_la_partida_actual compara estados(motor.mapa) solo cuando existe motor.mapa, comprobá que ahora sí lo compara; si no lo compara, agregalo.
+5. Corré la suite completa y el replay de ejemplo, marcá T031, T032 y T033 en tasks.md y PARÁ. Decime los archivos de esta parte, el diff exacto de Logic/motorJuego.py y el resultado de la suite y del replay. Yo hago el commit y te escribo «seguí».
+
+PARTE 2 — fase 9 (solo cuando te diga «seguí»): T035 (segundo momento), T037, T040, T041, T042 y T044.
+1. T035: las seis pruebas de a_guardado y restaurar en tests/test_guardado_mapa.py. Comprobá que fallan.
+2. T037: a_guardado y restaurar en Logic/MapaConocido.py. restaurar(None) arma el mapa inicial desde jugador.Sala_Actual con _explorar + _observar_puertas; restaurar nunca registra en el historial (ni con un DTO ni con None). Marcá T035 y T037.
+3. T040: primero sus tres pruebas en tests/test_mapa_conocido_partida.py (comprobá que fallan); después, en Logic/PartidaGuardada.py, EXACTAMENTE: el argumento mapa=motor.mapa.a_guardado() en el PartidaGuardadaDTO(...) de guardar, y la línea motor.mapa.restaurar(partida.mapa) en cargar, justo antes de motor.historial.descartar_intervalo_abierto(), sin if ni raise. Nada más en ese archivo (también es del integrante 1). Comprobá que tests/test_partida_guardada.py, tests/test_servicio_guardado.py, tests/test_controlador_backend.py, tests/TestGuardadoBinario.py y las pruebas de la 004 siguen en verde sin cambiarlas.
+4. T041 y T042, como dicen las tareas (T041 es una excepción documentada al «falla primero»; T042 con la guarda de T118).
+5. T044. Su texto dice que H4-4 figura como skip «de T023 de la 004»: corregilo en tasks.md a «de T118». Y marcá T043 [x]: el aviso se mandó el 14/11 después del lote 1.
+6. Marcá en tasks.md solo lo que quedó completo y PARÁ. No hagas nada de las fases 10 en adelante.
+
+Reglas para las dos partes:
+- Constitución v1.2.0 y las «Reglas para todas las tareas» de tasks.md: sin dict ni set como índice o caché, sin collections, heapq ni bisect, sin sorted ni list.sort, sin copy fuera de tests/, y Logic no importa Data ni Service.
+- Archivos permitidos: Logic/RepartidorAvisosPuertas.py (nuevo), Logic/motorJuego.py y Logic/PartidaGuardada.py (solo las líneas de T033 y T040), Logic/MapaConocido.py, tests/test_mapa_conocido_puertas.py, tests/test_mapa_conocido_estados.py, tests/test_mapa_conocido_antorcha.py, tests/test_mapa_conocido_partida.py, tests/test_guardado_mapa.py, tests/ayudas_mapa.py (solo ayudantes nuevos) y specs/002-niebla-ir-a/tasks.md. Podés leer tests/ayudas_terreno.py, pero no lo cambies (es del integrante 1). Si otro archivo tuviera que cambiar, avisame en vez de cambiarlo.
+- Antes de terminar cada parte corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8 en Windows) y el replay de ejemplo (python main.py --replay ejemplos/partida_ejemplo.log --offline), que debe dar lo mismo que antes, y el grep de restricciones de T059 sobre los archivos de Logic que tocaste.
+
+Al final de cada parte decime:
+- los archivos nuevos y los modificados, separados para el commit de esa parte (en la parte 2, en dos grupos: (a) T035 y T037; (b) T040 a T044 con tasks.md);
+- el diff exacto de los archivos del integrante 1;
+- las pruebas nuevas, con su resultado antes y después del código;
+- el resultado de la suite, de los scripts, del replay y del grep;
+- cualquier diferencia con tasks.md, el data-model o el contrato.
+No hagas commit.
+
+**Uso de la respuesta (parte 1):** fase 8 de la 002 (T031 a T033), en un commit propio que revisa el integrante 1. `Logic/RepartidorAvisosPuertas.py` nuevo (reenvía `puerta_cambio` a `[motor.rutas, motor.mapa]`, en ese orden). En `Logic/motorJuego.py`, solo los cinco cambios acordados el 14/11: dos imports, `self.mapa`, el repartidor como `observador_puertas`, `self.mapa.iniciar(...)` en `iniciar()` y `self.mapa.entrar(...)` en `mover_jugador()`; sin otros cambios. 13 pruebas nuevas sin `skipTest` (repartidor, motor e historias 1 a 4 con el motor); todas fallaron primero. Ayudante nuevo `motor_con_inventario` en `tests/ayudas_mapa.py`. Suite: 766 pruebas OK (2 skip), 31 de 31 scripts; replay byte a byte igual; grep de restricciones limpio. Revisé el zip y el diff de `motorJuego.py` antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
