@@ -776,6 +776,95 @@ class TestModosSinVista(unittest.TestCase):
         de datos de FR-122 (costo inválido o distinto entre caras), la verificación no concluye y el programa
         termina con código 1, sin caerse ni instanciar la vista.
         """
+        import contextlib
+        import io
+        import shutil
+        import subprocess
+        from unittest import mock
+        import main
+        from DTO.SalaDTO import EnemigoEnSalaDTO
+        from tests.ayudas_resolubilidad import FuenteConLlaves, abierta, cara, cripta, paquete_temporal, puerta, ubic
+
+        class FuenteConCazadores(FuenteConLlaves):
+            """Como FuenteConLlaves, pero cada sala trae un cazador y el catálogo tiene su ficha."""
+
+            def obtener_contenido(self, id_cripta, ids_salas):
+                contenidos = super().obtener_contenido(id_cripta, ids_salas)
+                for contenido in contenidos:
+                    contenido.enemigos.append(EnemigoEnSalaDTO(f"c-{contenido.sala}", "ent_cazador_h3_7", 10))
+                return contenidos
+
+            def obtener_catalogo(self, ids):
+                self.pedidos_catalogo += 1
+                return [ficha_cazador(600, id="ent_cazador_h3_7")]
+
+        def resoluble(costo):
+            """H1-3 de la 003 (A en 2, B en 3, S en 4); 'costo' da el costo de cada salida, el mismo en sus dos caras."""
+            return cripta(9, [abierta(1, E, 2, costo()), puerta(1, S, 3, "A", costo()), puerta(3, E, 4, "B", costo()),
+                              abierta(4, S, 8, costo()), puerta(8, E, 9, "S", costo())],
+                          [ubic("S", 4), ubic("B", 3), ubic("A", 2)])
+
+        def ciclo(costo):
+            """H2-2 de la 003: A detrás de la puerta (B) y B detrás de la puerta (A); no resoluble."""
+            return cripta(9, [abierta(1, E, 2, costo()), abierta(1, S, 3, costo()), abierta(1, O, 5, costo()),
+                              puerta(2, E, 6, "B", costo()), puerta(3, S, 7, "A", costo()),
+                              puerta(5, S, 8, "A", costo()), puerta(8, E, 9, "S", costo())],
+                          [ubic("A", 6), ubic("B", 7), ubic("S", 8)])
+
+        def verificar(fuente):
+            salida = io.StringIO()
+            with mock.patch("Service.ServicioPartida.FuenteRed", lambda: fuente),                     contextlib.redirect_stdout(salida):
+                codigo = main.main(["--verificar", "prueba"])
+            return codigo, salida.getvalue()
+
+        anterior, carpeta = os.getcwd(), tempfile.mkdtemp()
+        os.chdir(carpeta)                       # cache/ y paquete/ nacen en la carpeta temporal
+        try:
+            # Veredicto y orden de llaves: los mismos sin costos, con costos de 1 a 300 y con cazadores (003 FR-302).
+            for armar, esperado in ((resoluble, 0), (ciclo, 3)):
+                sin_costos = verificar(FuenteConLlaves(*armar(lambda: None)))
+                self.assertEqual(sin_costos[0], esperado, sin_costos[1])
+                self.assertEqual("Orden" in sin_costos[1], esperado == 0, sin_costos[1])
+                for semilla in (1, 2, 3):
+                    azar = random.Random(semilla)
+                    fuente = FuenteConCazadores(*armar(lambda: azar.randint(1, 300)))
+                    self.assertEqual(verificar(fuente), sin_costos, f"semilla {semilla}")
+                    self.assertEqual((fuente.pedidos_contenido, fuente.pedidos_catalogo), (0, 0))
+
+            # FR-122: costo inválido o distinto entre las caras de una salida: no concluye, código 1.
+            invalidas = (
+                (cripta(9, [abierta(1, E, 2), abierta(2, E, 3, costo=0), puerta(3, E, 9, "S")], [ubic("S", 3)]),
+                 ("salida E de la sala 2", "costo 0")),
+                (cripta(9, [abierta(1, E, 2), cara(2, E, 3, costo=5), cara(3, O, 2, costo=7), puerta(3, E, 9, "S")],
+                        [ubic("S", 3)]),
+                 ("costo 5", "costo 7", "deben ser iguales")),
+            )
+            for datos, textos in invalidas:
+                codigo, texto = verificar(FuenteConCazadores(*datos))
+                self.assertEqual(codigo, 1, texto)
+                self.assertIn("NO CONCLUYÓ", texto)
+                for parte in textos:
+                    self.assertIn(parte, texto)
+                self.assertNotIn("RESOLUBLE", texto)
+
+            # En otro proceso, con --offline: código de salida 1 y sin cargar pygame ni la Vista (Principio V).
+            datos, textos = invalidas[1]
+            paquete_temporal(os.path.join(carpeta, "paquete"), *datos)
+            programa = ("import sys; sys.path.insert(0, sys.argv[1]); import main; "
+                        "codigo = main.main(['--verificar', 'prueba', '--offline']); "
+                        "print('VISTA', any(m == 'pygame' or m.startswith(('pygame.', 'View')) for m in sys.modules)); "
+                        "sys.exit(codigo)")
+            proceso = subprocess.run([sys.executable, "-c", programa, RAIZ], cwd=carpeta, capture_output=True,
+                                     encoding="utf-8")
+            self.assertEqual(proceso.returncode, 1, proceso.stdout + proceso.stderr)
+            self.assertIn("NO CONCLUYÓ", proceso.stdout)
+            for parte in textos:
+                self.assertIn(parte, proceso.stdout)
+            self.assertIn("VISTA False", proceso.stdout)
+            self.assertNotIn("Traceback", proceso.stderr)
+        finally:
+            os.chdir(anterior)
+            shutil.rmtree(carpeta, ignore_errors=True)
 
     def test_h3_8_fr118_bench_aplica_las_mismas_reglas(self):
         """
