@@ -3204,3 +3204,35 @@ No hagas commit. Al final, los dos grupos de archivos definitivos.
 **Uso de la respuesta:** el worktree temporal se creó suelto (`--detach`, sin rama) en el scratchpad y se borró; `git worktree list` muestra solo la carpeta del proyecto y no hay ramas nuevas. T052 quedó marcada con la nota del paso 8, que corrí yo con red: `--verificar cripta-que-no-existe` da «NO CONCLUYÓ» (404) y código 1. Grupos definitivos para los dos commits.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+SOLO LECTURA (no modifiques nada, no ejecutes nada). Rama local Marco, commits 80b0c56..401e20d (T058). Leé Data/GestorContenido.py (asegurar_sala, el bloque nuevo de las líneas ~203-216), Data/ResolvedorCatalogo.py (ficha) y quién llama a asegurar_sala. (1) ¿El bloque nuevo corre solo la primera vez que se entrega una sala (al pasar a CARGADA) o en cada llamada a asegurar_sala (cada vez que el jugador entra a una sala ya cargada)? Si es en cada llamada, ¿ficha() lee del disco cada vez o usa lo que ya tiene en memoria? Estimá el costo por movimiento. (2) En Logic/BenchRutas.py y los demás Bench*.py: ¿los motores que se cronometran (NFR-101/SC-104, ciclo de 1 024 salas) tienen un GestorContenido con _resolvedor distinto de None? Es decir, ¿el bloque nuevo entra en lo que mide el bench? (3) El reporte de caché ahora da 3 aciertos en vez de 1 con caché: buscá en specs/ (todas las features), DECISIONES.md, research.md, bench-*.txt y tests/ si algún FR, prueba, bench o texto usa o cita cifras de aciertos/fallos de la caché del catálogo. Decime archivo y línea. Salida corta en lista.
+
+**Uso de la respuesta:** consulta `1a1e0c281d6`, respuesta en `.claude-bridge/outbox/1a1e0c281d6.txt`. Sobre T058 (`a27b859`). (1) El bloque nuevo de `asegurar_sala` (`Data/GestorContenido.py:203-216`) corre en cada llamada, no solo al pasar a CARGADA; `ficha()` usa lo que está en memoria y solo va al disco si la ficha salió de la caché (tope 25), así que cuesta unas e + t + o búsquedas por movimiento, microsegundos con todo en memoria. (2) Ningún motor que cronometra NFR-101/SC-104 (`BenchRutas`, `BenchLogica`, `BenchMapaConocido`) usa `GestorContenido`, y `BenchDatos` lo arma sin resolvedor; solo una medición de `Service/BenchLineaTiempo.py` (004) pasa por el bloque. (3) La única cifra de aciertos que cambia está en `DECISIONES.md:223` («3 aciertos en lugar de 1»); ningún FR, bench ni prueba con cifras fijas pasa por `asegurar_sala`, y `tests/test_servicios.py:343-346` sigue igual por `contar_acierto=False`. No se cambió nada.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+git fetch y git merge origin/derek (trae --verificar de la 003). Si hay conflictos en archivos de la 001,
+pará y avisame. Si el merge trae un commit que regenera paquete/ (cripta-02 a 06, catálogo nuevo), pará
+antes de mezclar y avisame: eso lo vamos a probar aparte.
+Luego, un commit por paso, suite en verde con uv run antes de cada commit, no push:
+1) Quitá el skipTest de H3-7 (solo esa línea) y corré la suite. Si H3-7 falla, no la cambies: decime qué
+   espera la prueba y qué devuelve --verificar (reporte y código de salida 0/3/1) para avisarle al
+   integrante 2.
+2) T048: completala con las pruebas que faltaban: --verificar (H3-7) y --replay … --hasta (de Kristel, 90b8bbf,
+   ya en la rama). Confirmá que las cuatro corridas sin vista de la constitución V (--replay,
+   --replay … --hasta, --verificar, --bench) tengan prueba en la 001 y marcá T048 en tasks.md.
+3) PROMPTS_LLM.md: este pedido y la consulta del puente 1a1e0c281d6 (T058: cuándo corre la validación y quién
+   usa los aciertos).
+Al final decime: resultado de H3-7, el estado de T048 y la suite.
+
+**Uso de la respuesta:** `git merge origin/derek` fue un fast-forward sin conflictos hasta `7ceaf3e` (003: `--verificar` y `--forzar`, T001 a T053 de la 003, más un arreglo de mensajes de la 002). Ningún commit regenera `paquete/`. (1) `b11fc99`: se quitó el `skipTest` de H3-7. La prueba solo tenía esa línea, así que sin ella pasaba sin comprobar nada; el cuerpo se escribió en el paso 2. (2) `a9ba07d`: H3-7 en `tests/test_terreno_cazador.py` corre `main.main(["--verificar", ...])` sobre dos criptas de la 003 (resoluble, código 0, y con ciclo, código 3): da la misma salida sin costos que con costos de 1 a 300 (3 semillas) y un cazador en cada sala, sin pedir contenido ni catálogo. Con costo 0 y con costos 5 y 7 en las dos caras de una salida da «NO CONCLUYÓ» y código 1; el segundo caso también se corre en otro proceso con `--offline` (paquete temporal), con código de salida 1 y sin pygame ni `View`. `tests/test_modos_sin_vista_terreno.py` (T048) suma `--replay … --hasta t` (`ServicioReplayHasta` de `90b8bbf`, comparado con el resumen de la partida viva en 6 instantes de cada una de las 6 partidas, más un t posterior al final) y `--verificar` (el mismo reporte, resoluble con `[itm_llave]`, en la cuadrícula de cada semilla con costos y cazador que sin ellos). Se quitó la línea `PENDIENTE`. T048 quedó marcada en `tasks.md` con la nota de qué prueba cubre cada una de las cuatro corridas sin vista del Principio V: `--replay`, `--hasta` y `--verificar` en ese script, `--verificar` con FR-122 en H3-7 y `--bench` en H3-8 y `tests/test_bench_rutas.py`. Se actualizó `quickstart.md` §6. Suite antes de cada commit: 952 pruebas OK (6 skip, ninguno de la 001: 2 de la 002 y 4 de la 003 por T054), 31 de 31 scripts. (3) Este registro, en su propio commit. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
