@@ -4,6 +4,7 @@ Pruebas de guardar y cargar con la línea de tiempo (feature 004, H4, T045): FR-
 Se juega con el paquete offline y el archivo binario de verdad. La partida se guarda con un servicio y se carga con OTRO
 servicio nuevo (su propia fuente, caché y carpeta de logs), como al abrir el programa otra vez.
 """
+import dataclasses
 import os
 import struct
 import sys
@@ -14,7 +15,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from ayudas_linea_tiempo import ID_CRIPTA, RAIZ, jugar, partida_de_prueba
+from ayudas_linea_tiempo import (ID_CRIPTA, ID_PERGAMINO, RAIZ, dar_pergaminos, jugar, partida_de_prueba,
+                                 resumen_vivo)
 from Data import GuardadoBinario
 from Data.FuenteOffline import FuenteOffline
 from Data.GuardadoBinario import ErrorGuardado
@@ -169,6 +171,46 @@ class PruebasArchivosIncompatibles(_ConPartidaGuardada):
         antes = ctx2.jugador.acciones
         jugar(ctx2, 3)                                                 # se puede seguir jugando
         self.assertGreater(ctx2.jugador.acciones, antes)
+
+
+class PruebasPergaminoTrasCargar(unittest.TestCase):
+    """T046 + H3: una partida cargada con un pergamino en el inventario sigue coherente después de leerlo."""
+
+    def test_h3_tras_cargar_el_pergamino_deja_historia_igual_al_estado_vivo_fr413_fr420(self):
+        with tempfile.TemporaryDirectory() as carpeta:
+            partida, ctx = partida_de_prueba(os.path.join(carpeta, "a"), semilla=2026, k=K_GUARDADO)
+            dar_pergaminos(ctx, 1)                                         # un pergamino en el inventario (y punto 0 nuevo)
+            vivos: dict = {}                                               # k -> resumen vivo justo antes de la acción k
+            jugar(ctx, 14, al_decidir=lambda _estado: vivos.__setitem__(ctx.jugador.acciones + 1, resumen_vivo(ctx)))
+            self.assertGreaterEqual(ctx.jugador.acciones, 8)
+            ruta = os.path.join(carpeta, "saves", "partida.sav")
+            ServicioGuardado(partida).guardar(ctx, ruta)
+
+            ctx2 = ServicioGuardado(_servicio_nuevo(os.path.join(carpeta, "b"))).cargar(ruta, "Beto")
+            ids = [objeto.id for objeto in ctx2.inventario.objetos()]
+            self.assertEqual(ids.count(ID_PERGAMINO), 1)                   # el pergamino viajó en el guardado
+            servicio = ServicioLineaTiempo()
+            servicio.ejecutar(ctx2, AccionDTO("retroceder"))               # sin acciones desde la carga no hay qué deshacer
+            self.assertEqual(ctx2.jugador.acciones, len(ctx2.linea.acciones))   # (el historial de retroceso no se guarda)
+            self.assertEqual([o.id for o in ctx2.inventario.objetos()].count(ID_PERGAMINO), 1)   # y el pergamino sigue ahí
+            jugar(ctx2, 3, al_decidir=lambda _estado: vivos.__setitem__(ctx2.jugador.acciones + 1, resumen_vivo(ctx2)))
+            hechas = ctx2.jugador.acciones
+            self.assertGreater(hechas, len(ctx.linea.acciones))            # hay acciones hechas después de cargar
+            servicio.ejecutar(ctx2, AccionDTO("retroceder"))               # se lee el pergamino de la partida cargada
+            self.assertEqual(ctx2.jugador.acciones, hechas - 1)
+            self.assertEqual(len(ctx2.linea.acciones), hechas - 1)         # la línea quitó esa acción
+            self.assertEqual(ctx2.linea.puntos[-1].acciones_completadas, hechas - 1)   # y tomó el punto nuevo en c
+
+            for k in range(1, ctx2.jugador.acciones + 1):                  # cada decisión vigente coincide con la vivida
+                esperado = vivos[k]
+                self.assertEqual(servicio.consultar_por_accion(ctx2, k),
+                                 dataclasses.replace(esperado, instante_pedido=k), f"decisión {k}")
+                self.assertEqual(servicio.consultar_por_instante(ctx2, esperado.reloj), esperado, f"instante {esperado.reloj}")
+            self.assertEqual(servicio.consultar_por_instante(ctx2, ctx2.motor.reloj), resumen_vivo(ctx2))   # el instante actual
+            with self.assertRaises(ValueError):
+                servicio.consultar_por_accion(ctx2, hechas)                # la revertida ya no existe
+            jugar(ctx2, 3)                                                 # y se puede seguir jugando
+            self.assertEqual(len(ctx2.linea.acciones), ctx2.jugador.acciones)
 
 
 if __name__ == "__main__":
