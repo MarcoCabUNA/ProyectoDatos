@@ -3236,3 +3236,34 @@ Al final decime: resultado de H3-7, el estado de T048 y la suite.
 **Uso de la respuesta:** `git merge origin/derek` fue un fast-forward sin conflictos hasta `7ceaf3e` (003: `--verificar` y `--forzar`, T001 a T053 de la 003, más un arreglo de mensajes de la 002). Ningún commit regenera `paquete/`. (1) `b11fc99`: se quitó el `skipTest` de H3-7. La prueba solo tenía esa línea, así que sin ella pasaba sin comprobar nada; el cuerpo se escribió en el paso 2. (2) `a9ba07d`: H3-7 en `tests/test_terreno_cazador.py` corre `main.main(["--verificar", ...])` sobre dos criptas de la 003 (resoluble, código 0, y con ciclo, código 3): da la misma salida sin costos que con costos de 1 a 300 (3 semillas) y un cazador en cada sala, sin pedir contenido ni catálogo. Con costo 0 y con costos 5 y 7 en las dos caras de una salida da «NO CONCLUYÓ» y código 1; el segundo caso también se corre en otro proceso con `--offline` (paquete temporal), con código de salida 1 y sin pygame ni `View`. `tests/test_modos_sin_vista_terreno.py` (T048) suma `--replay … --hasta t` (`ServicioReplayHasta` de `90b8bbf`, comparado con el resumen de la partida viva en 6 instantes de cada una de las 6 partidas, más un t posterior al final) y `--verificar` (el mismo reporte, resoluble con `[itm_llave]`, en la cuadrícula de cada semilla con costos y cazador que sin ellos). Se quitó la línea `PENDIENTE`. T048 quedó marcada en `tasks.md` con la nota de qué prueba cubre cada una de las cuatro corridas sin vista del Principio V: `--replay`, `--hasta` y `--verificar` en ese script, `--verificar` con FR-122 en H3-7 y `--bench` en H3-8 y `tests/test_bench_rutas.py`. Se actualizó `quickstart.md` §6. Suite antes de cada commit: 952 pruebas OK (6 skip, ninguno de la 001: 2 de la 002 y 4 de la 003 por T054), 31 de 31 scripts. (3) Este registro, en su propio commit. Sin push.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+En tasks.md, en T048, anotá que --verificar corresponde a la T051 de la 003 (integrante 2).
+
+**Uso de la respuesta:** en `specs/001-terreno-cazador/tasks.md`, la nota de T048 dice ahora que lo de `--verificar` (el script de los modos sin vista y H3-7) corresponde a la T051 de la 003 (integrante 2), el aviso de que `--verificar` ya existía para quitar el `skipTest` de H3-7 y cerrar T048.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Sí, commiteá tasks.md y PROMPTS_LLM.md en un solo commit (suite en verde con uv run, no push).
+Antes, confirmame: ¿ya está mezclado origin/derek con --verificar en la rama Marco? ¿H3-7 ya no tiene
+skipTest y pasa? ¿T048 quedó marcada [X]? Si falta alguna de las tres, hacé esto, un commit por paso:
+1) git fetch y git merge origin/derek. Si hay conflicto solo en PROMPTS_LLM.md (UTF-16, merge=union no
+   funciona): conservá todas las entradas de los dos lados por hora, sin duplicados ni separadores dobles, y
+   sin cambiar la codificación. Cualquier otro conflicto, o si el merge trae la regeneración de paquete/:
+   pará y avisame.
+2) Quitá el skipTest de H3-7 (solo esa línea). Si falla, no cambies la prueba: decime qué espera y qué
+   devuelve --verificar (reporte y código 0/3/1).
+3) Confirmá que las cuatro corridas sin vista (--replay, --replay … --hasta, --verificar, --bench) tengan
+   prueba en la 001 y marcá T048.
+4) PROMPTS_LLM.md con este pedido y la consulta del puente 1a1e0c281d6.
+
+**Uso de la respuesta:** las tres cosas ya estaban hechas, así que los pasos 1 a 4 no hicieron falta (solo se registró este pedido). Después de `git fetch`, `origin/derek` no trae nada nuevo y `dadf468` (`--verificar`) ya está en Marco desde el fast-forward a `7ceaf3e`. H3-7 no tiene `skipTest` desde `b11fc99` y pasa con su cuerpo de `a9ba07d`. T048 está marcada [X] desde `a9ba07d`, con las cuatro corridas sin vista cubiertas. La consulta `1a1e0c281d6` ya estaba registrada en `93c2d34`. `PROMPTS_LLM.md` está en UTF-8 con CRLF, no en UTF-16. Un solo commit con la nota de T051 de la 003 en T048 (`tasks.md`) y este registro. Suite en verde antes del commit. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
