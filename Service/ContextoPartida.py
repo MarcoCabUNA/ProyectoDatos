@@ -22,6 +22,7 @@ from Data.GestorContenido import GestorContenido
 from Data.GestorEsqueleto import GestorEsqueleto
 from Data.ResolvedorCatalogo import ResolvedorCatalogo
 from DTO.CriptaDTO import CriptaDTO
+from DTO.ReporteResolubilidadDTO import ReporteResolubilidadDTO
 from Estructuras.BufferCircular import BufferCircular
 from Logic.Inventario import Inventario
 from Logic.LineaTiempo import LineaTiempo
@@ -47,3 +48,6 @@ class ContextoPartida:
     bitacora: BitacoraReplayIO | None = None
     criterio_vista: str | None = None
     linea: LineaTiempo | None = None
+    # Feature 003 (FR-313): el reporte de la verificación al iniciar una partida nueva, o None (al cargar, en --replay
+    # o si se armó sin verificar). Después de linea, al final y con valor por defecto. PartidaGuardada no lo guarda.
+    resolubilidad: ReporteResolubilidadDTO | None = None

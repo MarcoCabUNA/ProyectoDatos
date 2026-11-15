@@ -28,6 +28,7 @@ se anexa cada acción. Con registrar_bitacora=False (al REPRODUCIR un log) no se
 """
 import random
 
+from Data.AlmacenLlaves import AlmacenLlaves
 from Data.BitacoraReplayIO import BitacoraReplayIO
 from Data.FuenteOffline import FuenteOffline
 from Data.FuenteRed import FuenteRed
@@ -58,10 +59,11 @@ MENSAJES_EN_PANTALLA = 20       # §4.8: la interfaz muestra los últimos 20 men
 class ServicioPartida:
 
     def __init__(self, config: ConfiguracionDTO, fuente=None, carpeta_cache: str | None = None,
-                 carpeta_logs: str = "logs"):
+                 carpeta_logs: str = "logs", almacen_llaves: AlmacenLlaves | None = None):
         """
         fuente, carpeta_cache: las pruebas los inyectan (otra fuente, una caché en una carpeta temporal).
         En el programa real se dejan en None: la fuente sale de config.offline y la caché usa su carpeta por defecto.
+        almacen_llaves (feature 003): el almacén de llaves de las pruebas que inyectan la fuente; si no, lo elige fuente().
         """
         self._config = config
         self._fuente = fuente
@@ -69,11 +71,18 @@ class ServicioPartida:
         self._carpeta_logs = carpeta_logs
         self._armador = ArmadorEstado()
         self._sincronizador = SincronizadorUsos()
+        self._almacen_llaves = almacen_llaves
 
     def fuente(self):
-        """La fuente de datos de esta ejecución (se crea la primera vez que se necesita)."""
+        """La fuente de datos de esta ejecución (se crea la primera vez que se necesita).
+        El mismo if elige el almacén de llaves (feature 003, FR-317, FR-318): offline sin almacén; red con AlmacenLlaves."""
         if self._fuente is None:
-            self._fuente = FuenteOffline() if self._config.offline else FuenteRed()
+            if self._config.offline:
+                self._fuente = FuenteOffline()
+                self._almacen_llaves = None
+            else:
+                self._fuente = FuenteRed()
+                self._almacen_llaves = AlmacenLlaves()
         return self._fuente
 
     def listar_criptas(self) -> list:
@@ -98,8 +107,9 @@ class ServicioPartida:
         return BitacoraReplayIO.ruta_libre(self._carpeta_logs)
 
     def iniciar_partida(self, id_cripta: str, nombre_jugador: str, semilla: int | None = None,
-                        registrar_bitacora: bool = True) -> ContextoPartida:
-        cripta, resolvedor, esqueleto, contenido = self.abrir_datos(id_cripta)
+                        registrar_bitacora: bool = True, datos=None) -> ContextoPartida:
+        # datos (feature 003): lo que ya devolvió abrir_datos, para no pedir dos veces los datos generales y el esqueleto
+        cripta, resolvedor, esqueleto, contenido = self.abrir_datos(id_cripta) if datos is None else datos
         if semilla is None:
             semilla = self._semilla_nueva()
         mazmorra = Mazmorra(cripta.sala_salida, cripta.llave_salida)
@@ -155,3 +165,10 @@ class ServicioPartida:
     def _semilla_nueva() -> int:
         """La semilla se elige AQUÍ, fuera del modelo, y se guarda en la bitácora para poder reproducir."""
         return random.SystemRandom().randrange(1, 2 ** 31)
+
+    # ---- feature 003 (resolubilidad) ----
+
+    def almacen_llaves(self) -> AlmacenLlaves | None:
+        """El almacén de la ubicación de las llaves de esta ejecución: el que eligió fuente() (None con --offline)."""
+        self.fuente()
+        return self._almacen_llaves
