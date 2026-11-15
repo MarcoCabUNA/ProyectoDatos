@@ -1744,8 +1744,6 @@ Para y reporta con los commits y el total de la suite. No hagas push.
 -----------------------------------------------------------------------------------------------------------------------
 **Fecha:** Viernes 13 de noviembre 2026
 
-**Fecha:** Viernes 13 de noviembre 2026
-
 **Herramienta:** Claude Code (consulta por el puente, solo lectura)
 
 Revision de codigo, SOLO LECTURA. Hace git fetch. Metodo nuevo Motor.avanzar_hasta(t) de la integrante 3 en origin/kris (Logic/motorJuego.py, T012) y sus pruebas tests/test_linea_tiempo_motor.py. Usa git show origin/kris:<archivo>.
@@ -2226,6 +2224,149 @@ Restricciones: constitución v1.2.0 (sin dict ni set como índice, sin heapq, bi
 
 **Herramienta:** Claude Code
 
+/speckit-tasks Tareas de la feature 002-niebla-ir-a, parte del integrante 2 (mapa conocido, memoria de puertas y antorcha: FR-201 a FR-225, NFR-201 a NFR-205, SC-201 a SC-207). Se arman a partir de specs/002-niebla-ir-a/spec.md, plan.md, research.md, data-model.md, quickstart.md y contracts/contrato-mapa-conocido.md. Usá como modelo de formato specs/003-resolubilidad/tasks.md: las mismas secciones («Formato», «Reglas para todas las tareas (constitución v1.2.0)», «Responsable», fases, dependencias, grafo, paralelismo, estrategia, commits sugeridos y tabla de cobertura). Todo en español.
+
+1. Alcance. Las tareas de «ir a» (FR-250 a FR-264, historias 6 y 7) son del integrante 3: no las escribas. Dejá al final del archivo una sección reservada «Viaje automático «ir a» (integrante 3)» para que ella agregue las suyas en su propio commit, con una numeración que no choque con la tuya. Por ejemplo: las tuyas de T001 a T099 y las de ella desde T100. Decí el rango en el encabezado.
+2. Responsable: integrante 2. Las tareas que tocan archivos de otro integrante, según la tabla «Cambios a código existente» y la sección «Coordinación» del plan, van marcadas «(coordinar con el integrante 1)» o «(coordinar con el integrante 3)», con el cambio exacto, y no se implementan sin su visto bueno. Son, por lo menos: las cuatro líneas de Logic/motorJuego.py (integrante 1); Logic/PartidaGuardada.py (dueño a confirmar con el integrante 1; el plan propone que lo escriba el integrante 2 y lo revise él); y, del integrante 3, la confirmación del contrato, H-2 (EstadoJuegoDTO), H-3 (comparación de nombres), T023 de la 004, el texto del §2 del contrato de la 004 (cabecera v2 con los bloques del mapa y de la línea) y la vista y el comando del mapa. Agregá avisos explícitos (sin código) a cada uno cuando lo que necesitan esté listo.
+3. Pruebas primero (Principio X): una prueba por escenario de las historias 1 a 5 y por caso del Apéndice B de esta parte (casos 2a, 4 y 5, y los adicionales A1 a A23 y A38 a A43), escrita antes del código, que falle primero y cite su escenario y su FR en el nombre del método (por ejemplo test_h3_1_apendiceB_caso4_fr210_fr211_…). Usá los archivos de prueba del plan. Las pruebas que pasan por el motor, mientras no esté el cambio del integrante 1, van con skipTest y su motivo, y otra tarea dice cuándo se quita.
+4. Orden según el plan: DTO del mapa → MapaConocido (estados, caras, iniciar, entrar, antorcha, observación, puerta_cambio, pergamino) con una Mazmorra y un jugador de prueba → GrafoMapaConocido y buscar_exploradas (el contrato para el integrante 3, lo antes posible) → RepartidorAvisosPuertas y el pedido del motor → guardado: PartidaGuardadaDTO con el campo mapa antes de linea (T002 de la 004 en la misma tarea o justo después, con el import local de LineaTiempoGuardadaDTO), PartidaGuardada y GuardadoBinario versión 2 con los bloques del mapa y de la línea (T003 y T047 de la 004, que son del integrante 2: que la versión 2 se defina una sola vez) → vista (a_dto, SC-202) → bench B1 a B10 → documentación. Cada tarea cita los FR que atiende y, si viene de la 004, su número «T002 de la 004», «T003 de la 004» o «T047 de la 004».
+5. Cierre: --bench (B1 a B10) y su tabla guardada; la sección «Mapa conocido» de DECISIONES.md, en la sección del integrante 2, con el problema, las alternativas, la decisión, la complejidad, la evidencia y si coincide con el plan; la revisión de restricciones con grep, como T067 de la 003; correr tests/correr_pruebas.py (en Windows, con PYTHONIOENCODING=utf-8) y el replay de ejemplo sin regresiones; y registrar los prompts al final de PROMPTS_LLM.md, en orden cronológico (Principio XI).
+6. Calificá siempre los números de tareas de otras features («T002 de la 004», «T071 de la 004», «T048 de la 001») para que no se confundan con los de esta feature.
+
+Solo escribí specs/002-niebla-ir-a/tasks.md: no escribas código ni modifiques ningún otro archivo. Al final decime cuántas tareas hay por fase, cuáles son de coordinación y si algún FR, NFR, SC, escenario o caso del Apéndice B de esta parte quedó sin tarea. No hagas commit.
+
+Segundo prompt, en el mismo chat, por la respuesta del integrante 1:
+
+Un cambio más en las tareas, por la respuesta del integrante 1 del 14/11. Toca tasks.md y, en plan.md, la tabla «Cambios a código existente» y la sección «Coordinación». No escribas código, no renumeres tareas y no hagas commit.
+
+El integrante 1 aceptó que el integrante 2 escriba las líneas de Logic/motorJuego.py (crear el mapa y el RepartidorAvisosPuertas como observador_puertas, la llamada en iniciar y la llamada en mover_jugador) y las dos de Logic/PartidaGuardada.py (guardar y cargar el mapa), con pruebas. Él las revisa antes del merge, como el integrante 3 con las suyas en la 003. Le parece bien el repartidor. Va a anotar en su plan la lista de funciones privadas que usan la 002 y la 003 (_salida_inversa, _cronometrar, _mejor_y_mediana, SEMILLA, _cuadricula_con_costos, _motor_con_cazadores, _centro y _peor) para avisar antes de tocarlas. Su revisión cruzada del plan de la 002 llega hoy.
+
+Por eso:
+1. Las tareas de motorJuego.py y PartidaGuardada.py pasan de «pedir» a «escribir (acordado con el integrante 1 el 14/11; él lo revisa antes del merge)», sin quitar la marca «(coordinar con el integrante 1)». Ya no hace falta que las pruebas que pasan por el motor esperen con skipTest al cambio del integrante 1. Quitá esa estrategia y la tarea que quitaba los skip, y ordená las pruebas del motor antes del código del motor, como las demás.
+2. En plan.md: la columna «Dueño» de esas filas dice que lo escribe el integrante 2 y lo revisa el integrante 1. En «Coordinación con el integrante 1», los puntos 1 y 2 quedan resueltos así, y el punto 3 y el 5 dicen que el integrante 1 avisará antes de cambiar esas funciones privadas. Actualizá también el riesgo R-1.
+3. Actualizá en tasks.md, en el mismo sentido, «Responsable», las dependencias, el grafo, la estrategia y «Commits sugeridos».
+
+Al final: los archivos que tocaste y qué quedó en cada punto. No hagas commit.
+
+**Uso de la respuesta:** `specs/002-niebla-ir-a/tasks.md` de la parte del integrante 2, con 61 números de tarea (T001 a T061; las del integrante 3 empiezan en T100) en 12 fases. T002, T003 y T047 de la 004 quedaron dentro (T036, T039 y T038). Con el segundo prompt, T033 (`motorJuego.py`) y T040 (`PartidaGuardada.py`) las escribe el integrante 2 y las revisa el integrante 1; se quitaron los `skipTest` del motor y T034. Revisé las tareas contra el plan antes del analyze.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-analyze Análisis de consistencia de la parte del integrante 2 de la feature 002-niebla-ir-a: specs/002-niebla-ir-a/spec.md (FR-201 a FR-225, NFR-201 a NFR-205, SC-201 a SC-207, historias 1 a 5 y sus casos del Apéndice B), plan.md, research.md, data-model.md, quickstart.md y contracts/contrato-mapa-conocido.md (commit acd4196, más los cambios sin commit de plan.md) y el tasks.md nuevo, sin commit. Revisalo contra la constitución .specify/memory/constitution.md v1.2.0. La parte de «ir a» (FR-250 a FR-264, historias 6 y 7) es del integrante 3 y todavía no tiene tareas: no la cuentes como faltante, solo comprobá que el contrato le da lo que FR-252 y FR-253 necesitan. Es solo lectura: no modifiques ningún archivo.
+
+Además de lo que el análisis revisa siempre, comprobá en particular:
+1. Que cada FR, NFR, SC, escenario y caso del Apéndice B de la parte del integrante 2 tenga al menos una prueba y una tarea, y que el FR del nombre de cada prueba sea el que la spec le asigna a ese escenario en su tabla de trazabilidad.
+2. Que las pruebas vayan antes que el código que prueban, y que ninguna tarea dependa de otra posterior sin decirlo (Principio X).
+3. Que las tareas marcadas para coordinar coincidan con la tabla «Cambios a código existente» y la «Coordinación» del plan, y que ninguna tarea sin esa marca toque un archivo de otro integrante. Archivos del integrante 1: Logic/motorJuego.py, Logic/Mazmorra.py, Logic/BenchLogica.py y Logic/BenchRutas.py. Archivos del integrante 3: Service/ArmadorEstado.py, DTO/EstadoJuegoDTO.py, Service/ContextoPartida.py, la vista, UIController y su contrato de la 004. Logic/PartidaGuardada.py: acordado el 14/11 que lo escribe el integrante 2 y lo revisa el integrante 1.
+4. Que lo acordado el 14/11 esté igual en plan.md, research.md, data-model.md y tasks.md: el integrante 2 escribe las líneas de motorJuego.py y PartidaGuardada.py, y las revisa el integrante 1. La respuesta anterior avisó que data-model.md §8 y research.md R2 todavía dicen que es una modificación del integrante 1.
+5. Que T002, T003 y T047 de la 004 queden cubiertas exactamente como las piden specs/004-linea-tiempo/tasks.md y su contrato (campo linea último y con valor None por defecto; VERSION_FORMATO 2; la versión 1 rechazada; cargar_sala sin leer los bloques nuevos), y que la versión 2 se defina una sola vez.
+6. Que el contrato del mapa coincida con contracts/busqueda-rutas.md de la 001 (las tres operaciones, el costo igualado, los ids reales y el aviso puerta_cambio), y que el DTO de la vista no deje pasar ningún id de una sala avistada (FR-204, SC-202).
+7. Restricciones de la constitución en lo que proponen el plan y las tareas: sin dict ni set como índice, sin collections, sin sorted ni list.sort, sin copy fuera de tests/, y Logic no importa Data.
+8. Referencias a tareas de otras features, siempre calificadas, y comandos que existan (correr_pruebas.py, --bench, --replay).
+
+Entregá el informe con la tabla de hallazgos (ID, categoría, severidad CRÍTICA/ALTA/MEDIA/BAJA, ubicación con archivo y línea, resumen, recomendación), la tabla de cobertura y las métricas. No propongas ni apliques ediciones: solo el informe.
+
+**Uso de la respuesta:** informe de solo lectura: 1 hallazgo crítico (D1: el aviso `observador_rutas` no lo pide ningún requisito, YAGNI), 3 altos (I1 e I2: documentos que todavía decían que el motor lo modifica el integrante 1; C1: el §1 y el §2 del contrato de la 004), 6 medios y 11 bajos. Cobertura del 100 %. Comprobé cada hallazgo y los corregí con los prompts de la entrada siguiente.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Tres prompts en el mismo chat del analyze.
+
+Primero:
+
+Aplicá estas correcciones del análisis. Tocan tasks.md, plan.md, research.md, data-model.md, quickstart.md y contracts/contrato-mapa-conocido.md, todos dentro de specs/002-niebla-ir-a/. spec.md no se toca. No escribas código, no renumeres tareas y no hagas commit.
+
+D1 (CRÍTICA): se saca el aviso del mapa a una búsqueda guardada (observador_rutas), por YAGNI (Principio III). El contrato recomienda una búsqueda nueva por paso (paso_desde_cero), y la regla 3 de la 001 lo admite («o empieza una búsqueda nueva»). Sacalo del contrato (a), del data-model, del plan y de research. Sacá también T028(b) y su prueba en T026. Dejá escrito en research, como alternativa descartada, que si la medición de NFR-251 del integrante 3 llega a pedir reutilizar la búsqueda, se agrega en ese momento con su prueba. No lo confundas con puerta_cambio que el mapa RECIBE de la Mazmorra por el RepartidorAvisosPuertas: eso se queda, porque lo exige FR-207.
+
+I1, I2 y F3: alineá con el acuerdo del 14/11 research.md (línea ~130, R2), data-model.md (línea ~166, §8) y quickstart.md (línea ~13). El cambio de motorJuego.py y PartidaGuardada.py lo escribe el integrante 2 (T033 y T040) y lo revisa el integrante 1 antes del merge. Calificá como «de la 004» las referencias a T002, T003 y T023 en plan.md, research.md, data-model.md y quickstart.md.
+
+A3: en el contrato, «se confirma con el integrante 3 antes de tasks.md» pasa a «se confirma en T005».
+
+C1 (ALTA): T007 cubre también el §1 del contrato de la 004 (el campo mapa va antes de linea, que sigue siendo el último) y el orden de los bloques de cada punto de control en el §2 (bloque global, salas y el bloque de su mapa).
+
+U4: no hay que romper a nadie con PartidaGuardadaDTO.mapa = None. Hoy hay unas 109 construcciones o llamadas en 11 archivos de prueba de otros integrantes que arman ese DTO a mano. Cambiá la decisión: si partida.mapa es None, PartidaGuardada.cargar NO lanza ValueError. En ese caso deja el mapa inicial desde la sala actual del jugador: esa sala explorada y los destinos de sus salidas avistados, como FR-202 con la sala de inicio. Los guardados reales (versión 2) y los puntos de control siempre traen el mapa, así que None solo aparece en DTOs armados a mano. Agregá a T040 una prueba con mapa None. Actualizalo en el plan (tabla de cambios, fila de PartidaGuardada.cargar), data-model, research R4 y el riesgo correspondiente. Después decime si eso choca con alguna regla de la spec.
+
+C3: en T039, las validaciones de la línea al leer son las del §1 del contrato de la 004 (las restricciones al leer de LineaTiempoDTO): un formato inválido es ErrorGuardado. Agregá a T038 que rechazar un archivo de versión 1 deja intacta la partida actual.
+
+C2: en T043, avisarle al integrante 3 que las pruebas de T003 y T047 de la 004 están en tests/test_guardado_mapa.py. En TestGuardadoBinario.py solo cambia la aserción de la versión.
+
+U1: el ayudante mapa_de_prueba (y estados) de T001 se escribe antes de T010. Su prueba falla al importar MapaConocido, que es el fallo esperado. Ajustá T001, T010 y las dependencias.
+
+U2 y U3: dejá escrito en T023 y T041 que esas pruebas cubren escenarios cuyo código llega antes (T012, T033 y T040), así que pueden pasar desde que se escriben. Es una excepción documentada al «falla primero».
+
+U5: en T048, pedirle explícitamente al integrante 3 la prueba de que el comando de ver el mapa no se registra en partida.log ni cambia nada (FR-220, H5-4), y anotarla en la cobertura.
+
+U6: T060 no da SC-202 por cumplido hasta que su parte del EstadoJuegoDTO (H-2) pase sin skip.
+
+A1: en T031, para H3-8 dá la receta concreta mirando Logic/motorJuego.py y Logic/EventoPorg.py: cómo se programa el fin de la antorcha en el mismo instante en que el jugador entra, antes o después según el orden de secuencia. Si eso no se puede armar con certeza, hacé la prueba sobre MapaConocido.entrar(sala, antorcha) con los dos valores, y además una que pase por el motor con el orden que sí se pueda garantizar.
+
+A2: en T014, H1-5: la precarga se simula con lo que de verdad hace (cargar contenido en la Mazmorra), sin volver a cargar el esqueleto.
+
+F1 y F2: ajustá los nombres de las pruebas a la tabla de trazabilidad de la spec. H1-6 cita FR-203 sin FR-222. En H2-6 (A42), si se reparte en dos pruebas, anotá en la cobertura qué FR cubre cada una. En T031, aclará que tiene pruebas de H1, H3 y H4 aunque la etiqueta sea [US2].
+
+F4: T061 registra al final los prompts de la implementación. Los de /speckit-tasks, del agregado del integrante 1, de este /speckit-analyze y de estas correcciones van en el commit de tasks (los registro yo).
+
+F5: T058 edita spec.md (solo las filas de la parte del integrante 2 en la tabla del Apéndice B). Marcala «(avisar al integrante 3)», porque ella también edita ese archivo.
+
+No cambies nada más. Al final: la lista de archivos que tocaste, qué quedó en cada punto, si U4 choca con la spec y si queda algún hallazgo CRÍTICO o ALTO abierto. No hagas commit.
+
+Segundo, por la revisión cruzada del plan del integrante 1 y las respuestas del integrante 3:
+
+Más correcciones a la 002, por la revisión cruzada del plan que hizo el integrante 1 y las respuestas del integrante 3 (14/11). Son dos partes: primero la A, solo en spec.md, porque se commitea antes (Principio IX); después la B, en los demás archivos de specs/002-niebla-ir-a/. No escribas código, no renumeres tareas y no hagas commit.
+
+PARTE A — spec.md (solo filas y escenarios de la parte del integrante 2)
+
+A1 (H-5). Reescribí el escenario H2-5 para que no haya que reinterpretarlo: «desde A» quiere decir las salidas de A que «ir a» puede usar, con el jugador en otra sala, como lo leyó el plan. Que el texto diga dónde está el jugador y por qué la cara A–C sigue «sin observar».
+
+A2 (H-8). En FR-221, agregá que al cargar una partida el mapa conocido pasa a ser el guardado y reemplaza al de la partida en curso. Es la misma regla que el resto del estado.
+
+A3. Agregá en Clarificaciones una sesión «Sesión 2026-11-14 (revisión del plan por el integrante 1)» con dos preguntas y respuestas: A1 (por qué se reescribió H2-5) y A2 (el mapa al cargar).
+
+PARTE B — plan.md, research.md, data-model.md, quickstart.md, contrato y tasks.md
+
+B1 (U4, revisado). Lo de mapa None queda en el código del integrante 2: MapaConocido.restaurar(None) arma el mapa inicial desde la sala actual del jugador (esa sala explorada y los destinos de sus salidas avistados, como FR-202). PartidaGuardada.cargar suma una sola línea, motor.mapa.restaurar(partida.mapa), sin if y sin raise. No es un comportamiento nuevo de cargar, porque nunca rechaza una partida por el mapa. restaurar sigue lanzando ValueError si los largos no coinciden con la Mazmorra (riesgo R-8). Alineá la tabla de cambios del plan («PartidaGuardada.py · cargar»: 1 línea), data-model, research R4 y T037/T040, con sus pruebas.
+
+B2 (Principio VIII). La frase «una búsqueda nueva por paso cumple NFR-250 con holgura» (research.md, ~291-297) y el armado del índice de entradas de GrafoMapaConocido en O(S+E) no tienen medición. Agregá una fila B11 al bench: armar GrafoMapaConocido sobre el mapa completo y un paso_desde_cero sobre él, en las tres cuadrículas. La 1 024 es la que importa para NFR-250. Que la frase de research diga que se comprueba con B11, sin afirmar el resultado antes de medir. Agregá B11 a T051 a T056, a la tabla de mediciones del plan y a la cobertura.
+
+B3 (B8). El ciclo con puertas que cambian tiene que usar el aviso real, mazmorra.observador_puertas (el RepartidorAvisosPuertas del motor), y no BenchRutas._cambiar_puerta, que avisa a una estrategia pasada por parámetro: con eso el mapa no se enteraría. Ajustalo en research R7 y en T054.
+
+B4. En T057, DECISIONES.md tiene que decir que el RepartidorAvisosPuertas (frente a un solo observador o a avisar desde la Mazmorra) y el formato binario (frente a meter el mapa en el bloque global) se decidieron por diseño, sin medición, y por qué.
+
+B5. Respuestas del integrante 3 del 14/11:
+- H-3 confirmado: «ir a <sala>» compara con strip().casefold() de los dos lados. Marcá esa parte de T005 y sacá «propuesta» del contrato (c).
+- H-2 lo resuelve ella en ArmadorEstado y en la vista cuando MapaConocido esté en origin/derek (T006 queda esperando eso).
+- El texto del §1 y §2 de su contrato de la 004 lo actualiza ella hoy (T007).
+- ArmadorResumen ya acepta un mapa opcional (T008: lo conecta cuando exista a_dto).
+- Va a escribir su sección del plan de «ir a» al final de plan.md en su propio commit.
+Reflejalo en esas tareas y agregá a T030 que el aviso también le dice que MapaConocido ya está, para H-2.
+
+B6. Orden de implementación: el integrante 3 depende del guardado (sus tareas T043 a T048 de la 004) y del mapa en la rama (H-2 y «ir a»). Agregá a «Estrategia» y a «Entrega incremental» que, después de la fase 2 (DTO), se adelantan T035, T036, T038 y T039 (PartidaGuardadaDTO y GuardadoBinario versión 2, que solo necesitan el DTO), con un commit y un aviso propios (T043). Después siguen las fases 3 a 7 hasta el aviso de T030. T040 (PartidaGuardada) queda donde está, porque necesita MapaConocido. Comprobá que el grafo de dependencias lo permita y ajustalo si hace falta.
+
+No cambies nada más. Al final: los archivos de la parte A y de la parte B por separado, qué quedó en cada punto, y si queda algún hallazgo CRÍTICO o ALTO abierto. No hagas commit.
+
+Tercero:
+
+Último ajuste, sin código y sin commit. En plan.md (la línea ~65 y la sección «Hallazgos») y en research.md, actualizá el estado de tres hallazgos que ya quedaron resueltos:
+- H-3: confirmado por el integrante 3 el 14/11 (strip().casefold() de los dos lados).
+- H-5: resuelto en la spec, porque H2-5 se reescribió en la Sesión 2026-11-14.
+- H-8: resuelto en la spec, porque FR-221 dice ahora que el mapa guardado reemplaza al de la partida en curso.
+Que la línea ~65 ya no diga que quedan ambigüedades abiertas de la spec. No cambies nada más. Al final: las líneas que cambiaste.
+
+**Uso de la respuesta:** dos commits. `spec(002)`: H2-5 reescrito (el jugador está en B, por eso la cara A–C sigue «sin observar»), FR-221 dice que el mapa guardado reemplaza al de la partida en curso y hay una sesión de Clarificaciones del 14/11. `tasks(002)`: se sacó `observador_rutas`; `MapaConocido.restaurar(None)` arma el mapa inicial, así que `PartidaGuardada.cargar` suma una sola línea, sin `if` ni `raise`, y no se rompen las pruebas de los otros integrantes; los documentos dicen quién escribe `motorJuego.py` y `PartidaGuardada.py`; el bench suma B11 (armar el grafo y un `paso_desde_cero`) en vez de afirmar que alcanza; B8 usa el aviso real de `observador_puertas`; H-3 confirmado; T035, T036, T038 y T039 (guardado versión 2) se adelantan después del DTO porque el integrante 3 depende de ellos; y el resto de los hallazgos medios y bajos. Revisé el resultado en el zip antes de cada commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
 1. git fetch y git merge origin/derek (trae T055). Si hay conflictos en archivos de la 001, pará y mostrámelos.
 2. test(001): T056, quitá el skip de H2-20 y H2-21 y marcá T055 y T056.
 3. spec(001): FR-122, una ficha de enemigo cuyo botín trae un objeto con duracion inválida es una ficha
@@ -2381,6 +2522,186 @@ Solo lectura, no cambies ni crees archivos. Lee Logic/ (motorJuego.py, jugador.p
 Responde en una tabla corta. Al final, indica si el plan de «ir a» (specs/002-niebla-ir-a/plan.md, mi sección) necesita cambiar algo por tus respuestas.
 
 **Uso de la respuesta:** Se resuelven con el código las preguntas M-1 a M-3 del plan de «ir a» (detección de daño y enemigos dormidos).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement Feature 002-niebla-ir-a, parte del integrante 2. Primer lote, según «Estrategia» y «Entrega incremental» de specs/002-niebla-ir-a/tasks.md: solo estas tareas y en este orden.
+
+1. T001: tests/ayudas_mapa.py.
+2. Fase 2: T009 y T010 (las pruebas primero; comprobá que fallan), después T011 y T012, y T013 (la suite completa en verde).
+3. Guardado adelantado:
+   - las cuatro primeras pruebas de T035 (DTO y linea). Las de restaurar NO, esas van con T037 en otro lote;
+   - T036: PartidaGuardadaDTO con mapa antes de linea, con el import local de LineaTiempoGuardadaDTO. Es T002 de la 004;
+   - T038: las pruebas del binario, que también son las de T003 y T047 de la 004. Comprobá que fallan;
+   - T039: GuardadoBinario versión 2. Es T003 de la 004.
+   El formato v2 se implementa con el diseño de data-model.md §6 y research R4 (cabecera de 58 bytes, bloque propio del mapa y de la línea, y el orden de los bloques de cada punto de control). El integrante 3 todavía no actualizó el texto del §1 y del §2 de su contrato de la 004 (T007), pero aceptó ese diseño el 14/11. Si encontrás algo de su contrato de la 004 que contradiga el diseño, avisame en vez de elegir uno.
+
+Después de T039, PARÁ. No hagas T037, T040 ni nada de las fases 3 en adelante.
+
+Reglas:
+- Constitución v1.2.0: sin dict ni set como índice, sin heapq, bisect ni collections, sin sorted ni list.sort, sin copy fuera de tests/, y Logic no importa Data.
+- Pruebas primero, con el FR en el nombre, como dice cada tarea.
+- Solo archivos del integrante 2: tests/ayudas_mapa.py, tests/test_guardado_mapa.py, tests/test_mapa_conocido_estados.py, DTO/MapaConocidoDTO.py, Logic/MapaConocido.py, DTO/PartidaGuardadaDTO.py, Data/GuardadoBinario.py y tests/TestGuardadoBinario.py (solo la aserción de la versión). No toques archivos de otros integrantes; si alguno tuviera que cambiar, avisame.
+- Marcá con [x] en tasks.md solo las tareas que quedaron completas. T035 queda sin marcar, porque le faltan las pruebas de restaurar; anotalo en la tarea.
+- Antes de terminar corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8 en Windows) y el replay de ejemplo (python main.py --replay ejemplos/partida_ejemplo.log --offline), que debe dar lo mismo que antes. Comprobá también que guardar y cargar una partida real con ServicioGuardado sigue funcionando con la versión 2. La versión 1 ahora se rechaza: decime si eso afecta algún archivo guardado del repositorio (partidas/, ejemplos/ o tests/).
+
+Al final decime:
+- los archivos de cada grupo, separados para dos commits: (a) T001 y la fase 2, y (b) el guardado adelantado;
+- las pruebas nuevas, con su resultado antes y después;
+- el resultado de la suite y del replay;
+- cualquier diferencia con el plan.
+No hagas commit.
+
+**Uso de la respuesta:** primer lote de la 002, con las pruebas primero. Las 24 pruebas nuevas fallaban antes del código. Se hicieron T001 (`tests/ayudas_mapa.py`); la fase 2, con T009 a T013 (`DTO/MapaConocidoDTO.py` y el núcleo de `Logic/MapaConocido.py`: dos arreglos, escrituras que registran su reversión en el historial); y el guardado adelantado: T036 (`PartidaGuardadaDTO` con `mapa` antes de `linea` e import local, T002 de la 004), T038 y T039 (`GuardadoBinario` versión 2 con cabecera de 58 bytes y bloques propios del mapa y de la línea, la versión 1 rechazada sin tocar la partida actual; T003 y T047 de la 004). En `tests/TestGuardadoBinario.py` cambiaron tres aserciones de versión. T035 queda abierta hasta las pruebas de `restaurar`. Resultado: 641 OK (skipped=2) y 32/32 scripts; el replay de ejemplo es idéntico, y guardar y cargar una partida real funciona con la versión 2. Revisé el diff antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+SOLO LECTURA, con archivo:linea. Hace git fetch.
+A) Revision linea por linea de origin/kris commit 2753a53 (git show 2753a53): Motor.avanzar_hasta(t) en Logic/motorJuego.py y tests/test_linea_tiempo_motor.py. Verifica: 1) usa el evento que devuelve obtener_siguiente; 2) cuando le toca al jugador hace exactamente lo mismo que avanzar_hasta_jugador (registrar reloj y Evento_pendiente, _cerrar_intervalo, devolver True); 3) si el siguiente evento es > t se detiene sin extraerlo ni mover el reloj; 4) se detiene si terminado; 5) la prueba del cancelado en la raiz con tiempo <= t seguido de uno valido > t existe y comprueba False sin mover el reloj; 6) avanzar_hasta_jugador no cambio. Mira tambien por encima los cambios de origin/kris en ControladorBackend._ejecutar y ServicioPartida.iniciar_partida: rompen algo de la 001 o el determinismo?
+B) Preguntas de la integrante 3 para el plan de ir a:
+M-1. Logic/BusquedaCostoMinimo.py paso_desde_cero con limite=None: guarda algo entre llamadas que cambie el resultado? El desempate es por la vecina de menor id del primer paso (no entre rutas completas)?
+M-2. En P1 hay curacion o regeneracion que pueda ocurrir dentro de un mismo paso del jugador (efectos, pulsos, objetos)? Existe un contador o evento de dano recibido mas fiable que comparar la vida antes y despues?
+M-3. motor.enemigos_vivos (o equivalente) incluye a los enemigos dormidos que se activan al entrar a la sala? Cuando se agregan?
+Salida: A con lo que esta bien y lo que hay que cambiar; B con respuesta corta y evidencia.
+
+**Uso de la respuesta:** consulta `1a1dc7afa4b`, respuesta en `.claude-bridge/outbox/1a1dc7afa4b.txt`. La consulta terminó **sin respuesta**: la sección «Respuesta» quedó vacía y 7 acciones quedaron bloqueadas por permisos (`git show`/`git diff` de `origin/main`, `HEAD` y `origin/kris` con `awk` y `grep`, `git log origin/main..origin/kris`, `git ls-tree` de `origin/kris`, y extraer `origin/kris` con `git archive` para correr `tests.test_linea_tiempo_motor`). No hay revisión de `2753a53` ni respuestas a M-1, M-2 y M-3; hay que repetir la consulta con esos permisos. No modificó nada. **Nota:** se repitió como `1a1dc8137f6` (registrada más abajo), con reglas de comandos que no se bloquean.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+1. plan(001): en contracts/contrato-datos.md, sección "Validación (FR-122)", agregá:
+   "AlmacenCatalogo solo guarda fichas válidas, botín incluido; ficha() revalida al leer del disco.
+   Un enemigo con botín rechazado no se guarda ni en disco ni en memoria, y la regla vale también
+   en otra partida." (confirmado por el integrante 2, se implementa en T057).
+2. test(001): a test_h2_22 agregale un subcaso de segunda partida: la primera partida guarda en caché
+   la ficha del enemigo; en la segunda, con la misma carpeta de caché, su sala tiene que quedar
+   igual de rechazada. Sigue con skip hasta T057.
+3. docs: registrá en PROMPTS_LLM.md la consulta del puente 1a1dc7afa4b (revisión de avanzar_hasta de
+   la integrante 3, commit 2753a53, y sus preguntas M-1 a M-3 para «ir a»). La respuesta va a estar en
+   C:\Users\Eli\.claude-bridge\outbox\1a1dc7afa4b.txt cuando el puente termine; si todavía no está,
+   registrá solo el pedido y completá el resumen después.
+Suite en verde con uv run, no hagas push.
+
+**Uso de la respuesta:** (1) `plan(001)`: el párrafo va en «Validación (FR-122)» de `contracts/contrato-datos.md`, después del de la fila de `suelta`. (2) `test(001)`: `test_h2_22` tiene un subcaso «segunda partida»: dos `ServicioPartida` con la misma carpeta de caché (y logs aparte); en las dos, entrar a la sala 2 se rechaza con el mismo mensaje, sin mover al jugador ni el reloj. Sigue con `skipTest` hasta T057; sin el skip falla igual que el subcaso de la sala no inicial (ya en la partida 1), sin errores de otro tipo. (3) La consulta `1a1dc7afa4b` se registró arriba; el puente terminó sin respuesta (7 acciones bloqueadas por permisos), así que no hay resumen que completar hasta repetirla. Suite: 549 OK (skipped=2: H3-7 y H2-22). Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+SOLO LECTURA. REGLAS DE COMANDOS: un solo comando git por llamada a Bash, sin pipes, sin ;, sin &&, sin for, sin awk ni grep en Bash (para buscar usa Read/Grep sobre archivos locales). Comandos permitidos: git fetch, git show <ref>:<archivo>, git show <commit>, git diff <a> <b> -- <archivo>, git log. NO ejecutes pruebas ni codigo: si algo requiere correrlo, decilo y lo corro yo aparte.
+A) Revision de origin/kris commit 2753a53 (git show 2753a53): Motor.avanzar_hasta(t) en Logic/motorJuego.py y tests/test_linea_tiempo_motor.py. Verifica con archivo:linea: 1) usa el evento que devuelve obtener_siguiente; 2) cuando le toca al jugador hace lo mismo que avanzar_hasta_jugador (registrar reloj y Evento_pendiente, _cerrar_intervalo, devolver True); 3) si el siguiente evento es > t se detiene sin extraerlo ni mover el reloj; 4) se detiene si terminado; 5) existe la prueba del cancelado en la raiz con tiempo <= t seguido de uno valido > t y comprueba False sin mover el reloj; 6) avanzar_hasta_jugador no cambio. Mira por encima git diff origin/Marco origin/kris -- Controller/ControladorBackend.py y Service/ServicioPartida.py (ajusta las rutas si son otras): rompen algo de la 001 o el determinismo?
+B) Confirma o corrige lo que concluyo la integrante 3: M-2) todo dano al jugador pasa por ActorBase.Recibir_Dannio y dentro de un paso solo la Regeneracion (Efectos.py) puede subir la vida. M-3) mover_jugador activa los dormidos de la sala de llegada en el mismo paso y Mazmorra.enemigos_vivos los cuenta. Y M-1) paso_desde_cero con limite=None: guarda algo entre llamadas que cambie el resultado? desempate por la vecina de menor id del primer paso?
+Salida: A con lo que esta bien y lo que hay que cambiar; B con respuesta corta y evidencia.
+
+**Uso de la respuesta:** consulta `1a1dc8137f6`, respuesta en `.claude-bridge/outbox/1a1dc8137f6.txt`. Repite `1a1dc7afa4b` con reglas de comandos que no se bloquean. (A) `Motor.avanzar_hasta(t)` en `origin/kris` (`2753a53`) cumple los seis puntos: usa el evento de `obtener_siguiente` (`Logic/motorJuego.py:119`); el turno del jugador repite las líneas 96 a 102 de `avanzar_hasta_jugador` (líneas 120 a 126); devuelve `False` sin extraer ni mover el reloj si el siguiente es > `t` (117-118); se detiene con `terminado` (115); la prueba del cancelado está en `tests/test_linea_tiempo_motor.py:141-150`, y `avanzar_hasta_jugador` no cambió. A cambiar: esa prueba también pasaba antes de `2753a53` (no distingue el arreglo), y falta una que compruebe el registro en el historial y `_cerrar_intervalo` con `acciones >= 1`. Se propuso una: dos motores, `avanzar_hasta_jugador()` frente a `avanzar_hasta(t)`, y comparar `historial.cantidad()` y el estado después de `deshacer()`. Los cambios en `UIController/ControladorBackend.py` y `Service/ServicioPartida.py` no rompen la 001 ni el determinismo. Quedan dos detalles: `ServicioGuardado.cargar` no instala la línea (aunque el docstring de `GrabadoresLinea.py` dice que sí) y `ServicioReplay` no la llena. (B) M-2 confirmado con un matiz: la poción (`usar`) también sube la vida si el paso incluye la acción del jugador, y deshacer y cargar cambian la vida fuera de un paso. M-3 confirmado con una corrección: los dormidos se activan en el mismo paso, pero su primera acción es en `reloj + intervalo`, y `Mazmorra.enemigos_vivos` (`Logic/Mazmorra.py:131-136`) cuenta vivos sin mirar `activo`, así que también cuenta a los dormidos. M-1: `paso_desde_cero` no guarda estado entre llamadas (solo la caché de estructura de `GrafoEsqueleto._inversa`), y el desempate es por la vecina de menor id del primer paso, apoyado en costos ≥ 1 (`Data/ValidacionDatos.py:46-48`). Se le pasa a la integrante 3. No corrió nada ni modificó nada.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+docs: registrá en PROMPTS_LLM.md la consulta del puente 1a1dc8137f6 (revisión de 2753a53 y M-1 a M-3;
+respuesta en C:\Users\Eli\.claude-bridge\outbox\1a1dc8137f6.txt) y completá la entrada de 1a1dc7afa4b
+con una nota de que se repitió como 1a1dc8137f6 por los comandos bloqueados. No hagas push.
+
+**Uso de la respuesta:** se registró la consulta `1a1dc8137f6` y se agregó a la entrada de `1a1dc7afa4b` la nota de que se repitió como `1a1dc8137f6`. Solo cambia `PROMPTS_LLM.md`, así que no se corrió la suite. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Dos prompts en un chat nuevo.
+
+Primero:
+
+Documentación de la feature 002-niebla-ir-a, sin código y sin commit. Son dos partes que van en dos commits separados (los hago yo): la A primero, porque T005 dice que los cambios del contrato van en un commit plan(002) propio antes de las tareas; la B después. No toques spec.md, ningún archivo de código ni la sección «Viaje automático «ir a» (integrante 3)» de plan.md (es del integrante 3). No renumeres T001 a T099.
+
+PARTE A — contracts/contrato-mapa-conocido.md y data-model.md (y plan.md o research.md solo si alguna frase de la parte del integrante 2 queda contradiciendo lo nuevo)
+
+Respuestas del integrante 3 del 14/11 (D-2, D-3, D-6 y su pedido sobre el grafo). Reflejalas así:
+
+A1. MapaConocido.es_explorada(sala: int) -> bool: True solo si el estado de la sala es EXPLORADA; O(1); no cambia nada, no consume tiempo ni registra en el historial. La usa ArmadorEstado del integrante 3 para el H-2 (opción A). Agregala al contrato (en (c) o en una sección corta propia) y a la tabla de métodos de MapaConocido del data-model.
+
+A2. buscar_exploradas(nombre): un nombre vacío o de solo espacios devuelve [] (después de strip() no coincide con ninguna sala); un nombre que no es str (None, un número, bytes) lanza ValueError, porque es un error de programación del que llama. Agregalo al contrato (c) y al data-model.
+
+A3. Garantías de GrafoMapaConocido que pidió el integrante 3 (la búsqueda de la 001 crea arreglos de tamaño cantidad_salas() e indexa por id):
+- cantidad_salas() es el total de la cripta, len(Mazmorra.salas), con ids de 0 a cantidad_salas() - 1, igual que GrafoEsqueleto.
+- Coherencia: (v, c) está en salidas(u) si y solo si (u, c) está en entradas(v).
+- Una sala no explorada no tiene salidas ni entradas.
+- La posición 0 puede no ser una sala (lo dice GrafoEsqueleto.cantidad_salas): salidas(0) y entradas(0) devuelven [] sin error, porque el estado se mira antes de leer mazmorra.salas[u]. Lo mismo para cualquier hueco.
+
+A4. Costo de armar el grafo: el constructor es O(1) y el índice inverso del esqueleto (_inversa) se arma en la primera llamada a entradas, O(S + E), como en GrafoEsqueleto. Hoy el contrato (a) dice «una vez por partida (o por viaje)». El plan del integrante 3 (I3-8) lo arma en cada paso. Cambiá el texto para que admita por partida, por viaje o por paso, y diga que armarlo en cada paso suma ese O(S + E) a cada paso, que es justo lo que mide B11 (armar el grafo y un paso_desde_cero); sin afirmar el resultado antes de medir.
+
+A5. Contrato (d) dice que «ir a» no debe usar el esqueleto (Mazmorra, GrafoEsqueleto, GestorEsqueleto) para rutas (FR-252). El plan del integrante 3 (D-1, decidir_paso) traduce la vecina que eligió el grafo a una dirección leyendo Mazmorra.salida sobre las cuatro direcciones de la sala actual. Aclará en (d) que eso no es usar el esqueleto para la ruta: la ruta sale solo del grafo, la sala actual está explorada y la vecina ya la eligió el grafo (acordado con el integrante 3, D-1).
+
+A6. H-2 quedó decidido por el integrante 3 el 14/11 (opción A): ArmadorEstado pone sala_destino = SIN_EXPLORAR (-1) en las salidas hacia salas no exploradas y sala_salida = None mientras la sala de salida no esté explorada, usando es_explorada. La constante SIN_EXPLORAR se define en DTO/EstadoJuegoDTO.py (del integrante 3), NO en DTO/MapaConocidoDTO.py, que no cambia (D-6). Actualizá en el contrato la garantía de (b) que dice «Si se agrega a EstadoJuegoDTO… Decide el integrante 3» y la mención del H-2 en (d), y lo que diga lo mismo en el data-model o en la parte del integrante 2 del plan.
+
+PARTE B — tasks.md
+
+B1. T005: marcala [x] y anotá en la línea que el integrante 3 confirmó el contrato el 14/11, con es_explorada, los dos casos de buscar_exploradas y las garantías del grafo de A3, que quedaron en el contrato en el commit plan(002) de la parte A.
+
+B2. T006: actualizá la anotación con la decisión de A6 (opción A, SIN_EXPLORAR en DTO/EstadoJuegoDTO.py del integrante 3, es_explorada). Sigue sin marcar hasta que ella lo suba; la prueba de SC-202 sobre EstadoJuegoDTO (T045) sigue en skip hasta entonces.
+
+B3. T026: agregá estas pruebas a tests/test_grafo_mapa_conocido.py, con el FR en el nombre:
+- test_fr225_entradas_es_la_inversa_de_salidas: en varias criptas con el mapa a medias (salas exploradas, avistadas y desconocidas, caras abiertas, cerradas y sin observar, incluida la de H2-6), para toda sala u y toda (v, c) de salidas(u), (u, c) está en entradas(v), y al revés; las no exploradas no tienen salidas ni entradas.
+- test_fr225_posicion_cero_y_huecos_dan_listas_vacias: con la Mazmorra de tests/ayudas_mapa.py (salas 1..n, la posición 0 no es una sala), salidas(0) y entradas(0) devuelven [] sin error, y cantidad_salas() == len(Mazmorra.salas).
+- test_fr204_fr217_es_explorada_solo_para_exploradas: True para exploradas; False para avistadas, desconocidas y la posición 0; no cambia el estado ni registra nada en el historial.
+- test_fr251_buscar_exploradas_vacio_o_espacios_da_lista_vacia ("" y "   ").
+- test_fr251_buscar_exploradas_no_str_es_value_error (None, 5 y b"x").
+
+B4. T027 y T028: que T027 diga que salidas y entradas miran el estado de la sala antes de leer mazmorra.salas, y cómo se arma _inversa (A4); que T028 incluya es_explorada (O(1)) y la validación de buscar_exploradas de A2. Agregá las pruebas nuevas a la tabla de cobertura.
+
+B5. T030: el aviso también dice que es_explorada está lista, para el H-2.
+
+B6. Sección reservada del integrante 3: el integrante 3 pidió el 14/11 que el integrante 2 genere sus tareas desde T100, y las revisa ella antes de implementarlas. Cambiá la nota en cursiva de la sección para que diga eso (ya no «El integrante 2 no la edita»). Generá sus tareas a partir de SU sección del plan («Viaje automático «ir a» (integrante 3)», commits 29caa4a y 44265bc), sin agregar reglas ni decisiones que el plan no tenga:
+- Numeración consecutiva desde T100, con el mismo formato que las del integrante 2: [P] cuando se puede hacer en paralelo, [US6] o [US7], los FR entre paréntesis, pruebas antes del código que prueban y cada prueba con el escenario o caso y el FR en el nombre, según su tabla «Pruebas previstas» y la tabla de trazabilidad de la spec.
+- Componentes: DTO/ViajeDTO.py, Logic/ViajeAutomatico.py, Service/ServicioIrA.py, ir_a y dar_paso_viaje al final de ControladorBackend, la opción A del H-2 en Service/ArmadorEstado.py con SIN_EXPLORAR en DTO/EstadoJuegoDTO.py (A6; su plan todavía dice MapaConocidoDTO, eso lo corrige ella en su sección) y tests/test_estado_sin_filtrar.py, Logic/BenchViaje.py, su parte de DECISIONES.md (con los límites de H-3: sin tildes ni espacios internos, I3-9) y su registro en PROMPTS_LLM.md.
+- Agregá una tarea suya para que ServicioLineaTiempo pase motor.mapa.a_dto() a ArmadorResumen (no motor.mapa, y no el nombre mapa_conocido que lee hoy), que depende del aviso de a_dto (T049); referenciala desde T008.
+- Dependencias con las tareas del integrante 2: T030 (GrafoMapaConocido, buscar_exploradas, es_explorada y tests/ayudas_mapa.py), T033 (contexto.motor.mapa en el motor) y T049 (a_dto). Las pruebas de Logic pura pueden empezar con T030; las del servicio y el motor, con T033.
+- Marcá «(coordinar con el integrante 2)» la que toca Service/ServicioBench.py (D-5: quien suba segundo hace el merge) y cualquier otra que toque un archivo del integrante 1 o del integrante 2.
+- Donde su plan deja algo abierto (por ejemplo la señal de daño, I3-3 y M-2, o lo que dependa de las respuestas M-1 a M-3), no lo decidas: escribí la tarea como dice el plan y marcala «(confirmar con el integrante 3)».
+- Agregá al final de su sección su propia tabla de cobertura: FR-250 a FR-264, NFR-250, NFR-251, SC-250 a SC-253, H6-1 a H6-10, H7-1 a H7-9, los casos 1, 2b, 3 y 6 y A24 a A37, cada uno con su prueba y su tarea.
+- Restricciones de la constitución v1.2.0 en lo que proponen las tareas: sin dict ni set como índice, sin collections, heapq ni bisect, sin sorted ni list.sort, sin copy fuera de tests/, y Logic no importa Data ni Service.
+- En «Dependencias» y en el grafo de «Entrega incremental», solo agregá que sus tareas dependen de T030, T033 y T049.
+
+Al final decime:
+- los archivos de la parte A y de la parte B por separado;
+- las líneas que cambiaste del contrato y del data-model;
+- la lista de T100 en adelante, con su título corto;
+- si encontraste algo del plan del integrante 3 que choque con el contrato, con la spec o con la constitución (no lo arregles: decímelo);
+- cualquier elemento de la cobertura que quede sin prueba o sin tarea.
+No hagas commit.
+
+Segundo:
+
+Tres ajustes chicos en specs/002-niebla-ir-a/tasks.md, sin código y sin commit. No toques ningún otro archivo.
+
+1. T042: la guarda dice que hace skipTest si no existe Service/ArmadorResumen.py, pero ese archivo ya existe (T023 de la 004), así que la prueba fallaría en vez de saltarse hasta T118. Cambiala a: si el ResumenHistoriaDTO.mapa_conocido que devuelve historia #4 es None, self.skipTest("pendiente: T118 del integrante 3 (ServicioLineaTiempo pasa motor.mapa.a_dto())"). T050 la quita.
+
+2. T050 dice «Cuando el integrante 3 termine T023 de la 004 y H-2». Que diga «cuando el integrante 3 termine T118 y T116 (aviso en T117)». Y en T008, la última frase («La prueba H4-4 (T042) queda en skip hasta que exista T023 de la 004») tiene que decir que queda en skip hasta T118.
+
+3. En la nota en cursiva de la sección del integrante 3, la primera frase todavía dice «Esta sección la completa el integrante 3 en su propio commit», y contradice lo que sigue. Que diga que la generó el integrante 2 a pedido del integrante 3 (14/11), con el resto de la nota como está (ella las revisa y puede corregirlas en su propio commit).
+
+No cambies nada más. Al final: las líneas que cambiaste, con el texto antes y después.
+
+**Uso de la respuesta:** dos commits. `plan(002)`: el contrato del mapa queda confirmado por el integrante 3 (T005) con `es_explorada(sala)` O(1) para el H-2, los dos casos de `buscar_exploradas` (vacío o solo espacios → `[]`; no `str` → `ValueError`), las garantías del grafo (total de salas, coherencia entre `salidas` y `entradas`, sala no explorada sin listas, posición 0 y huecos → `[]`), el costo de armarlo por paso (`_inversa` en la primera llamada a `entradas`, lo mide B11), la aclaración de D-1 (traducir la vecina a una dirección con `Mazmorra.salida` no es usar el esqueleto para la ruta) y el H-2 decidido (opción A, `SIN_EXPLORAR` en `DTO/EstadoJuegoDTO.py`); data-model, una frase del plan y dos de research alineadas. `tasks(002)`: T005 marcada; T006, T008, T026 a T028, T030, T042 y T050 actualizadas (cinco pruebas nuevas en T026; la guarda de H4-4 espera a T118); y las tareas de «ir a» del integrante 3, T100 a T127, generadas desde su sección del plan a su pedido, con lo abierto marcado «confirmar con el integrante 3» y su tabla de cobertura. En T050 corregí a mano «la guarda de T023 de la 004» por «la guarda de T118». No se tocaron spec.md, el código ni la sección del integrante 3 en plan.md. Revisé el resultado en el zip antes de cada commit.
+
+-----------------------------------------------------------------------------------------------------------------------
 
 -----------------------------------------------------------------------------------------------------------------------
 **Fecha:** Sábado 14 de noviembre 2026

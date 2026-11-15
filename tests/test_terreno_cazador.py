@@ -615,6 +615,8 @@ class TestDatosInvalidos(unittest.TestCase):
         `duracion` 0, -5, "10" o true. En la sala 2 (no inicial), la partida inicia y entrar a la sala 2 se rechaza
         con un mensaje que nombra la ficha del enemigo, el campo `suelta` y la ficha rechazada; el jugador sigue
         en la sala 1, el reloj no avanza y la partida sigue. En la sala 1 (la inicial), la partida no inicia.
+        En una segunda partida con la misma carpeta de caché, la sala 2 queda igual de rechazada: AlmacenCatalogo
+        no guarda al enemigo con botín rechazado, y ficha() revalida lo que lee del disco.
         """
         self.skipTest("pendiente de T057 (integrante 2): Data todavía no rechaza un enemigo por su suelta")
         acciones = ServicioAccionJugador()
@@ -646,6 +648,28 @@ class TestDatosInvalidos(unittest.TestCase):
                     for texto in (ID_ENEMIGO_BOTIN_INVALIDO, "suelta", ID_OBJETO_DURACION_INVALIDA):
                         self.assertIn(texto, str(error.exception))
                     self.assertFalse(os.path.isdir(os.path.join(carpeta, "logs")))    # no se creó partida.log
+
+            with self.subTest(sala="segunda partida", duracion=duracion):
+                # La primera partida baja la ficha del enemigo (y puede guardarla en caché); la segunda usa la
+                # misma carpeta de caché y su sala 2 tiene que quedar igual de rechazada.
+                with tempfile.TemporaryDirectory() as carpeta:
+                    cache = os.path.join(carpeta, "cache")
+                    for numero in (1, 2):
+                        partida = ServicioPartida(ConfiguracionDTO(),
+                                                  fuente=FuenteConBotinInvalido(3, sala_enemigo=2, duracion=duracion),
+                                                  carpeta_cache=cache,
+                                                  carpeta_logs=os.path.join(carpeta, f"logs-{numero}"))
+                        ctx = partida.iniciar_partida("cuadricula", "Ana", semilla=1)
+                        reloj = ctx.motor.reloj
+
+                        estado = acciones.ejecutar(ctx, AccionDTO("mover", direccion=E))
+                        mensaje = estado.resultado
+                        self.assertIsNotNone(mensaje, f"partida {numero}")
+                        for texto in (ID_ENEMIGO_BOTIN_INVALIDO, "suelta", ID_OBJETO_DURACION_INVALIDA):
+                            self.assertIn(texto, mensaje, f"partida {numero}")
+                        self.assertFalse(mensaje.startswith("Sin conexión"), f"partida {numero}")
+                        self.assertEqual(estado.sala.id, 1, f"partida {numero}")
+                        self.assertEqual(estado.reloj, reloj, f"partida {numero}")
 
 
 def _partida_con(fuente, carpeta: str) -> ServicioPartida:

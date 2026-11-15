@@ -9,6 +9,8 @@ Notación: S = `len(Mazmorra.salas)` (ids de 0 a S − 1; la posición 0 puede e
 ## 1. Constantes (`DTO/MapaConocidoDTO.py`)
 
 Viven en DTO porque las leen Logic, Data (al validar el binario) y la vista. Ningún otro módulo define estos valores.
+La constante `SIN_EXPLORAR = -1` del H-2 (opción A del integrante 3, 14/11) **no** está aquí: se define en
+`DTO/EstadoJuegoDTO.py`, del integrante 3, y este archivo no cambia por ella (D-6).
 
 | Constante | Valor | Significado |
 |---|---|---|
@@ -39,8 +41,9 @@ Estado de la partida. Lo crea el motor (`motor.mapa`); lo escriben solo `iniciar
 | `puerta_cambio(a: int, b: int) -> None` | `_observar_puertas(jugador.Sala_Actual)`; `a` y `b` no se usan | O(1) | FR-207, FR-209 |
 | `estado_sala(sala: int) -> int` | Lectura de `estado` | O(1) | NFR-201 |
 | `estado_cara(sala: int, direccion: int) -> int` | Lectura de `caras` | O(1) | NFR-201 |
+| `es_explorada(sala: int) -> bool` | `True` solo si `estado[sala] == EXPLORADA` (`False` para avistadas, desconocidas y posiciones que no son salas, como la 0). No cambia nada, no consume tiempo ni registra en el historial. La usa `ArmadorEstado` del integrante 3 para el H-2, opción A (contrato (c)) | O(1) | FR-204, FR-217, NFR-201 |
 | `a_dto() -> MapaConocidoDTO` | Vista de solo lectura (§4) | O(S) | FR-217, FR-219, FR-220 |
-| `buscar_exploradas(nombre: str) -> list[int]` | Ids de exploradas con ese nombre | O(S) | FR-251 |
+| `buscar_exploradas(nombre: str) -> list[int]` | Ids de exploradas cuyo nombre coincide con `strip().casefold()` en los dos lados, en orden creciente. Un nombre vacío o de solo espacios devuelve `[]`; uno que no es `str` (`None`, un número, `bytes`) lanza `ValueError` (error de programación del que llama; contrato (c)) | O(S) | FR-251 |
 | `a_guardado() -> MapaConocidoGuardadoDTO` | Copia de los dos arreglos con `list(...)` | O(S) | FR-221, FR-223, NFR-203 |
 | `restaurar(dto: MapaConocidoGuardadoDTO \| None) -> None` | Con un DTO: valida largos (`ValueError`, riesgo R-8) y copia los arreglos, reemplazando el mapa en curso; no registra en el historial. Con `None`: pone todo en `DESCONOCIDA` / `SIN_OBSERVAR` y arma el mapa inicial desde `jugador.Sala_Actual`, como `iniciar` (esa sala explorada, los destinos de sus salidas avistados y sus puertas observadas, FR-202); lo que registre queda en el intervalo abierto, que `PartidaGuardada.cargar` descarta enseguida | O(S) | FR-202, FR-221, FR-223 |
 
@@ -84,16 +87,27 @@ Grafo de búsqueda de «ir a» con la interfaz de `specs/001-terreno-cazador/con
 | Atributo | Tipo | Notas |
 |---|---|---|
 | `mapa` | `MapaConocido` | Se lee en vivo en cada llamada (`mapa.estado`, `mapa.caras`); no se guardan referencias a los arreglos, porque `restaurar` los reemplaza |
-| `_inversa` | `list[list[tuple[int, int]]] \| None` | Por sala x, pares (origen, dirección) del esqueleto que llegan a x; se arma una vez en O(S + E), como en `GrafoEsqueleto` |
+| `_inversa` | `list[list[tuple[int, int]]] \| None` | Por sala x, pares (origen, dirección) del esqueleto que llegan a x. `None` al construir; se arma en la **primera llamada a `entradas`**, en O(S + E), como en `GrafoEsqueleto`, y queda en ese objeto (solo depende del esqueleto) |
 
 | Método | Devuelve | Costo |
 |---|---|---|
-| `cantidad_salas()` | `len(Mazmorra.salas)` | O(1) |
+| `GrafoMapaConocido(mapa)` | Guarda el mapa; no recorre nada | O(1) |
+| `cantidad_salas()` | `len(Mazmorra.salas)`: el total de la cripta, ids de 0 a `cantidad_salas() - 1`, igual que `GrafoEsqueleto` | O(1) |
 | `salidas(u)` | `[(v, costo)]` de las salidas utilizables de u (vacía si u no está explorada) | O(4) |
-| `entradas(x)` | `[(u, costo)]` de las salidas utilizables que llegan a x (vacía si x no está explorada) | O(grado de entrada de x) |
+| `entradas(x)` | `[(u, costo)]` de las salidas utilizables que llegan a x (vacía si x no está explorada) | O(grado de entrada de x); O(S + E) la primera vez, al armar `_inversa` |
 
 «Utilizable»: `estado[u] == EXPLORADA`, `estado[v] == EXPLORADA` y `caras[u*4 + d] == ABIERTA`; costo =
 `SalidaViva.costo` (igualado, 001 FR-101).
+
+Garantías (contrato (a); pedidas por el integrante 3 el 14/11, porque la búsqueda de la 001 crea arreglos de tamaño
+`cantidad_salas()` e indexa por id):
+
+- **Coherencia**: `(v, c)` está en `salidas(u)` si y solo si `(u, c)` está en `entradas(v)`.
+- Una sala no explorada no tiene salidas ni entradas.
+- `salidas` y `entradas` miran `mapa.estado[u]` **antes** de leer `mazmorra.salas[u]`: con la posición 0 (que puede no
+  ser una sala) o cualquier hueco, devuelven `[]` sin error.
+- Se puede armar por partida, por viaje o por paso; armarlo en cada paso (plan del integrante 3, I3-8) suma el
+  O(S + E) de `_inversa` a cada paso, que es lo que mide B11.
 
 ## 4. DTO de la vista (`DTO/MapaConocidoDTO.py`, nuevos, `frozen`)
 
@@ -190,5 +204,6 @@ Mazmorra.observador_puertas ──► RepartidorAvisosPuertas ──► RutasHac
                                                         └──► MapaConocido
 GrafoMapaConocido ──lee──► MapaConocido + Mazmorra        (lo usa «ir a», integrante 3)
 PartidaGuardada ──a_guardado / restaurar──► MapaConocidoGuardadoDTO ──► PartidaGuardadaDTO.mapa ──► GuardadoBinario
-ArmadorEstado / ArmadorResumen / comando (integrante 3) ──► motor.mapa.a_dto() ──► MapaConocidoDTO
+ArmadorEstado (si agrega mapa_conocido) / ArmadorResumen / comando (integrante 3) ──► motor.mapa.a_dto() ──► MapaConocidoDTO
+ArmadorEstado (integrante 3, H-2 opción A) ──► motor.mapa.es_explorada(sala) ──► SIN_EXPLORAR (DTO/EstadoJuegoDTO.py) / None
 ```

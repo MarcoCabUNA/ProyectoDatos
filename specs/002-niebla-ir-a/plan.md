@@ -94,7 +94,10 @@ Ninguno bloquea; detalle en [research.md, Hallazgos](research.md#hallazgos). La 
 - **H-2** (SC-202, FR-204; integrante 3): `EstadoJuegoDTO.sala.salidas[d].sala_destino` lleva hoy el id real de
   destinos **avistados** y la vista lo usa (`View/EscenaJuego.py`). Con eso la prueba automática de SC-202 falla y la
   interfaz podría saber que dos salidas llevan a la misma sala avistada. Lo resuelve el integrante 3 en
-  `ArmadorEstado`; la prueba de SC-202 de este plan revisa también el `EstadoJuegoDTO`.
+  `ArmadorEstado` (**decidido el 14/11, opción A**: `sala_destino = SIN_EXPLORAR` hacia salas no exploradas y
+  `sala_salida = None` mientras la sala de salida no esté explorada, con `MapaConocido.es_explorada`; la constante
+  `SIN_EXPLORAR` va en `DTO/EstadoJuegoDTO.py`, suyo, y `DTO/MapaConocidoDTO.py` no cambia, D-6); la prueba de SC-202
+  de este plan revisa también el `EstadoJuegoDTO`.
 - **H-3** (FR-251; **resuelto**): la spec no dice cómo se comparan los nombres de «ir a <sala>». Confirmado por el
   integrante 3 el 14/11: `strip().casefold()` en los dos lados.
 - **H-4** (límite conocido): con salidas repetidas hacia la misma vecina, el emparejamiento de caras es el de la
@@ -149,7 +152,7 @@ DTO/
 └── PartidaGuardadaDTO.py         # MODIFICADO: campo mapa al final, antes de linea (T002 de la 004)   (FR-221)
 
 Logic/
-├── MapaConocido.py               # NUEVO: estado de salas y caras, iniciar/entrar/puerta_cambio, a_dto, buscar_exploradas, a_guardado/restaurar   (FR-201..FR-222)
+├── MapaConocido.py               # NUEVO: estado de salas y caras, iniciar/entrar/puerta_cambio, es_explorada, a_dto, buscar_exploradas, a_guardado/restaurar   (FR-201..FR-222)
 ├── GrafoMapaConocido.py          # NUEVO: cantidad_salas/salidas/entradas para «ir a»   (FR-225)
 ├── RepartidorAvisosPuertas.py    # NUEVO: reenvía puerta_cambio a las rutas del cazador y al mapa   (FR-207; 001 FR-114)
 ├── BenchMapaConocido.py          # NUEVO: B1 a B11   (NFR-204, SC-203, SC-204, SC-206, SC-207)
@@ -194,7 +197,7 @@ después en `DECISIONES.md`. Dueños verificados con `git log` y con los `plan.m
 | `DTO/PartidaGuardadaDTO.py` | Campo `mapa: MapaConocidoGuardadoDTO \| None = None` al final, **antes de `linea`** (T002 de la 004); `"mapa"` en `a_diccionario` y `d.get("mapa")` en `desde_diccionario` | El mapa es estado de la partida | FR-221 | Integrante 2 |
 | `Data/GuardadoBinario.py` | `VERSION_FORMATO = 2`; cabecera de 58 bytes con offset y largo del mapa y de la línea; `_codificar_mapa` / `_leer_mapa` (también para cada punto de control de la línea); validación de formato; `cargar` lee el mapa; `cargar_sala` no | Guardar el mapa y distinguir los archivos de la primera parte | FR-221; 004 FR-420, FR-421 | Integrante 2 (junto con T003 de la 004) |
 | `Service/ServicioBench.py` | `from Logic import BenchMapaConocido` y `BenchMapaConocido.medir` en la lista por defecto, después de `BenchLogica.medir` (y de `BenchResolubilidad.medir` si ya está). Sin import circular: ni `BenchLogica` ni `BenchRutas` importan `BenchMapaConocido` | Exponer las mediciones en `--bench`; `Logic/BenchLogica.py` no se modifica | NFR-204 | Integrante 2 |
-| `Service/ArmadorEstado.py`, `DTO/EstadoJuegoDTO.py` | (Opcional) campo final `mapa_conocido: MapaConocidoDTO \| None = None` con `motor.mapa.a_dto()`. Y resolver H-2 (`sala_destino` de destinos no explorados) | Que la vista muestre solo el conocimiento (FR-217, SC-202) | FR-217, FR-219 | **Integrante 3** (decide ella) |
+| `Service/ArmadorEstado.py`, `DTO/EstadoJuegoDTO.py` | (Opcional) campo final `mapa_conocido: MapaConocidoDTO \| None = None` con `motor.mapa.a_dto()`. Y H-2, **opción A** (decidida el 14/11): `sala_destino = SIN_EXPLORAR` (−1, constante en `DTO/EstadoJuegoDTO.py`) hacia salas no exploradas y `sala_salida = None` mientras la sala de salida no esté explorada, con `motor.mapa.es_explorada` | Que la vista muestre solo el conocimiento (FR-217, SC-202) | FR-217, FR-219 | **Integrante 3** |
 | `Service/ArmadorResumen.py` (T023 de la 004) | `mapa_conocido=motor.mapa.a_dto()` sobre el motor aparte | El resumen muestra el mapa de ese instante | FR-223; 004 FR-405 | Integrante 3 |
 | `UIController/…`, `View/…` | Comando de ver el mapa y dibujo, con `MapaConocidoDTO`; no se registra en `partida.log` ni pasa por el historial | §3.3, §7.3 | FR-219, FR-220 | Integrante 3 |
 | `DECISIONES.md` | Sección del integrante 2: «Mapa conocido» (R1 a R4) con los números de B1 a B11 | Principio VIII | NFR-204 | Integrante 2 |
@@ -231,7 +234,9 @@ el DTO), ningún archivo de `Estructuras/`.
 
 1. Revisar y confirmar [contrato-mapa-conocido.md](contracts/contrato-mapa-conocido.md): grafo, DTO, búsqueda por nombre
    (H-3) y lo que no se ofrece.
-2. **H-2**: decidir cómo deja de llegar a la vista el id de los destinos avistados en `EstadoJuegoDTO`.
+2. **H-2** (decidido por el integrante 3 el 14/11, opción A): `ArmadorEstado` enmascara con `SIN_EXPLORAR` (en
+   `DTO/EstadoJuegoDTO.py`) y `sala_salida = None`, usando `MapaConocido.es_explorada`, que agrega el integrante 2
+   (contrato (c)).
 3. **004**: T023 de la 004 copia `motor.mapa.a_dto()` al resumen; el contrato binario de la 004 (§2) debe decir que la cabecera
    también lleva el bloque del mapa y que cada punto de control lleva su mapa (ver «Cambios que piden la 004 y la 001»).
 4. «ir a» llama a `BitacoraReplayIO.anexar_comentario` (T071, hecho) y pasa por `ServicioLineaTiempo.ejecutar`; sus pasos
@@ -280,7 +285,7 @@ números de B1 a B11 y si la decisión final coincide con este plan.
 | R-3 | **El emparejamiento de caras diverge de la `Mazmorra`** | Se usa `_salida_inversa` en lugar de copiar la regla (H-7); pruebas H2-6 y A16 |
 | R-4 | **La re-simulación de la 004 escribe dentro de un punto de control** | `a_guardado` y `restaurar` copian los arreglos (R4); prueba que restaura dos veces del mismo DTO y compara |
 | R-5 | **Cambio de formato binario dos veces** (T003 de la 004 antes que el mapa) | La versión 2 se define una sola vez con los dos bloques (R4) |
-| R-6 | **Filtrar identidad de avistadas por `EstadoJuegoDTO`** (H-2) | La prueba de SC-202 revisa también ese DTO; lo resuelve el integrante 3 |
+| R-6 | **Filtrar identidad de avistadas por `EstadoJuegoDTO`** (H-2) | La prueba de SC-202 revisa también ese DTO; lo resuelve el integrante 3 con la opción A (`es_explorada`, `SIN_EXPLORAR`) |
 | R-7 | **Ciclo de eventos más lento con muchos avisos de puerta** | `puerta_cambio` es O(1) y no registra nada si no hay cambios; B8 con puertas que cambian en cada ciclo |
 | R-8 | **Mapa de otra versión de la cripta al cargar** | `restaurar` compara largos con la `Mazmorra` y lanza `ValueError`; antes, `comprobar_compatibilidad` ya rechaza otra versión |
 | R-9 | **Romper las pruebas de otros integrantes que arman un `PartidaGuardadaDTO` sin mapa**, o cargar en silencio una partida real sin mapa | `MapaConocido.restaurar(None)` arma el mapa inicial desde la sala del jugador (como FR-202) y `cargar` solo llama a `restaurar`, sin `if` ni `raise`, así que esas pruebas siguen igual. Una partida real nunca llega sin mapa: el guardado de la versión 2 y los puntos de control siempre lo traen, y los archivos de la versión 1 se rechazan por versión antes (FR-421 de la 004). `restaurar` sigue lanzando `ValueError` si los largos no coinciden (R-8). Pruebas con `mapa = None` en T035 (`restaurar`) y T040 (`cargar`) |
