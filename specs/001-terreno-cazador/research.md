@@ -4,7 +4,8 @@
 
 Este archivo resuelve las decisiones abiertas del plan. Cada una tiene problema, alternativas,
 decisión, complejidad, medición prevista y límites conocidos, como pide el Principio VIII.
-Las mediciones se completaron en la fase 7 (T045, [bench-2026-11-13.txt](bench-2026-11-13.txt)):
+Las mediciones se completaron en la fase 7 (T045, [bench-2026-11-13.txt](bench-2026-11-13.txt)) y el
+ciclo se volvió a medir con el mapa conocido de la 002 conectado ([bench-2026-11-15.txt](bench-2026-11-15.txt)):
 cada decisión tiene su «Medición» y su «¿Cambió respecto al plan?». La sección del integrante 1 de
 `DECISIONES.md` (§5.1, §5.2, §5.6) se escribe a partir de aquí.
 
@@ -370,6 +371,14 @@ sobre el grafo del integrante 2. Ver el [contrato](contracts/busqueda-rutas.md).
   con 30 cazadores, el peor ciclo es de 7,9 ms con el jugador quieto y de 5,4 ms con el jugador
   moviéndose (una búsqueda nueva en cada ciclo): **NFR-101 y SC-104 se cumplen**. Con 100 cazadores
   es de 14,5 y 18,0 ms: todavía cumple, pero con poco margen.
+- **Ciclo con cazadores y el mapa conocido** ([bench-2026-11-15.txt](bench-2026-11-15.txt), 3 corridas del
+  `--bench` completo): desde la 002 el `Motor` asigna `observador_puertas = RepartidorAvisosPuertas([rutas, mapa])`
+  y `BenchRutas` arma el mismo repartidor cuando cambia las rutas. Con 30 cazadores, el peor ciclo es de 9,9 / 9,8 /
+  17,6 ms con el jugador quieto y de 5,5 / 6,1 / 6,4 ms moviéndose: **NFR-101 y SC-104 se siguen cumpliendo**. Con
+  100 cazadores moviéndose (fuera de NFR-101) dio 19,6 / 20,0 / 22,4 ms. Medido aparte, 3 corridas alternadas antes
+  del merge (sin mapa) y después: 8,4 / 8,8 / 7,4 ms frente a 9,4 / 8,7 / 7,2 ms, medianas iguales (0,95 a 0,98 ms).
+  El mapa no encarece el ciclo; el pico depende de lo que corre antes en el mismo proceso, como la fila de
+  500 enemigos (`DECISIONES.md` §5.6). Los registros del historial por intervalo no cambian (249,3 y 108,0).
 - **Historial** (`medir_historial`, 30 cazadores): con el jugador quieto, la búsqueda agrega 0,02
   registros por intervalo sobre 249. Con el jugador moviéndose, agrega 1,60 sobre 106, un 1,5 %.
 
