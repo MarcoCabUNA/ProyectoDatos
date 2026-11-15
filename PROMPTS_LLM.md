@@ -3076,3 +3076,28 @@ cambió de comportamiento.
 **Uso de la respuesta:** Verificación previa: `ResolvedorCatalogo.ficha(id_ficha, contar_acierto=True)` existe y revalida lo que lee del disco (suelta incluida); las trampas se resuelven con `fn_ficha` en `cargar_contenido`; los objetos del suelo no pasan por `ficha()` ahí, pero `ficha()` valida cualquier id, así que no hubo que parar. `ErrorDatos` es subclase de `ErrorRed`, por eso se atrapa solo `ErrorDatos`. `GestorContenido` es de P1 (`855a6da`). Cuatro commits: (1) `80b0c56`, T058 en `tasks.md` y fila en «Cambios a código de la primera entrega» de `plan.md`. (2) `43fe72e`, `tests/test_cache_vieja.py` con la caché escrita a mano (`cache/v/VERSION` y `<id>.json`): (a) enemigo con suelta rechazada, (b) objeto del suelo con `duracion` 0, (c) `ErrorRed` al validar y reintento, (d) caché válida sin pedidos al catálogo. Sin el arreglo, (a) y (c) fallan (un enemigo a medio cargar; en (c) el reintento deja `e-1` dos veces con número 2) y (b) da ERROR: el movimiento se hace y `SincronizadorUsos` lanza el `ErrorDatos` sin atrapar. Se commitearon con `skipTest` hasta el arreglo, como H2-22, para que la suite quedara en verde. (3) `a27b859`, +14 líneas en `asegurar_sala` (comentario, sin docstring), sin `skipTest`, T058 marcada y antes/después en `DECISIONES.md` §5.6. Las solicitudes de red no cambian: partida con el API falso (6 y 4 solicitudes, 2 y 0 de catálogo, antes y después) y replay de ejemplo (los mismos 2 lotes de contenido, 0 de catálogo). Solo cambia el reporte de la caché cuando la ficha sale del disco (3 aciertos en lugar de 1). Suite: 834 pruebas OK (4 omitidas, las de antes), 31 de 31 scripts; ninguna prueba existente cambió de resultado. (4) Este registro. Sin push.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Sobre T058, solo responder (no cambies nada salvo que haga falta):
+1) ¿El bloque nuevo de asegurar_sala corre solo la primera vez que se entrega una sala o en cada llamada
+   (cada vez que el jugador entra)? Si es en cada llamada, ¿ficha() lee del disco cada vez o usa lo que ya
+   tiene en memoria? ¿Afecta al bench (medí el ciclo de 1 024 salas si _resolvedor no es None ahí)?
+2) El cambio en el reporte de caché (3 aciertos en vez de 1): ¿algún FR, prueba, bench o texto de
+   DECISIONES/research del integrante 2 usa esos aciertos? Si alguno cita cifras de aciertos, decime cuál.
+
+**Uso de la respuesta:** Solo respuesta, sin cambios. (1) El bloque corre solo la primera vez que se entra a cada sala (y al reintentar una entrada fallida): `ServicioAccionJugador._cargar_destino_si_falta` no llama a `asegurar_sala` si la sala ya está cargada en Lógica, y `ServicioPartida` la llama una vez para la sala inicial. `ficha()` busca primero en memoria (`CacheCatalogo`) y solo va al disco si no está. `BenchRutas` (ciclo de 1 024 salas), `BenchLogica` y `BenchMapaConocido` usan el `Motor` sin `GestorContenido`, y `BenchDatos` crea `GestorContenido` sin resolvedor: no pasan por el bloque. El único bench afectado es `medir_costo_por_accion` de la 004 (8 llamadas a `asegurar_sala` y 4 a `ficha()` más en todo el bench); 3 corridas alternadas sin y con el arreglo: 15,07/15,43/15,63 ms frente a 15,77/15,45/15,13 ms con línea activa, ruido. (2) Ningún FR, bench ni texto de DECISIONES o research cita cifras de aciertos que el cambio mueva; las pruebas que leen aciertos (`TestResolvedorCatalogo`, `TestCacheCatalogo`, `test_despacho_acciones`, `test_grabadores_linea`, `test_reconstructor_estado`, `test_servicios.py:343`) no pasan por `asegurar_sala` o comparan contra sí mismas, y `test_vista_fin.py:84` usa valores puestos a mano. Lo visible es «Aciertos de caché» en `View/PantallaFin.py`. `docs/Documento_Decisiones.pdf` no se revisó (PDF).
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+bien puedes hacer push ya
+
+**Uso de la respuesta:** `git push origin Marco` con los commits de T058 (`80b0c56`, `43fe72e`, `a27b859`, `401e20d`) y el de este registro.
+
+-----------------------------------------------------------------------------------------------------------------------
