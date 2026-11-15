@@ -2778,3 +2778,15 @@ No hagas commit.
 **Uso de la respuesta (parte 1):** fase 8 de la 002 (T031 a T033), en un commit propio que revisa el integrante 1. `Logic/RepartidorAvisosPuertas.py` nuevo (reenvía `puerta_cambio` a `[motor.rutas, motor.mapa]`, en ese orden). En `Logic/motorJuego.py`, solo los cinco cambios acordados el 14/11: dos imports, `self.mapa`, el repartidor como `observador_puertas`, `self.mapa.iniciar(...)` en `iniciar()` y `self.mapa.entrar(...)` en `mover_jugador()`; sin otros cambios. 13 pruebas nuevas sin `skipTest` (repartidor, motor e historias 1 a 4 con el motor); todas fallaron primero. Ayudante nuevo `motor_con_inventario` en `tests/ayudas_mapa.py`. Suite: 766 pruebas OK (2 skip), 31 de 31 scripts; replay byte a byte igual; grep de restricciones limpio. Revisé el zip y el diff de `motorJuego.py` antes del commit.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Mismo chat que la parte 1 del tercer lote de la 002:
+
+seguí
+
+**Uso de la respuesta (parte 2):** fase 9 de la 002 (T035 segundo momento, T037 y T040 a T044), en dos commits. (a) `a_guardado` y `restaurar` en `Logic/MapaConocido.py`: `restaurar` valida los largos (`ValueError`) y nunca registra en el historial; con `None` arma el mapa inicial desde la sala del jugador, con el historial en `None` mientras lo arma (try/finally). Se corrigió a mano la fila de `restaurar` del data-model §2, que decía que con `None` lo registrado quedaba en el intervalo abierto. (b) En `Logic/PartidaGuardada.py`, que revisa el integrante 1, solo `mapa=motor.mapa.a_guardado()` en `guardar` y `motor.mapa.restaurar(partida.mapa)` en `cargar`, sin `if`. Pruebas: las seis de T035 y las tres de T040 fallaron primero; T041 (replay y `--hasta` con líneas `# ir a`, y misma partida mismo mapa) es la excepción documentada y se comprobó que falla con `restaurar` anulado; T042 queda en skip hasta T118 del integrante 3 (y necesitará `a_dto`, T046). Suite: 778 pruebas OK (3 skip), 31 de 31 scripts; replay byte a byte igual; grep limpio. Revisé el zip y el diff de `PartidaGuardada.py` antes de los commits.
+
+-----------------------------------------------------------------------------------------------------------------------
