@@ -34,6 +34,7 @@ from Logic.ColaEventos import ColaEventos
 from Logic.EventoPorg import EventoProgramado
 from Logic.GrafoEsqueleto import GrafoEsqueleto
 from Logic.Mazmorra import Mazmorra
+from Logic.RepartidorAvisosPuertas import RepartidorAvisosPuertas
 from Logic.RutasHaciaJugador import RutasHaciaJugador
 from Logic.jugador import Jugador
 from Logic.motorJuego import Motor
@@ -449,7 +450,7 @@ def medir_ciclo_cazadores(cazadores=(10, 30, 100), lado: int = 32, otros: int = 
             comprobado = _motor_con_cazadores(lado, k, otros)
             comprobadas = _RutasComprobadas(comprobado.grafo, comprobado.historial)
             comprobado.rutas = comprobadas
-            comprobado.mazmorra.observador_puertas = comprobadas
+            comprobado.mazmorra.observador_puertas = RepartidorAvisosPuertas([comprobadas, comprobado.mapa])
             for _ in range(ciclos_comprobados):
                 _un_ciclo(comprobado, se_mueve, lado)
 
@@ -672,7 +673,7 @@ def medir_historial(cazadores: int = 30, lado: int = 32, otros: int = 20,
             motor = _motor_con_cazadores(lado, cazadores, otros)
             if not con_busqueda:
                 motor.rutas = RutasHaciaJugador(motor.grafo, None)
-                motor.mazmorra.observador_puertas = motor.rutas
+                motor.mazmorra.observador_puertas = RepartidorAvisosPuertas([motor.rutas, motor.mapa])
             contador = _contar_registros(motor.historial)
             tiempos = _cronometrar(lambda: _un_ciclo(motor, se_mueve, lado), ciclos)
             por_intervalo = contador[0] / (ciclos + 1)
