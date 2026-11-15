@@ -418,5 +418,9 @@ Cada prueba citará el identificador del requisito que verifica (Principio X).
 - Al cargar una partida guardada se conserva el valor de K con el que se guardó su línea de tiempo, aunque se
   indique otro `--checkpoint-cada`.
 - Se asume que cada paso de «ir a» es una acción ordinaria del jugador; se confirmará en la spec 002.
+- `--replay` sin `--hasta` es **headless**: reproduce el log e imprime cada acción en la consola, sin ventana ni línea de
+  comandos, y no alimenta la línea de tiempo (`ServicioReplay` usa `ServicioAccionJugador` directo). Por eso `historia` no
+  es alcanzable ahí. Solo `--replay --hasta T` (que sí arma una línea de tiempo y la deja consultable) y la partida normal
+  responden `historia`. Si algún día el replay completo se vuelve interactivo, deberá pasar por `ServicioLineaTiempo.ejecutar`.
 - Leer un pergamino no cuenta como acción del jugador (P1 §2.11): no recibe número de acción, y por eso las
   acciones revertidas dejan de existir en la línea (FR-413).

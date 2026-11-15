@@ -387,6 +387,13 @@ guarda 0,90 MB y K = 1 guarda 16,6 MB (unas 18 veces más). Las acciones pesan u
 escribe `GuardadoBinario` (versión 1) por cada punto (un archivo por punto, con su cabecera de unos 34 bytes) más las
 acciones; las cargas y las fichas se cuentan, pero no se pesan.
 
+**Supuesto: `--replay` sin `--hasta`.** Es headless (sin ventana ni línea de comandos) y no alimenta la línea de tiempo,
+porque `ServicioReplay` ejecuta las acciones con `ServicioAccionJugador` directo. Por eso `historia` no es alcanzable en ese
+modo y no se agregó código para él (YAGNI). Si se llamara a pesar de todo, el contexto del replay tiene una línea con solo
+el punto 0 y respondería un estado del instante 0, que engaña; la defensa mínima, que **no** se aplicó por ser inalcanzable,
+es `contexto.linea = None` en `ServicioReplay.reproducir`, para que salga el mensaje claro «Esta partida no tiene línea de
+tiempo que consultar». Anotado como supuesto en la spec de la 004 (Suposiciones).
+
 ### §5.6 Revisión de decisiones de la primera parte
 
 Las decisiones de la primera entrega que esta feature toca se volvieron a medir con la carga nueva (Principio VIII).
