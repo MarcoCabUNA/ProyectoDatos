@@ -45,23 +45,16 @@ Garantías:
 - No consultan el estado real de ninguna puerta, ni el contenido, ni el reporte de resolubilidad.
 - Costo: `salidas(u)` O(4); `entradas(x)` O(grado de entrada de x); `cantidad_salas()` O(1).
 
-**Aviso cuando cambia una salida utilizable** (regla 3 de la 001). `MapaConocido.observador_rutas` vale `None`. Si se
-le asigna un objeto con `puerta_cambio(a, b)` (por ejemplo, quien guarde una `BusquedaCostoMinimo` entre pasos), el
-mapa le avisa con los **destinos** de lo que cambió:
+**Búsqueda nueva por paso** (regla 3 de la 001: «o empieza una búsqueda nueva»). El grafo **no avisa** a una búsqueda
+guardada cuando cambia una salida utilizable. Como el viaje recalcula antes de cada paso (FR-255) y el conocimiento
+solo cambia entre un paso y el siguiente, «ir a» empieza una búsqueda nueva en cada paso (`paso_desde_cero`, o
+`BusquedaCostoMinimo.reiniciar`): da por construcción el mismo paso que «calcular desde cero» (FR-255, SC-251). Si armar
+el grafo y dar un paso entra en los 5 ms de NFR-250 se comprueba con B11 del bench (research, R7), sin afirmarlo antes
+de medir. Si la medición de NFR-251 llega a pedir reutilizar la búsqueda
+entre pasos, el aviso se agrega en ese momento, con su prueba y avisando antes (research, R5).
 
-| Qué cambió en el mapa | Aviso |
-|---|---|
-| Una observación cambia la cara de u (dirección d, destino v) entre «abierta» y «no abierta», con u y v exploradas | `puerta_cambio(v, v)` por esa cara |
-| Una sala x pasa a explorada | `puerta_cambio(x, w)` por cada salida utilizable x→w, y `puerta_cambio(x, x)` si alguna salida utilizable llega a x |
-
-El aviso llega dentro del mismo intervalo en que cambió el mapa. **El pergamino no avisa** (igual que con las
-puertas reales): quien guarde una búsqueda debe registrar en el historial su descarte, como hace
-`RutasHaciaJugador._registrar_descarte`, o empezar una búsqueda nueva.
-
-**Recomendación**: como el viaje recalcula antes de cada paso (FR-255) y el conocimiento solo cambia entre un paso y el
-siguiente, una búsqueda nueva por paso (`paso_desde_cero`) no necesita el aviso, da por construcción el mismo paso que
-«calcular desde cero» (FR-255, SC-251) y cabe en los 5 ms de NFR-250 con la cripta de referencia. El aviso queda
-disponible si la medición de NFR-251 pide reutilizar la búsqueda.
+(El aviso `puerta_cambio` que el mapa **recibe** de la `Mazmorra` por medio de `RepartidorAvisosPuertas`, para volver a
+observar las puertas de la sala del jugador, es otra cosa y se mantiene: lo exige FR-207.)
 
 ## (b) DTO de solo lectura para la vista, el comando y el resumen
 
@@ -113,8 +106,8 @@ contexto.motor.mapa.buscar_exploradas(nombre: str) -> list[int]
 
 - Solo compara nombres de salas **exploradas**: una sala avistada o desconocida con el mismo nombre no cuenta ni se
   revela.
-- Comparación: propuesta del plan `nombre.strip().casefold()` contra el nombre de la sala tratado igual (hallazgo
-  H-3); se confirma con el integrante 3 antes de `tasks.md`.
+- Comparación: `nombre.strip().casefold()` contra el nombre de la sala tratado igual (hallazgo H-3; confirmado por el
+  integrante 3 el 14/11, T005).
 - Ids en orden creciente. Costo O(S) por orden (no por paso). No cambia ningún estado.
 
 ## (d) Lo que el mapa conocido NO ofrece

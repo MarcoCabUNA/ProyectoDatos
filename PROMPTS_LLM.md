@@ -2381,3 +2381,40 @@ Solo lectura, no cambies ni crees archivos. Lee Logic/ (motorJuego.py, jugador.p
 Responde en una tabla corta. Al final, indica si el plan de «ir a» (specs/002-niebla-ir-a/plan.md, mi sección) necesita cambiar algo por tus respuestas.
 
 **Uso de la respuesta:** Se resuelven con el código las preguntas M-1 a M-3 del plan de «ir a» (detección de daño y enemigos dormidos).
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement Feature 002-niebla-ir-a, parte del integrante 2. Primer lote, según «Estrategia» y «Entrega incremental» de specs/002-niebla-ir-a/tasks.md: solo estas tareas y en este orden.
+
+1. T001: tests/ayudas_mapa.py.
+2. Fase 2: T009 y T010 (las pruebas primero; comprobá que fallan), después T011 y T012, y T013 (la suite completa en verde).
+3. Guardado adelantado:
+   - las cuatro primeras pruebas de T035 (DTO y linea). Las de restaurar NO, esas van con T037 en otro lote;
+   - T036: PartidaGuardadaDTO con mapa antes de linea, con el import local de LineaTiempoGuardadaDTO. Es T002 de la 004;
+   - T038: las pruebas del binario, que también son las de T003 y T047 de la 004. Comprobá que fallan;
+   - T039: GuardadoBinario versión 2. Es T003 de la 004.
+   El formato v2 se implementa con el diseño de data-model.md §6 y research R4 (cabecera de 58 bytes, bloque propio del mapa y de la línea, y el orden de los bloques de cada punto de control). El integrante 3 todavía no actualizó el texto del §1 y del §2 de su contrato de la 004 (T007), pero aceptó ese diseño el 14/11. Si encontrás algo de su contrato de la 004 que contradiga el diseño, avisame en vez de elegir uno.
+
+Después de T039, PARÁ. No hagas T037, T040 ni nada de las fases 3 en adelante.
+
+Reglas:
+- Constitución v1.2.0: sin dict ni set como índice, sin heapq, bisect ni collections, sin sorted ni list.sort, sin copy fuera de tests/, y Logic no importa Data.
+- Pruebas primero, con el FR en el nombre, como dice cada tarea.
+- Solo archivos del integrante 2: tests/ayudas_mapa.py, tests/test_guardado_mapa.py, tests/test_mapa_conocido_estados.py, DTO/MapaConocidoDTO.py, Logic/MapaConocido.py, DTO/PartidaGuardadaDTO.py, Data/GuardadoBinario.py y tests/TestGuardadoBinario.py (solo la aserción de la versión). No toques archivos de otros integrantes; si alguno tuviera que cambiar, avisame.
+- Marcá con [x] en tasks.md solo las tareas que quedaron completas. T035 queda sin marcar, porque le faltan las pruebas de restaurar; anotalo en la tarea.
+- Antes de terminar corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8 en Windows) y el replay de ejemplo (python main.py --replay ejemplos/partida_ejemplo.log --offline), que debe dar lo mismo que antes. Comprobá también que guardar y cargar una partida real con ServicioGuardado sigue funcionando con la versión 2. La versión 1 ahora se rechaza: decime si eso afecta algún archivo guardado del repositorio (partidas/, ejemplos/ o tests/).
+
+Al final decime:
+- los archivos de cada grupo, separados para dos commits: (a) T001 y la fase 2, y (b) el guardado adelantado;
+- las pruebas nuevas, con su resultado antes y después;
+- el resultado de la suite y del replay;
+- cualquier diferencia con el plan.
+No hagas commit.
+
+**Uso de la respuesta:** primer lote de la 002, con las pruebas primero. Las 24 pruebas nuevas fallaban antes del código. Se hicieron T001 (`tests/ayudas_mapa.py`); la fase 2, con T009 a T013 (`DTO/MapaConocidoDTO.py` y el núcleo de `Logic/MapaConocido.py`: dos arreglos, escrituras que registran su reversión en el historial); y el guardado adelantado: T036 (`PartidaGuardadaDTO` con `mapa` antes de `linea` e import local, T002 de la 004), T038 y T039 (`GuardadoBinario` versión 2 con cabecera de 58 bytes y bloques propios del mapa y de la línea, la versión 1 rechazada sin tocar la partida actual; T003 y T047 de la 004). En `tests/TestGuardadoBinario.py` cambiaron tres aserciones de versión. T035 queda abierta hasta las pruebas de `restaurar`. Resultado: 641 OK (skipped=2) y 32/32 scripts; el replay de ejemplo es idéntico, y guardar y cargar una partida real funciona con la versión 2. Revisé el diff antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+

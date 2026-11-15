@@ -127,8 +127,9 @@ No se agrega nada a `Estructuras/`.
   La `Mazmorra` tiene **un solo** `observador_puertas`, que hoy es `RutasHaciaJugador`. Para que escuchen los dos sin
   modificar la `Mazmorra`, se agrega una clase nueva y mínima de Logic, `RepartidorAvisosPuertas`, que reenvía cada
   `puerta_cambio(a, b)` a una lista de observadores en orden fijo (primero las rutas del cazador, después el mapa). El
-  motor la asigna en lugar de `self.rutas`. Es una **modificación de `Logic/motorJuego.py`** (integrante 1): ver la
-  tabla de cambios del plan. El orden no cambia ningún resultado, porque el mapa no cambia puertas y las rutas no leen
+  motor la asigna en lugar de `self.rutas`. Es una **modificación de `Logic/motorJuego.py`**, archivo del integrante 1:
+  la escribe el integrante 2 (T033) y la revisa el integrante 1 antes del merge (acuerdo del 14/11); ver la tabla de
+  cambios del plan. El orden no cambia ningún resultado, porque el mapa no cambia puertas y las rutas no leen
   el mapa.
 
 - **FR-218, cómo se garantiza**: (1) solo esos tres puntos escriben el mapa, y los llaman `iniciar` y `mover_jugador`
@@ -203,15 +204,15 @@ No se agrega nada a `Estructuras/`.
   `PartidaGuardadaDTO` gana el campo **`mapa: MapaConocidoGuardadoDTO | None = None`**, al final y con valor por
   defecto.
 
-- **Orden respecto de `linea` (T002)**: **`mapa` va antes que `linea`**: `…, ruta_log, acciones_en_log, mapa=None,
+- **Orden respecto de `linea` (T002 de la 004)**: **`mapa` va antes que `linea`**: `…, ruta_log, acciones_en_log, mapa=None,
   linea=None`. Razones: (1) el contrato de la 004 dice que `linea` es el **último** campo, y así sigue siéndolo;
   (2) `mapa` es estado de la partida, como `rastro`, mientras que `linea` es la historia que contiene copias de ese
   estado (y en cada punto de control va en `None`); (3) todos los que construyen el DTO (`PartidaGuardada.guardar`,
   `GuardadoBinario._leer_partida`, `desde_diccionario`) usan nombres de campo, así que insertar `mapa` antes de
-  `linea` no rompe nada aunque T002 se haga primero.
+  `linea` no rompe nada aunque T002 de la 004 se haga primero.
 
 - **Imports**: `DTO/MapaConocidoDTO.py` no importa nada del proyecto; `PartidaGuardadaDTO` lo importa;
-  `LineaTiempoDTO` importa `PartidaGuardadaDTO`. **El mapa no forma ningún ciclo.** Aviso para T002: si
+  `LineaTiempoDTO` importa `PartidaGuardadaDTO`. **El mapa no forma ningún ciclo.** Aviso para T002 de la 004: si
   `PartidaGuardadaDTO` importara `LineaTiempoDTO` arriba del módulo para anotar `linea`, sí se formaría un ciclo
   (`LineaTiempoDTO` → `PartidaGuardadaDTO` → `LineaTiempoDTO`). Se evita anotando `linea` con texto
   (`"LineaTiempoGuardadaDTO | None"`, que `dataclasses` no evalúa) e importando `LineaTiempoGuardadaDTO` **dentro** de
@@ -223,9 +224,18 @@ No se agrega nada a `Estructuras/`.
   copias son necesarias: la línea de tiempo arma **varios** motores aparte desde el mismo punto de control, y si
   `restaurar` no copiara, la re-simulación escribiría dentro del punto de control.
   `PartidaGuardada.guardar` agrega `mapa=motor.mapa.a_guardado()` y `PartidaGuardada.cargar` llama a
-  `motor.mapa.restaurar(partida.mapa)` antes de vaciar el historial. Si `partida.mapa` es `None`, `cargar` lanza
-  `ValueError` («la partida guardada no trae el mapa conocido»): nunca se inventa un mapa (FR-221). Los archivos de la
-  primera parte no llegan aquí: `GuardadoBinario` los rechaza por versión (FR-421 de la 004).
+  `motor.mapa.restaurar(partida.mapa)` antes de vaciar el historial (las dos líneas las escribe el integrante 2 en T040
+  y las revisa el integrante 1, acuerdo del 14/11). `cargar` suma **una sola línea**, `motor.mapa.restaurar(partida.mapa)`,
+  sin `if` ni `raise`: el caso `partida.mapa is None` lo resuelve `MapaConocido.restaurar(None)`, código del integrante
+  2, que arma el mapa inicial desde la sala actual del jugador (esa sala explorada y los destinos de sus salidas
+  avistados, como FR-202 con la sala de inicio). Como `cargar` vacía el historial después, eso no se puede deshacer.
+  `cargar` no gana ningún comportamiento nuevo (nunca rechaza una partida por el mapa), y `restaurar` sigue lanzando
+  `ValueError` si los largos no coinciden con la `Mazmorra` (riesgo R-8). Los guardados reales (versión 2) y los puntos de control siempre traen el mapa, así que
+  `None` solo aparece en un `PartidaGuardadaDTO` armado a mano: hay unas 109 construcciones o llamadas en 11 archivos
+  de prueba de otros integrantes que no conocen el mapa, y lanzar un error las rompería. Los archivos de la primera
+  parte no llegan aquí: `GuardadoBinario` los rechaza por versión (FR-421 de la 004). *Alternativas descartadas*: lanzar
+  `ValueError` con `mapa = None`, porque rompe esas pruebas sin proteger ningún archivo real; y un `if` en `cargar`
+  que llame a `iniciar`, porque pone en el archivo del integrante 1 una regla del mapa que puede vivir en `restaurar`.
 
 - **Línea de tiempo**: como los puntos de control son `PartidaGuardada.guardar` y la re-simulación usa
   `PartidaGuardada.cargar` y el mismo motor, el mapa entra en cada punto de control (una copia O(S) por punto, NFR-203)
@@ -234,14 +244,14 @@ No se agrega nada a `Estructuras/`.
   necesita nada más del mapa** salvo copiar la vista al resumen: `ResumenHistoriaDTO.mapa_conocido =
   motor.mapa.a_dto()` sobre el motor aparte (T023 de la 004, integrante 3).
 
-- **Decisión (binario, versión 2)**: el mapa va en un **bloque propio**, igual que la línea de T003:
+- **Decisión (binario, versión 2)**: el mapa va en un **bloque propio**, igual que la línea de T003 de la 004:
 
   ```text
   CABECERA (58 bytes)   4s "CRPT" · H versión = 2 · Q,I global · Q,I índice (offset, entradas) · I id mínimo
                         · Q,I mapa (offset, largo) · Q,I línea (offset, largo)
   BLOQUE GLOBAL         PartidaGuardadaDTO sin mapa ni línea (mismo formato que en la versión 1)
   BLOQUE DEL MAPA       I cantidad de salas S · S bytes de estado · S bytes de caras (2 bits por cara: N, S, E, O)
-  BLOQUE DE LA LÍNEA    (T003 de la 004) cada punto de control lleva, después de su bloque global, el bloque de su mapa
+  BLOQUE DE LA LÍNEA    (T003 de la 004) cada punto de control lleva su bloque global, sus salas y el bloque de su mapa
   BLOQUES DE SALAS      sin cambios
   ÍNDICE                sin cambios (sigue al final: la comprobación de tamaño de hoy no cambia)
   ```
@@ -256,8 +266,8 @@ No se agrega nada a `Estructuras/`.
   - **Versión 1 rechazada**: `_leer_cabecera` ya compara la versión antes de interpretar el resto; con
     `VERSION_FORMATO = 2`, un archivo de la primera parte da `ErrorGuardado` con la versión leída y la esperada, sin
     cargar nada.
-  - **Coordinación con T003**: como T003 también es del integrante 2, la versión 2 se define **una sola vez** con los
-    dos bloques. Si T003 se implementa antes que el mapa, su cabecera ya reserva el offset y el largo del mapa (con
+  - **Coordinación con T003 de la 004**: como esa tarea también es del integrante 2, la versión 2 se define **una sola
+    vez** con los dos bloques. Si T003 de la 004 se implementa antes que el mapa, su cabecera ya reserva el offset y el largo del mapa (con
     largo 0). Así el formato no pasa a una versión 3 cuando llegue el mapa.
 
 - **Costo**: copiar para un punto de control o para guardar: O(S) tiempo y memoria (5 casillas por sala en memoria,
@@ -288,13 +298,15 @@ El detalle (firmas, reglas, ejemplos y lo que no se ofrece) está en
   llamada (regla 2 del contrato de la 001). `salidas(u)`: O(4). `entradas(x)`: O(grado de entrada de x), con una
   adyacencia inversa del esqueleto armada una vez en O(S + E), como `GrafoEsqueleto`; solo devuelve orígenes
   explorados, de los que el jugador conoce todas sus salidas (FR-205), así que no filtra nada del esqueleto.
-  **Aviso**: el mapa tiene un atributo `observador_rutas = None`. Si alguien lo asigna, cada vez que cambia una salida
-  utilizable le avisa `puerta_cambio(a, b)` con los **destinos** de lo que cambió, según la regla de la 001 (cuando una
-  cara observada pasa de abierta a no abierta o al revés entre exploradas: los destinos de esa cara; cuando una sala x
-  pasa a explorada: `(x, w)` por cada salida x→w utilizable y `(x, x)` por las que entran a x). Recomendación: como el
-  viaje recalcula **antes de cada paso** (FR-255) y el conocimiento solo cambia entre pasos, empezar una búsqueda
-  nueva por paso (`paso_desde_cero` o `reiniciar`) no necesita el aviso y cumple NFR-250 con holgura en la cripta de
-  referencia; el aviso queda disponible si el integrante 3 decide reutilizar la búsqueda entre pasos.
+  **Sin aviso a una búsqueda guardada**: como el viaje recalcula **antes de cada paso** (FR-255) y el conocimiento solo
+  cambia entre pasos, «ir a» empieza una búsqueda nueva por paso (`paso_desde_cero` o `reiniciar`), que la regla 3 de
+  la 001 admite («o empieza una búsqueda nueva»). Si eso entra en los 5 ms de NFR-250 (armar el grafo y dar un paso)
+  **no se afirma antes de medir**: se comprueba con B11 (R7), en la cuadrícula de 1 024 salas con el mapa completo.
+  *Alternativa descartada*: que el mapa avise con `puerta_cambio(a, b)` a una búsqueda guardada entre pasos cada vez
+  que cambia una salida utilizable. Ningún requisito lo pide y nadie lo usaría (YAGNI, Principio III). Si la medición de
+  NFR-251 del integrante 3 llega a pedir reutilizar la búsqueda, el aviso se agrega en ese momento, con su prueba y
+  avisando antes al integrante 3. No es el aviso `puerta_cambio` que el mapa **recibe** de la `Mazmorra` por el
+  `RepartidorAvisosPuertas` (R2): ese se mantiene, porque lo exige FR-207.
   *Alternativa descartada*: una segunda búsqueda propia de «ir a» (§5.3 pide justificarlo): la 001 ya decidió
   compartir la búsqueda (R5 de la 001) y el grafo como parámetro lo permite sin duplicar el desempate.
 - **(b) DTO de solo lectura para la vista, el comando y el resumen**: `MapaConocido.a_dto() -> MapaConocidoDTO`, armado
@@ -353,14 +365,16 @@ El detalle (firmas, reglas, ejemplos y lo que no se ofrece) está en
 | B5 | **Alternativa descartada de R2**: después de cada entrada, recalcular «avistadas» recorriendo todo el mapa conocido | ídem | Crece con X | Principio VIII |
 | B6 | Registrar e invertir con el pergamino los cambios de una entrada con antorcha (misma cantidad de casillas): entrar, cerrar el intervalo y deshacer | ídem | El mayor contra el menor: menos de ×2 | NFR-203, SC-207 |
 | B7 | **Alternativa descartada de R3**: copiar el mapa entero antes de la acción y restaurarlo | ídem | Crece con S | Principio VIII |
-| B8 | Ciclo de eventos con la antorcha encendida: 1 024 salas (32 × 32), 30 cazadores y 20 errantes y rastreadores (`_motor_con_cazadores` de la 001), el jugador se mueve en cada ciclo; variante con una puerta de la sala del jugador que cambia en cada ciclo (camino del aviso). Antes, sin cronometrar, se comprueba que el mapa coincide con el de un motor de control | 1 024 | Peor ciclo frente a 20 ms; la nota dice si cumple | NFR-205, SC-206 |
+| B8 | Ciclo de eventos con la antorcha encendida: 1 024 salas (32 × 32), 30 cazadores y 20 errantes y rastreadores (`_motor_con_cazadores` de la 001), el jugador se mueve en cada ciclo; variante con una puerta de la sala del jugador que cambia en cada ciclo, avisada por el camino real: después de cambiar la cara, `motor.mazmorra.observador_puertas.puerta_cambio(a, b)` (el `RepartidorAvisosPuertas` del motor, que llega a las rutas y al mapa), **no** `BenchRutas._cambiar_puerta`, que avisa solo a la estrategia que recibe por parámetro y dejaría al mapa sin enterarse. Antes, sin cronometrar, se comprueba que el mapa coincide con el de un motor de control | 1 024 | Peor ciclo frente a 20 ms; la nota dice si cumple | NFR-205, SC-206 |
 | B9 | Copia del mapa para un punto de control: `a_guardado` + `restaurar` | 100 / 1 024 / 10 000 | Crece con S (lineal), una vez por punto | NFR-203 (última oración) |
 | B10 | Armar `MapaConocidoDTO` y `buscar_exploradas` con el mapa completo | ídem | O(S); respalda R5 (b) y (c) | Principio VIII |
+| B11 | Armar `GrafoMapaConocido` sobre el mapa completo (índice de entradas en O(S + E)) y un `paso_desde_cero` sobre él, por separado y juntos | 100 / 1 024 / 10 000 | La 1 024 es la que importa para NFR-250: la nota dice si armar el grafo más un paso queda por debajo de 5 ms; las otras dos muestran el crecimiento | Principio VIII; respalda R5 (a) y la búsqueda nueva por paso |
 
-- **No se mide aquí**: el cálculo de un paso de «ir a» (NFR-250, NFR-251, SC-252): es del integrante 3, que usa
-  `GrafoMapaConocido`; su bench puede reutilizar las cuadrículas de B1 con el mapa completo.
+- **No se mide aquí**: la medición oficial del cálculo de un paso de «ir a» (NFR-250, NFR-251, SC-252) es del
+  integrante 3, que usa `GrafoMapaConocido`; su bench puede reutilizar las cuadrículas de B1 con el mapa completo. B11
+  solo respalda las decisiones de este plan (el grafo y la búsqueda nueva por paso).
 - **DECISIONES.md**: la sección del integrante 2 gana «Mapa conocido» con problema, alternativas, decisión,
-  complejidad, los números de B1 a B10 y si la decisión final coincide con este plan (Principio VIII, NFR-204).
+  complejidad, los números de B1 a B11 y si la decisión final coincide con este plan (Principio VIII, NFR-204).
 
 ---
 
@@ -378,11 +392,11 @@ El detalle (firmas, reglas, ejemplos y lo que no se ofrece) está en
 | `tests/test_mapa_conocido_estados.py` | Historia 1: H1-1 (A1), H1-2 y H1-6 (A2), H1-3 (A13), H1-4 (A14), H1-5 (A3), H1-7 (A41); casos borde (vecina de sí misma, varias salidas, sala de origen) y que ninguna operación baja un estado (FR-203) |
 | `tests/test_mapa_conocido_puertas.py` | Historia 2: H2-1 (**caso 2a**), H2-2 (A4), H2-3 (A15), H2-4 (A16), H2-5 (A38), H2-6 (A42); invariante «en la sala del jugador, recordado = real» tras abrir y cerrar |
 | `tests/test_mapa_conocido_antorcha.py` | Historia 3: H3-1 (**caso 4**), H3-2 (A5), H3-3 (A6), H3-4 (A17), H3-5 (A18), H3-6 (A19), H3-7 (A20), H3-8 (A43, las dos variantes de orden) |
-| `tests/test_mapa_conocido_partida.py` | Historia 4: H4-1 (**caso 5**), H4-2 (A8), H4-3 (A7: `PartidaGuardada` y `GuardadoBinario` versión 2), H4-4 (A9: con `ArmadorResumen` de la 004; `skip` con motivo hasta que exista T023), H4-5 (A10: `--replay` y `--replay … --hasta` con un log con «# ir a»); pergaminos seguidos; pergamino sin cambios del mapa |
+| `tests/test_mapa_conocido_partida.py` | Historia 4: H4-1 (**caso 5**), H4-2 (A8), H4-3 (A7: `PartidaGuardada` y `GuardadoBinario` versión 2), H4-4 (A9: con `ArmadorResumen` de la 004; `skip` con motivo hasta que exista T023 de la 004), H4-5 (A10: `--replay` y `--replay … --hasta` con un log con «# ir a»); pergaminos seguidos; pergamino sin cambios del mapa |
 | `tests/test_mapa_conocido_vista.py` | Historia 5 en Logic: H5-1 (A11), H5-2 (A21), H5-3 (A22), H5-4 (A12: `a_dto` no cambia reloj, historial ni estado), H5-5 (A23), H5-6 (A39), H5-7 (A40); SC-202: partida de 200 acciones con y sin antorcha que revisa en cada acción el `MapaConocidoDTO`, el `ResumenHistoriaDTO` (si existe) y el `EstadoJuegoDTO` (ver hallazgo H-2) |
-| `tests/test_grafo_mapa_conocido.py` | Contrato (a), (c) y (d): interfaz de la 001, «utilizable», igualdad con `paso_desde_cero` sobre un grafo filtrado a mano, aviso `puerta_cambio`, `buscar_exploradas` (0, 1 y 2 coincidencias) |
-| `tests/test_guardado_mapa.py` | `MapaConocidoGuardadoDTO` y `PartidaGuardadaDTO` ida y vuelta por diccionario; binario versión 2: ida y vuelta con mapa, mapa `None` (largo 0), `cargar_sala` sin leer el mapa, versión 1 rechazada, bytes inválidos → `ErrorGuardado`; `restaurar` con largos distintos → `ValueError` |
-| `tests/test_bench_mapa.py` | B1 a B10 con tamaños chicos, sin vista; las alternativas dan el mismo mapa que la decisión |
+| `tests/test_grafo_mapa_conocido.py` | Contrato (a), (c) y (d): interfaz de la 001, «utilizable», igualdad con `paso_desde_cero` sobre un grafo filtrado a mano, `buscar_exploradas` (0, 1 y 2 coincidencias) |
+| `tests/test_guardado_mapa.py` | `MapaConocidoGuardadoDTO` y `PartidaGuardadaDTO` ida y vuelta por diccionario; binario versión 2: ida y vuelta con mapa, mapa `None` (largo 0), `cargar_sala` sin leer el mapa, versión 1 rechazada, bytes inválidos → `ErrorGuardado`; `restaurar` con largos distintos → `ValueError`; `restaurar(None)` y `PartidaGuardada.cargar` con `mapa = None` dejan el mapa inicial desde la sala del jugador |
+| `tests/test_bench_mapa.py` | B1 a B11 con tamaños chicos, sin vista; las alternativas dan el mismo mapa que la decisión |
 
 La prueba de la vista en pantalla y del comando (FR-219, FR-220 con `partida.log`) es del integrante 3 (ver
 contrato).
@@ -405,22 +419,24 @@ Ninguno bloquea el plan. No se cambió la spec.
   integrante 3 en `ArmadorEstado` (por ejemplo, `sala_destino = None` para destinos no explorados y un dato aparte para
   la puerta final y la de llegada). Las puertas de la sala actual sí pueden seguir mostrando el estado real, porque es
   igual al recordado (invariante de R2).
-- **H-3 (FR-251, ambigüedad)**: la spec no dice si el nombre de «ir a <sala>» se compara distinguiendo mayúsculas o
-  espacios. Propuesta del plan: comparar `nombre.strip().casefold()` con el nombre de la sala tratado igual; se
-  confirma con el integrante 3 antes de `tasks.md`.
+- **H-3 (FR-251; resuelto)**: la spec no dice si el nombre de «ir a <sala>» se compara distinguiendo mayúsculas o
+  espacios. Confirmado por el integrante 3 el 14/11: se compara `nombre.strip().casefold()` con el nombre de la sala
+  tratado igual, de los dos lados.
 - **H-4 (salidas repetidas)**: si una sala tiene dos salidas hacia la misma vecina, el mapa empareja caras con la misma
   regla de la `Mazmorra` (la primera salida que vuelve). Con salidas repetidas, una de las caras de la vecina no queda
   emparejada desde el otro lado y no se observa desde allí. Las criptas publicadas no tienen salidas repetidas (H-1 de
   la 001); es un límite conocido que se documenta en `DECISIONES.md`.
-- **H-5 (escenario H2-5, ambigüedad)**: dice «lo que el mapa ofrece a "ir a" **desde A**» con la puerta A–C «sin
-  observar». Si el jugador estuviera **en** A, esa puerta tendría cara en A y ya estaría observada (FR-207), así que el
-  escenario no puede leerse como «el jugador está en A». El plan lo lee como «las salidas de A que se ofrecen», con el
-  jugador en otra sala (A y C exploradas por la antorcha); la prueba se arma así.
+- **H-5 (escenario H2-5; resuelto en la spec)**: decía «lo que el mapa ofrece a "ir a" **desde A**» con la puerta A–C
+  «sin observar». Si el jugador estuviera **en** A, esa puerta tendría cara en A y ya estaría observada (FR-207), así
+  que el escenario no podía leerse como «el jugador está en A». H2-5 se reescribió en la Sesión 2026-11-14 de la spec:
+  el jugador está en B, A y C se exploraron con la antorcha sin que estuviera nunca en ellas, y se consultan las
+  salidas de A que puede usar «ir a»; la prueba se arma así.
 - **H-6 (SC-206, tamaño)**: dice «1 000 salas»; el bench de la 001 usa 1 024 (32 × 32), «al menos 1 000». Se usa la
   misma cuadrícula de 1 024 para medir en la misma cripta que la 001.
 - **H-7 (dependencia de la 001)**: el mapa usa `Mazmorra._salida_inversa` (privada) para emparejar caras, como ya
   hace `PartidaGuardada`. Si el integrante 1 cambia esa regla o su nombre, avisa antes (las pruebas H2-6 y A16 lo
   detectan).
-- **H-8 (informativo, FR-203)**: cargar una partida guardada reemplaza el mapa por el guardado, que puede tener menos
-  salas exploradas que el mapa vivo. No contradice FR-203 (no es una sala que «vuelve» dentro de la misma partida,
-  sino otra partida cargada, FR-221), pero conviene que la spec lo diga si se vuelve a editar.
+- **H-8 (FR-203; resuelto en la spec)**: cargar una partida guardada reemplaza el mapa por el guardado, que puede tener
+  menos salas exploradas que el mapa vivo. No contradice FR-203 (no es una sala que «vuelve» dentro de la misma
+  partida, sino otra partida cargada). Desde la Sesión 2026-11-14, FR-221 lo dice: el mapa guardado reemplaza al de la
+  partida en curso.
