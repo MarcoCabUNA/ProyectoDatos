@@ -12,13 +12,18 @@ class ActorBase:
         self.Sala_Actual = SAct
         self.Evento_pendiente = ObjEvent
         self.historial = None
+        # Daño total recibido (suma de los daños finales > 0). Solo sube; no va al historial de retroceso ni a
+        # PartidaGuardada: «ir a» (spec 002) compara su valor antes y después de un paso para saber si hubo daño.
+        self.danio_recibido: int = 0
 
     def Calcu_de_Intervalo(self, Costo):
         return max(1, Costo * 100 // self.velocidad)
 
     def Recibir_Dannio(self, Cant):
+        """Resta Cant (el daño FINAL: la defensa y demás ajustes ya se aplicaron) y lo suma a danio_recibido si es > 0."""
         if Cant <= 0:
             return
+        self.danio_recibido += Cant
         self._registrar_vida()
         if Cant > self.vida:
             self.vida = 0
