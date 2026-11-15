@@ -18,11 +18,13 @@ from urllib.parse import quote
 
 from Data.ClienteHttp import ErrorRed
 from Data.FuenteDatos import FuenteDatos
+from Data.ValidacionDatos import es_entero
 from DTO.CriptaDTO import CriptaDTO, ResumenCriptaDTO
 from DTO.FichaEnemigoDTO import FichaEnemigoDTO   # Integrante 1
 from DTO.FichaTrampaDTO import FichaTrampaDTO     # Integrante 1
 from DTO.ObjetoDTO import ObjetoDTO, es_clase_objeto
 from DTO.SalaDTO import ContenidoSalaDTO, SalaDTO
+from DTO.UbicacionLlaveDTO import UbicacionLlaveDTO
 
 
 class ProveedorJson(Protocol):
@@ -104,6 +106,41 @@ class FuenteJson(FuenteDatos):
         if es_clase_objeto(clase):
             return ObjetoDTO.desde_diccionario(d)
         raise ValueError(f"clase de catálogo desconocida: {clase!r}")
+
+    # ------------------------------------------------------------ llaves (feature 003)
+    def obtener_llaves(self, id_cripta: str) -> list[UbicacionLlaveDTO]:
+        """Una solicitud a GET /criptas/{id}/llaves (cuenta en el presupuesto en FuenteRed, FR-317)."""
+        op = f"ubicación de llaves de {id_cripta}"
+        datos = self._proveedor.get_json(f"criptas/{self._id_en_url(id_cripta)}/llaves", op)
+        return self._traducir(op, lambda: self.ubicaciones_desde_diccionario(datos))
+
+    @staticmethod
+    def ubicaciones_desde_diccionario(d: dict) -> list[UbicacionLlaveDTO]:
+        """
+        Traduce {"llaves": [...]} validando el FORMATO de contracts/contrato-llaves.md: 'llaves' es una lista; cada
+        elemento, un objeto con 'id' texto no vacío, 'sala' entero de verdad (un bool no cuenta) y 'enemigo' ausente,
+        null o texto no vacío. Entrega la lista en el orden de la respuesta, sin ordenar ni deduplicar.
+        Lanza ValueError (que _traducir convierte en ErrorRed de formato). Pública: también la usa AlmacenLlaves.
+        """
+        if not isinstance(d, dict) or "llaves" not in d:
+            raise ValueError("falta la lista 'llaves'")
+        llaves = d["llaves"]
+        if not isinstance(llaves, list):
+            raise ValueError("'llaves' no es una lista")
+        resultado: list[UbicacionLlaveDTO] = []
+        for i in range(len(llaves)):
+            e = llaves[i]
+            if not isinstance(e, dict):
+                raise ValueError(f"el elemento {i} de 'llaves' no es un objeto")
+            if not isinstance(e.get("id"), str) or e["id"] == "":
+                raise ValueError(f"el elemento {i} de 'llaves' no tiene un 'id' de texto no vacío")
+            if not es_entero(e.get("sala")):
+                raise ValueError(f"la llave {e['id']!r} no tiene una 'sala' entera")
+            enemigo = e.get("enemigo")
+            if enemigo is not None and (not isinstance(enemigo, str) or enemigo == ""):
+                raise ValueError(f"la llave {e['id']!r} trae un 'enemigo' que no es texto no vacío")
+            resultado.append(UbicacionLlaveDTO.desde_diccionario(e))
+        return resultado
 
     # ------------------------------------------------------------ red
     def solicitudes_realizadas(self) -> int:

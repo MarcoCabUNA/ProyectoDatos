@@ -2959,3 +2959,37 @@ No hagas commit.
 **Uso de la respuesta:** dos commits. (A) Ajustes de la revisión del integrante 1 a la 002: `puerta_cambio` es O(g), g ≤ 4 (docstring, data-model y DECISIONES); en `PartidaGuardada.cargar` el comentario «El historial no se guarda…» queda justo encima de `descartar_intervalo_abierto()`; el mensaje de otra versión del binario dice si es un «formato viejo» (versión 1: «empezá una partida nueva») o «más nuevo» («actualizá el programa»), con dos pruebas nuevas que fallaron primero, y se comprobó que llega tal cual al aviso de la vista y entra sin cortarse; y los commits de los cambios a archivos de la primera parte (`ed0da17` motor, `4aac926` `PartidaGuardada`) anotados en `tasks.md` y en DECISIONES §5.3. (B) T057 de la 001 (FR-122, H2-22): un enemigo con una ficha de su `suelta` rechazada se rechaza con un `ErrorDatos` que nombra al enemigo, `suelta` y la ficha rechazada. Como el enemigo llega antes que su suelta, `ResolvedorCatalogo` lo deja en espera hasta que la cola de esa resolución se vacía y recién ahí lo acepta o lo rechaza (mismos lotes que antes, sin solicitudes extra); `AlmacenCatalogo` nunca guarda un enemigo con botín rechazado, y `ficha()` revisa la suelta de un enemigo leído del disco (caché vieja; si a esa caché le falta la ficha de la suelta, la baja en un lote, la misma solicitud que el código viejo hacía al morir el enemigo). Se quitó solo el `skipTest` de la prueba de H2-22 del integrante 1 (falló primero en sus 12 subcasos contra el código anterior) y se agregaron seis pruebas de Data. Suite: 830 pruebas OK (4 skip), 31 de 31 scripts; replay byte a byte igual. Revisé el zip antes de los commits.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement Feature 003-resolubilidad (toda del integrante 2). Primer lote: las fases 1 a 4 de specs/003-resolubilidad/tasks.md (T001 a T034), en este orden y como dice cada tarea. Antes de empezar, cambiá .specify/feature.json a {"feature_directory":"specs/003-resolubilidad"}.
+
+1. Fase 1: T001 (T002 y T003 ya están confirmadas).
+2. Fase 2 (base, contrato de llaves): T004 y T005 (las pruebas primero; comprobá que fallan), T006 y T007; T008; T009 (comprobá que fallan), T010 a T013; T014 (comprobá que fallan), T015; T016 (comprobá que fallan), T017 y T018; T019.
+   - T008 ya está confirmada: el integrante 2 revisó el Swagger el 15/11. GET /v1/criptas/{dungeon_id}/llaves responde 200 con {"llaves": [{"id": "string", "sala": 0, "enemigo": "string"}]} (y 400, 404, 429 con reintentar_en, y 500 «Invalid published content», todos con {"error": ...}), lleva el encabezado X-Cripta-Client-Id como las demás rutas, y coincide con contracts/contrato-llaves.md (raíz llaves; id, sala y enemigo). El contrato ya acepta enemigo ausente o null, así que no cambia nada: marcá T008 con esa nota y seguí.
+3. Fase 3 (historia 1, MVP): T020 y T021 (comprobá que fallan), T022, T023 y T024; T025 (parar y validar: los casos 2 y 3 del Apéndice B pasan).
+4. Fase 4 (historia 2): T026 a T029 (comprobá que fallan), T030 (solo el generador), T031, T032 y T033; T034 (parar y validar: el caso 1 del Apéndice B pasa).
+
+Después de T034, PARÁ. No hagas la fase 5 en adelante: necesita antes un merge de origin/kris que hago yo, y T037, T038, T040, T049 y T054 tocan archivos del integrante 3.
+
+Reglas (las «Reglas para todas las tareas» de tasks.md, en particular):
+- Constitución v1.2.0: sin copy ni deepcopy fuera de tests/, sin bisect, heapq, collections, dict o set como índice o caché, sin bibliotecas de grafos, sin sorted() ni list.sort() (para ordenar, Estructuras/Ordenador.py); las colas son Estructuras/Cola.py.
+- Sin recursión en Logic/CiclosLlaves.py ni en la fase hacia afuera de Logic/RecorridoLlaves.py, y sin sys.setrecursionlimit (T029 lo comprueba con más de 1000 dependientes).
+- Logic no importa Data ni Service. Sin ids, salas ni versiones de una cripta concreta en el código.
+- No se tocan los archivos de la lista «No se tocan» de tasks.md (Mazmorra.py solo se usa; GestorEsqueleto.py, ClienteHttp.py, AlmacenCatalogo.py, Estructuras/, etc.), ni ningún archivo de los integrantes 1 y 3. Si alguna tarea necesitara cambiar uno, PARÁ y avisame.
+- Código nuevo con type hints y docstring breve; pruebas primero, con el escenario y el FR en el nombre, como dice cada tarea.
+- Marcá con [x] en tasks.md solo lo que quedó completo.
+- Antes de terminar corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8 en Windows) y el replay de ejemplo (python main.py --replay ejemplos/partida_ejemplo.log --offline), que debe dar lo mismo que antes, y el grep de restricciones de T067 sobre los archivos nuevos de Logic, DTO y Data.
+
+Al final decime:
+- los archivos de cada grupo, para dos commits: (a) fases 1 y 2, contrato de llaves y DTO del reporte (T001 a T019); (b) fases 3 y 4, verificación, reporte, frontera y ciclos en Logic (T020 a T034), con tasks.md en el (b);
+- las pruebas nuevas de cada fase, con su resultado antes y después del código;
+- el resultado de la suite, de los scripts, del replay y del grep;
+- cualquier diferencia con tasks.md, el data-model, los contratos o la spec, y cualquier cosa que no se haya podido cumplir tal cual.
+No hagas commit.
+
+**Uso de la respuesta:** primer lote de la 003 (T001 a T034), en dos commits. (a) Contrato de llaves y DTO del reporte: `UbicacionLlaveDTO`, `ReporteResolubilidadDTO`, `obtener_llaves` en `FuenteDatos` (no abstracto: por defecto `ErrorRed`), `FuenteJson` (con validación de formato), `FuenteOffline` (`llaves.json`) y `DescargadorPaquete`, `AlmacenLlaves` por versión, `validar_ubicaciones` (FR-321) y `GestorLlaves`; se ajustaron `tests/Utilidades.py` (la `ApiFalsa` sirve llaves) y los conteos de `tests/TestDescargadorPaquete.py` por la solicitud nueva. T008 confirmada con el Swagger del 15/11 (`GET /v1/criptas/{dungeon_id}/llaves` → `{"llaves": [{"id", "sala", "enemigo"}]}`), sin cambios al contrato. (b) Verificación en Logic: `GrafoLlaves` (caras combinadas con una `Mazmorra` aparte, índice propio de llaves y ubicaciones ordenadas sin repetir con el `Ordenador`), `RecorridoLlaves` (oleadas incrementales con la `Cola`: cada sala y cada cara una vez; frontera y fase hacia afuera por niveles, sin recursión), `CiclosLlaves` iterativo, `VerificadorResolubilidad` y el generador de cuadrícula de `BenchResolubilidad`. 66 pruebas nuevas; cada grupo falló primero (dos pruebas que pasaban con reportes vacíos se reforzaron). La prueba de 1 500 dependientes no usa recursión. Suite: 896 pruebas OK (4 skip), 31 de 31 scripts; replay igual; grep de T067 limpio. Revisé el zip antes de los commits.
+
+-----------------------------------------------------------------------------------------------------------------------
