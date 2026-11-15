@@ -200,6 +200,20 @@ class GestorContenido:
             raise error.with_traceback(None)   # el mismo error, sin acumular la traza del intento anterior
         sala = self.obtener_contenido(id_sala)
         assert sala is not None
+        if self._resolvedor is not None:
+            # T058 (FR-122): cada ficha de la sala se pide ya, para que una inválida (por ejemplo, de una caché vieja
+            # en disco, que ficha() vuelve a validar) rechace la sala ANTES de que Lógica la cargue. Un ErrorRed sale
+            # sin marcar nada: la sala sigue CARGADA y se vuelve a validar en el próximo intento.
+            try:
+                for enemigo in sala.enemigos:
+                    self._resolvedor.ficha(enemigo.tipo, contar_acierto=False)
+                for trampa in sala.trampas:
+                    self._resolvedor.ficha(trampa.tipo, contar_acierto=False)
+                for id_objeto in sala.objetos:
+                    self._resolvedor.ficha(id_objeto, contar_acierto=False)
+            except ErrorDatos as rechazo:
+                self._rechazar(id_sala, rechazo)
+                raise
         return sala
 
     # ------------------------------------------------------------ BFS

@@ -155,6 +155,15 @@ Las decisiones de la primera entrega que esta feature toca se volvieron a medir 
     60,6 µs y descarta 917 entradas por cada 100 válidas. En el juego no hay tantas cancelaciones juntas:
     salen de muertes, antídotos y cambios de velocidad.
 - Con 30 cazadores en 1 024 salas, el peor ciclo es de 7,9 ms.
+- *Con el mapa conocido de la 002* (15 de noviembre): `observador_puertas` ya no es `self.rutas` sino un
+  `RepartidorAvisosPuertas([rutas, mapa])` que el `Motor` asigna (002 FR-207), y `Logic/BenchRutas.py` arma el
+  mismo repartidor en las dos mediciones que reemplazan las rutas (`medir_ciclo_cazadores`, `medir_historial`).
+  En 3 corridas del `--bench` completo, con 30 cazadores el peor ciclo es de 5,5 a 17,6 ms: **NFR-101 y SC-104 se
+  siguen cumpliendo**. Con 100 cazadores y el jugador moviéndose (fuera de NFR-101) dio 19,6 / **20,0** / **22,4** ms.
+  Medido aparte, alternando el código de antes del merge (sin mapa) y el de ahora, el peor ciclo es de 7,2 a 9,4 ms
+  en los dos y las medianas son iguales: el mapa no encarece el ciclo, y el pico depende de lo que corre antes en
+  el mismo proceso, como la fila de 500 enemigos de abajo. Tabla en
+  [bench-2026-11-15.txt](specs/001-terreno-cazador/bench-2026-11-15.txt).
 
 **Historial de retroceso (no cambia).**
 
@@ -190,7 +199,30 @@ actual), el `Logic` de antes y el de ahora dan lo mismo (tercera fila). La difer
 que corre antes en el mismo proceso, cuyo código (Servicios y Datos) también cambió desde `83d15c5`; no
 se aisló qué parte. Queda para revisarla con el equipo; esta feature no cambia nada por eso.
 
-Mediciones: `python -m Service.ServicioBench` (`Logic/BenchRutas.py`), tabla completa en [bench-2026-11-13.txt](specs/001-terreno-cazador/bench-2026-11-13.txt). Máquina: AMD Ryzen 5 3600X, 32 GB, Windows 11 Pro, Python 3.12.10. Semilla `SEMILLA = 2026`: los conteos son reproducibles; los tiempos son medianas y dependen de la máquina.
+Mediciones: `python -m Service.ServicioBench` (`Logic/BenchRutas.py`), tabla completa en [bench-2026-11-13.txt](specs/001-terreno-cazador/bench-2026-11-13.txt) y, con el mapa conocido conectado, en [bench-2026-11-15.txt](specs/001-terreno-cazador/bench-2026-11-15.txt). Máquina: AMD Ryzen 5 3600X, 32 GB, Windows 11 Pro, Python 3.12.10. Semilla `SEMILLA = 2026`: los conteos son reproducibles; los tiempos son medianas y dependen de la máquina.
+
+**Contenido de una sala con una caché vieja en disco (cambia, T058, FR-122).**
+
+- *Antes* (P1, `Data/GestorContenido.asegurar_sala`, con lo de T052): la sala se entregaba como cargada si ninguna
+  de sus fichas estaba entre los rechazos **en memoria**. Con una caché escrita antes de T055/T057 (un enemigo
+  guardado sin su `suelta`, o un objeto con `duracion` 0), la ficha inválida aparecía recién dentro de
+  `Mazmorra.cargar_contenido`, cuando `ResolvedorCatalogo.ficha()` la volvía a validar al leerla del disco. La
+  sala quedaba a medio cargar: los enemigos anteriores agregados, `contadores_tipo` avanzado (incluido el del
+  rechazado) y la sala todavía cargada para Data. Con un `ErrorRed` a mitad, el reintento duplicaba los enemigos
+  (en la prueba (c), `e-1` dos veces y los números en 2). Un objeto del suelo inválido ni siquiera se detectaba al
+  entrar: el movimiento se hacía y el error salía después, sin atrapar, en `SincronizadorUsos`.
+- *Después*: antes de devolver la sala, `asegurar_sala` pide `resolvedor.ficha(tipo, contar_acierto=False)` de
+  cada enemigo, cada trampa y cada objeto del suelo. Con `ErrorDatos`, la sala queda rechazada (`_rechazar`) y el
+  error sale; con `ErrorRed`, sale sin marcar nada y la sala se vuelve a validar en el próximo intento. Lógica
+  recibe la sala solo si todas sus fichas son válidas; `Logic/Mazmorra.py` no cambia.
+- *Costo*: O(enemigos + trampas + objetos) consultas a `ficha()` por sala que se entra. Las fichas ya están en
+  memoria o en disco (las bajó `resolver_contenido`), así que no hay solicitudes nuevas: en una partida con el API
+  falso, sin caché y con caché, las solicitudes (6 y 4) y los pedidos de catálogo (2 y 0) son los mismos antes y
+  después, y el replay de ejemplo pide los mismos 2 lotes de contenido. Lo que cambia es el reporte de la caché:
+  si una ficha se lee del disco aquí, la lectura de `cargar_contenido` que sigue cuenta como acierto (en la
+  partida con caché, 3 aciertos en lugar de 1; los fallos y las lecturas de disco no cambian).
+- *Acuerdo*: con el integrante 2, dueño del archivo; el cambio lo hizo el integrante 1. Pruebas en
+  `tests/test_cache_vieja.py`.
 
 ### Diferencia conocida entre la verificación y el motor de P1
 

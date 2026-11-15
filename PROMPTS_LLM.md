@@ -2960,6 +2960,72 @@ No hagas commit.
 
 -----------------------------------------------------------------------------------------------------------------------
 
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+Revisión cruzada, SOLO LECTURA (no modifiques nada). git fetch; usá git show sobre origin/kris. Commits: 9e9db5d (contador danio_recibido en Logic/ActorBase.py), 57d26ff (prueba de avanzar_hasta), 740f47b (cargar y retroceder con la línea). Revisá contra la constitución v1.2.0: (a) 9e9db5d: que el cambio a P1 sea solo __init__ + una línea después de la guarda Cant <= 0, con type hint y docstring; que exista la fila en la tabla 'Cambios a código de la primera entrega' de specs/002*/plan.md y el antes/después en DECISIONES.md; que no entre a historial, PartidaGuardada, GuardadoBinario ni a ningún DTO; que no afecte a Cazador ni a Logic/RutasHaciaJugador.py; que tests/test_danio_recibido.py cite el FR e incluya el caso de Regeneración. (b) 57d26ff y 740f47b: que las pruebas comparen lo que dicen (historial.cantidad, reloj, vida, Evento_pendiente) y citen FR. (c) que ninguno toque archivos de la 001 (RutasHaciaJugador, BusquedaCostoMinimo, GrafoEsqueleto, BenchRutas, Mazmorra). Salida corta: primero lo que está bien, luego hallazgos ALTA/MEDIA/BAJA con archivo y línea.
+
+**Uso de la respuesta:** consulta `1a1dd66dbd1`, respuesta en `.claude-bridge/outbox/1a1dd66dbd1.txt`. Revisión cruzada de tres commits de la integrante 3 en `origin/kris`. Bien: `9e9db5d` cambia `Logic/ActorBase.py` solo en `__init__` (`danio_recibido: int = 0`, línea 17) y una línea después de la guarda `Cant <= 0` (línea 26); tiene la fila en la tabla de cambios a P1 (`specs/002-niebla-ir-a/plan.md:389`) y el antes/después en `DECISIONES.md`; no entra a historial, `PartidaGuardada`, `GuardadoBinario` ni DTO, ni afecta a `Cazador` ni a `RutasHaciaJugador`. `57d26ff` compara `historial.cantidad()`, reloj, vida y `Evento_pendiente` y cita FR-402; `740f47b` cita FR-413 y FR-420. Ninguno toca archivos de la 001. MEDIA: `tests/test_danio_recibido.py:110` no tiene un caso con el efecto Regeneración (queda para T114). BAJA: el plan y las tareas dicen que un golpe absorbido no sube el contador, pero el ataque usa `max(1, …)`; `DECISIONES.md` dice «cuatro» sitios y son tres; el docstring nuevo en `Recibir_Dannio` (método de P1) va contra la constitución; no se prueba la carga; tres pruebas sin FR en el nombre; el helper de `test_linea_tiempo_motor.py:50-53` lee atributos privados del historial y compara cuántos cambios, no cuáles; `test_linea_tiempo_guardado.py:193-194` no compara contra el valor anterior. No corrió nada ni modificó nada.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+Revisión cruzada, SOLO LECTURA (no modifiques nada). git fetch. Buscá en git log origin/derek el commit de la T033 de la 002 que cambia Logic/motorJuego.py y revisalo con git show. Verificá: (1) que el diff de motorJuego.py sea solo +6 -1: imports de MapaConocido y RepartidorAvisosPuertas; self.mapa = MapaConocido(mazmorra, jugador, self.historial) después de self.rutas; observador_puertas = RepartidorAvisosPuertas([self.rutas, self.mapa]); self.mapa.iniciar(...) en iniciar() después de rastro.marcar; self.mapa.entrar(destino, self.efectos.tiene(self.jugador, 'antorcha')) en mover_jugador justo después de Sala_Actual = destino. Y que esté la fila en la tabla de cambios a P1 de specs/002*/plan.md. (2) Capas: que Logic/MapaConocido.py y el repartidor no importen Data ni Service; estructuras prohibidas (dict/set como índice, collections, copy, sorted). (3) Interacción con la 001: que RepartidorAvisosPuertas reenvíe exactamente la misma llamada que antes recibía RutasHaciaJugador (mismo método y argumentos), en orden rutas y luego mapa; que MapaConocido no use el RNG ni cambie el orden de eventos (determinismo); cómo registra cambios en self.historial y si eso interfiere con historial.registrar_cambio(self.descartar) de RutasHaciaJugador al deshacer con pergamino. (4) Logic/BenchRutas.py en origin/derek líneas ~452 y ~675: en qué funciones se reasigna observador_puertas a las rutas solas y si alguna de esas mide el ciclo completo del motor (NFR-101/SC-104) o medir_historial, es decir, si con el mapa conectado esas cifras dejan de representar el juego real. Salida corta: primero lo que está bien, luego ALTA/MEDIA/BAJA con archivo y línea.
+
+**Uso de la respuesta:** consulta `1a1ddacdb5c`, respuesta en `.claude-bridge/outbox/1a1ddacdb5c.txt`. Revisión de `ed0da17` (T031 a T033 de la 002, de Dereck). Bien: el diff de `Logic/motorJuego.py` es +6 -1, exactamente lo pedido, con las filas en `specs/002-niebla-ir-a/plan.md:191-194`; `MapaConocido` y el repartidor no importan Data ni Service ni usan estructuras prohibidas; el repartidor reenvía la misma llamada `puerta_cambio(a, b)` a `rutas` y después a `mapa`; el mapa no usa el azar ni programa eventos (determinismo intacto) y sus registros en el historial no interfieren con `registrar_cambio(self.descartar)` de las rutas al deshacer con el pergamino. En `Logic/BenchRutas.py` las cifras siguen representando el juego: la línea 452 solo cambia el motor comprobado (no cronometrado) y la 675 el caso «sin registrar». Sin ALTA ni MEDIA. BAJA: en esos dos motores del bench el mapa deja de recibir avisos (sugiere `RepartidorAvisosPuertas([comprobadas, comprobado.mapa])` y lo mismo en la 675); el docstring de `MapaConocido.puerta_cambio` dice O(1) y es O(g); el comentario de `observador_puertas` en `Logic/Mazmorra.py:60-64` quedó viejo; `_observar_puertas` usa `Mazmorra._salida_inversa`, privada. Una acción bloqueada (`git grep` de `def tiene`), sin efecto en las conclusiones. Los puntos del bench y de `Mazmorra` se hicieron en el pedido del 15 de noviembre (más abajo).
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+Revisión cruzada, SOLO LECTURA (no modifiques nada). git fetch. Buscá en git log origin/derek el commit de la T040 de la 002 (Logic/PartidaGuardada.py) y revisalo con git show. Verificá: (1) que el diff de PartidaGuardada.py sea solo 2 líneas: mapa=motor.mapa.a_guardado() en el PartidaGuardadaDTO(...) de guardar, y motor.mapa.restaurar(partida.mapa) en cargar antes de motor.historial.descartar_intervalo_abierto(); y que esté la fila en la tabla de cambios a P1 de specs/002*/plan.md. (2) PartidaGuardadaDTO: que el campo mapa sea el último y con default None (para no romper DTO armados a mano ni archivos viejos). (3) MapaConocido.restaurar: que nunca registre en el historial, que con None arme el mapa inicial desde la sala actual del jugador (y que la sala del jugador ya esté restaurada en ese punto de cargar), y que valide o maneje un mapa guardado inconsistente con el esqueleto. (4) GuardadoBinario v2: que lea archivos v1 (sin mapa) sin fallar, y que no guarde nada de la caché de rutas de la 001 (RutasHaciaJugador es estado derivado y no va al guardado). (5) Que guardar y cargar a mitad de partida deje al cazador decidiendo igual (la búsqueda arranca vacía en el motor cargado) y que exista una prueba de guardar/cargar con mapa (ida y vuelta) que cite FR. Salida corta: primero lo que está bien, luego ALTA/MEDIA/BAJA con archivo y línea.
+
+**Uso de la respuesta:** consulta `1a1ddc30d98`, respuesta en `.claude-bridge/outbox/1a1ddc30d98.txt`. Revisión de `4aac926` (T040 a T044 de la 002, de Dereck). Bien: el diff de `Logic/PartidaGuardada.py` son las 2 líneas pedidas (`mapa=motor.mapa.a_guardado()` en la línea 42 y `motor.mapa.restaurar(partida.mapa)` en la 88, antes de `descartar_intervalo_abierto()`), con las filas en `plan.md:195-196`; `PartidaGuardadaDTO.mapa` tiene default `None` (no es el último campo: lo es `linea`, como se acordó en la 004); `restaurar` no registra en el historial, con `None` arma el mapa inicial desde la sala del jugador ya restaurada y rechaza largos incorrectos con `ValueError`; la caché de rutas de la 001 no se guarda y el motor cargado arranca con la búsqueda vacía; hay pruebas de ida y vuelta con FR (`test_h4_3_a7_fr221_…`, `test_fr221_…`, `test_fr223_…`) y `test_linea_tiempo_cazador.py` cubre al cazador. Sin ALTA. MEDIA: un archivo v1 se rechaza en vez de leerse (`Data/GuardadoBinario.py:33` y `:271`), pero es lo que piden R-9 y FR-421; si se quiere otra cosa hay que cambiar la spec. BAJA: `restaurar` solo revisa largos, no la coherencia con el esqueleto; el comentario del historial en `PartidaGuardada.py:87-88` quedó encima de la línea del mapa; T040 salió junto con T041 a T044 en vez de en un commit propio. Una acción bloqueada (`git grep` de `def restaurar`), sin efecto en las conclusiones. No corrió nada ni modificó nada.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+git fetch y git merge origin/derek (trae ed0da17, mapa conocido en motorJuego.py, y 4aac926, T040 en
+PartidaGuardada.py). Si hay conflictos en archivos de la 001, pará y avisame.
+Luego, un commit por paso, suite en verde con uv run antes de cada commit, no push:
+1) Logic/BenchRutas.py ~452 (medir_ciclo_cazadores, motor comprobado) y ~675 (medir_historial, caso sin
+   registrar): en vez de asignar observador_puertas a las rutas solas, usá
+   RepartidorAvisosPuertas([<rutas>, <motor>.mapa]). No cambies nombres ni firmas (los usa el integrante 2).
+2) Logic/Mazmorra.py 60-64: actualizá el comentario de observador_puertas (ahora es el repartidor).
+3) Corré el --bench completo (3 corridas), compará con bench-2026-11-13.txt y confirmá NFR-101/SC-104 con
+   el mapa conectado. Guardá un bench nuevo con la fecha de hoy y actualizá research.md, DECISIONES.md §5.6
+   y data-model.md de la 001 (observador_puertas = RepartidorAvisosPuertas).
+4) Registrá en PROMPTS_LLM.md este pedido y las consultas del puente 1a1dd66dbd1 (revisión de 9e9db5d,
+   57d26ff, 740f47b de Kristel), 1a1ddacdb5c (revisión de ed0da17 de Dereck) y 1a1ddc30d98 (revisión de
+   4aac926 de Dereck).
+
+**Uso de la respuesta:** `git merge origin/derek` fue un avance rápido sin conflictos: además de `ed0da17` y `4aac926` trajo lo posterior de `origin/derek` hasta `38861c6` (T045 a T059 de la 002 y T057 de la 001). Un commit por paso, suite en verde con `uv run` antes de cada uno (830 pruebas de unittest OK, 4 omitidas; 31 de 31 scripts): (1) `c22202d`, `Logic/BenchRutas.py`: `medir_ciclo_cazadores` (motor comprobado) y `medir_historial` (caso sin registrar) asignan `RepartidorAvisosPuertas([<rutas>, <motor>.mapa])`, sin cambiar nombres ni firmas. (2) `2bcdc2b`, `Logic/Mazmorra.py`: el comentario de `observador_puertas` describe el repartidor. (3) `4c8d5e4`: 3 corridas del `--bench` completo (93 a 96 s) en `specs/001-terreno-cazador/bench-2026-11-15.txt`; los conteos son los mismos que el 13 de noviembre (solo crece 0,1 KB el guardado de 2000 salas, por la versión 2). Con 30 cazadores en 1 024 salas el peor ciclo es de 5,5 a 17,6 ms: **NFR-101 y SC-104 se cumplen**. Con 100 cazadores y el jugador moviéndose (fuera de NFR-101) dio 19,6 / 20,0 / 22,4 ms; medido aparte, alternando `4c4307b` (sin mapa) y `2bcdc2b`, da 7,2 a 9,4 ms en los dos con medianas iguales, así que el mapa no encarece el ciclo y el pico depende de lo que corre antes en el proceso. Se actualizaron `research.md` (R6), `DECISIONES.md` §5.6 y `data-model.md` de la 001. (4) Este registro. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+En specs/001-terreno-cazador: (1) en plan.md, junto a la línea de T033 donde observador_puertas = self.rutas,
+agregá una nota de una línea: «Desde ed0da17 (002, integrante 2) es RepartidorAvisosPuertas([self.rutas,
+self.mapa]); ver data-model.md y DECISIONES.md §5.6». No reescribas el plan original. (2) En tasks.md marcá
+T057 como hecha (38861c6, integrante 2) y anotá que H2-22 ya no tiene skip. Un commit, suite en verde con
+uv run, PROMPTS_LLM.md, no push.
+
+**Uso de la respuesta:** (1) En `specs/001-terreno-cazador/plan.md`, la línea de T033 es la fila de `Logic/motorJuego.py · __init__` de la tabla de cambios; la nota va al final de esa fila, en la última celda, para no cortar la tabla. El resto del plan no cambia. (2) T057 ya estaba marcada `[X]` en `tasks.md` (lo hizo `38861c6`); se agregó «Hecha en `38861c6` (integrante 2): la prueba de H2-22 ya no tiene `skipTest`» al final de la tarea y la misma aclaración en la nota de H2-22 de la sección de pruebas. Se comprobó que `test_h2_22_fr122_botin_invalido_deja_la_sala_sin_contenido` no tiene `skipTest` (el único que queda en `tests/test_terreno_cazador.py` es el de la 003). Suite con `uv run`: 830 pruebas OK (4 omitidas), 31 de 31 scripts. Un commit, sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+
 **Fecha:** Domingo 15 de noviembre 2026
 
 **Herramienta:** Claude Code
@@ -2991,6 +3057,82 @@ Al final decime:
 No hagas commit.
 
 **Uso de la respuesta:** primer lote de la 003 (T001 a T034), en dos commits. (a) Contrato de llaves y DTO del reporte: `UbicacionLlaveDTO`, `ReporteResolubilidadDTO`, `obtener_llaves` en `FuenteDatos` (no abstracto: por defecto `ErrorRed`), `FuenteJson` (con validación de formato), `FuenteOffline` (`llaves.json`) y `DescargadorPaquete`, `AlmacenLlaves` por versión, `validar_ubicaciones` (FR-321) y `GestorLlaves`; se ajustaron `tests/Utilidades.py` (la `ApiFalsa` sirve llaves) y los conteos de `tests/TestDescargadorPaquete.py` por la solicitud nueva. T008 confirmada con el Swagger del 15/11 (`GET /v1/criptas/{dungeon_id}/llaves` → `{"llaves": [{"id", "sala", "enemigo"}]}`), sin cambios al contrato. (b) Verificación en Logic: `GrafoLlaves` (caras combinadas con una `Mazmorra` aparte, índice propio de llaves y ubicaciones ordenadas sin repetir con el `Ordenador`), `RecorridoLlaves` (oleadas incrementales con la `Cola`: cada sala y cada cara una vez; frontera y fase hacia afuera por niveles, sin recursión), `CiclosLlaves` iterativo, `VerificadorResolubilidad` y el generador de cuadrícula de `BenchResolubilidad`. 66 pruebas nuevas; cada grupo falló primero (dos pruebas que pasaban con reportes vacíos se reforzaron). La prueba de 1 500 dependientes no usa recursión. Suite: 896 pruebas OK (4 skip), 31 de 31 scripts; replay igual; grep de T067 limpio. Revisé el zip antes de los commits.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+perfecto haz el push
+
+**Uso de la respuesta:** `git push origin Marco`: `4c4307b..e9038d6`, 72 commits (el avance rápido de `origin/derek` y los cinco commits de Marco del 15 de noviembre). Esta entrada queda sin commit, para el próximo.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Nueva tarea de la 001 (FR-122): validar todo el contenido de una sala en Data antes de que Logic lo cargue.
+
+Problema: con una caché vieja (de antes de T055/T057) en disco, GestorContenido.asegurar_sala entrega la sala
+como CARGADA porque solo mira los rechazos en memoria; la ficha inválida aparece recién dentro de
+Mazmorra.cargar_contenido (vía ficha() → revalidación de disco). Resultado: sala a medio cargar (enemigos
+anteriores agregados, contadores_tipo avanzados, incluido el del rechazado), sala sigue CARGADA, y si la falla
+es ErrorRed, al reintentar se duplican los enemigos.
+
+Arreglo acordado con el integrante 2 (el archivo es suyo, lo hacemos en mi rama; NO tocar Logic/Mazmorra.py):
+en Data/GestorContenido.asegurar_sala, antes de devolver la sala, pedir resolvedor.ficha(tipo,
+contar_acierto=False) de cada enemigo, cada trampa y cada objeto del suelo. Con ErrorDatos: _rechazar(id_sala,
+error) y relanzar. Con ErrorRed: dejarlo propagar sin marcar nada. Verificá primero que ficha() acepte
+contar_acierto y que trampas y objetos se resuelvan con ficha(); si no, pará y explicame antes de cambiar nada.
+
+Orden de trabajo (spec-kit, un commit por paso, suite en verde con uv run antes de cada commit, no push):
+1) tasks.md de la 001: agregá T058 con la descripción, el FR-122 y los escenarios de prueba. Si GestorContenido
+   es código de P1, agregá la fila en la tabla «Cambios a código de la primera entrega» de plan.md. Commit.
+2) Pruebas (citan FR-122): caché vieja escrita a mano en un directorio temporal con
+   (a) un enemigo cuya suelta está rechazada, en la sala 3: al intentar entrar se rechaza con el mensaje, la
+       sala 3 queda sin enemigos, contadores_tipo no cambia, el movimiento no consume tiempo ni se registra, y
+       la sala queda marcada como contenido no disponible desde el primer intento;
+   (b) lo mismo con un objeto del suelo con duracion inválida;
+   (c) variante ErrorRed durante la validación y reintento con red buena: sin enemigos duplicados y
+       contadores correctos.
+   Confirmá que (a) y (c) fallan sin el arreglo. Commit.
+3) El arreglo en GestorContenido.asegurar_sala, con type hints; si es código de P1, sin docstrings nuevos
+   (comentario si hace falta) y con antes/después en mi sección de DECISIONES.md. Verificá que no cambien las
+   solicitudes de red en el caso normal (caché válida). Commit.
+4) PROMPTS_LLM.md con este pedido.
+
+Al final decime: el diff de GestorContenido (líneas), los resultados de la suite y si alguna prueba existente
+cambió de comportamiento.
+
+**Uso de la respuesta:** Verificación previa: `ResolvedorCatalogo.ficha(id_ficha, contar_acierto=True)` existe y revalida lo que lee del disco (suelta incluida); las trampas se resuelven con `fn_ficha` en `cargar_contenido`; los objetos del suelo no pasan por `ficha()` ahí, pero `ficha()` valida cualquier id, así que no hubo que parar. `ErrorDatos` es subclase de `ErrorRed`, por eso se atrapa solo `ErrorDatos`. `GestorContenido` es de P1 (`855a6da`). Cuatro commits: (1) `80b0c56`, T058 en `tasks.md` y fila en «Cambios a código de la primera entrega» de `plan.md`. (2) `43fe72e`, `tests/test_cache_vieja.py` con la caché escrita a mano (`cache/v/VERSION` y `<id>.json`): (a) enemigo con suelta rechazada, (b) objeto del suelo con `duracion` 0, (c) `ErrorRed` al validar y reintento, (d) caché válida sin pedidos al catálogo. Sin el arreglo, (a) y (c) fallan (un enemigo a medio cargar; en (c) el reintento deja `e-1` dos veces con número 2) y (b) da ERROR: el movimiento se hace y `SincronizadorUsos` lanza el `ErrorDatos` sin atrapar. Se commitearon con `skipTest` hasta el arreglo, como H2-22, para que la suite quedara en verde. (3) `a27b859`, +14 líneas en `asegurar_sala` (comentario, sin docstring), sin `skipTest`, T058 marcada y antes/después en `DECISIONES.md` §5.6. Las solicitudes de red no cambian: partida con el API falso (6 y 4 solicitudes, 2 y 0 de catálogo, antes y después) y replay de ejemplo (los mismos 2 lotes de contenido, 0 de catálogo). Solo cambia el reporte de la caché cuando la ficha sale del disco (3 aciertos en lugar de 1). Suite: 834 pruebas OK (4 omitidas, las de antes), 31 de 31 scripts; ninguna prueba existente cambió de resultado. (4) Este registro. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Sobre T058, solo responder (no cambies nada salvo que haga falta):
+1) ¿El bloque nuevo de asegurar_sala corre solo la primera vez que se entrega una sala o en cada llamada
+   (cada vez que el jugador entra)? Si es en cada llamada, ¿ficha() lee del disco cada vez o usa lo que ya
+   tiene en memoria? ¿Afecta al bench (medí el ciclo de 1 024 salas si _resolvedor no es None ahí)?
+2) El cambio en el reporte de caché (3 aciertos en vez de 1): ¿algún FR, prueba, bench o texto de
+   DECISIONES/research del integrante 2 usa esos aciertos? Si alguno cita cifras de aciertos, decime cuál.
+
+**Uso de la respuesta:** Solo respuesta, sin cambios. (1) El bloque corre solo la primera vez que se entra a cada sala (y al reintentar una entrada fallida): `ServicioAccionJugador._cargar_destino_si_falta` no llama a `asegurar_sala` si la sala ya está cargada en Lógica, y `ServicioPartida` la llama una vez para la sala inicial. `ficha()` busca primero en memoria (`CacheCatalogo`) y solo va al disco si no está. `BenchRutas` (ciclo de 1 024 salas), `BenchLogica` y `BenchMapaConocido` usan el `Motor` sin `GestorContenido`, y `BenchDatos` crea `GestorContenido` sin resolvedor: no pasan por el bloque. El único bench afectado es `medir_costo_por_accion` de la 004 (8 llamadas a `asegurar_sala` y 4 a `ficha()` más en todo el bench); 3 corridas alternadas sin y con el arreglo: 15,07/15,43/15,63 ms frente a 15,77/15,45/15,13 ms con línea activa, ruido. (2) Ningún FR, bench ni texto de DECISIONES o research cita cifras de aciertos que el cambio mueva; las pruebas que leen aciertos (`TestResolvedorCatalogo`, `TestCacheCatalogo`, `test_despacho_acciones`, `test_grabadores_linea`, `test_reconstructor_estado`, `test_servicios.py:343`) no pasan por `asegurar_sala` o comparan contra sí mismas, y `test_vista_fin.py:84` usa valores puestos a mano. Lo visible es «Aciertos de caché» en `View/PantallaFin.py`. `docs/Documento_Decisiones.pdf` no se revisó (PDF).
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+bien puedes hacer push ya
+
+**Uso de la respuesta:** `git push origin Marco` con los commits de T058 (`80b0c56`, `43fe72e`, `a27b859`, `401e20d`) y el de este registro.
 
 -----------------------------------------------------------------------------------------------------------------------
 

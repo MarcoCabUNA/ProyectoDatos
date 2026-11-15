@@ -59,10 +59,12 @@ class Mazmorra:
         self.salida_abierta = False
         self.contadores_tipo = []
         self.historial = None
-        # Quien guarda una búsqueda de rutas (RutasHaciaJugador): abrir_puerta y CierrePuerta le avisan con
-        # puerta_cambio(a, b), donde a y b son los DESTINOS de las caras que cambiaron. Basta con los destinos:
-        # la búsqueda va al revés (R3), así que una salida u -> v solo se lee al resolver v. Con dos caras son
-        # los dos extremos; con una sola cara (salida sin vuelta) se pasa su destino dos veces.
+        # Un solo observador de puertas. El Motor asigna un RepartidorAvisosPuertas([rutas, mapa]) que reenvía el
+        # aviso, en ese orden, a la búsqueda de rutas del cazador (RutasHaciaJugador) y al mapa conocido (002
+        # FR-207). abrir_puerta y CierrePuerta avisan con puerta_cambio(a, b), donde a y b son los DESTINOS de las
+        # caras que cambiaron. Basta con los destinos: la búsqueda va al revés (R3), así que una salida u -> v solo
+        # se lee al resolver v. Con dos caras son los dos extremos; con una sola cara (salida sin vuelta) se pasa
+        # su destino dos veces.
         self.observador_puertas = None
 
     # ---------- Metodos publicos
