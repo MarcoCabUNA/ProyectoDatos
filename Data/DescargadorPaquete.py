@@ -11,7 +11,8 @@ Esta clase descarga UNA cripta completa por la red y guarda esas respuestas en d
     └── cripta-01/
         ├── general.json          GET /criptas/cripta-01 (tal cual)
         ├── salas_p1.json         GET /criptas/cripta-01/salas?pagina=1 (tal cual), una por página
-        └── contenido.json        {"contenido": [...]}  el contenido de TODAS las salas, junto
+        ├── contenido.json        {"contenido": [...]}  el contenido de TODAS las salas, junto
+        └── llaves.json           GET /criptas/cripta-01/llaves (tal cual; feature 003, FR-318)
 
 Contenido y catálogo se guardan juntos (no una respuesta por lote) para que FuenteOffline
 pueda responder cualquier combinación de salas o ids, aunque el juego pida lotes
@@ -52,6 +53,8 @@ class DescargadorPaquete:
 
         general = self._cliente.get_json(f"criptas/{id_cripta}", f"datos generales de {id_cripta}")
         paginas = self._descargar_paginas(id_cripta, general)
+        # Feature 003: la ubicación de las llaves, después de las páginas del esqueleto (contrato de llaves).
+        llaves = self._cliente.get_json(f"criptas/{id_cripta}/llaves", f"ubicación de llaves de {id_cripta}")
         ids_salas = self._ids_de_salas(paginas)
         contenido = self._descargar_contenido(id_cripta, ids_salas)
 
@@ -69,6 +72,7 @@ class DescargadorPaquete:
         for i in range(len(paginas)):
             self._escribir(os.path.join(carpeta_cripta, f"salas_p{i + 1}.json"), paginas[i])
         self._escribir(os.path.join(carpeta_cripta, "contenido.json"), {"contenido": contenido})
+        self._escribir(os.path.join(carpeta_cripta, "llaves.json"), llaves)
 
     def solicitudes_realizadas(self) -> int:
         return self._cliente.solicitudes_realizadas

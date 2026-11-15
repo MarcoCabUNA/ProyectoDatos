@@ -19,9 +19,12 @@ de red pregunta isinstance(error, ErrorDatos).
 
 Datos solo valida (Principio I); no decide reglas del juego. Lógica supone que lo que recibe es válido.
 """
+from typing import Callable
+
 from Data.ClienteHttp import ErrorRed
 from DTO.FichaEnemigoDTO import FichaEnemigoDTO
 from DTO.ObjetoDTO import ObjetoDTO
+from DTO.UbicacionLlaveDTO import UbicacionLlaveDTO
 
 COMPORTAMIENTO_CAZADOR = "cazador"
 
@@ -87,6 +90,22 @@ def error_de_suelta(enemigo: FichaEnemigoDTO, rechazo) -> ErrorDatos | None:
                               f"el campo 'suelta' trae la ficha {id_suelta}, que fue rechazada por datos inválidos",
                               id_ficha=enemigo.id)
     return None
+
+
+def validar_ubicaciones(operacion: str, ubicaciones: list[UbicacionLlaveDTO],
+                        existe_sala: Callable[[int], bool]) -> None:
+    """
+    Feature 003, FR-321: lanza ErrorDatos en la PRIMERA ubicación cuya sala no existe en el esqueleto, con la llave,
+    la sala y, si lo trae, el enemigo. La instancia de enemigo no se valida (exigiría descargar contenido, FR-301), y
+    una llave que pide una puerta y no está en la lista no es error (Lógica la informa «sin ubicación»).
+    existe_sala es GestorEsqueleto.existe_sala: se pasa la función y no el gestor porque GestorEsqueleto ya importa
+    este archivo. O(U).
+    """
+    for u in ubicaciones:
+        if not existe_sala(u.sala):
+            enemigo = f" (enemigo {u.enemigo})" if u.enemigo is not None else ""
+            raise ErrorDatos(operacion, f"la llave {u.id} está en la sala {u.sala}{enemigo}, "
+                                        f"que no existe en el esqueleto")
 
 
 def _error_de_duracion(objeto: ObjetoDTO) -> ErrorDatos | None:

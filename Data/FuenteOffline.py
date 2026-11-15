@@ -10,7 +10,8 @@ El paquete son las respuestas del API guardadas en disco por DescargadorPaquete:
     └── <id_cripta>/
         ├── general.json
         ├── salas_p<N>.json       una por página
-        └── contenido.json        {"contenido": [...]}  todas las salas
+        ├── contenido.json        {"contenido": [...]}  todas las salas
+        └── llaves.json           GET /criptas/<id>/llaves tal cual (feature 003, FR-318)
 
 LectorPaquete imita a ClienteHttp: recibe la misma ruta del API y devuelve el mismo
 JSON, pero leído de un archivo. Para contenido y catálogo filtra solo lo que se pidió,
@@ -85,6 +86,8 @@ class LectorPaquete:
                 ids_salas = [self._entero(operacion, x) for x in texto.split(",")]
                 todas = self._leer(operacion, id_cripta, "contenido.json")["contenido"]
                 return {"contenido": self._filtrar(todas, "sala", ids_salas)}
+            if len(partes) == 3 and partes[2] == "llaves":       # feature 003 (FR-318): la respuesta tal cual
+                return self._leer(operacion, id_cripta, "llaves.json")
 
         raise ErrorRed(operacion, f"la ruta {ruta!r} no existe en el paquete offline")
 

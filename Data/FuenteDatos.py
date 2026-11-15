@@ -12,8 +12,10 @@ Reglas del contrato:
 """
 from abc import ABC, abstractmethod
 
+from Data.ClienteHttp import ErrorRed
 from DTO.CriptaDTO import CriptaDTO, ResumenCriptaDTO
 from DTO.SalaDTO import ContenidoSalaDTO, SalaDTO
+from DTO.UbicacionLlaveDTO import UbicacionLlaveDTO
 
 
 class FuenteDatos(ABC):
@@ -63,6 +65,15 @@ class FuenteDatos(ABC):
             trampa  -> FichaTrampaDTO   (Integrante 1)
             otra    -> ObjetoDTO        (Integrante 2)
         """
+
+    # ------------------------------------------------------------ llaves (feature 003)
+    # No es abstracto: así las fuentes falsas que ya existen (BenchDatos, tests/Utilidades.py) no se rompen.
+    def obtener_llaves(self, id_cripta: str) -> list[UbicacionLlaveDTO]:
+        """
+        Ubicación de las llaves (GET /criptas/{id}/llaves), en el orden de la respuesta, sin ordenar ni deduplicar
+        (contracts/contrato-llaves.md). Por defecto, esta fuente no la entrega.
+        """
+        raise ErrorRed(f"ubicación de llaves de {id_cripta}", "esta fuente no entrega la ubicación de las llaves")
 
     # ------------------------------------------------------------ red
     # No son abstractos: una fuente sin red (offline) no hace solicitudes.
