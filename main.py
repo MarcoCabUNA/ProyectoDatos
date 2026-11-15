@@ -4,6 +4,7 @@ Cripta: punto de entrada. Solo cablea: lee las opciones y elige el modo.
     python main.py                       el juego (ventana de pygame)
     python main.py --offline             el juego con el paquete guardado en disco
     python main.py --replay ARCHIVO      reproduce una partida desde su log, sin ventana
+    python main.py --replay ARCHIVO --hasta T   lo mismo, hasta el instante T, e imprime el resumen (feature 004)
     python main.py --bench               corre las mediciones de rendimiento, sin ventana
     python main.py --ayuda               muestra las opciones
 
@@ -32,6 +33,8 @@ def main(argumentos: list[str] | None = None) -> int:
     if config.bench:
         return medir(config)
     if config.replay is not None:
+        if config.hasta is not None:
+            return reproducir_hasta(config)
         return reproducir(config)
     return jugar(config)
 
@@ -65,6 +68,29 @@ def reproducir(config: ConfiguracionDTO) -> int:
     print(f"Resultado: {final.resultado if final.terminado else 'la partida no terminó'} (reloj {final.reloj})")
     if resultado.ultima_linea_descartada:
         print("Aviso: la última línea del log estaba a medio escribir y se ignoró.")
+    return 0
+
+
+def reproducir_hasta(config: ConfiguracionDTO) -> int:
+    """--replay ARCHIVO --hasta T (feature 004, FR-410 a FR-412): imprime el resumen del instante T, sin ventana."""
+    try:
+        resumen = ControladorBackend(config).reproducir_hasta(config.replay, config.hasta)
+    except ErrorOperacion as error:
+        print(error)
+        return 1
+    print(f"Estado en t={resumen.reloj}")
+    print(f"Sala: {resumen.sala_nombre} (#{resumen.sala_id})")
+    jugador = resumen.jugador
+    print(f"Jugador: vida {jugador.vida}/{jugador.vida_max}, ataque {jugador.ataque}, defensa {jugador.defensa}, "
+          f"velocidad {jugador.velocidad}")
+    print(f"Inventario: {', '.join(resumen.inventario) if resumen.inventario else '(vacío)'}")
+    print(f"Arma: {resumen.arma_equipada or '(ninguna)'}  Armadura: {resumen.armadura_equipada or '(ninguna)'}")
+    efectos = [f"{efecto.tipo} ({efecto.restante})" for efecto in resumen.efectos]
+    print(f"Efectos: {', '.join(efectos) if efectos else '(ninguno)'}")
+    enemigos = [f"{enemigo.nombre} {enemigo.vida}/{enemigo.vida_max}" for enemigo in resumen.enemigos]
+    print(f"Enemigos en la sala: {', '.join(enemigos) if enemigos else '(ninguno)'}")
+    if resumen.terminada_antes:
+        print(f"La partida terminó antes de t={resumen.instante_pedido}: este es el estado final (reloj {resumen.reloj}).")
     return 0
 
 

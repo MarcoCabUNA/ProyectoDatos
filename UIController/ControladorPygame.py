@@ -239,7 +239,8 @@ class ControladorPygame:
             return PantallaDTO(JUEGO, opciones=self._juego.botones(), seleccion=self._seleccion,
                                aviso=self._aviso or self._juego.aviso, ayuda=self._juego.ayuda(),
                                estado=self._juego.estado, objetivo=self._juego.objetivo(),
-                               elemento_bajo_el_raton=self._bajo_el_raton)
+                               elemento_bajo_el_raton=self._bajo_el_raton, resumen=self._juego.resumen,
+                               linea_comandos=self._juego.linea)
         if self._pantalla == PAUSA:
             return PantallaDTO(PAUSA, "Pausa", list(_OPCIONES_PAUSA), self._seleccion, aviso=self._aviso,
                                ayuda=list(_AYUDA_PAUSA), estado=self._juego.estado)
@@ -333,7 +334,7 @@ class ControladorPygame:
             return
         es_clic = evento.type == pygame.MOUSEBUTTONDOWN and evento.button in (_CLIC_IZQUIERDO, _CLIC_DERECHO)
         elemento = self._vista.elemento_en(evento.pos) if es_clic else None   # la rueda no necesita saber qué hay debajo
-        espera = self._es_esperar(evento, elemento)
+        espera = self._juego.linea is None and self._es_esperar(evento, elemento)   # con la línea abierta, Z se escribe
         orden = self._juego.procesar_evento(evento, elemento)
         if espera and self._juego.aviso is None:        # esperar suena; si el backend la rechazó, no
             self._activaciones += 1

@@ -25,7 +25,8 @@ visible, así que sus controles no necesitan abrirlo:
     Cambiar la vista         V (real, peso, valor, nombre; el orden real no cambia)
     Pergamino de retroceso   Retroceso o Ctrl + Z
     Guardar / Cargar         Ctrl + S o F5 / Ctrl + L o F9      (las hace ControladorPygame; aquí solo se piden)
-    Menú                     Esc
+    Línea de comandos        Enter la abre (historia <t> o historia #k); Enter acepta; Esc la cierra
+    Menú                     Esc (con la línea o el panel de historia abiertos, Esc los cierra primero)
 
 Decisiones donde el documento deja un hueco (están anotadas para poder cambiarlas):
   - Objetivo prefijado: el último enemigo atacado si sigue en la sala; si no, el primero de la lista.
@@ -52,11 +53,15 @@ from DTO.ElementoDTO import (ELEMENTO_BOTON, ELEMENTO_ENEMIGO, ELEMENTO_INVENTAR
                              ELEMENTO_PUERTA, ElementoDTO)
 from DTO.EstadoJuegoDTO import EstadoJuegoDTO
 from DTO.InventarioDTO import InventarioDTO
+from DTO.ResumenHistoriaDTO import ResumenHistoriaDTO
 from UIController.ControladorBackend import CRITERIOS_INVENTARIO, ControladorBackend, ErrorOperacion
 
 PIDE_PAUSA = "pausa"
 PIDE_GUARDAR = "guardar"
 PIDE_CARGAR = "cargar"
+
+MENSAJE_USO_HISTORIA = "Uso: historia <t> (instante, entero >= 0) o historia #k (acción, entero >= 1)."
+_PALABRA_HISTORIA = "historia"
 
 BOTONES = ("Esperar",)          # los botones de la pantalla de juego; ELEMENTO_BOTON con indice 0 es "Esperar"
 DOBLE_CLIC_MS = 400             # dos clics sobre la misma casilla en menos de esto cuentan como doble clic
@@ -67,19 +72,21 @@ _TECLAS_DE_DIRECCION = (
 )
 _CLIC_IZQUIERDO = 1
 _CLIC_DERECHO = 3
+_TECLAS_ENTER = (pygame.K_RETURN, pygame.K_KP_ENTER)
+LARGO_MAXIMO_LINEA = 40         # lo más que se puede escribir en la línea de comandos
 
 AYUDA_JUEGO = (
     "WASD / flechas: moverse",
     "Clic en un enemigo (o Espacio): atacar",
     "Clic en un objeto del suelo: recoger",
     "E (o clic en la puerta): abrir una puerta",
-    "Z: esperar",
+    "Z: esperar   Enter: línea de comandos (historia)",
     "Rueda o Tab: recorrer el inventario",
     "U (o doble clic): usar   Q (o clic derecho): equipar",
     "G (o Mayús + clic): soltar   V: cambiar el orden",
     "Retroceso o Ctrl + Z: pergamino de retroceso",
     "Ctrl + S / F5: guardar   Ctrl + L / F9: cargar",
-    "Esc: menú",
+    "Esc: menú (o cierra la línea o el panel)",
 )
 
 
@@ -97,6 +104,8 @@ class ControlesJuego:
         self._modificadores = modificadores if modificadores is not None else pygame.key.get_mods
         self.estado = estado
         self.aviso: str | None = None
+        self.resumen: ResumenHistoriaDTO | None = None       # el último `historia` consultado (solo lectura, feature 004)
+        self.linea: str | None = None                        # la línea de comandos: None cerrada, "" abierta y vacía
         self._objetivo: str | None = None
         self._ultimo_clic: tuple[int, int] | None = None     # (casilla, milisegundos) del último clic en el inventario
 
@@ -125,6 +134,9 @@ class ControlesJuego:
         self.aviso = None
         try:
             if tipo == pygame.KEYDOWN:
+                if self.linea is not None:
+                    self._teclado_en_la_linea(evento)           # con la línea abierta, el teclado es solo suyo
+                    return None
                 return self._teclado(evento)
             if tipo == pygame.MOUSEWHEEL:
                 self._rueda(evento.y)
@@ -133,6 +145,44 @@ class ControlesJuego:
         except ErrorOperacion as error:
             self.aviso = str(error)
         return None
+
+    # ================================================================== línea de comandos: historia (feature 004)
+    def procesar_comando(self, texto: str) -> None:
+        """`historia <t>` (entero >= 0) o `historia #k` (entero >= 1). Valida solo la ESTRUCTURA: otra cosa deja el aviso de
+        uso y no llama al backend. El rango lo valida Logic (el backend lo devuelve como ErrorOperacion y su mensaje se
+        muestra tal cual). Una consulta no cambia la partida: ni reloj, ni acciones, ni partida.log."""
+        self.aviso = None
+        partes = texto.split()
+        if len(partes) != 2 or partes[0].casefold() != _PALABRA_HISTORIA:
+            self.aviso = MENSAJE_USO_HISTORIA
+            return
+        argumento = partes[1]
+        es_accion = argumento.startswith("#")
+        numero = _entero_sin_signo(argumento[1:] if es_accion else argumento)
+        if numero is None or (es_accion and numero < 1):
+            self.aviso = MENSAJE_USO_HISTORIA
+            return
+        try:
+            self.resumen = (self._backend.historia_por_accion(numero) if es_accion
+                            else self._backend.historia_por_instante(numero))
+        except ErrorOperacion as error:
+            self.aviso = str(error)
+
+    def _teclado_en_la_linea(self, evento) -> None:
+        """Con la línea abierta las teclas del juego NO actúan: W, E, Z... se escriben, Retroceso borra (no lee el
+        pergamino) y Esc la cierra sin pausar. Enter acepta: cierra la línea y ejecuta lo escrito."""
+        tecla = evento.key
+        if tecla == pygame.K_ESCAPE:
+            self.linea = None
+        elif tecla in _TECLAS_ENTER:
+            texto, self.linea = self.linea, None
+            if texto.strip() != "":
+                self.procesar_comando(texto)
+        elif tecla == pygame.K_BACKSPACE:
+            self.linea = self.linea[:-1]
+        elif len(evento.unicode) == 1 and evento.unicode.isprintable() and len(self.linea) < LARGO_MAXIMO_LINEA \
+                and not evento.mod & pygame.KMOD_CTRL:
+            self.linea += evento.unicode
 
     # ================================================================== teclado
     def _teclado(self, evento) -> str | None:
@@ -173,7 +223,12 @@ class ControlesJuego:
             return PIDE_GUARDAR
         elif tecla == pygame.K_F9:
             return PIDE_CARGAR
+        elif tecla in _TECLAS_ENTER:
+            self.linea = ""                 # abre la línea de comandos (feature 004)
         elif tecla == pygame.K_ESCAPE:
+            if self.resumen is not None:
+                self.resumen = None         # primero se cierra el panel de historia: el juego sigue tal cual estaba
+                return None
             return PIDE_PAUSA
         return None
 
@@ -247,6 +302,7 @@ class ControlesJuego:
     def _aplicar(self, estado: EstadoJuegoDTO) -> None:
         """Una acción del jugador: el estado nuevo reemplaza al anterior. Si fue rechazada, el motivo es el aviso."""
         self.estado = estado
+        self.resumen = None                 # el panel de historia describe un estado pasado: una acción nueva lo cierra
         self._ultimo_clic = None            # el inventario pudo cambiar: un clic anterior ya no cuenta
         if not estado.terminado and estado.resultado is not None:
             self.aviso = estado.resultado
@@ -271,6 +327,16 @@ def _de(lista: list, indice: int, que: str):
     if not 0 <= indice < len(lista):
         raise ErrorOperacion(f"Ese {que} ya no está.")
     return lista[indice]
+
+
+def _entero_sin_signo(texto: str) -> int | None:
+    """El entero que escriben solo los dígitos 0-9 de `texto`; None si hay otra cosa o está vacío ('-3', '2.5', 'x', '')."""
+    if texto == "":
+        return None
+    for caracter in texto:
+        if not ("0" <= caracter <= "9"):
+            return None
+    return int(texto)
 
 
 def _direccion_de(tecla: int) -> int | None:

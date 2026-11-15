@@ -13,7 +13,7 @@ Regla de consulta para un instante t (FR-402, data-model.md «Qué punto usa una
     j = la última acción con tiempo estrictamente MENOR que t. Si en t hay una decisión del jugador, esa decisión no
         se hace: el estado pedido es el de justo antes de ella. (Es lo mismo que «j = última con tiempo <= t» y,
         si esa acción cae justo en t, quitarla.)
-    - Si el último punto con acciones_completadas == j ya tiene reloj >= t, ese punto ES el estado pedido: el jugador
+    - Si el último punto con acciones_completadas == j ya tiene reloj == t, ese punto ES el estado pedido: el jugador
       tiene el control, sus eventos anteriores a la decisión ya corrieron y el suyo ya salió de la cola. Se parte de él.
       No se llama a avanzar_hasta(t): con el reloj del punto igual a t correría los eventos de ese mismo instante que la
       cola ordena DESPUÉS de la decisión, y FR-402 pide el estado justo antes de ella.
@@ -90,7 +90,7 @@ class ReconstructorEstado:
         else:
             j = self._linea.ubicar_accion_por_tiempo(t - 1)      # acciones con tiempo < t: la de t, si la hay, no se hace
         punto = self._linea.ubicar_punto(j)
-        if punto.acciones_completadas == j and punto.partida.reloj >= t:
+        if punto.acciones_completadas == j and punto.partida.reloj == t:
             return self._cargar(punto)                           # el punto ya es el estado pedido
         punto = self._linea.ubicar_punto(j - 1 if j > 0 else 0)
         motor = self._cargar(punto)

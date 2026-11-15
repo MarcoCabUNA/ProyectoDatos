@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -400,7 +401,8 @@ def probar_medir_junta_los_cinco_grupos_en_orden():
     try:
         for i in range(5):
             setattr(B, nombres[i], lambda i=i: [filas[i]])
-        assert B.medir() == filas                                 # los cinco, y en este orden
+        with mock.patch.object(B.BenchLineaTiempo, "medir", return_value=[]):   # el sexto grupo (004) se prueba aparte
+            assert B.medir() == filas                             # los cinco, y en este orden
     finally:
         for i in range(5):
             setattr(B, nombres[i], originales[i])

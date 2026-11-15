@@ -38,6 +38,7 @@ from Estructuras.ListaDoble import ListaDoble
 from Estructuras.Ordenador import Ordenador
 from Logic.HistorialRetroceso import HistorialRetroceso
 from Logic.Inventario import Inventario
+from Service import BenchLineaTiempo
 from Service.Cronometro import medir as cronometrar
 
 SEMILLA = 2026                  # las cargas sintéticas son siempre las mismas: los resultados se pueden comparar
@@ -52,9 +53,12 @@ _ALGORITMOS = (("inserción", Ordenador.ordenar_por_insercion),
 
 
 def medir() -> list[ResultadoBenchDTO]:
-    """Todas las mediciones del integrante 3, con los tamaños por defecto."""
+    """Todas las mediciones del integrante 3, con los tamaños por defecto.
+
+    La última es el grupo de la línea de tiempo (feature 004, NFR-401): así --bench lo muestra sin tocar
+    Service/ServicioBench.py, que es del integrante 2."""
     return (medir_estructura() + medir_inventario() + medir_historial()
-            + medir_buffer() + medir_ordenamiento())
+            + medir_buffer() + medir_ordenamiento() + BenchLineaTiempo.medir())
 
 
 # ====================================================================== 1. estructura del inventario

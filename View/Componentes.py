@@ -46,13 +46,13 @@ AYUDA_PARA_MEDIR = (
     "Clic en un enemigo (o Espacio): atacar",
     "Clic en un objeto del suelo: recoger",
     "E (o clic en la puerta): abrir una puerta",
-    "Z: esperar",
+    "Z: esperar   Enter: línea de comandos (historia)",
     "Rueda o Tab: recorrer el inventario",
     "U (o doble clic): usar   Q (o clic derecho): equipar",
     "G (o Mayús + clic): soltar   V: cambiar el orden",
     "Retroceso o Ctrl + Z: pergamino de retroceso",
     "Ctrl + S / F5: guardar   Ctrl + L / F9: cargar",
-    "Esc: menú",
+    "Esc: menú (o cierra la línea o el panel)",
 )
 # Los peores mensajes del motor (tiempo de 4 cifras, enemigo #99, daño de 999 y los nombres más largos del paquete offline);
 # test_vista_hud comprueba que con ellos se elige el mismo tamaño que con TODAS las plantillas
@@ -160,6 +160,11 @@ HUD_ESPERAR = pygame.Rect(1028, 470, 340, 40)
 HUD_AVISO = pygame.Rect(1028, 516, 340, 52)
 HUD_AYUDA = pygame.Rect(1028, 574, 340, 186)
 HUD_PANELES = [HUD_ESTADISTICAS, HUD_EFECTOS, HUD_MENSAJES, HUD_INVENTARIO, HUD_ESPERAR, HUD_AVISO, HUD_AYUDA]
+# Paneles pasajeros de `historia` (feature 004): no están en HUD_PANELES porque solo se dibujan cuando el jugador los pide.
+# Caben en los huecos del HUD: el de resumen entre efectos y mensajes, a la izquierda; la línea de comandos abajo, al centro.
+HUD_HISTORIA = pygame.Rect(8, 296, 350, 168)
+HUD_HISTORIA_ARRIBA = 24                     # donde empieza la primera línea del resumen (debajo del rótulo)
+HUD_LINEA = pygame.Rect(380, 712, 640, 40)
 HUD_RELLENO = 8                              # margen interior de los paneles
 HUD_MENSAJES_LINEAS = 20                     # capacidad del panel de mensajes
 HUD_MENSAJES_INTERLINEA = 13

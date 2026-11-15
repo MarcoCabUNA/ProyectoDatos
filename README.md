@@ -64,6 +64,8 @@ se escribe como `uv run python main.py ...`.
 | Abre el juego con el paquete local de `paquete/`, sin usar la red. | `.venv\Scripts\python.exe main.py --offline` | `.venv/bin/python main.py --offline` |
 | Cambia el tope de fichas del catálogo en memoria (entero mayor o igual a 1; por defecto 25). Se puede combinar con los demás modos. | `.venv\Scripts\python.exe main.py --cache-size 10` | `.venv/bin/python main.py --cache-size 10` |
 | Reproduce una partida desde su bitácora, sin abrir la ventana, y muestra cada acción y el resultado final. | `.venv\Scripts\python.exe main.py --replay logs/partida_001.log --offline` | `.venv/bin/python main.py --replay logs/partida_001.log --offline` |
+| Reproduce la partida solo hasta el instante `T` (entero mayor o igual a 0) y muestra el resumen del estado en ese instante, sin abrir la ventana. Solo se acepta junto con `--replay`. | `.venv\Scripts\python.exe main.py --replay logs/partida_001.log --hasta 300 --offline` | `.venv/bin/python main.py --replay logs/partida_001.log --hasta 300 --offline` |
+| Cambia cada cuántas acciones del jugador la línea de tiempo toma un punto de control (entero mayor o igual a 1; por defecto 20). Se puede combinar con los demás modos. | `.venv\Scripts\python.exe main.py --checkpoint-cada 50` | `.venv/bin/python main.py --checkpoint-cada 50` |
 | Corre las mediciones de rendimiento con cargas sintéticas, sin abrir la ventana, y muestra una tabla por subsistema. | `.venv\Scripts\python.exe main.py --bench` | `.venv/bin/python main.py --bench` |
 | Muestra las opciones. | `.venv\Scripts\python.exe main.py --ayuda` | `.venv/bin/python main.py --ayuda` |
 
@@ -100,10 +102,31 @@ Durante la partida (el inventario está siempre visible; la ventana muestra este
 | Soltar | `G` | `Mayús` + clic sobre la casilla |
 | Cambiar la vista del inventario | `V` (real, peso, valor, nombre; el orden real no cambia) | |
 | Pergamino de retroceso | `Retroceso` o `Ctrl + Z` | |
+| Abrir la línea de comandos (`historia`) | `Enter` (acepta con `Enter`, se cierra con `Esc`) | |
 | Guardar / Cargar | `Ctrl + S` o `F5` / `Ctrl + L` o `F9` | botones de la pausa |
 | Pausa | `Esc` (Continuar, Guardar, Cargar, Salir al menú) | |
 
 Para salir: `Salir` en el menú principal, `Salir al menú` en la pausa, o cerrar la ventana.
+
+### Historia de la partida
+
+Durante la partida se puede consultar cómo estaba la partida en un instante o antes de una acción, sin cambiarla.
+`Enter` abre la línea de comandos (un campo de texto abajo en la ventana), `Enter` ejecuta lo escrito y `Esc` la cierra
+sin pausar el juego. Mientras está abierta, las teclas del juego se escriben en la línea y no actúan.
+
+| Comando | Qué muestra |
+|---|---|
+| `historia <t>` | El estado en el instante `t` (entero mayor o igual a 0, hasta el reloj actual). |
+| `historia #k` | El estado justo antes de la acción `k` del jugador (entero mayor o igual a 1, hasta las acciones hechas). |
+
+El resultado aparece en un panel de solo lectura con el reloj, la sala, la vida y las estadísticas del jugador, el
+inventario (con el arma y la armadura equipadas), los efectos activos y los enemigos de la sala. `Esc` cierra el panel
+y el juego sigue tal cual estaba. Una consulta no consume tiempo, no cuenta como acción y no se escribe en la bitácora.
+Si el número está fuera de rango, la línea muestra un aviso con el rango válido.
+
+La línea de tiempo toma un punto de control cada 20 acciones (se cambia con `--checkpoint-cada N`, entero mayor o igual a
+1): una consulta nunca re-simula más de `N` acciones. El valor por defecto salió de `--bench` (con 5 000 acciones,
+`historia` tarda menos de 1 ms; ver `DECISIONES.md`).
 
 ### Modo `--offline`
 
@@ -126,6 +149,17 @@ versión del catálogo y semilla) y una línea por cada acción del jugador. `--
 con la misma semilla y llega al mismo resultado. Si la versión de la cripta o del catálogo no coincide con la
 disponible, se informa la incompatibilidad y no se reproduce. Si la última línea quedó a medio escribir (por
 ejemplo, porque el programa se cerró), se ignora y se avisa.
+
+Con `--hasta T` el replay no recorre la partida mostrando cada acción: la reproduce hasta el instante `T` y
+imprime el resumen de ese estado (el mismo que muestra `historia T` durante la partida). Si `T` es posterior al final de
+la partida, muestra el estado final y avisa que la partida terminó antes. Sin `--hasta`, `--replay` reproduce la partida
+completa. Códigos de salida de `--replay ... --hasta`:
+
+| Código | Cuándo |
+|---|---|
+| 0 | Imprimió el resumen. |
+| 1 | No se pudo reproducir: el log no existe o no se puede leer, o la versión de la cripta o del catálogo no coincide. El mensaje dice por qué. |
+| 2 | Error en las opciones: `--hasta` sin valor, negativo o que no es un entero, o usado sin `--replay`. |
 
 Al cargar una partida guardada, la bitácora continúa en un archivo nuevo que incluye las acciones anteriores,
 así que ese log también se puede reproducir completo.
