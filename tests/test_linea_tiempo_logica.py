@@ -3,6 +3,7 @@ Pruebas de Logic/LineaTiempo.py (feature 004): la historia de la partida tal com
 
 Solo Lógica pura: sin Data ni Service. Los puntos de control llevan los DTO de ejemplo del guardado.
 """
+import dataclasses
 import sys
 import unittest
 from pathlib import Path
@@ -12,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from ayudas_terreno import mazmorra_con_costos, motor_con, salida, salidas_con_costos
+from test_dto_linea_tiempo import _linea_guardada
 from TestPartidaGuardadaDTO import partida_de_ejemplo, sala_de_ejemplo
 from DTO.AccionDTO import AccionDTO
 from Logic.Inventario import Inventario
@@ -243,6 +245,56 @@ class PruebasRetrocederUna(unittest.TestCase):
         with self.assertRaises(ValueError):
             linea.retroceder_una(_estado_vivo(0))
         self.assertEqual([p.acciones_completadas for p in linea.puntos], [0])    # no cambió nada
+
+
+class PruebasGuardadaYVuelta(unittest.TestCase):
+    """T043 (FR-420): la línea de tiempo se convierte a LineaTiempoGuardadaDTO y vuelve igual."""
+
+    def test_linea_a_guardada_y_desde_guardada_son_iguales_fr420(self):
+        guardada = _linea_guardada(k=3, acciones=6, posiciones=(0, 3, 6))
+        linea = LineaTiempo.desde_guardada(guardada)
+        self.assertIsInstance(linea, LineaTiempo)
+        self.assertEqual(linea.k, 3)                                                   # K
+        self.assertEqual(len(linea.acciones), 6)                                       # acciones
+        self.assertEqual([p.acciones_completadas for p in linea.puntos], [0, 3, 6])    # puntos
+        self.assertEqual([r.sala.id for r in linea.cargas], [g.sala.id for g in guardada.cargas])   # cargas
+        self.assertEqual([f.id for f in linea.fichas], [f.id for f in guardada.fichas])             # fichas
+        self.assertEqual(linea.accion(2).accion, AccionDTO("atacar", objetivo="e-201"))
+        self.assertEqual(linea.accion(2).tiempo, 200)
+        self.assertEqual(linea.a_guardada(), guardada)                                 # ida y vuelta exacta
+
+    def test_linea_a_guardada_no_comparte_los_arreglos_fr420(self):
+        linea = LineaTiempo.desde_guardada(_linea_guardada())
+        guardada = linea.a_guardada()
+        linea.agregar_accion(10_000, AccionDTO("esperar"))                             # seguir jugando no cambia lo guardado
+        linea.registrar_ficha(SimpleNamespace(id="otra"))
+        self.assertEqual(len(guardada.acciones), 6)
+        self.assertEqual(len(guardada.fichas), 3)
+        guardada2 = LineaTiempo.desde_guardada(guardada)
+        guardada2.acciones.pop()
+        self.assertEqual(len(guardada.acciones), 6)                                    # y la línea cargada tampoco toca el DTO
+
+    def test_linea_desde_guardada_conserva_el_orden_fr420(self):
+        guardada = _linea_guardada(k=2, acciones=6, posiciones=(0, 2, 4, 6))
+        linea = LineaTiempo.desde_guardada(guardada)
+        self.assertEqual([a.tiempo for a in linea.acciones], [100, 200, 300, 400, 500, 600])
+        self.assertEqual([p.acciones_completadas for p in linea.puntos], [0, 2, 4, 6])
+        self.assertEqual([r.ordinal for r in linea.cargas], [0, 2])                    # orden real de carga (H-1)
+        self.assertEqual(linea.ubicar_punto(5).acciones_completadas, 4)                # la búsqueda binaria sigue valiendo
+        self.assertEqual(linea.ubicar_accion_por_tiempo(350), 3)
+        self.assertEqual(linea.a_guardada().cargas, guardada.cargas)
+
+    def test_linea_vacia_ida_y_vuelta_fr420(self):
+        linea = LineaTiempo(7)
+        vuelta = LineaTiempo.desde_guardada(linea.a_guardada())
+        self.assertEqual(vuelta.k, 7)
+        self.assertEqual((vuelta.acciones, vuelta.puntos, vuelta.cargas, vuelta.fichas), ([], [], [], []))
+
+    def test_linea_desde_guardada_rechaza_una_linea_invalida_fr420(self):
+        buena = _linea_guardada()
+        mala = dataclasses.replace(buena, acciones=list(reversed(buena.acciones)))     # tiempos decrecientes
+        with self.assertRaises(ValueError):
+            LineaTiempo.desde_guardada(mala)
 
 
 if __name__ == "__main__":

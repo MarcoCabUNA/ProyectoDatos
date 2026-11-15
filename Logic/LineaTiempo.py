@@ -19,10 +19,13 @@ rango de las consultas (FR-409) es regla de negocio y por eso vive aquí; Servic
 Costos: agregar_accion, agregar_punto y registrar_carga O(1) amortizado; ubicar_punto O(log P);
 ubicar_accion_por_tiempo O(log A); registrar_ficha y ficha O(F), con F las fichas vistas (pocas).
 retroceder_una (el pergamino) O(1 + r), con r los puntos de control que sobran: no recorre la historia (NFR-403).
+a_guardada y desde_guardada (FR-420) recorren una vez cada arreglo: O(A + P + C + F), con copia manual de los arreglos.
 """
 from dataclasses import dataclass
 
 from DTO.AccionDTO import AccionDTO
+from DTO.LineaTiempoDTO import (AccionGuardadaDTO, LineaTiempoGuardadaDTO, PuntoControlGuardadoDTO,
+                                RegistroCargaGuardadoDTO)
 from DTO.PartidaGuardadaDTO import PartidaGuardadaDTO, SalaGuardadaDTO
 from DTO.SalaDTO import SalaDTO
 from Estructuras.BusquedaBinaria import ultimo_menor_o_igual
@@ -144,6 +147,40 @@ class LineaTiempo:
             if ficha.id == id_ficha:
                 return ficha
         return None
+
+    # ---------- Guardado (FR-420)
+
+    def a_guardada(self) -> LineaTiempoGuardadaDTO:
+        """La línea tal como se escribe en el archivo de partida: k, acciones, puntos, cargas y fichas.
+
+        Copia a mano cada arreglo (sin `copy`): seguir jugando después de guardar no cambia lo guardado. Los puntos de
+        control, las salas y las fichas se comparten por referencia porque nunca se modifican una vez tomados (la
+        reconstrucción solo los lee). El mapa conocido del punto (`mapa_conocido`) no se guarda aquí: viaja dentro de
+        `partida.mapa` cuando exista (spec 002)."""
+        acciones = [AccionGuardadaDTO(a.tiempo, a.accion.tipo, a.accion.direccion, a.accion.objetivo, a.accion.objeto)
+                    for a in self.acciones]
+        puntos = [PuntoControlGuardadoDTO(p.acciones_completadas, p.partida, [sala for sala in p.salas])
+                  for p in self.puntos]
+        cargas = [RegistroCargaGuardadoDTO(r.ordinal, r.sala) for r in self.cargas]
+        fichas = [ficha for ficha in self.fichas]
+        return LineaTiempoGuardadaDTO(self.k, acciones, puntos, cargas, fichas)
+
+    @classmethod
+    def desde_guardada(cls, guardada: LineaTiempoGuardadaDTO) -> "LineaTiempo":
+        """Una LineaTiempo nueva con lo que trae el archivo, en el mismo orden (FR-420). Conserva el K guardado.
+
+        Lanza ValueError, sin armar nada, si la línea guardada no cumple sus restricciones (`guardada.validar()`)."""
+        guardada.validar()
+        linea = cls(guardada.k)
+        for a in guardada.acciones:
+            linea.acciones.append(AccionVigente(a.tiempo, AccionDTO(a.tipo, a.direccion, a.objetivo, a.objeto)))
+        for p in guardada.puntos:
+            linea.puntos.append(PuntoControl(p.acciones_completadas, p.partida, [sala for sala in p.salas]))
+        for r in guardada.cargas:
+            linea.cargas.append(RegistroCarga(r.ordinal, r.sala))
+        for ficha in guardada.fichas:
+            linea.fichas.append(ficha)
+        return linea
 
     # ---------- Validación de rango de las consultas (FR-409)
 
