@@ -11,13 +11,14 @@ exactamente como antes de la acción (FR-222) sin copiar el mapa (NFR-203). Con 
 
 Lógica no importa Datos ni Servicios: las constantes vienen de DTO/MapaConocidoDTO.py.
 
-Solo escriben el mapa iniciar, entrar y puerta_cambio (research R2). Ninguna operación baja un estado (FR-203).
-Las direcciones se recorren siempre en el orden N, S, E, O (0 a 3).
+Solo escriben el mapa iniciar, entrar y puerta_cambio (research R2), más restaurar al cargar, que no registra en el
+historial. Ninguna operación baja un estado (FR-203). Las direcciones se recorren siempre en el orden N, S, E, O (0 a 3).
 
 Costos: estado_sala, estado_cara y es_explorada O(1); _poner_estado y _poner_cara O(1); iniciar y puerta_cambio O(g);
-entrar O(1 + Σ g de las salas que pasan a exploradas); buscar_exploradas O(S).
+entrar O(1 + Σ g de las salas que pasan a exploradas); buscar_exploradas, a_guardado y restaurar O(S).
 """
-from DTO.MapaConocidoDTO import ABIERTA, AVISTADA, CERRADA, DESCONOCIDA, EXPLORADA, SIN_OBSERVAR
+from DTO.MapaConocidoDTO import (ABIERTA, AVISTADA, CERRADA, DESCONOCIDA, EXPLORADA, SIN_OBSERVAR,
+                                 MapaConocidoGuardadoDTO)
 
 
 class MapaConocido:
@@ -97,6 +98,38 @@ class MapaConocido:
             if self.estado[sala] == EXPLORADA and self.mazmorra.salas[sala].nombre.strip().casefold() == clave:
                 encontradas.append(sala)
         return encontradas
+
+    # ---------- guardado (FR-221, FR-223)
+
+    def a_guardado(self) -> MapaConocidoGuardadoDTO:
+        """Copia de los dos arreglos para el guardado y los puntos de control (NFR-203). O(S)."""
+        return MapaConocidoGuardadoDTO(list(self.estado), list(self.caras))
+
+    def restaurar(self, dto: MapaConocidoGuardadoDTO | None) -> None:
+        """
+        Reemplaza el mapa en curso al cargar una partida o un punto de control, sin registrar en el historial.
+        Con un DTO, copia sus dos arreglos; si sus largos no son S y 4·S (otra cripta), ValueError con el motivo
+        (riesgo R-8) y el mapa no cambia. Con None (un DTO armado sin mapa, riesgo R-9), arma el mapa inicial desde
+        jugador.Sala_Actual, como iniciar (FR-202). Así PartidaGuardada.cargar no necesita un if. O(S).
+        """
+        cantidad = len(self.mazmorra.salas)
+        if dto is not None:
+            if len(dto.estado_salas) != cantidad:
+                raise ValueError(f"el mapa guardado tiene {len(dto.estado_salas)} salas y la cripta tiene {cantidad}")
+            if len(dto.caras) != 4 * cantidad:
+                raise ValueError(f"el mapa guardado tiene {len(dto.caras)} caras y la cripta tiene {4 * cantidad}")
+            self.estado = list(dto.estado_salas)
+            self.caras = list(dto.caras)
+            return
+        self.estado = [DESCONOCIDA] * cantidad
+        self.caras = [SIN_OBSERVAR] * (4 * cantidad)
+        historial = self.historial
+        self.historial = None                   # _poner_estado / _poner_cara solo escriben: nada que deshacer
+        try:
+            self._explorar(self.jugador.Sala_Actual)
+            self._observar_puertas(self.jugador.Sala_Actual)
+        finally:
+            self.historial = historial
 
     # ---------- exploración y observación (privados)
 

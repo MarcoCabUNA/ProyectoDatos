@@ -45,7 +45,7 @@ Estado de la partida. Lo crea el motor (`motor.mapa`); lo escriben solo `iniciar
 | `a_dto() -> MapaConocidoDTO` | Vista de solo lectura (§4) | O(S) | FR-217, FR-219, FR-220 |
 | `buscar_exploradas(nombre: str) -> list[int]` | Ids de exploradas cuyo nombre coincide con `strip().casefold()` en los dos lados, en orden creciente. Un nombre vacío o de solo espacios devuelve `[]`; uno que no es `str` (`None`, un número, `bytes`) lanza `ValueError` (error de programación del que llama; contrato (c)) | O(S) | FR-251 |
 | `a_guardado() -> MapaConocidoGuardadoDTO` | Copia de los dos arreglos con `list(...)` | O(S) | FR-221, FR-223, NFR-203 |
-| `restaurar(dto: MapaConocidoGuardadoDTO \| None) -> None` | Con un DTO: valida largos (`ValueError`, riesgo R-8) y copia los arreglos, reemplazando el mapa en curso; no registra en el historial. Con `None`: pone todo en `DESCONOCIDA` / `SIN_OBSERVAR` y arma el mapa inicial desde `jugador.Sala_Actual`, como `iniciar` (esa sala explorada, los destinos de sus salidas avistados y sus puertas observadas, FR-202); lo que registre queda en el intervalo abierto, que `PartidaGuardada.cargar` descarta enseguida | O(S) | FR-202, FR-221, FR-223 |
+| `restaurar(dto: MapaConocidoGuardadoDTO \| None) -> None` | Con un DTO: valida largos (`ValueError`, riesgo R-8) y copia los arreglos, reemplazando el mapa en curso; no registra en el historial. Con `None`: pone todo en `DESCONOCIDA` / `SIN_OBSERVAR` y arma el mapa inicial desde `jugador.Sala_Actual`, como `iniciar` (esa sala explorada, los destinos de sus salidas avistados y sus puertas observadas, FR-202); tampoco registra en el historial (lo deja en `None` mientras arma el mapa inicial) | O(S) | FR-202, FR-221, FR-223 |
 
 Privados:
 
