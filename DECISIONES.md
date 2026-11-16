@@ -664,6 +664,8 @@ el punto 0 y respondería un estado del instante 0, que engaña; la defensa mín
 es `contexto.linea = None` en `ServicioReplay.reproducir`, para que salga el mensaje claro «Esta partida no tiene línea de
 tiempo que consultar». Anotado como supuesto en la spec de la 004 (Suposiciones).
 
+**HUD con mensajes largos y vida mayor que vida_max.** Un mensaje de 342 px en un ancho útil de 334 no se arregla con más holgura (achicaría la letra de todos): `HudJuego._mensajes` ya lo recorta con `recortar_a_ancho` y «...», así que no cambió la vista; `barra_de_vida` ya limitaba la proporción a 1.0 y ahora lo cubren dos pruebas (ratas de cripta-01: vida 12, vida_max 8).
+
 ### §5.6 Revisión de decisiones de la primera parte
 
 Las decisiones de la primera entrega que esta feature toca se volvieron a medir con la carga nueva (Principio VIII).

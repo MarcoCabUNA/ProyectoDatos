@@ -375,6 +375,26 @@ def probar_todos_los_mensajes_reales_del_motor_caben_en_el_ancho_util_del_panel_
                 or max(f.size(m)[0] for m in mensajes) + c.HUD_HOLGURA > ancho_util), f"el tamaño {mayor} también cabe"
 
 
+def probar_un_mensaje_mas_ancho_que_el_panel_se_recorta_con_puntos_suspensivos():
+    pygame.font.init()
+    fuente = _fuente(c.Fuentes().tam_mensajes)
+    ancho_util = c.HUD_MENSAJES.width - 2 * c.HUD_RELLENO
+    peor = "[t=9999] El veneno hace 999 de daño a Espectro acechador #99"
+    recortado = c.recortar_a_ancho(fuente, peor, ancho_util)
+    assert fuente.size(recortado)[0] <= ancho_util
+    assert fuente.size(peor)[0] <= ancho_util or recortado.endswith("...")
+
+
+def probar_la_barra_de_vida_tolera_vida_mayor_que_vida_max():
+    pygame.font.init()
+    fuentes = c.Fuentes()
+    barra = pygame.Rect(0, 0, 100, 12)
+    pasada, justa = pygame.Surface((100, 12)), pygame.Surface((100, 12))
+    c.barra_de_vida(pasada, fuentes, barra, 12, 8)                # las ratas de cripta-01 empiezan con vida 12 y vida_max 8
+    c.barra_de_vida(justa, fuentes, barra, 8, 8)
+    assert pasada.get_at((98, 6)) == justa.get_at((98, 6)) == c.VIDA_BUENA   # llena, sin pasarse del borde
+
+
 def probar_los_mensajes_de_una_partida_real_caben_enteros_sin_cortes():
     vista = VistaPygame()
     vista.abrir()
@@ -998,6 +1018,8 @@ if __name__ == "__main__":
     probar_con_12_enemigos_y_12_objetos_ninguna_zona_solapa_un_panel_con_el_protagonista_en_cada_sitio()
     probar_si_el_reparto_ignorara_los_paneles_si_se_pisarian_los_paneles_del_suelo()
     probar_todos_los_mensajes_reales_del_motor_caben_en_el_ancho_util_del_panel_de_mensajes()
+    probar_un_mensaje_mas_ancho_que_el_panel_se_recorta_con_puntos_suspensivos()
+    probar_la_barra_de_vida_tolera_vida_mayor_que_vida_max()
     probar_los_mensajes_de_una_partida_real_caben_enteros_sin_cortes()
     probar_las_11_lineas_de_ayuda_caben_en_su_panel_con_holgura_y_con_el_mayor_tamano_que_cabe()
     probar_las_estadisticas_y_el_reloj_se_ven_con_los_valores_del_jugador()
