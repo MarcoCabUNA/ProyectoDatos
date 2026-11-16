@@ -694,8 +694,9 @@ la 7. Cuando se dice «el mapa» se entiende el mapa conocido del jugador (FR-21
 - **NFR-205**: Las actualizaciones del mapa conocido NO DEBEN hacer que el ciclo de eventos entre dos
   decisiones del jugador supere el límite de 20 ms (P1 §5.2 y §6.1 de la Parte II).
 - **NFR-250**: El cálculo de un paso de «ir a» DEBE tardar menos de 5 ms con el mapa conocido completo de la
-  cripta de referencia, medido en el equipo local, sin red ni renderizado. El «5 ms» sale de la tabla de §6.1
-  del enunciado.
+  cripta de referencia, que es **cripta-06 (300 salas, del paquete con `--offline`)**, medido en el equipo local, sin red
+  ni renderizado. Si cripta-06 no está disponible, se mide con una cripta sintética de 300 salas. El «5 ms» sale de la
+  tabla de §6.1 del enunciado.
 - **NFR-251**: `--bench` DEBE medir el cálculo de un paso de «ir a» en criptas sintéticas deterministas por
   semilla de al menos tres tamaños, incluido el mapa conocido completo *(decisión del grupo)*, y las decisiones
   que se tomen con esas mediciones DEBEN documentarse en `DECISIONES.md` (§6.3, Principio VIII).
@@ -814,8 +815,8 @@ Cada prueba citará el identificador del requisito que verifica (Principio X).
   no abre ninguna puerta, y cada paso coincide con el que resulta de calcular la ruta desde cero con el
   conocimiento de ese momento, con el desempate por menor identificador.
 - **SC-252**: Con `--bench`, el cálculo de un paso de «ir a» con el mapa conocido completo de la cripta de
-  referencia (o de una sintética de tamaño equivalente) tarda menos de 5 ms (el «5 ms» sale de la tabla de §6.1
-  del enunciado).
+  referencia, **cripta-06 (300 salas)**, o de una sintética de 300 salas si cripta-06 no está disponible, tarda menos
+  de 5 ms (el «5 ms» sale de la tabla de §6.1 del enunciado).
 - **SC-253**: En el 100 % de los viajes probados, reproducir `partida.log` con `--replay` deja la partida y el
   mapa conocido idénticos a los originales, y la línea de tiempo cuenta exactamente un paso por acción.
 
