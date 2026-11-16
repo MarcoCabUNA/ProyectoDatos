@@ -17,5 +17,7 @@ from Data.ClienteHttp import ErrorRed
 from Data.GuardadoBinario import ErrorGuardado
 from Service.ServicioGuardado import ErrorCarga
 from Service.ServicioReplay import ErrorReplay
+from Service.ServicioResolubilidad import ErrorPartidaNoIniciada   # feature 003 (FR-311)
 
-ERRORES_ESPERADOS = (ErrorRed, ErrorGuardado, ErrorBitacora, ErrorPuntajes, ErrorCarga, ErrorReplay)
+ERRORES_ESPERADOS = (ErrorRed, ErrorGuardado, ErrorBitacora, ErrorPuntajes, ErrorCarga, ErrorReplay,
+                     ErrorPartidaNoIniciada)

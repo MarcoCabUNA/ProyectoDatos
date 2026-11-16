@@ -11,6 +11,10 @@ Servicios lo recibe y decide con él, sin leer sys.argv:
     checkpoint_cada   cada cuántas acciones del jugador la línea de tiempo toma un punto de control
                       (feature 004, FR-415; la bandera es --checkpoint-cada)
     hasta       instante t hasta el que reproducir con --replay ... --hasta t, o None (feature 004, FR-410)
+    verificar   id de la cripta de --verificar CRIPTA: escribir si es resoluble y salir, sin vista ni partida, o None
+                (feature 003, FR-314)
+    forzar      True -> --forzar: una partida NUEVA inicia aunque la cripta no sea resoluble o la verificación no
+                concluya; con --replay, --bench, --verificar o al cargar no tiene efecto (feature 003, FR-312)
 
 Regla de los DTOs: solo transportan datos.
 """
@@ -35,3 +39,5 @@ class ConfiguracionDTO:
     ayuda: bool = False
     checkpoint_cada: int = CHECKPOINT_POR_DEFECTO   # feature 004: al final y con valor por defecto
     hasta: int | None = None                        # feature 004: después de checkpoint_cada; al final de los de la 004
+    verificar: str | None = None                    # feature 003: detrás de hasta, con valor por defecto
+    forzar: bool = False                            # feature 003: el último campo

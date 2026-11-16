@@ -268,9 +268,12 @@ def _leer_cabecera(archivo, ruta: str) -> _Cabecera:
     if len(datos) < 6 or datos[:4] != MAGIA:
         raise ErrorGuardado(f"{ruta!r} no es una partida guardada (no empieza con {MAGIA!r})")
     version = _U16.unpack_from(datos, 4)[0]
-    if version != VERSION_FORMATO:          # se revisa ANTES de interpretar el resto
-        raise ErrorGuardado(f"{ruta!r} usa la versión {version} del formato y este programa "
-                            f"lee la versión {VERSION_FORMATO}")
+    if version < VERSION_FORMATO:           # se revisa ANTES de interpretar el resto
+        raise ErrorGuardado(f"{ruta!r} es una partida guardada con un formato viejo (versión {version}) que este "
+                            f"programa ya no carga (lee la versión {VERSION_FORMATO}): empieza una partida nueva")
+    if version > VERSION_FORMATO:
+        raise ErrorGuardado(f"{ruta!r} es una partida guardada con un formato más nuevo (versión {version}) que "
+                            f"este programa no sabe leer (lee la versión {VERSION_FORMATO}): actualiza el programa")
     if len(datos) < _CABECERA.size:
         raise ErrorGuardado(f"{ruta!r} está cortado (la cabecera está incompleta)")
     (_, _, offset_global, largo_global, offset_indice, entradas, id_minimo,

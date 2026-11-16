@@ -40,12 +40,18 @@ inválida NO se guarda (ni en memoria ni en disco) y su error queda en el array 
 fichas del mismo lote se guardan normalmente. Un id rechazado no se vuelve a pedir: ficha(id) lanza otra
 vez el mismo error sin ir a la red, y resolver() lo salta. '_rechazadas' se recorre con búsqueda lineal:
 casi siempre está vacío y, si no, tiene muy pocas fichas.
+
+Botín inválido (FR-122, T057): si alguna ficha de la 'suelta' de un enemigo quedó rechazada, el enemigo también
+(ValidacionDatos.error_de_suelta: nombra al enemigo, el campo 'suelta' y la ficha rechazada), así que GestorContenido
+rechaza la sala que lo tiene, igual que con T052. Como el enemigo llega antes que su suelta, no se guarda al llegar:
+espera a que la cola de esa resolución se vacíe (_descargar y _cerrar_espera). Así AlmacenCatalogo nunca guarda un
+enemigo con botín rechazado, y ficha() revisa también la suelta de un enemigo que lee del disco (caché vieja).
 """
 from Data.AlmacenCatalogo import CARPETA_POR_DEFECTO, AlmacenCatalogo
 from Data.CacheCatalogo import TOPE_POR_DEFECTO, CacheCatalogo, Ficha
 from Data.ClienteHttp import ErrorRed
 from Data.FuenteDatos import FuenteDatos
-from Data.ValidacionDatos import ErrorDatos, error_de_ficha
+from Data.ValidacionDatos import ErrorDatos, error_de_ficha, error_de_suelta
 from DTO.FichaEnemigoDTO import FichaEnemigoDTO
 from Estructuras.Cola import Cola
 from Security.ValidadorAcceso import es_nombre_seguro
@@ -129,6 +135,8 @@ class ResolvedorCatalogo:
         en_disco = self._almacen.leer(id_ficha)
         if en_disco is not None:
             error = error_de_ficha(en_disco)                # disco editado a mano o de otra versión del juego
+            if error is None:
+                error = self._error_de_suelta_en_disco(en_disco)    # T057: también su suelta
             if error is not None:
                 self._rechazadas.append(error)
                 raise error
@@ -233,26 +241,84 @@ class ResolvedorCatalogo:
         ya_contada: el id que ficha() ya contó como fallo en CacheCatalogo.obtener(); no se cuenta otra vez.
         Una ficha inválida (FR-122) no se guarda ni se cuenta como descargada: solo queda su error en
         '_rechazadas'. La solicitud sí cuenta, porque se hizo.
+        T057: un enemigo con 'suelta' llega ANTES que las fichas de su suelta (se encolan al recibirlo), así que
+        no se guarda al llegar: queda en 'en_espera' hasta que la cola se vacía, y recién ahí se decide con
+        error_de_suelta (_cerrar_espera). No agrega solicitudes: los lotes son los mismos que antes.
         """
         descargadas: list[Ficha] = []
-        while not pendientes.esta_vacia():
-            lote: list[str] = []
-            while not pendientes.esta_vacia() and len(lote) < FuenteDatos.MAX_IDS_POR_CATALOGO:
-                lote.append(pendientes.desencolar())
-            fichas = self._fuente.obtener_catalogo(lote)    # ErrorRed sale de aquí tal cual
-            self._solicitudes_catalogo += 1
-            for ficha in fichas:
-                error = error_de_ficha(ficha)
-                if error is not None:
-                    self._rechazadas.append(error)
-                    continue
-                self._almacen.guardar(ficha)
-                self._cache.insertar(ficha)
-                self._fichas_descargadas += 1
-                if ficha.id != ya_contada:
-                    self._cache.registrar_fallo()
-                descargadas.append(ficha)
-                if isinstance(ficha, FichaEnemigoDTO):
-                    for id_suelta in ficha.suelta:
-                        self._encolar_si_falta(id_suelta, pendientes, vistos)
+        en_espera: list[FichaEnemigoDTO] = []               # enemigos cuya suelta todavía no se resolvió
+        try:
+            while not pendientes.esta_vacia():
+                lote: list[str] = []
+                while not pendientes.esta_vacia() and len(lote) < FuenteDatos.MAX_IDS_POR_CATALOGO:
+                    lote.append(pendientes.desencolar())
+                fichas = self._fuente.obtener_catalogo(lote)    # ErrorRed sale de aquí tal cual
+                self._solicitudes_catalogo += 1
+                for ficha in fichas:
+                    error = error_de_ficha(ficha)
+                    if error is not None:
+                        self._rechazadas.append(error)
+                        continue
+                    if isinstance(ficha, FichaEnemigoDTO) and ficha.suelta:
+                        en_espera.append(ficha)
+                        for id_suelta in ficha.suelta:
+                            self._encolar_si_falta(id_suelta, pendientes, vistos)
+                        continue
+                    self._aceptar(ficha, descargadas, ya_contada)
+        except ErrorRed:
+            self._cerrar_espera(en_espera, descargadas, ya_contada, cola_vacia=False)
+            raise
+        self._cerrar_espera(en_espera, descargadas, ya_contada, cola_vacia=True)
         return descargadas
+
+    def _aceptar(self, ficha: Ficha, descargadas: list[Ficha], ya_contada: str | None) -> None:
+        """Una ficha descargada y válida: a disco y a memoria, y se cuenta (fallo de caché y descargada)."""
+        self._almacen.guardar(ficha)
+        self._cache.insertar(ficha)
+        self._fichas_descargadas += 1
+        if ficha.id != ya_contada:
+            self._cache.registrar_fallo()
+        descargadas.append(ficha)
+
+    def _cerrar_espera(self, en_espera: list[FichaEnemigoDTO], descargadas: list[Ficha], ya_contada: str | None,
+                       cola_vacia: bool) -> None:
+        """
+        T057: decide cada enemigo en espera, en orden de llegada. Si alguna ficha de su suelta quedó rechazada,
+        el enemigo también (su ErrorDatos va a '_rechazadas'; no se guarda ni en disco ni en memoria). Si no, se
+        acepta. Con la cola vacía, toda su suelta ya pasó por un lote, por memoria o por disco. Si la red falló a
+        mitad (cola_vacia=False), un enemigo con una ficha de su suelta sin resolver no se acepta ni se rechaza: se
+        descarta y se volverá a pedir cuando haga falta. La suelta son objetos (el motor los deja en el suelo),
+        así que ningún enemigo en espera depende de otro. O(Σ |suelta| x r), r = fichas rechazadas.
+        """
+        for enemigo in en_espera:
+            error = error_de_suelta(enemigo, self.rechazo)
+            if error is not None:
+                self._rechazadas.append(error)
+            elif cola_vacia or self._suelta_resuelta(enemigo):
+                self._aceptar(enemigo, descargadas, ya_contada)
+
+    def _suelta_resuelta(self, enemigo: FichaEnemigoDTO) -> bool:
+        """Cada ficha de su suelta está en memoria o en disco (las rechazadas ya las miró error_de_suelta)."""
+        for id_suelta in enemigo.suelta:
+            if not self._cache.contiene(id_suelta) and not self._almacen.contiene(id_suelta):
+                return False
+        return True
+
+    def _error_de_suelta_en_disco(self, ficha: Ficha) -> ErrorDatos | None:
+        """
+        T057: un enemigo leído del disco (ficha()) con una ficha de su suelta rechazada. Este almacén ya no guarda
+        un enemigo así, pero una caché escrita por una versión anterior del programa sí pudo guardarlo, sin la
+        ficha rechazada. Una ficha de la suelta que no está ni en memoria, ni en disco, ni rechazada se baja aquí
+        (en un solo lote: es la misma solicitud que el resolvedor hace siempre por la suelta de un enemigo, y que
+        esa caché vieja no hizo). Con una caché escrita por esta versión no pasa: la suelta de un enemigo guardado
+        siempre está en disco o rechazada.
+        """
+        if not isinstance(ficha, FichaEnemigoDTO) or not ficha.suelta:
+            return None
+        pendientes = Cola()
+        vistos: list[str] = []
+        for id_suelta in ficha.suelta:
+            self._encolar_si_falta(id_suelta, pendientes, vistos)
+        if not pendientes.esta_vacia():
+            self._descargar(pendientes, vistos)
+        return error_de_suelta(ficha, self.rechazo)

@@ -30,6 +30,8 @@ def main(argumentos: list[str] | None = None) -> int:
     if config.ayuda:
         print(TEXTO_AYUDA)
         return 0
+    if config.verificar is not None:
+        return verificar(config)
     if config.bench:
         return medir(config)
     if config.replay is not None:
@@ -37,6 +39,25 @@ def main(argumentos: list[str] | None = None) -> int:
             return reproducir_hasta(config)
         return reproducir(config)
     return jugar(config)
+
+
+def verificar(config: ConfiguracionDTO) -> int:
+    """--verificar CRIPTA (feature 003, FR-314): escribe el reporte en la salida estándar, sin vista ni partida.
+    Código: 0 resoluble, 3 no resoluble, 1 no concluyó (el 2 sigue siendo solo de opciones inválidas)."""
+    from DTO.ReporteResolubilidadDTO import NO_RESOLUBLE, RESOLUBLE
+    from UIController.TextoResolubilidad import lineas_reporte
+    if hasattr(sys.stdout, "reconfigure"):    # «→» con la salida redirigida en Windows (cp1252); StringIO no lo tiene
+        sys.stdout.reconfigure(encoding="utf-8")
+    try:
+        reporte = ControladorBackend(config).verificar(config.verificar)
+    except ErrorOperacion as error:
+        print(error)
+        return 1
+    for linea in lineas_reporte(reporte):
+        print(linea)
+    if reporte.veredicto == RESOLUBLE:
+        return 0
+    return 3 if reporte.veredicto == NO_RESOLUBLE else 1
 
 
 def medir(config: ConfiguracionDTO) -> int:

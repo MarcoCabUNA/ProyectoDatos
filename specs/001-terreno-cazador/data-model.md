@@ -57,7 +57,7 @@ costo igualado (FR-101, FR-116).
 | `_igualar_costos()` (privado, nuevo; se llama en `cargar_esqueleto` justo después de `_igualar_caras()`) | Para cada cara: si declara costo, ese; si no, el que declara su cara inversa; si ninguna lo declara, 100. Recorre todas las salas en cada llamada, así que no depende del orden de las páginas. No valida costos distintos: eso es de Data. `_igualar_caras` no cambia. | FR-101 |
 | `salidas_abiertas_con_costo(id_sala) -> list[tuple[int, int]]` | Igual que `salidas_abiertas`, en el **mismo orden**, pero con pares (destino, costo). | FR-102, FR-104 |
 | `costo_paso(origen, destino) -> int` | El menor costo entre las salidas **abiertas** de `origen` hacia `destino`. Lanza `ValueError` si no hay ninguna. | FR-119 |
-| `observador_puertas` (atributo, `None` por defecto) | Si no es `None`, `abrir_puerta` y `CierrePuerta.activar` le avisan con `puerta_cambio(a, b)` después de cambiar las caras. `a` y `b` son los **destinos** de las caras que cambiaron: con dos caras, los dos extremos; con una, su destino dos veces (ver [contrato](contracts/busqueda-rutas.md)). | FR-114 |
+| `observador_puertas` (atributo, `None` por defecto; el `Motor` asigna un `RepartidorAvisosPuertas([rutas, mapa])`, ver `Motor`) | Si no es `None`, `abrir_puerta` y `CierrePuerta.activar` le avisan con `puerta_cambio(a, b)` después de cambiar las caras. `a` y `b` son los **destinos** de las caras que cambiaron: con dos caras, los dos extremos; con una, su destino dos veces (ver [contrato](contracts/busqueda-rutas.md)). | FR-114 |
 
 ### `MonticuloMinimo` · `Estructuras/MonticuloMinimo.py` (nuevo, sin dependencias)
 
@@ -154,7 +154,7 @@ válida --decidir con otra sala de jugador--> válida (búsqueda nueva)
 
 | Cambio | Requisito |
 |---|---|
-| `__init__`: crea `self.grafo = GrafoEsqueleto(mazmorra)`, `self.rutas = RutasHaciaJugador(self.grafo, historial)` y asigna `mazmorra.observador_puertas = self.rutas` (tres líneas). | FR-112, FR-114 |
+| `__init__`: crea `self.grafo = GrafoEsqueleto(mazmorra)`, `self.rutas = RutasHaciaJugador(self.grafo, historial)` y asigna `mazmorra.observador_puertas = self.rutas` (tres líneas). Desde la 002 (FR-207, `ed0da17`) asigna `mazmorra.observador_puertas = RepartidorAvisosPuertas([self.rutas, self.mapa])`: el repartidor reenvía cada `puerta_cambio(a, b)` primero a las rutas y después al mapa conocido. Quien reemplace `self.rutas` (por ejemplo `Logic/BenchRutas.py`) arma un repartidor nuevo con las rutas nuevas y `self.mapa`. | FR-112, FR-114 |
 | `mover_jugador`: `terminar_accion_jugador(salida.costo)` en lugar de `COSTO_MOVER`. | FR-102 |
 | `turno_enemigo`: usa `decidir_paso()`. Programa con el costo devuelto si se movió, o con 100 si espera o ataca. | FR-102, FR-103, FR-110, FR-121 |
 

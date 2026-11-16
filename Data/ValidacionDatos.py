@@ -5,7 +5,8 @@ Aquí están, en un solo lugar, las reglas de FR-122 que le tocan a Datos:
   - costo de una salida: entero >= 1 (un bool NO cuenta como entero);
   - cierre_automatico de una salida, si viene: entero >= 1 (tampoco bool); null o ausente es válido (T055);
   - rango de una ficha con comportamiento "cazador": entero >= 0 (tampoco bool); no puede faltar ni ser null;
-  - duracion de la ficha de un objeto, si la trae: entero >= 1 (tampoco bool); null o ausente es válido (T055).
+  - duracion de la ficha de un objeto, si la trae: entero >= 1 (tampoco bool); null o ausente es válido (T055);
+  - suelta de la ficha de un enemigo: ninguna de sus fichas puede haber quedado rechazada (T057, error_de_suelta()).
 cierre_automatico y duracion programan eventos en la agenda, y la feature 004 supone que nada se programa con
 retraso 0. La duracion de un efecto de ficha (EfectoFichaDTO) NO se valida aquí: P1 ya convierte las <= 0 en None.
 Las reglas del esqueleto (costo, cierre_automatico y los dos lados de una salida con costos distintos) las
@@ -18,9 +19,12 @@ de red pregunta isinstance(error, ErrorDatos).
 
 Datos solo valida (Principio I); no decide reglas del juego. Lógica supone que lo que recibe es válido.
 """
+from typing import Callable
+
 from Data.ClienteHttp import ErrorRed
 from DTO.FichaEnemigoDTO import FichaEnemigoDTO
 from DTO.ObjetoDTO import ObjetoDTO
+from DTO.UbicacionLlaveDTO import UbicacionLlaveDTO
 
 COMPORTAMIENTO_CAZADOR = "cazador"
 
@@ -71,6 +75,37 @@ def error_de_ficha(ficha) -> ErrorDatos | None:
     return ErrorDatos(f"ficha {ficha.id}",
                       f"el campo 'rango' de un cazador debe ser un entero >= 0 ({recibido})",
                       id_ficha=ficha.id)
+
+
+def error_de_suelta(enemigo: FichaEnemigoDTO, rechazo) -> ErrorDatos | None:
+    """
+    T057 (FR-122, H2-22): el ErrorDatos del enemigo si alguna ficha de su 'suelta' quedó rechazada, o None.
+    rechazo(id) -> ErrorDatos | None es el de ResolvedorCatalogo. Solo se puede llamar cuando las fichas de la
+    suelta ya se resolvieron (descargadas, en memoria o en disco): antes, una ficha que todavía no llegó no
+    figura como rechazada. Mismo formato de mensaje que las demás fichas. O(|suelta| x r), r = fichas rechazadas.
+    """
+    for id_suelta in enemigo.suelta:
+        if rechazo(id_suelta) is not None:
+            return ErrorDatos(f"ficha {enemigo.id}",
+                              f"el campo 'suelta' trae la ficha {id_suelta}, que fue rechazada por datos inválidos",
+                              id_ficha=enemigo.id)
+    return None
+
+
+def validar_ubicaciones(operacion: str, ubicaciones: list[UbicacionLlaveDTO],
+                        existe_sala: Callable[[int], bool]) -> None:
+    """
+    Feature 003, FR-321: lanza ErrorDatos en la PRIMERA ubicación cuya sala no existe en el esqueleto, con la llave,
+    la sala y, si lo trae, el enemigo. La instancia de enemigo no se valida (exigiría descargar contenido, FR-301), y
+    una llave que pide una puerta y no está en la lista no es error (Lógica la informa «sin ubicación»).
+    existe_sala es GestorEsqueleto.existe_sala: se pasa la función y no el gestor porque GestorEsqueleto ya importa
+    este archivo. O(U).
+    """
+    for u in ubicaciones:
+        if not existe_sala(u.sala):
+            enemigo = f" (enemigo {u.enemigo})" if u.enemigo is not None else ""
+            raise ErrorDatos(operacion, f"la llave {u.id} está en la sala {u.sala}{enemigo}, "
+                                        f"que no existe en el esqueleto")
 
 
 def _error_de_duracion(objeto: ObjetoDTO) -> ErrorDatos | None:

@@ -2702,8 +2702,6 @@ No cambies nada más. Al final: las líneas que cambiaste, con el texto antes y 
 **Uso de la respuesta:** dos commits. `plan(002)`: el contrato del mapa queda confirmado por el integrante 3 (T005) con `es_explorada(sala)` O(1) para el H-2, los dos casos de `buscar_exploradas` (vacío o solo espacios → `[]`; no `str` → `ValueError`), las garantías del grafo (total de salas, coherencia entre `salidas` y `entradas`, sala no explorada sin listas, posición 0 y huecos → `[]`), el costo de armarlo por paso (`_inversa` en la primera llamada a `entradas`, lo mide B11), la aclaración de D-1 (traducir la vecina a una dirección con `Mazmorra.salida` no es usar el esqueleto para la ruta) y el H-2 decidido (opción A, `SIN_EXPLORAR` en `DTO/EstadoJuegoDTO.py`); data-model, una frase del plan y dos de research alineadas. `tasks(002)`: T005 marcada; T006, T008, T026 a T028, T030, T042 y T050 actualizadas (cinco pruebas nuevas en T026; la guarda de H4-4 espera a T118); y las tareas de «ir a» del integrante 3, T100 a T127, generadas desde su sección del plan a su pedido, con lo abierto marcado «confirmar con el integrante 3» y su tabla de cobertura. En T050 corregí a mano «la guarda de T023 de la 004» por «la guarda de T118». No se tocaron spec.md, el código ni la sección del integrante 3 en plan.md. Revisé el resultado en el zip antes de cada commit.
 
 -----------------------------------------------------------------------------------------------------------------------
-
------------------------------------------------------------------------------------------------------------------------
 **Fecha:** Sábado 14 de noviembre 2026
 
 **Herramienta:** (Claude Code)
@@ -2788,3 +2786,467 @@ No hagas push. Reporta los commits y cualquier cosa que no hayas podido aplicar.
 3) Contador de daño (la tarea nueva del plan de «ir a», antes de T111): ActorBase.danio_recibido, entero inicial 0 en __init__, que sube en Recibir_Dannio solo cuando Cant > 0. Verifica primero en el código que Cant ya es el daño final (después de defensa u otros ajustes) y dime dónde se calcula. No va al historial, no va a PartidaGuardada, no toques nada más de ActorBase. Con type hint y docstring. Pruebas primero: ataque de enemigo, veneno y trampa lo hacen subir; un daño de 0 no; una curación no lo baja; un pergamino no lo cambia el resultado de la comparación antes y después de un paso. Anota el antes/después en DECISIONES.md. Commit «feat(002): contador de daño recibido en ActorBase para ir a (primera entrega, revisión del integrante 1)». Reporta archivo y línea.
 
 **Uso de la respuesta:** Se verifica con una mutación la prueba de avanzar_hasta, se prueba cargar y retroceder con la línea y se implementa el contador de daño recibido para «ir a».
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement Feature 002-niebla-ir-a, parte del integrante 2. Segundo lote: las fases 3 a 7 de specs/002-niebla-ir-a/tasks.md, de T014 a T029, en este orden y como dice cada tarea. El primer lote (T001, la fase 2, T036, T038 y T039) ya está hecho y en origin/derek.
+
+1. Fase 3 (historia 1): T014 (las pruebas primero; comprobá que fallan), T015 y T016.
+2. Fase 4 (historia 2): T017 (comprobá que fallan), T018 y T019.
+3. Fase 5 (historia 3): T020 (comprobá que fallan), T021 y T022.
+4. Fase 6 (pergamino en Logic): T023, T024 y T025. Ojo con la excepción documentada de T023: esas pruebas cubren código que ya llegó (T012, T015 y T021) y pueden pasar desde que se escriben. Si pasan, decímelo y no cambies nada en T024. Si alguna falla, T024 corrige SOLO _poner_estado / _poner_cara.
+5. Fase 7 (contrato para el integrante 3): T026 con TODAS sus pruebas, incluidas las cinco que se agregaron hoy (coherencia de entradas y salidas, posición 0 y huecos, es_explorada, y los dos casos de buscar_exploradas); comprobá que fallan. Después T027, T028 y T029.
+
+Después de T029, PARÁ. T030 es un aviso sin código: no lo hagas, lo mando yo. No hagas T031 ni nada de las fases 8 en adelante: no toques Logic/motorJuego.py, Logic/PartidaGuardada.py ni ningún archivo del integrante 1 o del integrante 3.
+
+Reglas:
+- Constitución v1.2.0 y las «Reglas para todas las tareas» de tasks.md: sin dict ni set como índice o caché, sin collections, heapq ni bisect, sin sorted ni list.sort, sin copy fuera de tests/, y Logic no importa Data ni Service. Las direcciones siempre en orden 0 a 3.
+- Toda escritura del mapa pasa por _poner_estado / _poner_cara; ninguna operación baja un estado.
+- Mazmorra._salida_inversa es del integrante 1: solo se lee, no se modifica (está en su nota de dependencias).
+- H2-5 se lee como está escrito hoy en la spec (el jugador está en otra sala; por eso la cara A–C sigue «sin observar»).
+- Archivos permitidos: Logic/MapaConocido.py, Logic/GrafoMapaConocido.py (nuevo), tests/test_mapa_conocido_estados.py, tests/test_mapa_conocido_puertas.py, tests/test_mapa_conocido_antorcha.py, tests/test_mapa_conocido_partida.py, tests/test_grafo_mapa_conocido.py (nuevos los cuatro últimos), tests/ayudas_mapa.py (solo si hace falta un ayudante nuevo, sin cambiar los que ya existen) y specs/002-niebla-ir-a/tasks.md (solo para marcar). Si otro archivo tuviera que cambiar, avisame en vez de cambiarlo.
+- Marcá con [x] en tasks.md solo las tareas que quedaron completas, de T014 a T029.
+- Antes de terminar corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8 en Windows) y el replay de ejemplo (python main.py --replay ejemplos/partida_ejemplo.log --offline), que debe dar lo mismo que antes. Corré también el grep de restricciones de T059 sobre Logic/MapaConocido.py y Logic/GrafoMapaConocido.py.
+
+Al final decime:
+- los archivos nuevos y los modificados;
+- las pruebas nuevas de cada fase, con su resultado antes y después del código (y cuáles de T023 pasaron desde el principio);
+- el resultado de la suite, de los scripts y del replay;
+- el resultado del grep de restricciones;
+- cualquier diferencia con tasks.md, el data-model o el contrato, y cualquier cosa del contrato que no se haya podido cumplir tal cual.
+No hagas commit.
+
+**Uso de la respuesta:** segundo lote de la 002 (T014 a T029), en un commit. `Logic/MapaConocido.py`: `iniciar`, `entrar` con y sin antorcha, `puerta_cambio`, `es_explorada` y `buscar_exploradas` (con `strip().casefold()`, `[]` para un nombre vacío y `ValueError` si no es `str`); toda escritura por `_poner_estado` / `_poner_cara`. `Logic/GrafoMapaConocido.py` nuevo, con la interfaz de la 001: constructor O(1), `_inversa` en la primera llamada a `entradas`, lectura en vivo del mapa, `entradas` inversa de `salidas` y `[]` para la posición 0 y los huecos. 44 pruebas nuevas en cinco archivos; cada fase falló primero, salvo las cinco del pergamino (T023), que pasaron desde el principio por la excepción documentada, y algunas que ya cubría la observación de T015. Tres pruebas de la antorcha que pasaban sin probar nada se reforzaron. En NFR-202 se acota el total de registros (5 + 16 + 8), porque una vecina avistada y explorada en la misma entrada registra dos cambios, como manda el orden del data-model. Límite anotado para DECISIONES: con dos salidas de una sala hacia la misma vecina, `Mazmorra._salida_inversa` (del integrante 1, solo lectura) da solo la primera cara de vuelta. Suite: 753 pruebas OK (2 skip), 31 de 31 scripts; replay igual que antes; grep de restricciones limpio. Revisé el zip antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Un prompt en dos partes, en un chat nuevo (la parte 2 empieza cuando se le escribe «seguí»):
+
+/speckit-implement Feature 002-niebla-ir-a, parte del integrante 2. Tercer lote: las fases 8 y 9 de specs/002-niebla-ir-a/tasks.md. Los lotes 1 y 2 (T001, fase 2, T014 a T029, T036, T038 y T039) ya están hechos. Son dos partes, con una parada en medio, porque T033 y T040 van cada una en su commit propio y el integrante 1 las revisa antes del merge.
+
+PARTE 1 — fase 8: T031, T032 y T033, en ese orden.
+1. T031: todas sus pruebas, como dice la tarea, sin skipTest. Comprobá que las del repartidor fallan porque falta Logic/RepartidorAvisosPuertas.py y las del motor porque falta motor.mapa.
+2. T032: Logic/RepartidorAvisosPuertas.py. Las dos primeras pruebas de T031 pasan.
+3. T033: en Logic/motorJuego.py, EXACTAMENTE los cinco cambios de la tarea y nada más: los dos imports; self.mapa = MapaConocido(mazmorra, jugador, self.historial) después de self.rutas = ...; reemplazar self.mazmorra.observador_puertas = self.rutas por el RepartidorAvisosPuertas([self.rutas, self.mapa]); self.mapa.iniciar(self.jugador.Sala_Actual) en iniciar() después de self.rastro.marcar(...); y self.mapa.entrar(destino, self.efectos.tiene(self.jugador, "antorcha")) en mover_jugador() justo después de self.jugador.Sala_Actual = destino. Sin type hints, docstrings ni comentarios nuevos en ese archivo, sin reordenar ni reformatear nada. Es un archivo del integrante 1: él revisa el diff, así que tiene que ser mínimo.
+4. Después de T033: las pruebas del motor de T031 pasan, y tests/test_terreno_cazador.py, tests/test_rutas_equivalencia.py y las pruebas de la 003 y de la 004 siguen en verde. Si en tests/test_guardado_mapa.py la prueba test_t047_de_la_004_archivo_v1_deja_intacta_la_partida_actual compara estados(motor.mapa) solo cuando existe motor.mapa, comprobá que ahora sí lo compara; si no lo compara, agregalo.
+5. Corré la suite completa y el replay de ejemplo, marcá T031, T032 y T033 en tasks.md y PARÁ. Decime los archivos de esta parte, el diff exacto de Logic/motorJuego.py y el resultado de la suite y del replay. Yo hago el commit y te escribo «seguí».
+
+PARTE 2 — fase 9 (solo cuando te diga «seguí»): T035 (segundo momento), T037, T040, T041, T042 y T044.
+1. T035: las seis pruebas de a_guardado y restaurar en tests/test_guardado_mapa.py. Comprobá que fallan.
+2. T037: a_guardado y restaurar en Logic/MapaConocido.py. restaurar(None) arma el mapa inicial desde jugador.Sala_Actual con _explorar + _observar_puertas; restaurar nunca registra en el historial (ni con un DTO ni con None). Marcá T035 y T037.
+3. T040: primero sus tres pruebas en tests/test_mapa_conocido_partida.py (comprobá que fallan); después, en Logic/PartidaGuardada.py, EXACTAMENTE: el argumento mapa=motor.mapa.a_guardado() en el PartidaGuardadaDTO(...) de guardar, y la línea motor.mapa.restaurar(partida.mapa) en cargar, justo antes de motor.historial.descartar_intervalo_abierto(), sin if ni raise. Nada más en ese archivo (también es del integrante 1). Comprobá que tests/test_partida_guardada.py, tests/test_servicio_guardado.py, tests/test_controlador_backend.py, tests/TestGuardadoBinario.py y las pruebas de la 004 siguen en verde sin cambiarlas.
+4. T041 y T042, como dicen las tareas (T041 es una excepción documentada al «falla primero»; T042 con la guarda de T118).
+5. T044. Su texto dice que H4-4 figura como skip «de T023 de la 004»: corregilo en tasks.md a «de T118». Y marcá T043 [x]: el aviso se mandó el 14/11 después del lote 1.
+6. Marcá en tasks.md solo lo que quedó completo y PARÁ. No hagas nada de las fases 10 en adelante.
+
+Reglas para las dos partes:
+- Constitución v1.2.0 y las «Reglas para todas las tareas» de tasks.md: sin dict ni set como índice o caché, sin collections, heapq ni bisect, sin sorted ni list.sort, sin copy fuera de tests/, y Logic no importa Data ni Service.
+- Archivos permitidos: Logic/RepartidorAvisosPuertas.py (nuevo), Logic/motorJuego.py y Logic/PartidaGuardada.py (solo las líneas de T033 y T040), Logic/MapaConocido.py, tests/test_mapa_conocido_puertas.py, tests/test_mapa_conocido_estados.py, tests/test_mapa_conocido_antorcha.py, tests/test_mapa_conocido_partida.py, tests/test_guardado_mapa.py, tests/ayudas_mapa.py (solo ayudantes nuevos) y specs/002-niebla-ir-a/tasks.md. Podés leer tests/ayudas_terreno.py, pero no lo cambies (es del integrante 1). Si otro archivo tuviera que cambiar, avisame en vez de cambiarlo.
+- Antes de terminar cada parte corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8 en Windows) y el replay de ejemplo (python main.py --replay ejemplos/partida_ejemplo.log --offline), que debe dar lo mismo que antes, y el grep de restricciones de T059 sobre los archivos de Logic que tocaste.
+
+Al final de cada parte decime:
+- los archivos nuevos y los modificados, separados para el commit de esa parte (en la parte 2, en dos grupos: (a) T035 y T037; (b) T040 a T044 con tasks.md);
+- el diff exacto de los archivos del integrante 1;
+- las pruebas nuevas, con su resultado antes y después del código;
+- el resultado de la suite, de los scripts, del replay y del grep;
+- cualquier diferencia con tasks.md, el data-model o el contrato.
+No hagas commit.
+
+**Uso de la respuesta (parte 1):** fase 8 de la 002 (T031 a T033), en un commit propio que revisa el integrante 1. `Logic/RepartidorAvisosPuertas.py` nuevo (reenvía `puerta_cambio` a `[motor.rutas, motor.mapa]`, en ese orden). En `Logic/motorJuego.py`, solo los cinco cambios acordados el 14/11: dos imports, `self.mapa`, el repartidor como `observador_puertas`, `self.mapa.iniciar(...)` en `iniciar()` y `self.mapa.entrar(...)` en `mover_jugador()`; sin otros cambios. 13 pruebas nuevas sin `skipTest` (repartidor, motor e historias 1 a 4 con el motor); todas fallaron primero. Ayudante nuevo `motor_con_inventario` en `tests/ayudas_mapa.py`. Suite: 766 pruebas OK (2 skip), 31 de 31 scripts; replay byte a byte igual; grep de restricciones limpio. Revisé el zip y el diff de `motorJuego.py` antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Mismo chat que la parte 1 del tercer lote de la 002:
+
+seguí
+
+**Uso de la respuesta (parte 2):** fase 9 de la 002 (T035 segundo momento, T037 y T040 a T044), en dos commits. (a) `a_guardado` y `restaurar` en `Logic/MapaConocido.py`: `restaurar` valida los largos (`ValueError`) y nunca registra en el historial; con `None` arma el mapa inicial desde la sala del jugador, con el historial en `None` mientras lo arma (try/finally). Se corrigió a mano la fila de `restaurar` del data-model §2, que decía que con `None` lo registrado quedaba en el intervalo abierto. (b) En `Logic/PartidaGuardada.py`, que revisa el integrante 1, solo `mapa=motor.mapa.a_guardado()` en `guardar` y `motor.mapa.restaurar(partida.mapa)` en `cargar`, sin `if`. Pruebas: las seis de T035 y las tres de T040 fallaron primero; T041 (replay y `--hasta` con líneas `# ir a`, y misma partida mismo mapa) es la excepción documentada y se comprobó que falla con `restaurar` anulado; T042 queda en skip hasta T118 del integrante 3 (y necesitará `a_dto`, T046). Suite: 778 pruebas OK (3 skip), 31 de 31 scripts; replay byte a byte igual; grep limpio. Revisé el zip y el diff de `PartidaGuardada.py` antes de los commits.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Un prompt en un chat nuevo y una respuesta a una pregunta de Claude Code durante T055.
+
+Prompt:
+
+/speckit-implement Feature 002-niebla-ir-a, parte del integrante 2. Cuarto y último lote: las fases 10, 11 y 12 de specs/002-niebla-ir-a/tasks.md. Las fases 1 a 9 ya están hechas y en origin/derek (T001 a T044, salvo T004 y T006, que son coordinación). Hacé solo estas tareas, en este orden y como dice cada una:
+
+1. Fase 10: T045 (las pruebas primero; comprobá que fallan, salvo las que tienen guarda), T046 (a_dto) y T047.
+   - T048 y T049 son avisos al integrante 3 y T050 espera al integrante 3: no los hagas ni los marques.
+2. Fase 11: T051 (comprobá que fallan), T052, T053, T054, T055 y T056.
+   - Para correr el bench usá el Python del proyecto (python main.py --bench, con PYTHONIOENCODING=utf-8 en Windows; uv solo si está instalado) y guardá la tabla en specs/002-niebla-ir-a/bench-<fecha de hoy>.txt con la máquina y la versión de Python, como specs/001-terreno-cazador/bench-2026-11-13.txt.
+   - En T056: si algún criterio NO se cumple (SC-203, SC-204, SC-206, SC-207, NFR-205, o B11 con 1 024 salas por encima de 5 ms), PARÁ ahí y decímelo con los números: no cambies umbrales, ni el diseño, ni la spec. Si se cumplen, corregí la frase de research R5 y del contrato (a) con el número medido de B11, como dice la tarea.
+3. Fase 12: T057, T058, T059 y T060.
+   - T057: en DECISIONES.md, reemplazá el «(pendiente)» de la sección «## Integrante 2 — 002 y 003» por los enlaces a la spec, el plan y la investigación de la 002 (como hacen las otras secciones) y un apartado «### §5.3 Mapa conocido». El plan de trabajo del curso numera así: §5.3 mapa conocido (compartido con el integrante 3, que escribe la parte de «ir a») y §5.4 resolubilidad. Agregá al principio del apartado una línea que diga que la parte de «ir a» de §5.3 la escribe el integrante 3 en su sección, y dejá «§5.4 Resolubilidad» como «(pendiente: 003)». Además de todo lo que pide T057, incluí en los límites conocidos el de las dos salidas de una sala hacia la misma vecina: Mazmorra._salida_inversa (del integrante 1, solo lectura) da solo la primera cara de vuelta, así que la segunda cara de la vecina no se observa (es la misma regla que abrir_puerta; fuera de las criptas publicadas). No toques las secciones de los integrantes 1 y 3, ni la introducción del archivo.
+   - T058: solo las filas de esta parte en la tabla «Trazabilidad del Apéndice B» de spec.md, con los nombres reales de las pruebas que existen hoy en tests/ (buscalos, no los supongas).
+   - T059: todos los grep de la tarea, más git diff de Logic/motorJuego.py y Logic/PartidaGuardada.py contra el commit 0f71f15 (antes de la feature), que debe mostrar solo las líneas de T033 y T040.
+   - T060: la suite y el replay. Del quickstart, hacé §1, §3, §4 y §5; §2 es con el integrante 3. NO marques T060: queda abierta hasta que pase la parte del EstadoJuegoDTO de test_sc202 (H-2 del integrante 3), como dice la tarea.
+   - T061: NO la hagas: los prompts los registro yo en PROMPTS_LLM.md. No toques ese archivo.
+
+Reglas:
+- Constitución v1.2.0 y las «Reglas para todas las tareas» de tasks.md: sin dict ni set como índice o caché (tampoco en el bench), sin collections, heapq ni bisect, sin sorted ni list.sort, sin copy fuera de tests/, y Logic no importa Data ni Service.
+- Logic/BenchLogica.py y Logic/BenchRutas.py no se modifican (solo se importan sus funciones, como dicen las tareas). B8 avisa por motor.mazmorra.observador_puertas, nunca con BenchRutas._cambiar_puerta.
+- Archivos permitidos: Logic/MapaConocido.py, Logic/BenchMapaConocido.py (nuevo), Service/ServicioBench.py (solo el import y la entrada de la lista), tests/test_mapa_conocido_vista.py (nuevo), tests/test_bench_mapa.py (nuevo), tests/ayudas_mapa.py (solo ayudantes nuevos), specs/002-niebla-ir-a/bench-<fecha>.txt (nuevo), specs/002-niebla-ir-a/research.md y contracts/contrato-mapa-conocido.md (solo la frase de B11 de T056), specs/002-niebla-ir-a/spec.md (solo las filas de T058), DECISIONES.md (solo la sección del integrante 2) y specs/002-niebla-ir-a/tasks.md (para marcar). Si otro archivo tuviera que cambiar, avisame en vez de cambiarlo.
+- Marcá con [x] en tasks.md solo lo que quedó completo.
+
+Al final decime:
+- los archivos de cada grupo, para cuatro commits: (1) fase 10: T045 a T047; (2) fase 11: T051 a T056 con el archivo del bench; (3) spec(002): T058; (4) docs: T057, la frase de B11 en research y el contrato, y tasks.md;
+- las pruebas nuevas, con su resultado antes y después del código, y cuáles quedaron con guarda y por qué;
+- la tabla del bench y, por cada criterio de T056, si se cumple, con el número;
+- el resultado de la suite, de los scripts, del replay y de cada grep de T059;
+- cualquier diferencia con tasks.md, el data-model o el contrato.
+No hagas commit.
+
+Pregunta de Claude Code: T055 rompe `tests/TestServicioBench.py:132`, que compara la lista por defecto de `ServicioBench` exactamente con [BenchDatos.medir, BenchLogica.medir, BenchInventario.medir]. ¿Qué hago?
+
+Respuesta:
+
+Cambiala: en tests/TestServicioBench.py, solo la aserción de la línea 132 (y su import), para que espere [BenchDatos.medir, BenchLogica.medir, BenchMapaConocido.medir, BenchInventario.medir]. En Service/ServicioBench.py, además del import y la lista, actualizá el docstring de __init__, que dice «las de los tres integrantes, en orden: Datos, Lógica, Inventario», para que nombre también el mapa conocido. El nombre de la prueba no lo cambies. Los dos archivos son míos. Seguí con T056 y la fase 12.
+
+**Uso de la respuesta:** último lote de la 002 (fases 10 a 12), en cuatro commits. (1) `MapaConocido.a_dto()` (solo exploradas, costo igualado, estado recordado y `destino = None` para las avistadas) con `tests/test_mapa_conocido_vista.py`: las 10 pruebas fallaron primero; H5-7 queda en skip hasta la 003 y la parte del `EstadoJuegoDTO` de SC-202 hasta el H-2 del integrante 3. (2) `Logic/BenchMapaConocido.py` (B1 a B11), `BenchMapaConocido.medir` en `ServicioBench` después de `BenchLogica.medir` (con la aserción de `TestServicioBench` actualizada) y la tabla `bench-2026-11-15.txt`: se cumplen SC-203 (×1,10 y ×1,09), SC-204 (×1,03), SC-207 (×0,99), NFR-205 / SC-206 (peor ciclo 5,7 ms < 20 ms) y B11 con 1 024 salas (armar el grafo + un paso: 4,52 ms < 5 ms, con poco margen; la búsqueda es 3,8 ms y armar el grafo 0,9 ms). (3) `spec(002)`: la trazabilidad del Apéndice B de la parte del integrante 2 con los nombres reales de las pruebas. (4) `DECISIONES.md` «§5.3 Mapa conocido» (R0 a R5 con su evidencia, decisiones por diseño, límites conocidos, antes y después del binario), la frase de B11 en research y el contrato con el número medido, y las tareas marcadas (T004, T030, T048, T049 y T061 a mano, después de los avisos). Suite: 822 pruebas OK (5 skip), 31 de 31 scripts; replay igual que antes de la feature; greps de T059 limpios. T050 y T060 quedan abiertas hasta el H-2 y T118 del integrante 3. Revisé el zip antes de los commits.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Dos trabajos chicos, en dos grupos separados para dos commits. No hagas commit. Constitución v1.2.0: sin dict ni set como índice o caché, sin collections, heapq ni bisect, sin sorted ni list.sort, sin copy fuera de tests/, y Logic no importa Data ni Service. Pruebas primero, con el FR en el nombre.
+
+PARTE A — Ajustes de la revisión del integrante 1 a la feature 002 (15/11). Solo esto:
+A1. La complejidad de MapaConocido.puerta_cambio: recorre las salidas de la sala del jugador (_observar_puertas), así que es O(g), con g ≤ 4. Corregí «O(1)» por «O(g), g ≤ 4» en su docstring (Logic/MapaConocido.py, línea ~65), en la fila de puerta_cambio de specs/002-niebla-ir-a/data-model.md §2 (línea ~41) y en DECISIONES.md, sección del integrante 2, §5.3 (línea ~286, «`puerta_cambio`: O(1)»). La fila del RepartidorAvisosPuertas (data-model ~185) queda como está.
+A2. Logic/PartidaGuardada.py (archivo del integrante 1, que pidió este cambio): en cargar, mové la línea motor.mapa.restaurar(partida.mapa) para que quede ARRIBA del comentario «# El historial no se guarda: se empieza vacío, …», y ese comentario quede justo encima de motor.historial.descartar_intervalo_abierto(). Nada más en ese archivo.
+A3. Data/GuardadoBinario.py, _leer_cabecera: el mensaje de otra versión tiene que decir claramente si el archivo es de un formato viejo o de uno más nuevo. Primero la prueba en tests/test_guardado_mapa.py (comprobá que falla): con un archivo de versión 1, el ErrorGuardado dice «formato viejo» y sigue nombrando «versión 1» y «versión 2» (las aserciones que ya existen no cambian); con una versión mayor que VERSION_FORMATO, dice «formato más nuevo». Después el mensaje, por ejemplo: «'<ruta>' es una partida guardada con un formato viejo (versión 1) que este programa ya no carga (lee la versión 2): empezá una partida nueva». Revisá cómo le llega ese mensaje al jugador (ServicioGuardado / ControladorBackend / la vista) y decime si se muestra tal cual, sin cambiar esos archivos.
+A4. Para la defensa, dejá anotado en qué commit quedó cada cambio a archivos de la primera parte:
+   - en specs/002-niebla-ir-a/tasks.md, al final de T033: «Cambio a Logic/motorJuego.py en el commit ed0da17 (revisado y aprobado por el integrante 1 el 15/11).» y al final de T040: «Cambio a Logic/PartidaGuardada.py en el commit 4aac926, junto con T041 a T044 (el integrante 1 aceptó no rehacerlo como commit propio; aprobado el 15/11). El comentario se reordenó después en el commit de los ajustes de su revisión.»;
+   - en DECISIONES.md, §5.3 del integrante 2, una línea en el punto que corresponda (R2 para el motor y R4 para PartidaGuardada) con los mismos dos commits.
+
+PARTE B — T057 de la feature 001 (integrante 2), escenario H2-22 de FR-122. Leé la tarea en specs/001-terreno-cazador/tasks.md, el contrato specs/001-terreno-cazador/contracts/contrato-datos.md (las líneas nuevas del integrante 1: AlmacenCatalogo solo guarda fichas válidas, botín incluido, y ficha() revalida al leer del disco) y la prueba ya escrita test_h2_22_fr122_botin_invalido_deja_la_sala_sin_contenido en tests/test_terreno_cazador.py (clase TestDatosInvalidos, con FuenteConBotinInvalido de tests/ayudas_terreno.py). La prueba es la especificación: tiene tres casos (sala no inicial, sala inicial y una segunda partida con la misma carpeta de caché).
+B1. Quitá SOLO el self.skipTest de esa prueba (es lo que pide T057; los dos archivos de prueba son del integrante 1 y no se cambia nada más en ellos) y comprobá que falla por lo esperado.
+B2. Implementá la regla en Data (archivos del integrante 2: Data/ResolvedorCatalogo.py, Data/AlmacenCatalogo.py, Data/GestorContenido.py, Data/ValidacionDatos.py, los que hagan falta): si alguna ficha de la `suelta` de un enemigo quedó rechazada, la ficha del enemigo cuenta como inválida, con un ErrorDatos que nombra la ficha del enemigo, el campo `suelta` y la ficha rechazada; el efecto es el mismo que T052 (solo la sala con ese enemigo queda RECHAZADA, entrar se rechaza con ese mensaje y en la sala inicial la partida no inicia). Cuidado con dos cosas:
+   - El orden de llegada: la ficha del enemigo llega antes que las de su suelta (que se encolan al descargarla). El enemigo no se puede dar por válido, ni guardar en el AlmacenCatalogo, hasta que se resolvieron las fichas de su suelta.
+   - La segunda partida: el AlmacenCatalogo no tiene que guardar un enemigo con botín rechazado, y ficha() al leer un enemigo del disco tiene que revisar también su suelta (una caché vieja podría tenerlo guardado).
+   No agregues solicitudes: ResolvedorCatalogo ya baja las fichas de suelta antes de integrar la sala. Si para cumplir la regla hiciera falta una solicitud extra o cambiar un archivo que no es del integrante 2, PARÁ y avisame.
+B3. Pruebas propias de Data, si hacen falta para lo que la prueba de H2-22 no cubre (por ejemplo, que el almacén no guarde el enemigo y que una caché vieja con el enemigo guardado se rechace al leerlo), en los archivos de prueba del integrante 2 (tests/TestValidacionDatos.py u otro tuyo nuevo).
+B4. Marcá T057 en specs/001-terreno-cazador/tasks.md.
+
+Antes de terminar corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8 en Windows) y el replay de ejemplo (python main.py --replay ejemplos/partida_ejemplo.log --offline), que debe dar lo mismo que antes.
+
+Al final decime:
+- los archivos de la parte A y de la parte B por separado;
+- el diff exacto de Logic/PartidaGuardada.py y de los dos archivos de prueba del integrante 1;
+- las pruebas nuevas con su resultado antes y después;
+- el mensaje nuevo de versión y cómo le llega al jugador;
+- cómo resolviste el orden de llegada del enemigo y su suelta, y la complejidad que agrega;
+- el resultado de la suite, de los scripts y del replay.
+No hagas commit.
+
+**Uso de la respuesta:** dos commits. (A) Ajustes de la revisión del integrante 1 a la 002: `puerta_cambio` es O(g), g ≤ 4 (docstring, data-model y DECISIONES); en `PartidaGuardada.cargar` el comentario «El historial no se guarda…» queda justo encima de `descartar_intervalo_abierto()`; el mensaje de otra versión del binario dice si es un «formato viejo» (versión 1: «empezá una partida nueva») o «más nuevo» («actualizá el programa»), con dos pruebas nuevas que fallaron primero, y se comprobó que llega tal cual al aviso de la vista y entra sin cortarse; y los commits de los cambios a archivos de la primera parte (`ed0da17` motor, `4aac926` `PartidaGuardada`) anotados en `tasks.md` y en DECISIONES §5.3. (B) T057 de la 001 (FR-122, H2-22): un enemigo con una ficha de su `suelta` rechazada se rechaza con un `ErrorDatos` que nombra al enemigo, `suelta` y la ficha rechazada. Como el enemigo llega antes que su suelta, `ResolvedorCatalogo` lo deja en espera hasta que la cola de esa resolución se vacía y recién ahí lo acepta o lo rechaza (mismos lotes que antes, sin solicitudes extra); `AlmacenCatalogo` nunca guarda un enemigo con botín rechazado, y `ficha()` revisa la suelta de un enemigo leído del disco (caché vieja; si a esa caché le falta la ficha de la suelta, la baja en un lote, la misma solicitud que el código viejo hacía al morir el enemigo). Se quitó solo el `skipTest` de la prueba de H2-22 del integrante 1 (falló primero en sus 12 subcasos contra el código anterior) y se agregaron seis pruebas de Data. Suite: 830 pruebas OK (4 skip), 31 de 31 scripts; replay byte a byte igual. Revisé el zip antes de los commits.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+Revisión cruzada, SOLO LECTURA (no modifiques nada). git fetch; usá git show sobre origin/kris. Commits: 9e9db5d (contador danio_recibido en Logic/ActorBase.py), 57d26ff (prueba de avanzar_hasta), 740f47b (cargar y retroceder con la línea). Revisá contra la constitución v1.2.0: (a) 9e9db5d: que el cambio a P1 sea solo __init__ + una línea después de la guarda Cant <= 0, con type hint y docstring; que exista la fila en la tabla 'Cambios a código de la primera entrega' de specs/002*/plan.md y el antes/después en DECISIONES.md; que no entre a historial, PartidaGuardada, GuardadoBinario ni a ningún DTO; que no afecte a Cazador ni a Logic/RutasHaciaJugador.py; que tests/test_danio_recibido.py cite el FR e incluya el caso de Regeneración. (b) 57d26ff y 740f47b: que las pruebas comparen lo que dicen (historial.cantidad, reloj, vida, Evento_pendiente) y citen FR. (c) que ninguno toque archivos de la 001 (RutasHaciaJugador, BusquedaCostoMinimo, GrafoEsqueleto, BenchRutas, Mazmorra). Salida corta: primero lo que está bien, luego hallazgos ALTA/MEDIA/BAJA con archivo y línea.
+
+**Uso de la respuesta:** consulta `1a1dd66dbd1`, respuesta en `.claude-bridge/outbox/1a1dd66dbd1.txt`. Revisión cruzada de tres commits de la integrante 3 en `origin/kris`. Bien: `9e9db5d` cambia `Logic/ActorBase.py` solo en `__init__` (`danio_recibido: int = 0`, línea 17) y una línea después de la guarda `Cant <= 0` (línea 26); tiene la fila en la tabla de cambios a P1 (`specs/002-niebla-ir-a/plan.md:389`) y el antes/después en `DECISIONES.md`; no entra a historial, `PartidaGuardada`, `GuardadoBinario` ni DTO, ni afecta a `Cazador` ni a `RutasHaciaJugador`. `57d26ff` compara `historial.cantidad()`, reloj, vida y `Evento_pendiente` y cita FR-402; `740f47b` cita FR-413 y FR-420. Ninguno toca archivos de la 001. MEDIA: `tests/test_danio_recibido.py:110` no tiene un caso con el efecto Regeneración (queda para T114). BAJA: el plan y las tareas dicen que un golpe absorbido no sube el contador, pero el ataque usa `max(1, …)`; `DECISIONES.md` dice «cuatro» sitios y son tres; el docstring nuevo en `Recibir_Dannio` (método de P1) va contra la constitución; no se prueba la carga; tres pruebas sin FR en el nombre; el helper de `test_linea_tiempo_motor.py:50-53` lee atributos privados del historial y compara cuántos cambios, no cuáles; `test_linea_tiempo_guardado.py:193-194` no compara contra el valor anterior. No corrió nada ni modificó nada.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+Revisión cruzada, SOLO LECTURA (no modifiques nada). git fetch. Buscá en git log origin/derek el commit de la T033 de la 002 que cambia Logic/motorJuego.py y revisalo con git show. Verificá: (1) que el diff de motorJuego.py sea solo +6 -1: imports de MapaConocido y RepartidorAvisosPuertas; self.mapa = MapaConocido(mazmorra, jugador, self.historial) después de self.rutas; observador_puertas = RepartidorAvisosPuertas([self.rutas, self.mapa]); self.mapa.iniciar(...) en iniciar() después de rastro.marcar; self.mapa.entrar(destino, self.efectos.tiene(self.jugador, 'antorcha')) en mover_jugador justo después de Sala_Actual = destino. Y que esté la fila en la tabla de cambios a P1 de specs/002*/plan.md. (2) Capas: que Logic/MapaConocido.py y el repartidor no importen Data ni Service; estructuras prohibidas (dict/set como índice, collections, copy, sorted). (3) Interacción con la 001: que RepartidorAvisosPuertas reenvíe exactamente la misma llamada que antes recibía RutasHaciaJugador (mismo método y argumentos), en orden rutas y luego mapa; que MapaConocido no use el RNG ni cambie el orden de eventos (determinismo); cómo registra cambios en self.historial y si eso interfiere con historial.registrar_cambio(self.descartar) de RutasHaciaJugador al deshacer con pergamino. (4) Logic/BenchRutas.py en origin/derek líneas ~452 y ~675: en qué funciones se reasigna observador_puertas a las rutas solas y si alguna de esas mide el ciclo completo del motor (NFR-101/SC-104) o medir_historial, es decir, si con el mapa conectado esas cifras dejan de representar el juego real. Salida corta: primero lo que está bien, luego ALTA/MEDIA/BAJA con archivo y línea.
+
+**Uso de la respuesta:** consulta `1a1ddacdb5c`, respuesta en `.claude-bridge/outbox/1a1ddacdb5c.txt`. Revisión de `ed0da17` (T031 a T033 de la 002, de Dereck). Bien: el diff de `Logic/motorJuego.py` es +6 -1, exactamente lo pedido, con las filas en `specs/002-niebla-ir-a/plan.md:191-194`; `MapaConocido` y el repartidor no importan Data ni Service ni usan estructuras prohibidas; el repartidor reenvía la misma llamada `puerta_cambio(a, b)` a `rutas` y después a `mapa`; el mapa no usa el azar ni programa eventos (determinismo intacto) y sus registros en el historial no interfieren con `registrar_cambio(self.descartar)` de las rutas al deshacer con el pergamino. En `Logic/BenchRutas.py` las cifras siguen representando el juego: la línea 452 solo cambia el motor comprobado (no cronometrado) y la 675 el caso «sin registrar». Sin ALTA ni MEDIA. BAJA: en esos dos motores del bench el mapa deja de recibir avisos (sugiere `RepartidorAvisosPuertas([comprobadas, comprobado.mapa])` y lo mismo en la 675); el docstring de `MapaConocido.puerta_cambio` dice O(1) y es O(g); el comentario de `observador_puertas` en `Logic/Mazmorra.py:60-64` quedó viejo; `_observar_puertas` usa `Mazmorra._salida_inversa`, privada. Una acción bloqueada (`git grep` de `def tiene`), sin efecto en las conclusiones. Los puntos del bench y de `Mazmorra` se hicieron en el pedido del 15 de noviembre (más abajo).
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+Revisión cruzada, SOLO LECTURA (no modifiques nada). git fetch. Buscá en git log origin/derek el commit de la T040 de la 002 (Logic/PartidaGuardada.py) y revisalo con git show. Verificá: (1) que el diff de PartidaGuardada.py sea solo 2 líneas: mapa=motor.mapa.a_guardado() en el PartidaGuardadaDTO(...) de guardar, y motor.mapa.restaurar(partida.mapa) en cargar antes de motor.historial.descartar_intervalo_abierto(); y que esté la fila en la tabla de cambios a P1 de specs/002*/plan.md. (2) PartidaGuardadaDTO: que el campo mapa sea el último y con default None (para no romper DTO armados a mano ni archivos viejos). (3) MapaConocido.restaurar: que nunca registre en el historial, que con None arme el mapa inicial desde la sala actual del jugador (y que la sala del jugador ya esté restaurada en ese punto de cargar), y que valide o maneje un mapa guardado inconsistente con el esqueleto. (4) GuardadoBinario v2: que lea archivos v1 (sin mapa) sin fallar, y que no guarde nada de la caché de rutas de la 001 (RutasHaciaJugador es estado derivado y no va al guardado). (5) Que guardar y cargar a mitad de partida deje al cazador decidiendo igual (la búsqueda arranca vacía en el motor cargado) y que exista una prueba de guardar/cargar con mapa (ida y vuelta) que cite FR. Salida corta: primero lo que está bien, luego ALTA/MEDIA/BAJA con archivo y línea.
+
+**Uso de la respuesta:** consulta `1a1ddc30d98`, respuesta en `.claude-bridge/outbox/1a1ddc30d98.txt`. Revisión de `4aac926` (T040 a T044 de la 002, de Dereck). Bien: el diff de `Logic/PartidaGuardada.py` son las 2 líneas pedidas (`mapa=motor.mapa.a_guardado()` en la línea 42 y `motor.mapa.restaurar(partida.mapa)` en la 88, antes de `descartar_intervalo_abierto()`), con las filas en `plan.md:195-196`; `PartidaGuardadaDTO.mapa` tiene default `None` (no es el último campo: lo es `linea`, como se acordó en la 004); `restaurar` no registra en el historial, con `None` arma el mapa inicial desde la sala del jugador ya restaurada y rechaza largos incorrectos con `ValueError`; la caché de rutas de la 001 no se guarda y el motor cargado arranca con la búsqueda vacía; hay pruebas de ida y vuelta con FR (`test_h4_3_a7_fr221_…`, `test_fr221_…`, `test_fr223_…`) y `test_linea_tiempo_cazador.py` cubre al cazador. Sin ALTA. MEDIA: un archivo v1 se rechaza en vez de leerse (`Data/GuardadoBinario.py:33` y `:271`), pero es lo que piden R-9 y FR-421; si se quiere otra cosa hay que cambiar la spec. BAJA: `restaurar` solo revisa largos, no la coherencia con el esqueleto; el comentario del historial en `PartidaGuardada.py:87-88` quedó encima de la línea del mapa; T040 salió junto con T041 a T044 en vez de en un commit propio. Una acción bloqueada (`git grep` de `def restaurar`), sin efecto en las conclusiones. No corrió nada ni modificó nada.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+git fetch y git merge origin/derek (trae ed0da17, mapa conocido en motorJuego.py, y 4aac926, T040 en
+PartidaGuardada.py). Si hay conflictos en archivos de la 001, pará y avisame.
+Luego, un commit por paso, suite en verde con uv run antes de cada commit, no push:
+1) Logic/BenchRutas.py ~452 (medir_ciclo_cazadores, motor comprobado) y ~675 (medir_historial, caso sin
+   registrar): en vez de asignar observador_puertas a las rutas solas, usá
+   RepartidorAvisosPuertas([<rutas>, <motor>.mapa]). No cambies nombres ni firmas (los usa el integrante 2).
+2) Logic/Mazmorra.py 60-64: actualizá el comentario de observador_puertas (ahora es el repartidor).
+3) Corré el --bench completo (3 corridas), compará con bench-2026-11-13.txt y confirmá NFR-101/SC-104 con
+   el mapa conectado. Guardá un bench nuevo con la fecha de hoy y actualizá research.md, DECISIONES.md §5.6
+   y data-model.md de la 001 (observador_puertas = RepartidorAvisosPuertas).
+4) Registrá en PROMPTS_LLM.md este pedido y las consultas del puente 1a1dd66dbd1 (revisión de 9e9db5d,
+   57d26ff, 740f47b de Kristel), 1a1ddacdb5c (revisión de ed0da17 de Dereck) y 1a1ddc30d98 (revisión de
+   4aac926 de Dereck).
+
+**Uso de la respuesta:** `git merge origin/derek` fue un avance rápido sin conflictos: además de `ed0da17` y `4aac926` trajo lo posterior de `origin/derek` hasta `38861c6` (T045 a T059 de la 002 y T057 de la 001). Un commit por paso, suite en verde con `uv run` antes de cada uno (830 pruebas de unittest OK, 4 omitidas; 31 de 31 scripts): (1) `c22202d`, `Logic/BenchRutas.py`: `medir_ciclo_cazadores` (motor comprobado) y `medir_historial` (caso sin registrar) asignan `RepartidorAvisosPuertas([<rutas>, <motor>.mapa])`, sin cambiar nombres ni firmas. (2) `2bcdc2b`, `Logic/Mazmorra.py`: el comentario de `observador_puertas` describe el repartidor. (3) `4c8d5e4`: 3 corridas del `--bench` completo (93 a 96 s) en `specs/001-terreno-cazador/bench-2026-11-15.txt`; los conteos son los mismos que el 13 de noviembre (solo crece 0,1 KB el guardado de 2000 salas, por la versión 2). Con 30 cazadores en 1 024 salas el peor ciclo es de 5,5 a 17,6 ms: **NFR-101 y SC-104 se cumplen**. Con 100 cazadores y el jugador moviéndose (fuera de NFR-101) dio 19,6 / 20,0 / 22,4 ms; medido aparte, alternando `4c4307b` (sin mapa) y `2bcdc2b`, da 7,2 a 9,4 ms en los dos con medianas iguales, así que el mapa no encarece el ciclo y el pico depende de lo que corre antes en el proceso. Se actualizaron `research.md` (R6), `DECISIONES.md` §5.6 y `data-model.md` de la 001. (4) Este registro. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+En specs/001-terreno-cazador: (1) en plan.md, junto a la línea de T033 donde observador_puertas = self.rutas,
+agregá una nota de una línea: «Desde ed0da17 (002, integrante 2) es RepartidorAvisosPuertas([self.rutas,
+self.mapa]); ver data-model.md y DECISIONES.md §5.6». No reescribas el plan original. (2) En tasks.md marcá
+T057 como hecha (38861c6, integrante 2) y anotá que H2-22 ya no tiene skip. Un commit, suite en verde con
+uv run, PROMPTS_LLM.md, no push.
+
+**Uso de la respuesta:** (1) En `specs/001-terreno-cazador/plan.md`, la línea de T033 es la fila de `Logic/motorJuego.py · __init__` de la tabla de cambios; la nota va al final de esa fila, en la última celda, para no cortar la tabla. El resto del plan no cambia. (2) T057 ya estaba marcada `[X]` en `tasks.md` (lo hizo `38861c6`); se agregó «Hecha en `38861c6` (integrante 2): la prueba de H2-22 ya no tiene `skipTest`» al final de la tarea y la misma aclaración en la nota de H2-22 de la sección de pruebas. Se comprobó que `test_h2_22_fr122_botin_invalido_deja_la_sala_sin_contenido` no tiene `skipTest` (el único que queda en `tests/test_terreno_cazador.py` es el de la 003). Suite con `uv run`: 830 pruebas OK (4 omitidas), 31 de 31 scripts. Un commit, sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement Feature 003-resolubilidad (toda del integrante 2). Primer lote: las fases 1 a 4 de specs/003-resolubilidad/tasks.md (T001 a T034), en este orden y como dice cada tarea. Antes de empezar, cambiá .specify/feature.json a {"feature_directory":"specs/003-resolubilidad"}.
+
+1. Fase 1: T001 (T002 y T003 ya están confirmadas).
+2. Fase 2 (base, contrato de llaves): T004 y T005 (las pruebas primero; comprobá que fallan), T006 y T007; T008; T009 (comprobá que fallan), T010 a T013; T014 (comprobá que fallan), T015; T016 (comprobá que fallan), T017 y T018; T019.
+   - T008 ya está confirmada: el integrante 2 revisó el Swagger el 15/11. GET /v1/criptas/{dungeon_id}/llaves responde 200 con {"llaves": [{"id": "string", "sala": 0, "enemigo": "string"}]} (y 400, 404, 429 con reintentar_en, y 500 «Invalid published content», todos con {"error": ...}), lleva el encabezado X-Cripta-Client-Id como las demás rutas, y coincide con contracts/contrato-llaves.md (raíz llaves; id, sala y enemigo). El contrato ya acepta enemigo ausente o null, así que no cambia nada: marcá T008 con esa nota y seguí.
+3. Fase 3 (historia 1, MVP): T020 y T021 (comprobá que fallan), T022, T023 y T024; T025 (parar y validar: los casos 2 y 3 del Apéndice B pasan).
+4. Fase 4 (historia 2): T026 a T029 (comprobá que fallan), T030 (solo el generador), T031, T032 y T033; T034 (parar y validar: el caso 1 del Apéndice B pasa).
+
+Después de T034, PARÁ. No hagas la fase 5 en adelante: necesita antes un merge de origin/kris que hago yo, y T037, T038, T040, T049 y T054 tocan archivos del integrante 3.
+
+Reglas (las «Reglas para todas las tareas» de tasks.md, en particular):
+- Constitución v1.2.0: sin copy ni deepcopy fuera de tests/, sin bisect, heapq, collections, dict o set como índice o caché, sin bibliotecas de grafos, sin sorted() ni list.sort() (para ordenar, Estructuras/Ordenador.py); las colas son Estructuras/Cola.py.
+- Sin recursión en Logic/CiclosLlaves.py ni en la fase hacia afuera de Logic/RecorridoLlaves.py, y sin sys.setrecursionlimit (T029 lo comprueba con más de 1000 dependientes).
+- Logic no importa Data ni Service. Sin ids, salas ni versiones de una cripta concreta en el código.
+- No se tocan los archivos de la lista «No se tocan» de tasks.md (Mazmorra.py solo se usa; GestorEsqueleto.py, ClienteHttp.py, AlmacenCatalogo.py, Estructuras/, etc.), ni ningún archivo de los integrantes 1 y 3. Si alguna tarea necesitara cambiar uno, PARÁ y avisame.
+- Código nuevo con type hints y docstring breve; pruebas primero, con el escenario y el FR en el nombre, como dice cada tarea.
+- Marcá con [x] en tasks.md solo lo que quedó completo.
+- Antes de terminar corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8 en Windows) y el replay de ejemplo (python main.py --replay ejemplos/partida_ejemplo.log --offline), que debe dar lo mismo que antes, y el grep de restricciones de T067 sobre los archivos nuevos de Logic, DTO y Data.
+
+Al final decime:
+- los archivos de cada grupo, para dos commits: (a) fases 1 y 2, contrato de llaves y DTO del reporte (T001 a T019); (b) fases 3 y 4, verificación, reporte, frontera y ciclos en Logic (T020 a T034), con tasks.md en el (b);
+- las pruebas nuevas de cada fase, con su resultado antes y después del código;
+- el resultado de la suite, de los scripts, del replay y del grep;
+- cualquier diferencia con tasks.md, el data-model, los contratos o la spec, y cualquier cosa que no se haya podido cumplir tal cual.
+No hagas commit.
+
+**Uso de la respuesta:** primer lote de la 003 (T001 a T034), en dos commits. (a) Contrato de llaves y DTO del reporte: `UbicacionLlaveDTO`, `ReporteResolubilidadDTO`, `obtener_llaves` en `FuenteDatos` (no abstracto: por defecto `ErrorRed`), `FuenteJson` (con validación de formato), `FuenteOffline` (`llaves.json`) y `DescargadorPaquete`, `AlmacenLlaves` por versión, `validar_ubicaciones` (FR-321) y `GestorLlaves`; se ajustaron `tests/Utilidades.py` (la `ApiFalsa` sirve llaves) y los conteos de `tests/TestDescargadorPaquete.py` por la solicitud nueva. T008 confirmada con el Swagger del 15/11 (`GET /v1/criptas/{dungeon_id}/llaves` → `{"llaves": [{"id", "sala", "enemigo"}]}`), sin cambios al contrato. (b) Verificación en Logic: `GrafoLlaves` (caras combinadas con una `Mazmorra` aparte, índice propio de llaves y ubicaciones ordenadas sin repetir con el `Ordenador`), `RecorridoLlaves` (oleadas incrementales con la `Cola`: cada sala y cada cara una vez; frontera y fase hacia afuera por niveles, sin recursión), `CiclosLlaves` iterativo, `VerificadorResolubilidad` y el generador de cuadrícula de `BenchResolubilidad`. 66 pruebas nuevas; cada grupo falló primero (dos pruebas que pasaban con reportes vacíos se reforzaron). La prueba de 1 500 dependientes no usa recursión. Suite: 896 pruebas OK (4 skip), 31 de 31 scripts; replay igual; grep de T067 limpio. Revisé el zip antes de los commits.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+perfecto haz el push
+
+**Uso de la respuesta:** `git push origin Marco`: `4c4307b..e9038d6`, 72 commits (el avance rápido de `origin/derek` y los cinco commits de Marco del 15 de noviembre). Esta entrada queda sin commit, para el próximo.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Nueva tarea de la 001 (FR-122): validar todo el contenido de una sala en Data antes de que Logic lo cargue.
+
+Problema: con una caché vieja (de antes de T055/T057) en disco, GestorContenido.asegurar_sala entrega la sala
+como CARGADA porque solo mira los rechazos en memoria; la ficha inválida aparece recién dentro de
+Mazmorra.cargar_contenido (vía ficha() → revalidación de disco). Resultado: sala a medio cargar (enemigos
+anteriores agregados, contadores_tipo avanzados, incluido el del rechazado), sala sigue CARGADA, y si la falla
+es ErrorRed, al reintentar se duplican los enemigos.
+
+Arreglo acordado con el integrante 2 (el archivo es suyo, lo hacemos en mi rama; NO tocar Logic/Mazmorra.py):
+en Data/GestorContenido.asegurar_sala, antes de devolver la sala, pedir resolvedor.ficha(tipo,
+contar_acierto=False) de cada enemigo, cada trampa y cada objeto del suelo. Con ErrorDatos: _rechazar(id_sala,
+error) y relanzar. Con ErrorRed: dejarlo propagar sin marcar nada. Verificá primero que ficha() acepte
+contar_acierto y que trampas y objetos se resuelvan con ficha(); si no, pará y explicame antes de cambiar nada.
+
+Orden de trabajo (spec-kit, un commit por paso, suite en verde con uv run antes de cada commit, no push):
+1) tasks.md de la 001: agregá T058 con la descripción, el FR-122 y los escenarios de prueba. Si GestorContenido
+   es código de P1, agregá la fila en la tabla «Cambios a código de la primera entrega» de plan.md. Commit.
+2) Pruebas (citan FR-122): caché vieja escrita a mano en un directorio temporal con
+   (a) un enemigo cuya suelta está rechazada, en la sala 3: al intentar entrar se rechaza con el mensaje, la
+       sala 3 queda sin enemigos, contadores_tipo no cambia, el movimiento no consume tiempo ni se registra, y
+       la sala queda marcada como contenido no disponible desde el primer intento;
+   (b) lo mismo con un objeto del suelo con duracion inválida;
+   (c) variante ErrorRed durante la validación y reintento con red buena: sin enemigos duplicados y
+       contadores correctos.
+   Confirmá que (a) y (c) fallan sin el arreglo. Commit.
+3) El arreglo en GestorContenido.asegurar_sala, con type hints; si es código de P1, sin docstrings nuevos
+   (comentario si hace falta) y con antes/después en mi sección de DECISIONES.md. Verificá que no cambien las
+   solicitudes de red en el caso normal (caché válida). Commit.
+4) PROMPTS_LLM.md con este pedido.
+
+Al final decime: el diff de GestorContenido (líneas), los resultados de la suite y si alguna prueba existente
+cambió de comportamiento.
+
+**Uso de la respuesta:** Verificación previa: `ResolvedorCatalogo.ficha(id_ficha, contar_acierto=True)` existe y revalida lo que lee del disco (suelta incluida); las trampas se resuelven con `fn_ficha` en `cargar_contenido`; los objetos del suelo no pasan por `ficha()` ahí, pero `ficha()` valida cualquier id, así que no hubo que parar. `ErrorDatos` es subclase de `ErrorRed`, por eso se atrapa solo `ErrorDatos`. `GestorContenido` es de P1 (`855a6da`). Cuatro commits: (1) `80b0c56`, T058 en `tasks.md` y fila en «Cambios a código de la primera entrega» de `plan.md`. (2) `43fe72e`, `tests/test_cache_vieja.py` con la caché escrita a mano (`cache/v/VERSION` y `<id>.json`): (a) enemigo con suelta rechazada, (b) objeto del suelo con `duracion` 0, (c) `ErrorRed` al validar y reintento, (d) caché válida sin pedidos al catálogo. Sin el arreglo, (a) y (c) fallan (un enemigo a medio cargar; en (c) el reintento deja `e-1` dos veces con número 2) y (b) da ERROR: el movimiento se hace y `SincronizadorUsos` lanza el `ErrorDatos` sin atrapar. Se commitearon con `skipTest` hasta el arreglo, como H2-22, para que la suite quedara en verde. (3) `a27b859`, +14 líneas en `asegurar_sala` (comentario, sin docstring), sin `skipTest`, T058 marcada y antes/después en `DECISIONES.md` §5.6. Las solicitudes de red no cambian: partida con el API falso (6 y 4 solicitudes, 2 y 0 de catálogo, antes y después) y replay de ejemplo (los mismos 2 lotes de contenido, 0 de catálogo). Solo cambia el reporte de la caché cuando la ficha sale del disco (3 aciertos en lugar de 1). Suite: 834 pruebas OK (4 omitidas, las de antes), 31 de 31 scripts; ninguna prueba existente cambió de resultado. (4) Este registro. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Sobre T058, solo responder (no cambies nada salvo que haga falta):
+1) ¿El bloque nuevo de asegurar_sala corre solo la primera vez que se entrega una sala o en cada llamada
+   (cada vez que el jugador entra)? Si es en cada llamada, ¿ficha() lee del disco cada vez o usa lo que ya
+   tiene en memoria? ¿Afecta al bench (medí el ciclo de 1 024 salas si _resolvedor no es None ahí)?
+2) El cambio en el reporte de caché (3 aciertos en vez de 1): ¿algún FR, prueba, bench o texto de
+   DECISIONES/research del integrante 2 usa esos aciertos? Si alguno cita cifras de aciertos, decime cuál.
+
+**Uso de la respuesta:** Solo respuesta, sin cambios. (1) El bloque corre solo la primera vez que se entra a cada sala (y al reintentar una entrada fallida): `ServicioAccionJugador._cargar_destino_si_falta` no llama a `asegurar_sala` si la sala ya está cargada en Lógica, y `ServicioPartida` la llama una vez para la sala inicial. `ficha()` busca primero en memoria (`CacheCatalogo`) y solo va al disco si no está. `BenchRutas` (ciclo de 1 024 salas), `BenchLogica` y `BenchMapaConocido` usan el `Motor` sin `GestorContenido`, y `BenchDatos` crea `GestorContenido` sin resolvedor: no pasan por el bloque. El único bench afectado es `medir_costo_por_accion` de la 004 (8 llamadas a `asegurar_sala` y 4 a `ficha()` más en todo el bench); 3 corridas alternadas sin y con el arreglo: 15,07/15,43/15,63 ms frente a 15,77/15,45/15,13 ms con línea activa, ruido. (2) Ningún FR, bench ni texto de DECISIONES o research cita cifras de aciertos que el cambio mueva; las pruebas que leen aciertos (`TestResolvedorCatalogo`, `TestCacheCatalogo`, `test_despacho_acciones`, `test_grabadores_linea`, `test_reconstructor_estado`, `test_servicios.py:343`) no pasan por `asegurar_sala` o comparan contra sí mismas, y `test_vista_fin.py:84` usa valores puestos a mano. Lo visible es «Aciertos de caché» en `View/PantallaFin.py`. `docs/Documento_Decisiones.pdf` no se revisó (PDF).
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+bien puedes hacer push ya
+
+**Uso de la respuesta:** `git push origin Marco` con los commits de T058 (`80b0c56`, `43fe72e`, `a27b859`, `401e20d`) y el de este registro.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement Feature 003-resolubilidad, segundo lote: las fases 5, 6 y 7 de specs/003-resolubilidad/tasks.md, en este orden y como dice cada tarea. Las fases 1 a 4 (T001 a T034) ya están hechas y en origin/derek. .specify/feature.json ya apunta a specs/003-resolubilidad.
+
+Paso previo de la fase 5: ya está hecho. La rama derek tiene todo lo de origin/kris (lo comprobé hoy), así que no hagas ningún merge; solo corré python tests/correr_pruebas.py antes de tocar nada y anotá el resultado como línea base.
+
+1. Fase 5: T035 y T036 (las pruebas primero; comprobá que fallan), T037 (primero sus pruebas), T038 (primero su prueba), T039, T040 (primero su prueba) y T042 (parar y validar: el caso 4 del Apéndice B pasa y el replay de ejemplo sigue igual). T041 es un aviso: no lo hagas ni lo marques.
+2. Fase 6: T043 a T046 (comprobá que fallan), T047, T048, T049 y T050; T052 (la suite y el quickstart §2, pasos 5, 6, 9 y 10; el paso 8 necesita red, saltalo y decímelo; con el paquete actual, el paso 1 tiene que terminar con código 1 y «falta el archivo … llaves.json»). T051 es un aviso: no lo hagas ni lo marques.
+3. Fase 7: T053 (comprobá que fallan) y T054. T055 es del integrante 3 y T056 se hace con ella: no las hagas ni las marques.
+
+Después de T054, PARÁ. No hagas la fase 8 (paquete) ni las siguientes.
+
+Archivos del integrante 3 que este lote toca, solo con lo que dice cada tarea, al final y con valores por defecto, sin cambiar nada de lo suyo (ella los revisa antes del merge): Service/ServicioPartida.py (T037), Service/ContextoPartida.py (T038), Service/ErroresServicio.py (T040), UIController/ControladorBackend.py (T049 y T054, métodos nuevos al final de la clase). También DTO/ConfiguracionDTO.py y UIController/LectorArgumentos.py (T047, detrás de hasta, sin tocar --checkpoint-cada ni --hasta) y main.py (T050, solo la rama --verificar). Ningún otro archivo de los integrantes 1 y 3.
+
+MUY IMPORTANTE (T054): al hacer que ControladorBackend.iniciar pase por ServicioResolubilidad.iniciar_partida_nueva, una partida nueva sin --forzar no inicia si la verificación no concluye, y una FuenteDatos que no redefine obtener_llaves da NO_CONCLUYO. Puede que pruebas existentes de los integrantes 1 o 3 (test_controlador_backend.py, test_main.py, test_servicios.py, las de la 004 o de la 001, o los scripts) inicien partidas con fuentes falsas que no sirven llaves, o con --offline sobre el paquete actual, que no tiene llaves.json. Si eso pasa: NO cambies esas pruebas ni sus fuentes falsas, NO agregues un atajo que se saltee la verificación, y NO cambies la regla de FR-311. PARÁ antes de T054 (o deshacé solo T054) y decime exactamente qué pruebas fallan, por qué y qué opciones ves, para decidirlo con el equipo. Lo mismo si jugar normal con --offline deja de iniciar con el paquete actual: decímelo.
+
+Reglas:
+- Las «Reglas para todas las tareas» de tasks.md y la constitución v1.2.0 (sin copy fuera de tests/, sin bisect, heapq, collections, dict o set como índice o caché, sin sorted ni list.sort; Logic no importa Data ni Service). Una sola condición para --offline: el if de ServicioPartida.fuente(); ni GestorLlaves ni ServicioResolubilidad leen config.offline.
+- Sin import circular: ServicioResolubilidad no importa ErroresServicio.
+- Pruebas primero, con el escenario y el FR en el nombre. Las pruebas que corren en otro proceso leen la salida como UTF-8.
+- Marcá con [x] en tasks.md solo lo que quedó completo.
+- Antes de terminar corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8 en Windows), el replay de ejemplo (python main.py --replay ejemplos/partida_ejemplo.log --offline), que debe dar lo mismo que antes, y el grep de restricciones de T067 sobre los archivos nuevos.
+
+Al final decime:
+- los archivos de cada grupo, para dos commits: (a) fase 5, el servicio (T035 a T040); (b) fases 6 y 7, --verificar, --forzar y el controlador (T043 a T054), con tasks.md en el (b);
+- el diff exacto de cada archivo del integrante 3 y de main.py;
+- las pruebas nuevas, con su resultado antes y después del código;
+- el resultado de la suite (comparado con la línea base), de los scripts, del replay, del grep y de los pasos del quickstart;
+- qué pasa hoy al jugar normal (sin --forzar) en línea y con --offline con el paquete actual;
+- cualquier diferencia con tasks.md, el data-model, los contratos o la spec.
+No hagas commit.
+
+**Uso de la respuesta:** segundo lote de la 003, fases 5 a 7 (T035 a T053), en dos commits. (a) El servicio: `ServicioResolubilidad` (`verificar`, que nunca lanza por datos ni por red y da NO_CONCLUYO con el mensaje, e `iniciar_partida_nueva`, que sin `--forzar` no inicia una cripta que no es resoluble o que no se pudo verificar y lanza `ErrorPartidaNoIniciada` con el reporte; con los mismos datos de `abrir_datos`, sin pedirlos dos veces), y en los archivos del integrante 3, solo al final y con valores por defecto: `ServicioPartida` (el mismo `if` de `fuente()` elige el almacén de llaves: ninguno con `--offline`), `ContextoPartida.resolubilidad` después de `linea`, `ErrorPartidaNoIniciada` en `ERRORES_ESPERADOS`, y `verificar`/`forzar` en `ConfiguracionDTO` detrás de `hasta`. (b) La línea de comandos: `--verificar CRIPTA` (en el grupo de `--replay` y `--bench`) y `--forzar` en `LectorArgumentos`, `TextoResolubilidad.lineas_reporte` con el formato del contrato, `ControladorBackend.verificar` (T049, al final de la clase) y la rama `--verificar` de `main.py` (salida en UTF-8; códigos 0 resoluble, 3 no resoluble, 1 no concluyó). T054 (`iniciar` pasando por la verificación) se deshizo, como pedía el prompt: con el paquete actual, cripta-01 no tiene `llaves.json`, así que 6 pruebas de `test_controles_historia.py` y 15 scripts del integrante 3 que la inician con `--offline` ya no arrancaban; se decide con el integrante 3. 52 pruebas nuevas; cada grupo falló primero. El paso 8 del quickstart (con red) lo corrí yo. Revisé el zip antes de los commits.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Gracias, paraste donde correspondía. T054 queda pendiente hasta que el integrante 3 decida qué hacen sus pruebas que inician cripta-01 con --offline (cripta-01 ya no está en la API, así que nunca va a tener llaves.json). Mientras tanto, la suite tiene que quedar en verde para poder commitear. Solo esto, sin commit:
+
+1. En tests/test_resolubilidad_cli.py, clase PruebasControlador (las 4 pruebas de T053): en setUp, si ControladorBackend no tiene el atributo resolubilidad, self.skipTest("pendiente de T054: el integrante 3 decide cómo inician sus pruebas con cripta-01 sin llaves.json"). No cambies las pruebas en sí. T053 queda marcada (las pruebas están escritas); T054 sigue sin marcar.
+2. En specs/003-resolubilidad/tasks.md, al final de T054, una nota: «Pendiente (15/11): con T054, 6 pruebas de test_controles_historia.py y 15 scripts del integrante 3 no inician cripta-01 con --offline (paquete sin llaves.json; cripta-01 ya no está publicada). El parche está listo; se aplica cuando el integrante 3 decida cómo inician esas pruebas. Las pruebas de T053 tienen una guarda hasta entonces.»
+3. Corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8): tiene que dar todo en verde, con 7 skips (los 3 de antes y los 4 de T053).
+4. Reagrupá los dos commits: DTO/ConfiguracionDTO.py va en el (a), porque test_fr312_forzar_al_cargar_sin_efecto (del grupo a) necesita config.forzar. Confirmá que con solo los archivos del grupo (a) ninguna prueba del grupo (a) queda en rojo.
+
+Al final: las líneas que cambiaste, el resultado de la suite, los dos grupos de archivos y la ruta completa del parche de T054.
+
+**Uso de la respuesta:** mientras se decide T054, las 4 pruebas de T053 llevan una guarda en `setUp` (`skipTest` si `ControladorBackend` todavía no tiene `resolubilidad`), sin cambiar las pruebas, y `tasks.md` tiene la nota de T054 pendiente. `DTO/ConfiguracionDTO.py` pasó al commit (a) porque una prueba del servicio necesita `config.forzar`; Claude Code lo comprobó en un worktree temporal con solo los archivos del (a): 918 pruebas OK (3 skip), 31 de 31 scripts. Suite completa: 948 pruebas OK (7 skip), 31 de 31 scripts.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+¿Dónde creaste el worktree temporal y lo borraste? Confirmame con git worktree list que solo queda la carpeta del proyecto, y con git branch que no se creó ninguna rama nueva. Si quedó algo, borralo con git worktree remove y git worktree prune.
+
+Además: el paso 8 del quickstart §2 lo corrí yo con red. python main.py --verificar cripta-que-no-existe imprimió «Cripta cripta-que-no-existe: la verificación NO CONCLUYÓ» y «Falló 'datos generales de cripta-que-no-existe': Not found: dungeon 'cripta-que-no-existe' (HTTP 404)», y salió con código 1. Marcá T052 en specs/003-resolubilidad/tasks.md con esa nota (paso 8 corrido por el integrante 2 el 15/11, con red). T052 va en el grupo (b).
+
+No hagas commit. Al final, los dos grupos de archivos definitivos.
+
+**Uso de la respuesta:** el worktree temporal se creó suelto (`--detach`, sin rama) en el scratchpad y se borró; `git worktree list` muestra solo la carpeta del proyecto y no hay ramas nuevas. T052 quedó marcada con la nota del paso 8, que corrí yo con red: `--verificar cripta-que-no-existe` da «NO CONCLUYÓ» (404) y código 1. Grupos definitivos para los dos commits.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Feature 003-resolubilidad. Solo documentación de la spec, sin código ni pruebas, sin commit. Contexto: el 15/11 el API publica cripta-02 a cripta-06 (cripta-01 ya no está: responde 404) y el catálogo pasó a la versión 4b9e75a42be5. Con el integrante 1 acordamos cómo armar el paquete. Antes de hacerlo, la spec tiene que decirlo (Principio IX).
+
+1. specs/003-resolubilidad/tasks.md:
+   a. Marcar [x] T041 y agregar al final: «Hecho (15/11): aviso dado al integrante 3.»
+   b. Marcar [x] T051 y agregar al final: «Hecho (15/11): el integrante 1 quitó el skipTest de H3-7 y cerró la T048 de la 001.»
+   c. Reemplazar el texto de T057 (sigue sin marcar) por:
+   «T057 (FR-318) Paquete de la Parte II (acordado con el integrante 1 el 15/11). **Avisar antes a los integrantes 1 y 3** (cambia archivos que usan sus pruebas). (1) Descargar con python -m Data.DescargadorPaquete <id> <carpeta> cada cripta publicada (el 15/11: cripta-02 a cripta-06) en una carpeta **fuera** del proyecto y compararla con el paquete actual; el reporte queda en specs/003-resolubilidad/paquete-2026-11-15.md (fichas que cambian, fichas que usa cripta-01, criptas que cambian, veredictos de T058). (2) Armar paquete/: cripta-01/ queda **byte idéntica** (el API ya no la publica: es la única cripta sin llaves.json, excepción documentada); criptas.json es la lista del API con cripta-01 al principio; catalogo.json y catalogo_version.json son los del API (el catálogo es uno solo para todas las criptas, así que cripta-01 usa las fichas nuevas); cripta-02 a cripta-06 son las descargadas. (3) Comprobar que cada cripta publicada trae llaves.json, que hay salidas con costo y que los cazadores traen rango (001 FR-122). (4) Las pruebas de la primera parte del integrante 2 que suponían que catalogo.json son solo las fichas de cripta-01 pasan a usar solo esas: tests/Utilidades.catalogo_real() devuelve las fichas que usa cripta-01 (tipos de sus enemigos y trampas, sus objetos, la llave de salida y lo que sueltan sus enemigos) y test_formato_en_disco busca la rata por id y no por posición. (5) Regrabar ejemplos/partida_ejemplo.log jugando la cripta-02 nueva con --offline hasta ganar, y comprobar que el replay termina igual. (6) Correr python tests/correr_pruebas.py; si alguna prueba de otro integrante cambia de resultado por los datos nuevos, avisarle y esperar su arreglo antes del commit. Commit **propio** con paquete/, ejemplos/partida_ejemplo.log, el reporte y esos dos archivos de pruebas (por ejemplo datos: paquete de la Parte II con llaves.json, costos y rangos), y avisar a los tres cuando esté subido.»
+   d. En T058 (sigue sin marcar), reemplazar «Ninguna debe terminar con código 1 (la 1 es para datos que faltan); cada una con 0 o 3 y el mismo texto que en línea con la misma versión (quickstart §2, pasos 1 a 4 y 7).» por «Las criptas publicadas terminan con 0 o 3 y el mismo texto que en línea con la misma versión (quickstart §2, pasos 1 a 4 y 7); cripta-01 termina con código 1 y «falta el archivo … llaves.json» (FR-320), porque ya no está publicada (T057).»
+2. specs/003-resolubilidad/quickstart.md, §2: en los pasos 1, 2, 3, 4 y 7 cambiar cripta-01 por cripta-02 (en el paso 3, la ruta queda cache/llaves/cripta-02.json). En el «Esperado» del paso 1, «Con el paquete regenerado: el reporte y código 0 o 3» pasa a «Con el paquete regenerado: RESOLUBLE y código 0 (T058)». El resto del paso 1 no cambia. Debajo de la tabla, agregar: «cripta-01 ya no está publicada (el API responde 404): con --offline termina con código 1 porque el paquete no tiene su llaves.json (T057).»
+3. No toques nada más. Buscá además cripta-01 en el resto de quickstart.md, spec.md y plan.md de la 003 y decime dónde aparece, sin cambiarlo, para decidir si hace falta.
+
+Al final: el diff completo de los dos archivos y la lista del punto 3.
+
+**Uso de la respuesta:** antes de regenerar el paquete (Principio IX), la spec de la 003 dice cómo se arma, como lo acordé con el integrante 1: el API del 15/11 publica `cripta-02` a `cripta-06` (con `cripta-05` no resoluble) y ya no `cripta-01` (404), y el catálogo pasó a `4b9e75a42be5`. T057 queda con los pasos (descarga fuera del proyecto, reporte, `cripta-01` byte idéntica como excepción sin `llaves.json`, catálogo y criptas del API, ajuste de `catalogo_real()` en las pruebas de la primera parte, regrabar el log de ejemplo, avisar a los otros dos) y T058 acepta el código 1 de `cripta-01`. En el quickstart §2, los pasos 1 a 4 y 7 pasan a `cripta-02`. Marqué T041 y T051 (avisos dados; el integrante 1 quitó el skip de H3-7). Claude Code señaló además el comando de los requisitos previos, el paso 6 y el commit sugerido de la línea 389, que se arreglan en el prompt siguiente. Revisé el diff y el zip: solo cambian `tasks.md` y `quickstart.md`.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Agregá además en T057, después del punto (6) y antes de «Commit **propio**»: «(7) Documentar en DECISIONES.md (sección del integrante 2, apartado «§5.4 Resolubilidad», que T064 completa) la excepción de cripta-01: queda byte idéntica pero ya no está publicada; usa el catálogo nuevo, así que sus ratas traen "vida": 12 y la ficha nueva tiene vida_max 8 (empiezan con 12/8; aceptado por el integrante 1 el 15/11, porque evitarlo tocaría la primera parte sin FR o inventaría datos); y --verificar cripta-01 --offline termina con código 1 porque no tiene llaves.json.» En el «Commit **propio** con …», agregá DECISIONES.md a la lista.
+
+**Uso de la respuesta:** punto (7) de T057, pedido por el integrante 1: documentar en `DECISIONES.md` §5.4 la excepción de `cripta-01` (ratas que empiezan con 12/8 por el catálogo nuevo, aceptado por él, y código 1 de `--verificar`), en el mismo commit del paquete.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Bien. Arreglá también lo que encontraste, sin tocar nada más y sin commit:
+1. quickstart.md, requisitos previos (líneas 13 a 17): el texto queda «Para las pruebas con paquete: el paquete de la Parte II (T057). Para regenerarlo, bajar cada cripta publicada a una carpeta fuera del proyecto y armar `paquete/` como dice T057 (`cripta-01` ya no está publicada):», y el bloque de código pasa a `uv run python -m Data.DescargadorPaquete cripta-02 ../paquete-nuevo`.
+2. quickstart.md, paso 6: `cripta-01` por `cripta-02`.
+3. tasks.md, línea 389: «`datos: paquete de la Parte II` (T057, solo `paquete/`)» pasa a «`datos: paquete de la Parte II` (T057: `paquete/`, el log de ejemplo, el reporte, `DECISIONES.md` y los dos archivos de pruebas)».
+4. La cripta-02 nueva ya se verificó con el paquete armado fuera del proyecto: RESOLUBLE, código 0, así que el paso 1 queda como está. T052 queda como está (es el registro de una corrida pasada).
+Al final, el diff de estos cambios.
+
+**Uso de la respuesta:** el comando de los requisitos previos del quickstart usa la forma `<id> <carpeta>` y `cripta-02`, el paso 6 pasa a `cripta-02` y el commit sugerido de T057 lista todo lo que lleva. El paso 1 espera RESOLUBLE porque ya verifiqué la `cripta-02` nueva con el paquete armado fuera del proyecto. Solo documentación: no hace falta correr la suite.
+
+-----------------------------------------------------------------------------------------------------------------------

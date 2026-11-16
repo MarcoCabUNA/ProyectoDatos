@@ -16,9 +16,13 @@ Banderas:
                           (entero >= 1; por defecto 20, feature 004, FR-415)
     --bench               correr las mediciones de rendimiento
     -h, --help, --ayuda   mostrar la ayuda
+    --verificar CRIPTA    escribir si la cripta es resoluble y salir, sin vista ni partida (feature 003, FR-314)
+    --forzar              iniciar una partida nueva aunque la cripta no sea resoluble (feature 003, FR-312)
 Los valores se pueden escribir separados ("--cache-size 40") o con igual ("--cache-size=40").
 --replay y --bench no se pueden usar juntos (son modos distintos, §9 del enunciado).
 --hasta solo se acepta junto con --replay; sin --hasta, --replay reproduce la partida completa.
+--verificar va en el mismo grupo que --replay y --bench (no se combina con ellos); --forzar se combina con todo y solo
+lo lee la partida nueva (con --replay, --bench, --verificar o al cargar no tiene efecto).
 
 Uso desde main.py:
     import sys
@@ -83,6 +87,13 @@ def _entero_no_negativo(texto: str) -> int:
     return int(texto)
 
 
+def _id_cripta(texto: str) -> str:
+    """Tipo de --verificar (feature 003, FR-314): el id de la cripta, sin el texto vacío ni solo espacios."""
+    if texto.strip() == "":
+        raise argparse.ArgumentTypeError("necesita el id de la cripta")
+    return texto
+
+
 def _crear_analizador() -> _Analizador:
     opciones: dict = {}
     if sys.version_info >= (3, 14):
@@ -108,6 +119,13 @@ def _crear_analizador() -> _Analizador:
     modo.add_argument("--replay", metavar="ARCHIVO", help="reproducir una partida desde su log")
     modo.add_argument("--bench", action="store_true", help="correr las mediciones de rendimiento")
     analizador.add_argument("-h", "--help", "--ayuda", dest="ayuda", action="store_true", help="mostrar esta ayuda")
+    # feature 003 (FR-312, FR-314): detrás de las banderas existentes
+    modo.add_argument("--verificar", type=_id_cripta, default=None, metavar="CRIPTA",
+                      help="escribir si la cripta es resoluble y salir, sin vista ni partida "
+                           "(códigos: 0 resoluble, 3 no resoluble, 1 no concluyó)")
+    analizador.add_argument("--forzar", action="store_true",
+                            help="iniciar una partida nueva aunque la cripta no sea resoluble o la verificación "
+                                 "no concluya (con --replay, --bench o --verificar no tiene efecto)")
     return analizador
 
 
@@ -129,4 +147,5 @@ def leer_argumentos(argumentos: list[str]) -> ConfiguracionDTO:
         raise ErrorArgumentos("Error en las opciones: --hasta solo se puede usar junto con --replay")
     return ConfiguracionDTO(offline=resultado.offline, cache_size=resultado.cache_size,
                             replay=resultado.replay, bench=resultado.bench, ayuda=resultado.ayuda,
-                            checkpoint_cada=resultado.checkpoint_cada, hasta=resultado.hasta)
+                            checkpoint_cada=resultado.checkpoint_cada, hasta=resultado.hasta,
+                            verificar=resultado.verificar, forzar=resultado.forzar)

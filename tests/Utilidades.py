@@ -66,7 +66,7 @@ class ApiFalsa:
     """
 
     def __init__(self, criptas=None, generales=None, paginas=None, contenidos=None,
-                 catalogo=None, version_catalogo=None, falla_en=None):
+                 catalogo=None, version_catalogo=None, falla_en=None, llaves=None):
         self.criptas = criptas if criptas is not None else leer_paquete("criptas.json")
         self.generales = generales if generales is not None else {ID_CRIPTA: general_real()}
         self.paginas = paginas if paginas is not None else {ID_CRIPTA: [pagina_real()]}
@@ -75,6 +75,8 @@ class ApiFalsa:
         self.version_catalogo = (version_catalogo if version_catalogo is not None
                                  else leer_paquete("catalogo_version.json")["version"])
         self.falla_en = falla_en
+        # Feature 003: respuesta de GET /criptas/{id}/llaves por cripta; sin dato, una lista vacía (válida, FR-321).
+        self.llaves = llaves if llaves is not None else {}
         self.solicitudes_realizadas = 0
         self.presupuesto = None
         self.pedidos = []
@@ -110,6 +112,8 @@ class ApiFalsa:
             assert 1 <= len(ids) <= 10, "el API acepta de 1 a 10 salas"
             elegidos = [c for c in self.contenidos[id_cripta] if c["sala"] in ids]
             return {"contenido": elegidos[::-1]}
+        if partes[2] == "llaves":
+            return self.llaves.get(id_cripta, {"llaves": []})
         raise AssertionError(f"ruta inesperada: {ruta}")
 
     def rutas(self):

@@ -39,6 +39,7 @@ class PartidaGuardada:
             efectos=[_guardar_efecto(efecto) for efecto in efectos],
             eventos=[_guardar_evento(evento, motor.mazmorra, efectos) for evento in _eventos_validos(motor.cola)],
             ruta_log=ruta_log, acciones_en_log=acciones_en_log,
+            mapa=motor.mapa.a_guardado(),
         )
         salas = []
         for sala in motor.mazmorra.salas:
@@ -83,6 +84,7 @@ class PartidaGuardada:
             _cargar_evento(motor, evento_guardado, efectos)
         motor.cola.siguiente_secuencia = partida.siguiente_secuencia
 
+        motor.mapa.restaurar(partida.mapa)
         # El historial no se guarda: se empieza vacío, como justo después de cerrar un intervalo
         motor.historial.descartar_intervalo_abierto()
         motor._registrar_azar()

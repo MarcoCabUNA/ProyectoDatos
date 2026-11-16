@@ -149,7 +149,7 @@ el después en `DECISIONES.md`.
 | `Logic/Comportamientos.py` · `Errante` | Método nuevo `decidir_paso()` con el mismo sorteo sobre salidas con costo. `decidir()` no cambia. | Extensión | FR-104 | Con solo un destino no se sabe qué salida se sorteó si hay dos hacia la misma sala. |
 | `Logic/Comportamientos.py` · `COMPORTAMIENTOS` | Agregar `Cazador` | Modificación (1 línea + 1 import) | FR-106 | La fábrica solo conoce lo que está en la lista. |
 | `Logic/Comportamientos.py` · `Cazador` | Clase nueva. En la historia 2 decide con `paso_desde_cero`; en la historia 3 pasa a `motor.rutas.decidir` (una línea de código nuevo, no de P1). | Extensión | FR-106 a FR-115 | — |
-| `Logic/motorJuego.py` · `__init__` | Crear `self.grafo` (historia 2), `self.rutas` y asignar `mazmorra.observador_puertas` (historia 3) | Modificación (3 líneas + imports) | FR-112, FR-114 | Es el dueño del historial y de la mazmorra. |
+| `Logic/motorJuego.py` · `__init__` | Crear `self.grafo` (historia 2), `self.rutas` y asignar `mazmorra.observador_puertas` (historia 3) | Modificación (3 líneas + imports) | FR-112, FR-114 | Es el dueño del historial y de la mazmorra. *Nota: desde `ed0da17` (002, integrante 2) es `RepartidorAvisosPuertas([self.rutas, self.mapa])`; ver `data-model.md` y `DECISIONES.md` §5.6.* |
 | `Logic/motorJuego.py` · `mover_jugador()` | `terminar_accion_jugador(salida.costo)` en lugar de `COSTO_MOVER` | Modificación (1 línea) | FR-102 | La regla de costo cambió. |
 | `Logic/motorJuego.py` · `turno_enemigo()` | Usar `decidir_paso()` y programar con su costo (100 si espera o ataca) | Modificación (unas 5 líneas) | FR-102, FR-103, FR-110, FR-121 | Hoy programa 100 fijo después de moverse. |
 | `Logic/Enemigo.py` | Redefinir `a_dto()` para incluir `comportamiento` (hecho: T040) | Extensión | FR-117 | — |
@@ -160,10 +160,11 @@ el después en `DECISIONES.md`.
 | `DTO/ActorDTO.py` | Campo `comportamiento` | Extensión del DTO | FR-117 | Hecho (T039). |
 | `Data/FuenteDatos.py`, `Data/GestorContenido.py` | Error de datos (ficha y campo) distinguible del error de red; recordar el rechazo por sala sin otra solicitud; solo esa sala queda sin contenido | Modificación (T052, **integrante 2**) | FR-122 | Hoy el formato y la red usan el mismo `ErrorRed`, la precarga los trata igual y `resolver_pendientes` marca el lote como cargado antes de resolver el catálogo. |
 | `Service/ServicioAccionJugador.py` · `ejecutar` | Mostrar el error de datos al rechazar el movimiento, en lugar de «Sin conexión con el servicio» | Modificación (T053, **integrante 3**) | FR-122 | Hoy todo `ErrorRed` se muestra como falta de red. |
+| `Data/GestorContenido.py` · `asegurar_sala()` | Antes de devolver la sala, pedir `resolvedor.ficha(tipo, contar_acierto=False)` de cada enemigo, trampa y objeto del suelo; con `ErrorDatos`, rechazar la sala y relanzar; con `ErrorRed`, dejarlo pasar sin marcar nada | Modificación (T058, del integrante 1 en un archivo del integrante 2, acordado con él) | FR-122 | Con una caché vieja en disco la ficha inválida aparece recién en `Mazmorra.cargar_contenido` y deja la sala a medio cargar. Lógica no se toca: Data entrega la sala solo si todas sus fichas son válidas. |
 
 No se tocan: `ColaEventos`, `HistorialRetroceso`, `cambiar_velocidad`, `Rastreador.decidir`,
 `Errante.decidir`, `Mazmorra._igualar_caras`, `partida.log` (`BitacoraReplayIO`), `ServicioReplay`,
-`main.py` ni la Vista. De la capa Data solo cambia lo de T052.
+`main.py` ni la Vista. De la capa Data solo cambia lo de T052 (y T055, T057 y T058).
 
 ## Decisiones de diseño (resumen de [research.md](research.md))
 

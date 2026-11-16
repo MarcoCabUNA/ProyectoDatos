@@ -38,14 +38,14 @@ Estado de la partida. Lo crea el motor (`motor.mapa`); lo escriben solo `iniciar
 |---|---|---|---|
 | `iniciar(sala: int) -> None` | `_explorar(sala)` y `_observar_puertas(sala)` | O(g) | FR-202, FR-207 |
 | `entrar(sala: int, antorcha: bool) -> None` | `_explorar(sala)`; si `antorcha`, `_explorar(v)` para cada destino v de una salida de `sala` (abierta o cerrada); `_observar_puertas(sala)` | O(1 + Σ g de las que pasan a exploradas) | FR-203, FR-207, FR-210 a FR-214 |
-| `puerta_cambio(a: int, b: int) -> None` | `_observar_puertas(jugador.Sala_Actual)`; `a` y `b` no se usan | O(1) | FR-207, FR-209 |
+| `puerta_cambio(a: int, b: int) -> None` | `_observar_puertas(jugador.Sala_Actual)`; `a` y `b` no se usan | O(g), g ≤ 4 | FR-207, FR-209 |
 | `estado_sala(sala: int) -> int` | Lectura de `estado` | O(1) | NFR-201 |
 | `estado_cara(sala: int, direccion: int) -> int` | Lectura de `caras` | O(1) | NFR-201 |
 | `es_explorada(sala: int) -> bool` | `True` solo si `estado[sala] == EXPLORADA` (`False` para avistadas, desconocidas y posiciones que no son salas, como la 0). No cambia nada, no consume tiempo ni registra en el historial. La usa `ArmadorEstado` del integrante 3 para el H-2, opción A (contrato (c)) | O(1) | FR-204, FR-217, NFR-201 |
 | `a_dto() -> MapaConocidoDTO` | Vista de solo lectura (§4) | O(S) | FR-217, FR-219, FR-220 |
 | `buscar_exploradas(nombre: str) -> list[int]` | Ids de exploradas cuyo nombre coincide con `strip().casefold()` en los dos lados, en orden creciente. Un nombre vacío o de solo espacios devuelve `[]`; uno que no es `str` (`None`, un número, `bytes`) lanza `ValueError` (error de programación del que llama; contrato (c)) | O(S) | FR-251 |
 | `a_guardado() -> MapaConocidoGuardadoDTO` | Copia de los dos arreglos con `list(...)` | O(S) | FR-221, FR-223, NFR-203 |
-| `restaurar(dto: MapaConocidoGuardadoDTO \| None) -> None` | Con un DTO: valida largos (`ValueError`, riesgo R-8) y copia los arreglos, reemplazando el mapa en curso; no registra en el historial. Con `None`: pone todo en `DESCONOCIDA` / `SIN_OBSERVAR` y arma el mapa inicial desde `jugador.Sala_Actual`, como `iniciar` (esa sala explorada, los destinos de sus salidas avistados y sus puertas observadas, FR-202); lo que registre queda en el intervalo abierto, que `PartidaGuardada.cargar` descarta enseguida | O(S) | FR-202, FR-221, FR-223 |
+| `restaurar(dto: MapaConocidoGuardadoDTO \| None) -> None` | Con un DTO: valida largos (`ValueError`, riesgo R-8) y copia los arreglos, reemplazando el mapa en curso; no registra en el historial. Con `None`: pone todo en `DESCONOCIDA` / `SIN_OBSERVAR` y arma el mapa inicial desde `jugador.Sala_Actual`, como `iniciar` (esa sala explorada, los destinos de sus salidas avistados y sus puertas observadas, FR-202); tampoco registra en el historial (lo deja en `None` mientras arma el mapa inicial) | O(S) | FR-202, FR-221, FR-223 |
 
 Privados:
 

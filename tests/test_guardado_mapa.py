@@ -3,6 +3,7 @@ Pruebas del guardado del mapa conocido (feature 002, integrante 2).
 
 - DTO/MapaConocidoDTO.py: constantes, DTO de la vista y DTO guardado (T009).
 - DTO/PartidaGuardadaDTO.py: campos `mapa` y `linea` al final, en ese orden (T035, primeras cuatro; T002 de la 004).
+- Logic/MapaConocido.py: a_guardado y restaurar (T035, las otras seis; T037).
 - Data/GuardadoBinario.py versión 2: cabecera de 58 bytes, bloque del mapa y bloque de la línea (T038; también son
   las pruebas de T003 y T047 de la 004).
 """
@@ -167,6 +168,112 @@ class PruebasPartidaGuardadaConMapaYLinea(unittest.TestCase):
         self.assertEqual(proceso.returncode, 0, proceso.stderr)
 
 
+def cripta_guardado():
+    """
+    A –E– B (abierta), A –S– C (cerrada), B –E– D, D –S– E; X –E→ A (sin vuelta). Salas 1..24 (X = 24); las demás
+    aisladas. S = 25.
+    """
+    from tests.ayudas_mapa import A, B, C, D, E, ESTE, SUR, X, cripta_mapa, salida_sin_vuelta
+    return cripta_mapa(24, [salida(A, ESTE, B), salida(A, SUR, C, cerrada=True), salida(B, ESTE, D),
+                            salida(D, SUR, E), salida_sin_vuelta(X, ESTE, A)])
+
+
+class PruebasAGuardadoYRestaurar(unittest.TestCase):
+    """T035 (segundo momento): MapaConocido.a_guardado y restaurar (T037)."""
+
+    def setUp(self):
+        from Logic.HistorialRetroceso import HistorialRetroceso
+        from tests.ayudas_mapa import A, B, D, entrar_a, mapa_de_prueba
+        self.mazmorra = cripta_guardado()
+        self.historial = HistorialRetroceso()
+        self.mapa, self.jugador = mapa_de_prueba(self.mazmorra, A, self.historial)
+        self.mapa.iniciar(A)
+        entrar_a(self.mapa, self.jugador, B)
+        entrar_a(self.mapa, self.jugador, D, True)
+        self.historial.cerrar_intervalo()
+
+    def test_fr221_a_guardado_copia_los_arreglos(self):
+        from DTO.MapaConocidoDTO import MapaConocidoGuardadoDTO
+        from tests.ayudas_mapa import X, entrar_a, estados
+        dto = self.mapa.a_guardado()
+        self.assertIsInstance(dto, MapaConocidoGuardadoDTO)
+        antes = estados(self.mapa)
+        self.assertEqual((dto.estado_salas, dto.caras), antes)
+        self.assertIsNot(dto.estado_salas, self.mapa.estado)
+        self.assertIsNot(dto.caras, self.mapa.caras)
+        entrar_a(self.mapa, self.jugador, X)                    # cambiar el mapa después no cambia el DTO
+        self.mapa.caras[0] = 2
+        self.assertNotEqual(estados(self.mapa), antes)
+        self.assertEqual((dto.estado_salas, dto.caras), antes)
+
+    def test_fr223_restaurar_dos_veces_del_mismo_dto(self):
+        from tests.ayudas_mapa import A, X, entrar_a, estados
+        dto = self.mapa.a_guardado()
+        guardado = estados(self.mapa)
+        entrar_a(self.mapa, self.jugador, X)
+        self.mapa.restaurar(dto)
+        self.assertEqual(estados(self.mapa), guardado)
+        entrar_a(self.mapa, self.jugador, A, True)              # explorar sobre lo restaurado (riesgo R-4)
+        entrar_a(self.mapa, self.jugador, X)
+        self.assertNotEqual(estados(self.mapa), guardado)
+        self.mapa.restaurar(dto)
+        self.assertEqual(estados(self.mapa), guardado)
+        self.assertEqual((dto.estado_salas, dto.caras), guardado)    # el DTO no cambió
+
+    def test_fr221_restaurar_con_largos_distintos_es_value_error(self):
+        from DTO.MapaConocidoDTO import MapaConocidoGuardadoDTO
+        from tests.ayudas_mapa import estados
+        s = len(self.mazmorra.salas)
+        antes = estados(self.mapa)
+        for motivo, dto in (("estado corto", MapaConocidoGuardadoDTO([0] * (s - 1), [0] * (4 * s))),
+                            ("estado largo", MapaConocidoGuardadoDTO([0] * (s + 1), [0] * (4 * s))),
+                            ("caras cortas", MapaConocidoGuardadoDTO([0] * s, [0] * (4 * s - 1))),
+                            ("caras de otra cripta", MapaConocidoGuardadoDTO([0] * s, [0] * (4 * (s + 1))))):
+            with self.subTest(motivo=motivo):
+                with self.assertRaises(ValueError) as error:
+                    self.mapa.restaurar(dto)
+                mensaje = str(error.exception)
+                self.assertIn(str(len(dto.estado_salas) if "estado" in motivo else len(dto.caras)), mensaje)
+                self.assertIn(str(s if "estado" in motivo else 4 * s), mensaje)    # el largo esperado
+                self.assertEqual(estados(self.mapa), antes)    # no tocó el mapa
+
+    def test_fr221_restaurar_no_registra_en_el_historial(self):
+        from tests.ayudas_mapa import X
+        dto = self.mapa.a_guardado()
+        self.jugador.Sala_Actual = X
+        cantidad = self.historial.cantidad()
+        for argumento in (dto, None, dto):
+            with self.subTest(dto=argumento is not None):
+                self.mapa.restaurar(argumento)
+                self.assertEqual(len(self.historial._abierto), 0)
+                self.assertEqual(self.historial.cantidad(), cantidad)
+
+    def test_fr221_restaurar_reemplaza_el_mapa_en_curso(self):
+        from tests.ayudas_mapa import A, E, X, entrar_a, estados, mapa_de_prueba
+        chico, _ = mapa_de_prueba(self.mazmorra, A)
+        chico.iniciar(A)                                        # solo A explorada
+        dto = chico.a_guardado()
+        entrar_a(self.mapa, self.jugador, E)
+        entrar_a(self.mapa, self.jugador, X)                    # el mapa en curso tiene más salas exploradas
+        self.mapa.restaurar(dto)
+        self.assertEqual(estados(self.mapa), estados(chico))    # queda igual al DTO, casilla por casilla (FR-221)
+
+    def test_fr202_fr221_restaurar_none_arma_el_mapa_inicial_desde_la_sala_del_jugador(self):
+        from tests.ayudas_mapa import A, B, E, X, entrar_a, estados, mapa_de_prueba
+        entrar_a(self.mapa, self.jugador, E)                    # un mapa con varias salas exploradas
+        entrar_a(self.mapa, self.jugador, X)
+        self.jugador.Sala_Actual = X
+        self.mapa.restaurar(None)
+        nuevo, _ = mapa_de_prueba(self.mazmorra, X)
+        nuevo.iniciar(X)
+        self.assertEqual(estados(self.mapa), estados(nuevo))    # igual que iniciar(X) sobre un mapa nuevo
+        self.assertEqual(self.mapa.estado_sala(X), 2)           # X explorada
+        self.assertEqual(self.mapa.estado_sala(A), 1)           # el destino de su salida, avistado
+        self.assertEqual(self.mapa.estado_sala(B), 0)           # todo lo demás desconocido
+        self.assertEqual(self.mapa.estado_cara(X, 2), 1)        # su cara observada con el estado real (abierta)
+        self.assertEqual(self.mapa.estado_cara(A, 2), 0)        # las caras de A, sin observar
+
+
 # Cabecera de la versión 2 (data-model §6): magia, versión, offset y largo global, offset del índice, entradas,
 # id mínimo, offset y largo del mapa, offset y largo de la línea.
 CABECERA_V2 = struct.Struct("<4sHQIQIIQIQI")
@@ -302,6 +409,34 @@ class PruebasBinarioVersion2(unittest.TestCase):
                     funcion()
                 self.assertIn("versión 1", str(ctx.exception))         # la leída
                 self.assertIn("versión 2", str(ctx.exception))         # la esperada
+
+    def test_t047_de_la_004_fr421_archivo_v1_dice_formato_viejo(self):
+        from Data.GuardadoBinario import ErrorGuardado, cargar
+        self.archivo_v1()
+        with self.assertRaises(ErrorGuardado) as ctx:
+            cargar(self.ruta)
+        mensaje = str(ctx.exception)
+        self.assertIn("formato viejo", mensaje)
+        self.assertNotIn("más nuevo", mensaje)
+        self.assertIn("versión 1", mensaje)
+        self.assertIn("versión 2", mensaje)
+
+    def test_t047_de_la_004_fr421_archivo_de_version_mayor_dice_formato_mas_nuevo(self):
+        from Data.GuardadoBinario import VERSION_FORMATO, ErrorGuardado, cargar, cargar_sala, guardar
+        guardar(self.ruta, self.partida(mapa=mapa_guardado_de_ejemplo()), self.salas)
+        datos = self.bytes_del_archivo()
+        struct.pack_into("<H", datos, 4, VERSION_FORMATO + 1)            # el resto del archivo no se toca
+        self.escribir_bytes(datos)
+        for nombre, funcion in (("cargar", lambda: cargar(self.ruta)),
+                                ("cargar_sala", lambda: cargar_sala(self.ruta, 4))):
+            with self.subTest(funcion=nombre):
+                with self.assertRaises(ErrorGuardado) as ctx:
+                    funcion()
+                mensaje = str(ctx.exception)
+                self.assertIn("formato más nuevo", mensaje)
+                self.assertNotIn("viejo", mensaje)
+                self.assertIn(f"versión {VERSION_FORMATO + 1}", mensaje)
+                self.assertIn(f"versión {VERSION_FORMATO}", mensaje)
 
     def test_t047_de_la_004_archivo_v1_deja_intacta_la_partida_actual(self):
         carpeta_tests = os.path.join(RAIZ, "tests")
