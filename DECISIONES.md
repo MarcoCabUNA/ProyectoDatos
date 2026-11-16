@@ -492,19 +492,6 @@ Spec: [specs/004-linea-tiempo/spec.md](specs/004-linea-tiempo/spec.md) ·
 Plan: [specs/004-linea-tiempo/plan.md](specs/004-linea-tiempo/plan.md) ·
 Investigación: [specs/004-linea-tiempo/research.md](specs/004-linea-tiempo/research.md)
 
-### §5.3 Banco de pruebas de la línea de tiempo (`--bench`)
-
-`Service/BenchLineaTiempo.py` (con `Service/Cronometro.py` y `ResultadoBenchDTO`, igual que
-`Service/BenchInventario.py`) corre sin ventana y con cargas **sintéticas** (Principio VI): una cripta en
-cuadrícula de 4 × 4 salas, dos enemigos errantes inofensivos y un jugador que no puede morir, que juega una
-secuencia fija (esperar y dar la vuelta a una manzana de salas) con la semilla 2026. Cada partida de 5 000 acciones se
-juega una vez por K y la comparten M1, M2 y M3: como la partida es determinista, la historia de las primeras n
-acciones es la de una partida de n. `BenchInventario.medir()` devuelve también este grupo (una línea), y así `--bench`
-lo muestra sin tocar `Service/ServicioBench.py` (cambio registrado en el plan, NFR-401).
-
-Tabla completa: [bench-tabla.txt](specs/004-linea-tiempo/bench-tabla.txt) (`python -m Service.ServicioBench`, 74 s,
-Windows 11 Pro). Los tiempos son medianas y dependen de la máquina; los conteos son reproducibles.
-
 ### §5.5 Línea de tiempo y puntos de control
 
 Cada decisión sigue [research.md](specs/004-linea-tiempo/research.md) R1 a R10. «¿Coincide con el plan?» compara
@@ -665,6 +652,19 @@ es `contexto.linea = None` en `ServicioReplay.reproducir`, para que salga el men
 tiempo que consultar». Anotado como supuesto en la spec de la 004 (Suposiciones).
 
 **HUD con mensajes largos y vida mayor que vida_max.** Un mensaje de 342 px en un ancho útil de 334 no se arregla con más holgura (achicaría la letra de todos): `HudJuego._mensajes` ya lo recorta con `recortar_a_ancho` y «...», así que no cambió la vista; `barra_de_vida` ya limitaba la proporción a 1.0 y ahora lo cubren dos pruebas (ratas de cripta-01: vida 12, vida_max 8).
+
+#### §5.5 (subsección) Banco de pruebas de la línea de tiempo (`--bench`)
+
+`Service/BenchLineaTiempo.py` (con `Service/Cronometro.py` y `ResultadoBenchDTO`, igual que
+`Service/BenchInventario.py`) corre sin ventana y con cargas **sintéticas** (Principio VI): una cripta en
+cuadrícula de 4 × 4 salas, dos enemigos errantes inofensivos y un jugador que no puede morir, que juega una
+secuencia fija (esperar y dar la vuelta a una manzana de salas) con la semilla 2026. Cada partida de 5 000 acciones se
+juega una vez por K y la comparten M1, M2 y M3: como la partida es determinista, la historia de las primeras n
+acciones es la de una partida de n. `BenchInventario.medir()` devuelve también este grupo (una línea), y así `--bench`
+lo muestra sin tocar `Service/ServicioBench.py` (cambio registrado en el plan, NFR-401).
+
+Tabla completa: [bench-tabla.txt](specs/004-linea-tiempo/bench-tabla.txt) (`python -m Service.ServicioBench`, 74 s,
+Windows 11 Pro). Los tiempos son medianas y dependen de la máquina; los conteos son reproducibles.
 
 ### §5.6 Revisión de decisiones de la primera parte
 
