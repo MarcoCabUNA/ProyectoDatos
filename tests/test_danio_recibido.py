@@ -15,12 +15,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from ayudas_terreno import ficha_errante, mazmorra_con_costos, motor_con, poner_enemigo, salida
 from DTO.FichaTrampaDTO import FichaTrampaDTO
-from Logic.Efectos import Veneno
+from Logic.Efectos import Regeneracion, Veneno
 from Logic.Inventario import Inventario
 from Logic.EventoPorg import EventoProgramado
 from Logic.Mazmorra import TrampaViva
 from Logic.PartidaGuardada import PartidaGuardada
 from Logic.motorJuego import Motor
+from test_efectos_catalogo import crear_cripta, crear_motor, esqueleto
 
 
 def _escenario(semilla: int = 1) -> tuple[Motor, list]:
@@ -113,6 +114,16 @@ class PruebasContadorDeDanio(unittest.TestCase):
         motor.jugador.Recibir_Dannio(2)
         self.assertEqual(motor.jugador.danio_recibido, 9)                # y se acumula
 
+    def test_la_regeneracion_real_dentro_de_un_paso_del_motor_no_lo_sube(self):
+        motor, _ = _escenario()
+        motor.jugador.Recibir_Dannio(7)
+        motor.efectos.aplicar(Regeneracion(motor.jugador, 3))
+        motor.programar_accion(motor.jugador, 400)
+        vida = motor.jugador.vida
+        motor.avanzar_hasta(400)
+        self.assertGreater(motor.jugador.vida, vida)                     # la regeneración sí curó en el paso
+        self.assertEqual(motor.jugador.danio_recibido, 7)                # y curar no cuenta como daño
+
     def test_el_pergamino_no_cambia_la_comparacion_antes_y_despues_de_un_paso_fr262(self):
         """Deshacer una acción (lo que hace el pergamino) no baja el contador: restaura la vida, no el daño ya contado."""
         motor, _ = _escenario()
@@ -135,6 +146,14 @@ class PruebasContadorDeDanio(unittest.TestCase):
         partida, salas = PartidaGuardada.guardar(motor, _cripta_de(motor), "catalogo-1", 1)
         texto = repr(partida.a_diccionario()) + repr([sala.a_diccionario() for sala in salas])
         self.assertNotIn("danio_recibido", texto)
+
+    def test_guardar_y_cargar_no_cambian_el_contador(self):
+        motor, _ = crear_motor()
+        motor.jugador.Recibir_Dannio(5)
+        partida, salas = PartidaGuardada.guardar(motor, crear_cripta(), "v1", 7)
+        cargado = PartidaGuardada.cargar(partida, salas, crear_cripta(), esqueleto(), lambda _id: None)
+        self.assertEqual(motor.jugador.danio_recibido, 5)                # guardar no toca el original
+        self.assertEqual(cargado.jugador.danio_recibido, 0)              # y la carga no lo trae: no se guarda
 
 
 def _cripta_de(motor: Motor):

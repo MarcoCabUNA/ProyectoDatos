@@ -715,12 +715,12 @@ def Recibir_Dannio(self, Cant):
     self._registrar_vida()
     ...
 ```
-**Después** (`Logic/ActorBase.py`: campo en `__init__` y una línea en `Recibir_Dannio`):
+**Después** (`Logic/ActorBase.py`: campo con un comentario de una línea en `__init__` y una línea en `Recibir_Dannio`):
 ```python
+# daño recibido: suma de los daños finales > 0; no va al historial ni a PartidaGuardada
 self.danio_recibido: int = 0                 # en __init__
 
 def Recibir_Dannio(self, Cant):
-    """..."""
     if Cant <= 0:
         return
     self.danio_recibido += Cant              # la línea nueva
@@ -728,10 +728,13 @@ def Recibir_Dannio(self, Cant):
     ...
 ```
 
-**Por qué es seguro.** `Cant` ya es el daño final en los cuatro sitios que llaman a `Recibir_Dannio`: el ataque
+**Por qué es seguro.** `Cant` ya es el daño final en los tres sitios que llaman a `Recibir_Dannio`: el ataque
 (`Logic/motorJuego.py:256`, `max(1, ataque + azar - defensa_efectiva)`), la trampa (`:289`, `dano_al_activarse()`) y el veneno
 (`Logic/Efectos.py:33`, su valor por pulso); la defensa se resta antes de llamar, no dentro. La guarda `Cant <= 0` sigue
 primero, así que un daño de 0 no sube el contador. El contador **no** va al historial (deshacer con un pergamino no lo baja,
 así que el pergamino no parece daño en la comparación de un paso) ni a `PartidaGuardada` (solo importa la diferencia dentro
 de un paso; cargar una partida interrumpe el viaje). Los enemigos también lo tienen porque comparten `ActorBase`; nadie lo
-lee. Costo: O(1). Pruebas: `tests/test_danio_recibido.py` (9).
+lee. Costo: O(1). Pruebas: `tests/test_danio_recibido.py`.
+
+**Nota sobre las pruebas.** La mutación que quita `Evento_pendiente` del daño solo se nota contando los cambios del intervalo, y el
+helper de la prueba lee atributos privados del historial (se rompe si cambia el buffer).
