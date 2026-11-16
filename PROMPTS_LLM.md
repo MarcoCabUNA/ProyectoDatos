@@ -3317,3 +3317,5 @@ Implementa solo T101–T106 de specs/002-niebla-ir-a/tasks.md, siguiendo mi secc
 Un commit por grupo lógico, con mensaje: "feat(002): ViajeAutomatico y ViajeDTO (T101-T106)". Al final corre la suite y dime los resultados.
 
 **Uso de la respuesta:** se usó la respuesta para implementar la lógica pura de «ir a» (ViajeAutomatico, ViajeDTO y sus pruebas).
+
+-----------------------------------------------------------------------------------------------------------------------
