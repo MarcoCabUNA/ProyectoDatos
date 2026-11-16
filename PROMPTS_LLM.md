@@ -3235,7 +3235,6 @@ Agregá además en T057, después del punto (6) y antes de «Commit **propio**»
 **Uso de la respuesta:** punto (7) de T057, pedido por el integrante 1: documentar en `DECISIONES.md` §5.4 la excepción de `cripta-01` (ratas que empiezan con 12/8 por el catálogo nuevo, aceptado por él, y código 1 de `--verificar`), en el mismo commit del paquete.
 
 -----------------------------------------------------------------------------------------------------------------------
-
 **Fecha:** Domingo 15 de noviembre 2026
 
 **Herramienta:** Claude Code
@@ -3250,3 +3249,71 @@ Al final, el diff de estos cambios.
 **Uso de la respuesta:** el comando de los requisitos previos del quickstart usa la forma `<id> <carpeta>` y `cripta-02`, el paso 6 pasa a `cripta-02` y el commit sugerido de T057 lista todo lo que lleva. El paso 1 espera RESOLUBLE porque ya verifiqué la `cripta-02` nueva con el paquete armado fuera del proyecto. Solo documentación: no hace falta correr la suite.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Contexto: acabo de traer origin/derek y origin/Marco. Hay cinco arreglos pequeños, cada uno en su propio commit. No toques nada fuera de lo que se pide. No agregues docstrings al código nuevo de P1; mantén KISS y YAGNI.
+
+1) tests/test_bench_inventario.py: la palabra "unittest" hace que el corredor lo trate como módulo unittest. Reescribe el mock para que no aparezca esa palabra (ni en comentarios) y verifica que el corredor vuelva a contarlo como script (32 de 32). Commit: "test: test_bench_inventario vuelve a correr como script"
+
+2) forzar=True en pruebas del controlador y la vista (no son pruebas de resolubilidad; cripta-01 no tiene llaves.json y T054 de la 003 bloquearía la partida sin --forzar):
+   - tests/ayudas_controladores.py:24 -> CONFIG_OFFLINE = ConfiguracionDTO(offline=True, forzar=True)
+   - tests/test_controlador_pygame.py:181 -> ConfiguracionDTO(offline=True, cache_size=40, forzar=True)
+   Busca con grep otras pruebas que construyan ConfiguracionDTO(offline=True ...) con cripta-01 y dime cuáles hay antes de tocarlas. Commit: "test: forzar=True en configuraciones offline de cripta-01 (T054 de la 003)"
+
+3) tests/test_vista_hud.py y la vista: el peor mensaje "[t=9999] El veneno hace 999 de daño a Espectro acechador #99" mide 342 px y el ancho útil es 334 antes de HUD_HOLGURA. Elige la solución más simple (recortar el texto al ancho útil con "..." o ajustar la holgura) y justifícala en una línea en DECISIONES.md. Además, la barra de vida debe tolerar vida > vida_max (las ratas de cripta-01 empiezan con vida 12 y vida_max 8): limita la proporción a 1.0. Agrega una prueba para ese caso. Commit: "fix(004): HUD tolera mensajes largos y vida mayor que vida_max"
+
+4) Docstrings: en ContextoPartida, "linea" ya no es el último campo (resolubilidad va después); en main.py menciona --verificar y el código de salida 3. Commit: "docs: docstrings de ContextoPartida y main.py al día"
+
+5) DECISIONES.md: renombra mi "§5.3 Banco de pruebas de la línea de tiempo" como subsección de mi §5.5 (el §5.3 es de Derek: Mapa conocido). Revisa que no queden referencias cruzadas al número viejo. Commit: "docs: banco de pruebas de la línea de tiempo pasa a la subsección de §5.5"
+
+Al final corre toda la suite y dime: cuántas pruebas pasan, y qué decisión tomaste en el punto 3.
+
+**Uso de la respuesta:** se usó la respuesta para arreglar test_bench_inventario, poner forzar=True en las pruebas offline, el ancho del HUD y la barra de vida, los docstrings y el renombrado de §5.3. Se verificó con la suite completa.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Dos grupos de cambios, en commits separados y en este orden.
+
+A) spec(002), SOLO texto de especificación, sin código:
+En specs/002-niebla-ir-a/spec.md, NFR-250 dice "con la cripta de referencia" y SC-252 depende de ella. La cripta de referencia es cripta-06 (300 salas, del paquete con --offline). Ajusta NFR-250 y SC-252 para que lo digan explícitamente, y aclara que se puede medir con una cripta sintética de 300 salas si cripta-06 no está disponible. Actualiza en tasks.md las tareas T120 y T122 (medir con 300 salas, no 50) y en T121 agrega que se debe actualizar tests/TestServicioBench.py:132 poniendo BenchViaje.medir después de BenchMapaConocido.medir (Derek dio su visto bueno). Commit: "spec(002): cripta de referencia de NFR-250 y SC-252 es cripta-06 (300 salas)"
+
+B) Correcciones del contador de daño (Marco las revisó):
+1. Logic/ActorBase.py: quita el docstring de Recibir_Dannio (la constitución prohíbe docstrings nuevos en P1) y deja un comentario de una línea en el contador que diga "daño recibido" (no "vida perdida"). Actualiza el "después" de la fila en DECISIONES.md.
+2. DECISIONES.md: "cuatro sitios" -> "tres sitios" que llaman a Recibir_Dannio. Agrega una nota: la mutación del Evento_pendiente solo se nota contando cambios del intervalo, y el helper de la prueba lee atributos privados del historial (se rompe si cambia el buffer).
+3. specs/002-niebla-ir-a/plan.md:600 y tasks.md:644: corrige el texto: el ataque usa max(1, ...), así que un daño final 0 no ocurre; el contador solo se incrementa si Cant > 0.
+4. tests/test_danio_recibido.py: agrega una prueba con el efecto Regeneración REAL de Efectos.py dentro de un paso del motor (no Curacion(100) directo) y comprueba que el contador no sube. En test_no_va_a_partida_guardada agrega: después de guardar y cargar, el contador no cambia por la carga.
+5. tests/test_linea_tiempo_guardado.py (commit 740f47b): después del primer retroceder compara jugador.acciones contra el valor de antes, no solo contra len(linea.acciones).
+Commit: "fix(004): contador danio_recibido como comentario, prueba con Regeneración real y textos corregidos"
+
+Corre la suite completa y dime cuántas pasan.
+
+**Uso de la respuesta:** se usó la respuesta para aplicar la revisión de Marco al contador (comentario, prueba con Regeneración, textos de plan y tareas, DECISIONES) y para fijar cripta-06 (300 salas) en NFR-250 y SC-252 antes del código.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Revisa solo lectura, sin cambiar nada: el diff de origin/derek en mis archivos (ControladorBackend, ConfiguracionDTO, ContextoPartida y los demás que toque; usa git diff HEAD~N..HEAD o git log para ver los merges). Derek dice que son T037, T038, T040 y T049, todas al final de cada archivo y con valores por defecto. Verifica: (1) que no cambien el comportamiento de lo que ya hacía la línea de tiempo, (2) que los valores por defecto mantengan compatibles mis pruebas, (3) que no duplique lógica mía, (4) que respete SRP y KISS. Dime en una lista corta qué está bien y qué cambiarías, con archivo y línea.
+
+**Uso de la respuesta:** se usó la respuesta para revisar los cambios de Derek en mis archivos antes de aceptar su merge.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Implementa solo T101–T106 de specs/002-niebla-ir-a/tasks.md, siguiendo mi sección de specs/002-niebla-ir-a/plan.md. Sin tocar Service/ ni el controlador todavía.
+
+- Logic/ViajeAutomatico.py: resolver_destino (nombres con strip().casefold()), decidir_paso(grafo, mapa, mazmorra, sala_actual, destino) que usa paso_desde_cero(GrafoMapaConocido, destino, sala, None) y exige que mapa.estado_cara(sala, d) == ABIERTA, y motivos_de_parada (LLEGO, ENEMIGOS con enemigos activos o dormidos en la sala, DANO, SIN_RUTA; internos INTERRUMPIDO, TERMINADA, PASO_RECHAZADO). Lógica pura, sin pygame, sin Data.
+- DTO/ViajeDTO.py: dataclass frozen.
+- Pruebas de Logic pura en tests/ usando tests/ayudas_mapa.py (mapa_de_prueba, cripta_mapa, entrar_a). Cubre cada motivo de parada, la cara cerrada, el destino ambiguo y el destino inexistente.
+- Solo estructuras de datos y librerías permitidas por la constitución v1.2.0. Sin docstrings en código de P1.
+Un commit por grupo lógico, con mensaje: "feat(002): ViajeAutomatico y ViajeDTO (T101-T106)". Al final corre la suite y dime los resultados.
+
+**Uso de la respuesta:** se usó la respuesta para implementar la lógica pura de «ir a» (ViajeAutomatico, ViajeDTO y sus pruebas).
