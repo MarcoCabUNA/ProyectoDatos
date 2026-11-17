@@ -34,7 +34,7 @@ def _sin_pedido(resumen):
 
 class PruebasConsultas(unittest.TestCase):
 
-    def test_h1_1_apendiceB_caso3_fr409_instante_posterior(self):
+    def test_h1_1_apendiceB_caso1_fr409_instante_posterior(self):
         def prueba(carpeta):
             _, ctx = partida_de_prueba(carpeta, semilla=2026)
             jugar(ctx, 6)
