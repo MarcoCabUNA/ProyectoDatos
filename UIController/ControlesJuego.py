@@ -53,6 +53,7 @@ from DTO.ElementoDTO import (ELEMENTO_BOTON, ELEMENTO_ENEMIGO, ELEMENTO_INVENTAR
                              ELEMENTO_PUERTA, ElementoDTO)
 from DTO.EstadoJuegoDTO import EstadoJuegoDTO
 from DTO.InventarioDTO import InventarioDTO
+from DTO.MapaConocidoDTO import MapaConocidoDTO
 from DTO.ResumenHistoriaDTO import ResumenHistoriaDTO
 from UIController.ControladorBackend import CRITERIOS_INVENTARIO, ControladorBackend, ErrorOperacion
 
@@ -62,6 +63,8 @@ PIDE_CARGAR = "cargar"
 
 MENSAJE_USO_HISTORIA = "Uso: historia <t> (instante, entero >= 0) o historia #k (acción, entero >= 1)."
 _PALABRA_HISTORIA = "historia"
+_PALABRA_MAPA = "mapa"
+MENSAJE_USO_IR_A = "Uso: ir a <sala> (una sala que ya hayas explorado)."
 
 BOTONES = ("Esperar",)          # los botones de la pantalla de juego; ELEMENTO_BOTON con indice 0 es "Esperar"
 DOBLE_CLIC_MS = 400             # dos clics sobre la misma casilla en menos de esto cuentan como doble clic
@@ -80,7 +83,7 @@ AYUDA_JUEGO = (
     "Clic en un enemigo (o Espacio): atacar",
     "Clic en un objeto del suelo: recoger",
     "E (o clic en la puerta): abrir una puerta",
-    "Z: esperar   Enter: línea de comandos (historia)",
+    "Z: esperar   Enter: historia, mapa, ir a",
     "Rueda o Tab: recorrer el inventario",
     "U (o doble clic): usar   Q (o clic derecho): equipar",
     "G (o Mayús + clic): soltar   V: cambiar el orden",
@@ -88,6 +91,16 @@ AYUDA_JUEGO = (
     "Ctrl + S / F5: guardar   Ctrl + L / F9: cargar",
     "Esc: menú (o cierra la línea o el panel)",
 )
+
+
+def _destino_de_ir_a(texto: str) -> str | None:
+    resto = texto.strip()
+    if resto[:2].casefold() != "ir" or not resto[2:3].isspace():
+        return None
+    resto = resto[2:].lstrip()
+    if resto[:1].casefold() != "a" or (len(resto) > 1 and not resto[1].isspace()):
+        return None
+    return resto[1:].strip()
 
 
 class ControlesJuego:
@@ -105,6 +118,8 @@ class ControlesJuego:
         self.estado = estado
         self.aviso: str | None = None
         self.resumen: ResumenHistoriaDTO | None = None       # el último `historia` consultado (solo lectura, feature 004)
+        self.viajando = False                                # hay un viaje de `ir a` en curso (feature 002)
+        self.mapa: MapaConocidoDTO | None = None             # el panel del comando `mapa` abierto (solo lectura, feature 002)
         self.linea: str | None = None                        # la línea de comandos: None cerrada, "" abierta y vacía
         self._objetivo: str | None = None
         self._ultimo_clic: tuple[int, int] | None = None     # (casilla, milisegundos) del último clic en el inventario
@@ -132,6 +147,10 @@ class ControlesJuego:
         if tipo != pygame.KEYDOWN and tipo != pygame.MOUSEWHEEL and not es_clic:
             return None             # incluye los botones 4 y 5, que pygame genera además de MOUSEWHEEL
         self.aviso = None
+        if self.viajando:                                    # cualquier orden corta el viaje; Esc solo lo corta
+            self._interrumpir_el_viaje()
+            if tipo == pygame.KEYDOWN and evento.key == pygame.K_ESCAPE:
+                return None
         try:
             if tipo == pygame.KEYDOWN:
                 if self.linea is not None:
@@ -152,7 +171,14 @@ class ControlesJuego:
         uso y no llama al backend. El rango lo valida Logic (el backend lo devuelve como ErrorOperacion y su mensaje se
         muestra tal cual). Una consulta no cambia la partida: ni reloj, ni acciones, ni partida.log."""
         self.aviso = None
+        destino = _destino_de_ir_a(texto)
+        if destino is not None:
+            self._empezar_el_viaje(destino)
+            return
         partes = texto.split()
+        if len(partes) == 1 and partes[0].casefold() == _PALABRA_MAPA:
+            self._alternar_el_mapa()
+            return
         if len(partes) != 2 or partes[0].casefold() != _PALABRA_HISTORIA:
             self.aviso = MENSAJE_USO_HISTORIA
             return
@@ -167,6 +193,38 @@ class ControlesJuego:
                             else self._backend.historia_por_instante(numero))
         except ErrorOperacion as error:
             self.aviso = str(error)
+
+    def _empezar_el_viaje(self, destino: str) -> None:
+        if destino == "":
+            self.aviso = MENSAJE_USO_IR_A
+            return
+        try:
+            self._backend.ir_a(destino)
+        except ErrorOperacion as error:
+            self.aviso = str(error)
+            return
+        self.viajando = True
+
+    def dar_paso_de_viaje(self) -> None:
+        try:
+            paso = self._backend.dar_paso_viaje()
+        except ErrorOperacion as error:
+            self.viajando = False
+            self.aviso = str(error)
+            return
+        self._aplicar(paso.estado)
+        if paso.viaje is None:
+            self.viajando = False
+
+    def _interrumpir_el_viaje(self) -> None:
+        self.viajando = False
+        self.estado = self._backend.cancelar_viaje()
+
+    def _alternar_el_mapa(self) -> None:
+        if self.mapa is not None:
+            self.mapa = None
+            return
+        self.mapa = self._backend.ver_mapa()
 
     def _teclado_en_la_linea(self, evento) -> None:
         """Con la línea abierta las teclas del juego NO actúan: W, E, Z... se escriben, Retroceso borra (no lee el
@@ -226,6 +284,9 @@ class ControlesJuego:
         elif tecla in _TECLAS_ENTER:
             self.linea = ""                 # abre la línea de comandos (feature 004)
         elif tecla == pygame.K_ESCAPE:
+            if self.mapa is not None:
+                self.mapa = None            # el panel del mapa se cierra primero: el juego sigue tal cual estaba
+                return None
             if self.resumen is not None:
                 self.resumen = None         # primero se cierra el panel de historia: el juego sigue tal cual estaba
                 return None
@@ -303,6 +364,7 @@ class ControlesJuego:
         """Una acción del jugador: el estado nuevo reemplaza al anterior. Si fue rechazada, el motivo es el aviso."""
         self.estado = estado
         self.resumen = None                 # el panel de historia describe un estado pasado: una acción nueva lo cierra
+        self.mapa = None                    # y el del mapa también: ya no es el mapa de ahora
         self._ultimo_clic = None            # el inventario pudo cambiar: un clic anterior ya no cuenta
         if not estado.terminado and estado.resultado is not None:
             self.aviso = estado.resultado

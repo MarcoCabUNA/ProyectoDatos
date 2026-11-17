@@ -482,7 +482,294 @@ máquina.
 
 ### §5.4 Resolubilidad
 
-(pendiente: 003)
+Spec: [specs/003-resolubilidad/spec.md](specs/003-resolubilidad/spec.md) ·
+Plan: [specs/003-resolubilidad/plan.md](specs/003-resolubilidad/plan.md) ·
+Investigación: [specs/003-resolubilidad/research.md](specs/003-resolubilidad/research.md)
+
+La verificación de resolubilidad (§3.5, §5.4; FR-301 a FR-323, NFR-301 a NFR-304) dice, antes de iniciar una partida
+nueva o con `--verificar`, si se pueden obtener las llaves en algún orden hasta llegar a `sala_salida` por una puerta
+que pide `llave_salida`; si no, informa qué llaves no se pueden obtener, la frontera y los ciclos. Detalle en
+[research.md](specs/003-resolubilidad/research.md) R0 a R9 y en los contratos
+[contrato-llaves.md](specs/003-resolubilidad/contracts/contrato-llaves.md) y
+[contrato-reporte-resolubilidad.md](specs/003-resolubilidad/contracts/contrato-reporte-resolubilidad.md). Notación:
+S salas, E caras (E ≤ 4S), U ubicaciones de llaves, K llaves distintas, M menciones de llaves (caras con llave +
+ubicaciones + `llave_salida`), F puertas de la frontera.
+
+**Revisión de las estructuras existentes (R0).** Se usan tal cual la `Cola` (FIFO con nodos, O(1)) para el recorrido
+y la fase hacia afuera, y el `Ordenador` (estable, O(n log n)) para el índice de llaves, cada oleada, la frontera, las
+ubicaciones y los niveles de puertas. `GestorEsqueleto.existe_sala` (O(1)) sirve para validar ubicaciones en Data. La
+`Mazmorra` se usa en una instancia **aparte**, que se descarta, solo para leer las caras ya combinadas con la regla de
+la primera parte. No sirven: `MonticuloMinimo` (el costo no afecta la verificación, FR-302: no hay prioridad),
+`ListaDoble` (no hace falta borrar en el medio), `BufferCircular` (no se descarta nada), `GrafoEsqueleto` de la 001
+(lee el estado vivo y no conoce llaves) ni `BusquedaBinaria` de la 004 (el índice se arma sin búsquedas; la 003 no
+depende de la 004). Lo nuevo es código de Logic; **no se agrega nada a `Estructuras/`**.
+
+#### 1. Contrato y persistencia de las llaves (R1)
+
+**Problema.** Obtener la ubicación de las llaves (`GET /criptas/{id}/llaves`, §4.2) por el mismo camino que el resto
+de los datos, también con `--offline`, sin pedirla dos veces (FR-317), sin que el almacén tape un `llaves.json`
+ausente del paquete (FR-318, FR-320) y rechazando una llave en una sala que no existe (FR-321).
+
+**Alternativas.** `obtener_llaves` abstracto en `FuenteDatos` (rompe las fuentes de prueba y del bench que no lo
+necesitan); persistir en una carpeta por versión como el catálogo (la versión es por cripta: deja carpetas viejas,
+mismo O(1) archivos por cripta); validar la sala en Logic (mismo O(U), pero Logic supone datos válidos); pedir
+`GET /criptas/{id}/version` para validar lo persistido (+1 solicitud por verificación, y la versión ya llega en los
+datos generales).
+
+**Decisión.** `UbicacionLlaveDTO(id, sala, enemigo)` inmutable, entregado en el orden de la respuesta (Data no
+ordena ni deduplica). `FuenteDatos.obtener_llaves` **no abstracto**, que por defecto lanza `ErrorRed`; `FuenteJson`
+valida el formato y `LectorPaquete` lee `paquete/<id>/llaves.json` (si falta, el «falta el archivo» que ya existe es
+FR-320). `Data/AlmacenLlaves.py` guarda un archivo por cripta en `cache/llaves/<id>.json` con su versión, que se
+compara con `validar_version` contra la versión ya pedida de la cripta (no cuesta una solicitud); distinta versión,
+archivo dañado o id distinto se tratan como ausentes. Con `--offline` no hay almacén, y eso se decide en **una sola
+condición**, el mismo `if` donde `ServicioPartida.fuente()` elige la fuente. `Data/GestorLlaves.py` orquesta: almacén
+vigente o una solicitud que se persiste, y después `validar_ubicaciones` (FR-321). Se persiste **antes** de validar:
+volver a pedir no arregla un `ErrorDatos`, y así la segunda verificación da el mismo error sin gastar otra solicitud.
+
+**Complejidad.** Una solicitud por cripta y versión; leer y validar: O(U).
+
+**Evidencia.** No es un problema evaluado de §5: no se mide. Lo comprueban las pruebas de
+`tests/test_resolubilidad_datos.py` (`test_fr317_obtener_llaves_es_una_solicitud_que_cuenta`,
+`test_h3_5_fr317_no_repite_la_solicitud`, `test_fr317_se_persiste_antes_de_validar_fr321`) y
+`test_fr317_red_con_almacen_de_llaves` de `tests/test_resolubilidad_servicio.py`. El Swagger confirmó el formato del
+contrato el 15/11 (hallazgo H-4 de research, T008).
+
+**¿Coincide con el plan?** Sí. El Swagger coincidió con el contrato y no hizo falta cambiarlo.
+
+#### 2. Índice propio de llaves: ordenar y compactar (R3)
+
+**Problema.** El recorrido necesita, por cada llave, una lista de espera y un estado, pero las llaves son textos y no
+se puede usar `dict` como índice (Principio II).
+
+**Alternativas.** `dict` id → índice (O(M) esperado, prohibido); búsqueda lineal en la lista de ids por cada mención
+(O(M·K)); ids ordenados y búsqueda binaria por mención (O(M log M + M log K), y haría falta una búsqueda binaria de
+textos que no existe).
+
+**Decisión.** `Logic/GrafoLlaves.py` arma la lista de menciones `(id_llave, tipo, posición)`, la ordena con el
+`Ordenador` por id (desempate por tipo y posición, así no depende del orden de entrada) y la recorre una vez: cada id
+nuevo abre un índice `0, 1, 2…` que se escribe de vuelta en la cara o la ubicación mencionada. Los índices quedan en
+orden de id, así que desempatar por índice es desempatar por id (decisión 4).
+
+**Complejidad.** O(M log M) el ordenamiento + O(M) la compactación; espacio O(M + K).
+
+**Evidencia** (B5, las tres cuadrículas de B1: 191, 2 081 y 20 981 menciones; 10, 100 y 1 000 llaves):
+
+| Medición | Resultado |
+|---|---|
+| B5 ordenar y compactar (elegida) | 0,452 / 4,088 / 52,702 ms: ×9,0 y ×12,9 (con el mejor tiempo, ×12,4 y ×12,6), O(M log M) |
+| B5 búsqueda lineal (descartada) | 0,136 / 6,823 / 688,5 ms (en 10 000 salas, 1 repetición): ×50,1 y ×100,9, O(M·K) |
+
+Con 100 salas la lineal gana por constantes; con 1 000 ya gana ordenar y compactar, y de 1 000 a 10 000 la lineal
+crece ×100,9 frente a ×12,9. El desglose B4 (decisión 3) muestra que la preparación, que incluye este índice, es el
+86 % de la verificación con 1 000 salas.
+
+**¿Coincide con el plan?** Sí. B5 se agregó al plan en la revisión del integrante 1 (13/11), antes de implementar. La
+fila de B5 en research R7 decía que la lineal crece ~×100 en cada tramo; el 16/11 se corrigió con el factor medido
+entre 100 y 1 000 (Principio IX). La decisión no cambia.
+
+#### 3. Recorrido incremental por oleadas, con la frontera agrupada por llave (R4)
+
+**Problema.** Decidir si la cripta es resoluble sin volver a recorrer lo ya alcanzado cada vez que se obtiene una
+llave (§5.4, NFR-302), y dejar del mismo recorrido la frontera y lo que necesitan los ciclos (NFR-303).
+
+**Alternativas.** Repetir el recorrido completo desde `sala_inicial` cada vez que se obtienen llaves (la ingenua de
+§5.4, O(K · (S + E + U))); la misma por oleadas pero con la frontera en una sola lista revisada entera al obtener cada
+llave (O(S + E + K·F), y con llaves encadenadas F crece con la cripta); recorrido en profundidad (O(S + E + U), pero
+el orden depende del orden de visita y no deja oleadas para el desempate); `GrafoEsqueleto` (no resuelve el
+problema).
+
+**Decisión.** `GrafoLlaves` carga el esqueleto en una `Mazmorra` aparte, para combinar las caras igual que el juego
+(FR-302), y lee arreglos planos por cara (`c = sala*4 + dirección`): tipo, destino y llave. El costo y el cierre
+automático no se leen. `Logic/RecorridoLlaves.py` recorre por anchura con la `Cola`: una cara con llave no obtenida
+se anota en `esperando[k]` y una cerrada sin llave en `sin_llave`. Al terminar cada oleada, las llaves vistas pasan a
+obtenidas y **solo** se revisan sus listas `esperando[k]`. Es resoluble si se obtuvo `llave_salida` y alguna cara que
+lleva a `sala_salida`, cerrada y que pide `llave_salida`, sale de una sala alcanzable (FR-304); si no existe ninguna
+cara así en el esqueleto, el veredicto lleva el motivo de FR-322. La frontera son las caras que quedaron esperando
+cuyo destino sigue afuera (FR-308).
+
+**Complejidad.** O(S + E + U) el recorrido + O(K log K) ordenar las oleadas; con la preparación,
+O(S + E + U + M log M), «aproximadamente lineal» (NFR-302). Espacio O(S + E + U + K).
+
+**Evidencia** (B1 a B3 en cuadrículas de 100, 1 000 y 10 000 salas con 10, 100 y 1 000 llaves encadenadas; B6 en el
+«peine» de 100, 1 000 y 3 000 dientes, donde la frontera empieza con una puerta por diente):
+
+| Medición | Resultado |
+|---|---|
+| Cripta con más salas del paquete (`cripta-06`, 300 salas, resoluble) | mediana 1,371 ms: **SC-306 y NFR-301 se cumplen** (< 200 ms) |
+| B1 verificación incremental, resoluble | 0,808 / 11,107 / 156,423 ms: ×13,8 y ×14,1; de 1 000 a 10 000, ≤ ×20: **SC-307 se cumple** |
+| B2 repetir el recorrido por oleada (descartada) | 1,621 / 58,606 / 5 770,5 ms (en 10 000, 1 repetición): ×36,1 y ×98,5, 2,6 y 7,0 veces el de B1: **SC-307 se cumple** |
+| B6 frontera agrupada por llave (elegida) | 0,253 / 3,185 / 9,136 ms: ×12,6 y ×2,9 |
+| B6 frontera en una sola lista (descartada) | 0,507 / 28,033 / 236,7 ms (en 3 000, 1 repetición): ×55,3 y ×8,4 |
+| B4 desglose con 1 000 salas (cripta de B3) | preparación 9,543 ms (86 %), recorrido 0,777 (7 %), frontera, fase hacia afuera y ciclos 0,650 (6 %), armado 0,098 (1 %) |
+
+En B6, con 100 dientes pesa la parte que no depende de la frontera (unos 0,25 ms en las dos variantes); sin ella, la
+lista única crece unas ×98 entre 100 y 1 000. Con 2 001 salas la lista única tarda 8,8 veces la agrupada. El
+recorrido es el 7 % de B4: el tiempo se va en la preparación (decisión 2 y la carga en la `Mazmorra` aparte).
+
+**¿Coincide con el plan?** Sí. B6 y el peine se agregaron al plan en la revisión del integrante 1 (13/11), antes de
+implementar. La fila de B6 en research R7 se corrigió el 16/11 con el factor medido de la lista única entre 100 y
+1 000 (×55 en lugar de ~×100); la decisión no cambia.
+
+#### 4. Orden determinista (R5)
+
+**Problema.** Un orden válido de obtención de llaves (FR-305) que sea el mismo en cualquier ejecución y no dependa del
+orden del JSON (FR-306), y un orden fijo para cada lista del reporte, sin `sorted` ni `list.sort`.
+
+**Alternativas.** El orden de descubrimiento del recorrido (determinista con la misma entrada, pero depende del orden
+de las ubicaciones o de las páginas, que no es una regla del juego); orden topológico global por id, siempre la menor
+llave disponible (válido, pero necesita un montículo con claves de texto: O((K + E) log K)).
+
+**Decisión.** El orden es la concatenación de las oleadas de la decisión 3 y, dentro de cada oleada, por id (que es
+el índice de la decisión 2). Cada lista del reporte tiene su regla: no obtenibles por id; ubicaciones por sala, sin
+enemigo antes que con enemigo y luego por enemigo, con las idénticas una sola vez (FR-309); frontera por sala y
+dirección; ciclos por su llave de menor id; dependientes por id. Todo con el `Ordenador` y comparadores de enteros.
+
+**Complejidad.** O(K log K + F log F + U log U) en total.
+
+**Evidencia.** No es un problema de tiempo: el costo entra en el armado de B4 (0,098 ms, 1 % con 1 000 salas). El
+determinismo lo comprueban `test_h1_5_apendiceB_caso3_fr305_fr306_mismo_orden_en_dos_ejecuciones`,
+`test_fr306_entrada_permutada_mismo_resultado` y `test_sc303_diez_ejecuciones_en_procesos_separados`.
+
+**¿Coincide con el plan?** Sí.
+
+#### 5. La puerta que bloquea (FR-310) y ciclos sin recursión (R6)
+
+**Problema.** Señalar los ciclos de dependencia entre llaves no obtenibles y las llaves que dependen de ellos
+(FR-310), del mismo recorrido (NFR-303) y sin `RecursionError` con cadenas largas.
+
+**Alternativas.** El grafo completo de dependencias con componentes fuertemente conexas (O(K + D), pero un ciclo
+concreto igual necesita elegir una puerta por paso); un recorrido aparte por cada llave no obtenible (O(K · (S + E)),
+viola NFR-303); enumerar todos los ciclos simples (exponencial); entre puertas del mismo nivel, preferir la que pide
+la propia llave (solo arregla los ciclos de una llave); seguir las aristas con recursión (O(K), pero con una cadena de
+1 000 llaves llega al límite de Python, y `setrecursionlimit` solo corre el problema).
+
+**Decisión.** La regla de FR-310 (*decisión del grupo*, 13/11): la puerta que bloquea a una llave es una sola, la de
+menor nivel desde la región alcanzable y, si empatan, la de menor sala de origen y luego menor dirección. La fase
+hacia afuera continúa el recorrido por niveles con la `Cola` y asigna a cada zona su puerta. Así cada llave no
+obtenible tiene a lo sumo una arista: los ciclos son disjuntos. `Logic/CiclosLlaves.py` los detecta con un `while` que
+guarda el camino en un arreglo y asigna a cada llave la entrada a su ciclo volviendo por ese arreglo.
+
+**Complejidad.** Fase hacia afuera O(S + E) más ordenar los niveles, O(E log E) en el peor caso; detección O(K) +
+O(K log K) ordenar dependientes; espacio O(K).
+
+**Evidencia** (B3, la variante no resoluble de B1: un ciclo de una llave y una cadena de 5, 50 y 500 dependientes):
+
+| Medición | Resultado |
+|---|---|
+| B3 verificación incremental, no resoluble | 1,250 / 13,531 / 133,109 ms: ×10,8 y ×9,8 (con el mejor tiempo, ×13,4 y ×11,4), frente a ×13,8 y ×14,1 de B1: **NFR-303 se cumple** (el reporte no cambia el orden de crecimiento) |
+| B4 frontera, fase hacia afuera y ciclos, 1 000 salas | 0,650 ms, 6 % de la verificación |
+
+`test_fr310_cadena_de_mas_de_1000_dependientes_sin_recursion` (2 × 3 000 salas, unas 1 500 dependientes) termina
+sin `RecursionError` y sin cambiar `sys.getrecursionlimit()`; `test_h2_13_fr306_fr307_fr308_fr310_puerta_que_bloquea`
+comprueba el desempate.
+
+**¿Coincide con el plan?** Sí. La regla de FR-310 y la detección iterativa salieron de la revisión del plan por el
+integrante 1 (13/11), antes de implementar.
+
+#### 6. Dónde vive cada parte y cómo se inicia la partida (R8)
+
+**Problema.** Repartir la feature entre las capas (Principio I) y verificar al iniciar una partida nueva sin que el
+replay, la carga ni `--bench` verifiquen (FR-301) y sin pedir dos veces los datos (FR-317).
+
+**Alternativas.** Verificar dentro de `ServicioPartida.iniciar_partida` con una bandera (ese método lo usa el replay,
+y una bandera olvidada rompería FR-301); verificar en el controlador con su propia carga de datos (pediría dos veces
+los datos generales y el esqueleto).
+
+**Decisión.** Data entrega y valida (`obtener_llaves`, `AlmacenLlaves`, `GestorLlaves`, `validar_ubicaciones`);
+Logic decide (`GrafoLlaves`, `RecorridoLlaves`, `CiclosLlaves`, `VerificadorResolubilidad`) y no importa Data;
+Service orquesta (`ServicioResolubilidad`); `main.py` y `LectorArgumentos` agregan `--verificar` y `--forzar`.
+`iniciar_partida_nueva` abre los datos (un error ahí no inicia ni con `--forzar`), pide las llaves (un `ErrorRed` da
+«no concluyó»), verifica y, si no es resoluble y no hay `--forzar`, lanza `ErrorPartidaNoIniciada` sin crear el motor
+ni `partida.log`; si no, inicia con los mismos datos.
+
+**Interpretación del Principio I** («Data solo conexión y formato»). Comprobar que la sala de cada ubicación existe en
+el esqueleto (FR-321) es **integridad de los datos**, no una regla del juego: no depende del estado de la partida ni
+decide nada del juego, y una respuesta que nombra una sala inexistente está mal para esa versión, igual que un formato
+inválido. Por eso va en Data (`validar_ubicaciones` en `Data/ValidacionDatos.py`, O(U)). El precedente es 001
+FR-122: la validación de que una puerta tenga el mismo costo en sus dos caras ya vive en `GestorEsqueleto`, en Data
+(research R1). La instancia de enemigo de una ubicación no se valida (FR-321, FR-301).
+
+**Complejidad.** La de las decisiones 1 a 5; iniciar no pide dos veces los datos ni el esqueleto.
+
+**Evidencia.** Es una decisión de responsabilidades, no de tiempo. Lo comprueban
+`test_r3_fr317_no_pide_dos_veces_datos_ni_esqueleto`, `test_h4_1_apendiceB_caso4_fr311_no_resoluble_no_inicia` y
+`test_h1_8_fr301_no_descarga_contenido_ni_consume_azar`; T067 confirmó que Logic no importa Data ni Service.
+
+**¿Coincide con el plan?** Sí.
+
+#### 7. Nada en el historial ni en la línea de tiempo (R9)
+
+**Problema.** Que la verificación no cambie el estado de la partida ni lo que se reproduce o se revierte (FR-301).
+
+**Alternativas.** Registrar la verificación como un evento en el instante 0 «para que se vea en el replay» (cambiaría
+la cola de eventos, la numeración de la línea y el replay de las partidas de la primera parte).
+
+**Decisión.** La verificación no registra nada en `HistorialRetroceso`, en la línea de tiempo de la 004 ni en
+`partida.log`: ocurre antes de que existan el motor, el historial, la línea y la bitácora, y la `Mazmorra` auxiliar
+no tiene motor. El reporte no es una acción; `contexto.resolubilidad` es solo lectura y `PartidaGuardada` no lo guarda.
+
+**Complejidad.** Ninguna sobre la partida: O(1).
+
+**Evidencia.** `test_r9_fr301_verificacion_no_registra_en_historial_linea_ni_log`: después de
+`iniciar_partida_nueva`, el historial está vacío, la línea no tiene acciones y el log solo tiene el encabezado.
+
+**¿Coincide con el plan?** Sí.
+
+#### Paquete de la Parte II y veredictos (T057, T058)
+
+**Paquete de la Parte II y excepción de `cripta-01` (T057, 15/11).** El API del 15/11 publica `cripta-02` a `cripta-06`
+(catálogo `4b9e75a42be5`) y ya no `cripta-01` (responde 404). El paquete local conserva `cripta-01/` byte idéntica,
+porque la usan las pruebas de los tres integrantes, y toma del API el catálogo y las demás criptas. Como el catálogo es
+uno solo para todas las criptas, `cripta-01` usa las fichas nuevas: `ent_rata_gigante` (vida_max 12→8, ataque 5→3,
+defensa 1→0, velocidad 150→110) y `ent_guardian_oseo` (vida_max 20→16, ataque 7→5, defensa 3→2). Su contenido trae
+`"vida": 12` en las ratas y `Enemigo` toma esa vida tal cual, así que empiezan con 12 de vida y `vida_max` 8. Evitarlo
+tocaría la primera parte sin un FR o inventaría datos; el integrante 1 lo aceptó el 15/11. Además, `cripta-01` es la
+única cripta sin `llaves.json`: `--verificar cripta-01 --offline` termina con código 1 («falta el archivo …
+llaves.json», FR-320). Reporte completo, con los veredictos de T058:
+[paquete-2026-11-15.md](specs/003-resolubilidad/paquete-2026-11-15.md).
+
+**Veredictos de T058** (`--verificar <id> --offline` con el paquete armado):
+
+| Cripta | Veredicto | Código |
+|---|---|---|
+| `cripta-01` | no concluyó: falta `llaves.json` (ya no está publicada) | 1 |
+| `cripta-02` | resoluble: bronce, negra | 0 |
+| `cripta-03` | resoluble: bronce, hierro, negra | 0 |
+| `cripta-04` | resoluble: bronce, hierro, negra | 0 |
+| `cripta-05` | no resoluble: ciclo hierro ↔ negra (hierro en la sala 24, tras la 12–24, que pide negra; negra en la sala 23, tras la 7–22, que pide hierro) | 3 |
+| `cripta-06` | resoluble: bronce, hierro, plata, negra | 0 |
+
+#### Límites conocidos y hallazgos
+
+- **Diferencia con el motor en la puerta de salida** (H-1 de research): la registra el integrante 1 en [«Diferencia
+  conocida entre la verificación y el motor de P1»](#diferencia-conocida-entre-la-verificación-y-el-motor-de-p1); aquí
+  no se repite. En esa regla la diferencia va hacia el lado seguro.
+- **Límite conocido en la otra dirección** (spec, Suposiciones; *decisión del grupo*): el «lado seguro» no vale en
+  general. En una puerta con cierre automático y llaves distintas por cara, la verificación supone que la puerta
+  puede volver a abrirse (§3.5: «una puerta puede volver a abrirse con la misma llave») y no lee el cierre automático
+  (decisión 3). El motor la cierra en sus dos caras y volver pide la llave de la otra cara, así que la verificación
+  **puede decir «resoluble» y el jugador quedar encerrado**. Se acepta porque §3.5 pide verificar con llaves y
+  puertas, sin simular el reloj ni los cierres; lo fija
+  `test_fr302_cierre_automatico_con_llaves_distintas_por_cara_no_bloquea`.
+- **Varias puertas de entrada del mismo nivel** (R6): el ciclo señalado usa la puerta de la regla de FR-310 y no las
+  otras (H2-13); el reporte igual las lista todas en la frontera cuando salen de la región alcanzable.
+- **H-2 (presupuesto)**: en una partida en vivo, la solicitud de llaves gasta 1 del presupuesto que el replay no
+  gasta, porque el replay no verifica. Solo importaría si la partida agota el presupuesto; con las llaves persistidas
+  (FR-317) no se gasta nada. Lo pide FR-317; queda escrito.
+- **H-3 (paquete)**: el paquete de la primera parte (`cripta-01` a `cripta-04`, 6, 20, 40 y 50 salas) no traía
+  `llaves.json`, `costo` ni `rango`, y `--verificar … --offline` terminaba con código 1 (FR-320). Se resolvió con el
+  paquete de la Parte II (T057, arriba); queda la excepción de `cripta-01`.
+- **La fila del paquete no sirve para ver el crecimiento**: mide una sola cripta (300 salas); la base de B1 a B6 sigue
+  siendo la generación sintética por semilla (R7).
+- **Ruido en el tamaño menor**: con 100 salas algunas medianas salieron bastante por encima del mejor tiempo (B3:
+  1,250 frente a 0,861 ms; B5 ordenar y compactar: 0,452 frente a 0,318 ms); por eso se dan también los factores con
+  el mejor tiempo. No cambian ninguna conclusión.
+
+Mediciones: `python main.py --bench` (`Logic/BenchResolubilidad.py` para B1 a B6 y `Service/ServicioBench.py` para
+la fila del paquete), tabla completa y comprobaciones de quickstart §4 en
+[bench-2026-11-16.txt](specs/003-resolubilidad/bench-2026-11-16.txt). Máquina: AMD Ryzen 5 5500, 31,8 GB, Windows
+11 Pro, Python 3.14.7. Semilla `SEMILLA = 2026`: las criptas sintéticas son reproducibles (dos llamadas con la misma
+semilla dan criptas iguales); los tiempos son medianas y dependen de la máquina.
 
 ---
 
@@ -653,6 +940,8 @@ tiempo que consultar». Anotado como supuesto en la spec de la 004 (Suposiciones
 
 **HUD con mensajes largos y vida mayor que vida_max.** Un mensaje de 342 px en un ancho útil de 334 no se arregla con más holgura (achicaría la letra de todos): `HudJuego._mensajes` ya lo recorta con `recortar_a_ancho` y «...», así que no cambió la vista; `barra_de_vida` ya limitaba la proporción a 1.0 y ahora lo cubren dos pruebas (ratas de cripta-01: vida 12, vida_max 8).
 
+**Tamaño de letra del HUD.** Se mide con los nombres del catálogo de la Parte II (`MENSAJES_PARA_MEDIR` incluye Espectro acechador y Carcelero errante): con el catálogo nuevo el peor mensaje (342 px) ya no cabe en 334 a 17 px y el tamaño baja a 15, así que la vista no recorta mensajes reales; el recorte con «...» queda como protección. `test_vista_hud` pasa con el catálogo nuevo y con el viejo.
+
 #### §5.5 (subsección) Banco de pruebas de la línea de tiempo (`--bench`)
 
 `Service/BenchLineaTiempo.py` (con `Service/Cronometro.py` y `ResultadoBenchDTO`, igual que
@@ -738,3 +1027,124 @@ lee. Costo: O(1). Pruebas: `tests/test_danio_recibido.py`.
 
 **Nota sobre las pruebas.** La mutación que quita `Evento_pendiente` del daño solo se nota contando los cambios del intervalo, y el
 helper de la prueba lee atributos privados del historial (se rompe si cambia el buffer).
+
+**Prueba con Regeneración real y mutación.** `test_h7_5_a34_fr258_dano_compensado_por_regeneracion_detiene` (`tests/test_servicio_ir_a.py`) pone una
+`Regeneracion` real (+20, con su primer pulso a los 95) y un guardián que golpea a los 90 dentro de un paso: la vida queda igual
+(el pulso la devuelve al máximo), `danio_recibido` sube y el viaje se detiene con `DANO`. Su contraparte,
+`test_fr258_regeneracion_activa_sin_dano_el_viaje_sigue`, con Regeneración activa y sin daño, no lo detiene (el contador no sube
+al curarse). Se comprobó con una mutación: si `ServicioIrA` compara `jugador.vida` en lugar de `danio_recibido`, la primera falla.
+T110A sigue sin marcarse: falta la revisión del integrante 1.
+
+### Viaje automático «ir a» (002, integrante 3)
+
+Spec FR-250 a FR-264, NFR-250 y NFR-251; plan en `specs/002-niebla-ir-a/plan.md` («Viaje automático «ir a»»). Todo lo de abajo
+existe en el código y lo cubren las pruebas que se nombran.
+
+**1. Tres piezas, y el viaje viaja en un DTO.** *Problema:* decidir cada paso y cuándo parar sin reimplementar el movimiento.
+*Decisión:* «ir a» es una orden que se descompone en movimientos ordinarios. `Logic/ViajeAutomatico.py` (funciones puras, sin I/O:
+`resolver_destino`, `decidir_paso`, `motivos_de_parada`), `Service/ServicioIrA.py` (`iniciar(contexto, nombre)` y
+`dar_paso(contexto, viaje)`; no guarda el viaje) y `DTO/ViajeDTO.py` (`ViajeDTO(destino, nombre_destino, pasos_dados,
+acciones_esperadas)`, `InicioViajeDTO`, `PasoViajeDTO` y los motivos de parada). Cada paso es un `mover` que pasa por
+`ServicioLineaTiempo.ejecutar`, así que gasta su tiempo, deja correr los eventos, se anota en `partida.log` y en la línea de
+tiempo, y cuenta como acción (FR-254, FR-263, FR-264). *Alternativa descartada:* guardar el estado del viaje en el servicio;
+con un `ViajeDTO` que viaja de una llamada a la siguiente, cargar una partida o leer un pergamino no pueden dejar un viaje
+«a medias» dentro del servicio. *Pruebas:* `tests/test_servicio_ir_a.py`, `tests/test_viaje_logica.py`.
+
+**2. `dar_paso(contexto, viaje)` y `acciones_esperadas`: así se detecta el pergamino.** El `ViajeDTO` guarda cuántas acciones
+llevaba el jugador tras el último paso. Si `jugador.acciones` es otro valor (un pergamino la bajó en 1, o hubo otra orden), el
+paso se detiene con `INTERRUMPIDO` sin tocar nada (FR-262). Con solo el destino no habría cómo saberlo. Después: partida
+terminada → `TERMINADA`; sin ruta → `SIN_RUTA` sin tiempo; el `mover` rechazado → `PASO_RECHAZADO`; y, con el paso dado,
+`motivos_de_parada`. *Pruebas:* `test_h7_7_apendiceB_caso6_fr222_fr262_pergamino_revierte_solo_el_ultimo_paso`
+(`tests/test_ir_a_pergamino.py`), `test_dar_paso_con_la_partida_cambiada_por_fuera_para_con_interrumpido`.
+
+**3. Búsqueda desde cero en cada paso.** *Problema:* la ruta debe usar solo lo que el jugador conoce y recalcularse antes de cada
+paso (FR-252, FR-255). *Decisión:* `paso_desde_cero(grafo, destino, sala_actual, None)` sobre `GrafoMapaConocido`, sin guardar
+ninguna búsqueda entre pasos (la decisión es idéntica a un cálculo desde cero, SC-251). *Alternativa descartada:* reutilizar
+`BusquedaCostoMinimo` con `observador_rutas`; **no se implementó ni se midió**, porque el paso cabe en 5 ms (T122 la manda medir
+solo si no cabe). *Pruebas:* `test_sc251_cada_paso_igual_a_paso_desde_cero`, `test_sc251_fr255_cada_decision_igual_a_paso_desde_cero`.
+
+**4. El grafo se arma una vez por viaje y de nuevo tras cargar.** El plan lo armaba en cada paso. `ServicioIrA` guarda solo un
+caché de un valor: el `GrafoMapaConocido` y el mapa del que salió. `iniciar` lo borra (un grafo por viaje) y `dar_paso` lo
+rehace si `contexto.motor.mapa` es otro objeto, que es lo que pasa después de cargar una partida (hay un `Motor` nuevo).
+El grafo lee el mapa en vivo, así que reutilizarlo entre pasos no cambia la decisión. *Pruebas:* `test_el_grafo_se_arma_una_vez_por_viaje`,
+`test_viaje_tras_cargar_toma_el_mapa_del_motor_nuevo_y_arma_un_grafo_nuevo` (`tests/test_servicio_ir_a.py`).
+
+**5. La dirección del paso sale de `Mazmorra.salida` (D-1) y de la cara recordada.** `paso_desde_cero` devuelve `(vecina,
+costo)`, no la dirección. `decidir_paso` toma la primera dirección, por número, cuya salida lleva a la vecina, tiene ese costo y
+cuya cara de origen se recuerda abierta (`mapa.estado_cara == ABIERTA`); así, con dos salidas a la misma vecina (H-4), no elige una
+cara recordada cerrada. Solo mira la sala actual, que está explorada. *Pruebas:* `test_fr252_direccion_de_menor_numero_con_ese_costo`,
+`test_fr252_h4_cara_recordada_cerrada_de_menor_direccion_no_se_elige`.
+
+**6. Decisiones I3-4, I3-5 e I3-7.** *I3-4:* «ir a» desde una sala con enemigos vivos da el primer paso; solo se detiene al
+**entrar** a una sala con enemigos (`test_i3_4_la_sala_de_partida_con_enemigos_permite_el_primer_paso`). *I3-5:* el comentario
+`# ir a <sala>` se escribe justo después del primer paso aceptado, con el nombre real de la sala destino y solo si la bitácora
+existe; una orden rechazada o sin pasos no escribe nada (`test_h7_8_a36_fr261_log_con_tres_movimientos_y_un_comentario`,
+`test_fr261_orden_sin_pasos_no_se_registra`, `test_el_comentario_se_escribe_una_sola_vez_por_orden`). *I3-7:* `INTERRUMPIDO`,
+`TERMINADA` y `PASO_RECHAZADO` son motivos internos, no mensajes de la spec; `TERMINADA` sale junto a `DANO` o `LLEGO`, en el
+orden fijo `LLEGO`, `ENEMIGOS`, `DANO`, `TERMINADA` (`test_i3_7_fr258_terminada_junto_con_dano_o_llego`,
+`test_i3_6_fr258_paso_rechazado_para_sin_tiempo_ni_comentario`).
+
+**7. Límites de H-3 (I3-9).** El nombre se compara con `strip().casefold()` en los dos lados (`MapaConocido.buscar_exploradas`). No se
+quitan tildes (`sotano` no encuentra `Sótano`; es el comportamiento de `casefold`, no hay una prueba que lo fije) ni se colapsan
+espacios internos: el comando de la interfaz conserva los espacios internos del nombre (`test_solo_ir_a_con_un_destino_es_el_comando`).
+Si el grupo quiere tildes o espacios, el cambio es de una línea en `buscar_exploradas` (integrante 2).
+
+**8. H-2, opción A: la interfaz no ve ids de salas no exploradas.** *Problema:* `EstadoJuegoDTO.sala.salidas[d].sala_destino` traía
+el id real de las salas avistadas y `sala_salida` el de la salida de la cripta (FR-204, FR-217). *Decisión:* `ArmadorEstado` pone
+`SIN_EXPLORAR = -1` (constante en `DTO/EstadoJuegoDTO.py`) en cada salida hacia una sala no explorada y deja `sala_salida = None`
+mientras esa sala no esté explorada, con `mapa.es_explorada` (O(1) por salida; no usa `a_dto()`). La vista no cambia: `-1` no coincide con
+ningún id ni con `sala_salida`. *Costo conocido:* la puerta final no se distingue hasta explorar la sala de salida. *Alternativas descartadas*
+(plan, tabla del H-2): `sala_destino: int | None`, un campo nuevo con los destinos conocidos, o que `ArmadorEstado` calcule los hechos que
+la vista compara. *Pruebas:* `tests/test_estado_sin_filtrar.py` (200 acciones con y sin antorcha), y se ajustaron tres pruebas viejas
+que leían ids reales del estado (`test_servicios.py`, `test_grabadores_linea.py`, `test_dto_terreno.py`).
+
+**9. Interfaz de «ir a»: supuestos míos (la spec no los fija).** La spec dice que el viaje es paso a paso y que se muestra el motivo
+de parada (FR-260); el resto lo decidí yo, y se puede cambiar:
+- *Ritmo:* un paso cada `PASO_VIAJE_MS` = 350 ms (`UIController/ControladorPygame.py`), medidos con el reloj del controlador,
+  en `avanzar_viaje()`, que el bucle principal llama una vez por cuadro. El primer paso sale en el primer cuadro.
+- *Corte:* cualquier tecla, clic o rueda corta el viaje y además se ejecuta como siempre (`Z` espera, `D` mueve); **Esc solo corta el
+  viaje y no abre la pausa**. Sin viaje, Esc vuelve a pedir la pausa. El backend descarta el viaje (`cancelar_viaje`) y anota
+  «Viaje interrumpido.».
+- *Rechazos:* una orden rechazada (destino no válido, ambiguo, «ya estás aquí», comando vacío) sale como aviso, como los demás
+  comandos, sin tiempo ni bitácora. Un destino inexistente, avistado o desconocido da el **mismo** mensaje (FR-251), y no se puede
+  distinguir uno de otro; ambiguo y «ya estás aquí» tienen el suyo.
+- *Motivos de parada:* `ControladorBackend.dar_paso_viaje` anota un mensaje por motivo («Llegaste a ...», «Viaje detenido: hay
+  enemigos.», «...recibiste daño.», «...sin ruta conocida a ...», y «...no se pudo dar el paso.» para el `mover` rechazado) con
+  `ServicioIrA.anotar`, que los agrega al buffer de mensajes de la partida viva (el panel de mensajes). No son parte del estado del
+  motor, así que `--replay` no los reproduce. Son cortos a propósito y `test_vista_hud` los mide con los nombres de sala reales.
+- *Pruebas de punta a punta:* `tests/test_ir_a_interfaz.py` (`ControladorPygame` y `VistaPygame` reales, partida real de 5 × 5 salas).
+  Esas pruebas arrancan con `forzar=True` porque desde T054 `iniciar` verifica la resolubilidad y la fuente de la cuadrícula no trae llaves.
+
+**10. Banco del paso (NFR-250, NFR-251, SC-252).** `Logic/BenchViaje.py` mide, con el mapa conocido completo y desde la esquina hacia la sala
+opuesta, V1 armar el grafo, V2 un paso con el grafo armado y V3 un paso completo (grafo nuevo + `decidir_paso`), con cuadrículas de 100,
+1 024 y 10 000 salas y una de 15 × 20 = 300 salas, el tamaño de cripta-06. **cripta-06 no está en el paquete local** (trae cripta-01 a
+cripta-04): se midió la sintética de 300 salas, y cuando el paquete traiga cripta-06, `--bench` la mide sola (`ServicioBench`), desde su
+sala inicial hacia su salida, sin cambiar código (hasta entonces la tabla trae una fila «cripta-06 del paquete (no medida)»). Resultados
+(mediana): **300 salas, V3 = 1.001 ms contra 5 ms: cumple NFR-250 y SC-252** (V1 0.199 ms, V2 0.756 ms); 1 024 salas, V3 = 3.763 ms
+(por debajo de 5 ms, con poco margen; evidencia, no criterio); 10 000 salas, 50.363 ms. La tabla completa está en
+`specs/002-niebla-ir-a/bench-viaje-2026-11-17.txt`; se midió en otra máquina (Ryzen 4600G, 15 GB, Python 3.15.0) que la tabla del
+integrante 2 del 15/11 (Ryzen 5 5500), así que los tiempos de las dos no son comparables fila por fila. Complejidad: V1 O(S + E) (la primera
+`entradas` arma el índice inverso); un paso es una búsqueda de costo mínimo sobre las salas exploradas. *Pruebas:* `tests/test_bench_viaje.py`.
+
+### Comando `mapa` de la 002 (interfaz)
+
+- *Nombre y alcance.* La spec pide «un comando para ver el mapa conocido» (FR-219) sin fijar el nombre: elegí `mapa` (sin argumentos), en la
+  misma línea de comandos que `historia`. Repetirlo lo cierra; también lo cierran `Esc` (antes que la pausa) y cualquier acción.
+- *Qué lee.* `ControladorBackend.ver_mapa()` devuelve `motor.mapa.a_dto()` y nada más: no pasa por servicios, no toca Data, no consume tiempo,
+  no es una acción, no se anota en `partida.log` ni en la línea de tiempo, no toca el historial y no descarta un viaje en curso (FR-220).
+  `PantallaDTO.mapa` (campo final con valor por defecto) lleva el `MapaConocidoDTO` a la vista, que solo dibuja.
+- *Dibujo* (`View/MapaJuego.py`). El DTO no trae coordenadas: cada sala se pone junto a la que la nombra según N, S, E y O, a partir de la sala
+  actual, y una sala que no cabe junto a su vecina se corre en la misma dirección. Una salida hacia una sala avistada es una celda hueca sin
+  id ni nombre; cada conexión lleva el color de la puerta recordada. La celda va de 56 a 16 px; con 44 px o más se escriben nombres y costos.
+  Si ni a 16 px cabe, se recorta alrededor de la sala actual y el panel lo dice (300 salas en cuadrícula caben enteras a unos 34 px).
+- *Supuesto: con la partida terminada el comando no está disponible*, igual que `historia`. T048 punto 1 lo pide «también con la partida
+  terminada», pero FR-219 y FR-220 no lo exigen. Al terminar, `ControladorPygame` pasa a la pantalla de victoria o derrota (o ignora todos los eventos
+  durante la demora del fin) y esa pantalla no tiene línea de comandos. Habilitar `mapa` ahí obliga a darle teclas, un campo en `PantallaDTO`
+  y un dibujo a las pantallas de fin, es decir, tocar la navegación de victoria y derrota. Si el grupo lo quiere, el cambio es de esas pantallas
+  y no de `ver_mapa`, que no mira si la partida terminó (`test_con_la_partida_terminada_el_comando_no_esta_disponible_pero_ver_mapa_no_falla`).
+- *Pruebas:* `tests/test_comando_mapa.py`, con dos pruebas que parchean `ver_mapa` para que anote en el log o gaste tiempo y comprueban que la
+  comparación del reloj, las acciones, `partida.log`, la línea, el historial y el mapa lo detecta (la mutación de FR-220).
+
+### Reporte de resolubilidad en la interfaz (003, T055)
+
+El reporte llega a la vista como líneas de texto (`PantallaDTO.reporte_resolubilidad`, con el formato de `TextoResolubilidad.lineas_reporte`, FR-315) y un indicador de advertencia. `ControladorPygame` lo toma de `backend.resolubilidad()` justo después de iniciar: en una partida nueva se muestra en un panel hasta la primera acción que gasta tiempo (una acción rechazada no lo oculta), como advertencia si no es «resoluble» (`--forzar`, FR-312); si la partida no inicia (FR-311) el reporte completo se ve en la pantalla del nombre; al cargar o en `--replay` no hay reporte (FR-301). El aviso del menú no se toca: el mensaje de `ErrorPartidaNoIniciada` es corto y cabe en sus 2 líneas, pero no trae el ciclo, por eso el reporte va en un panel aparte. La fuente del juego no tiene la flecha «→» y la vista la dibuja como «->». Si un reporte no cabe en el panel (12 líneas en el menú, un ciclo con sus dependientes ocupa 12), se corta con «... y N líneas más» y se remite a `--verificar`, que escribe todo.

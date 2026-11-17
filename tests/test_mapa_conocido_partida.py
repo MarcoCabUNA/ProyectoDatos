@@ -9,7 +9,7 @@ T031: la variante con el motor (leer un pergamino); falla hasta T033.
 T040: guardar y cargar el mapa con PartidaGuardada (H4-3) y los puntos de control con su mapa; fallan hasta T040.
 T041: el replay da el mismo mapa (H4-5) y la misma partida da el mismo mapa en cada acción (SC-205). Excepción
 documentada al «falla primero»: pasan por el código de T033 y T040, así que pueden pasar desde que se escriben.
-T042: `historia #4` muestra el mapa de ese instante (H4-4), con guarda hasta T118 del integrante 3.
+T042: `historia #4` muestra el mapa de ese instante (H4-4); sin guarda desde T050 (T118 del integrante 3 está).
 """
 import dataclasses
 import os
@@ -392,8 +392,6 @@ class PruebasHistoriaConMapa(unittest.TestCase):
             antes_de_la_4 = ReconstructorEstado(ctx).hasta_accion(4)     # el motor aparte de `historia #4`
             self.assertFalse(antes_de_la_4.mapa.es_explorada(sala_b))    # ya sin guarda: el mapa de ese instante
             resumen = servicio.consultar_por_accion(ctx, 4)
-            if resumen.mapa_conocido is None:
-                self.skipTest("pendiente: T118 del integrante 3 (ServicioLineaTiempo pasa motor.mapa.a_dto())")
             self.assertEqual(resumen.sala_id, sala_a)                # en la acción 4 el jugador está en A
             mapa = resumen.mapa_conocido
             self.assertIsInstance(mapa, MapaConocidoDTO)

@@ -10,8 +10,8 @@ El `reloj` del resumen (FR-405):
     historia #k     el instante de la decisión k: el reloj del motor, que está justo antes de ella
     si la partida terminó ANTES del instante pedido, el reloj del final
 
-`mapa_conocido`: si el estado trae el mapa conocido (campo de PartidaGuardadaDTO, spec 002) el resumen lo copia a mano;
-si no, queda en None.
+`mapa_conocido`: el MapaConocidoDTO del motor (`motor.mapa.a_dto()`), o None si quien arma no lo da. Es inmutable y
+`a_dto()` arma uno nuevo en cada llamada, así que el resumen lo lleva tal cual, sin copiarlo.
 """
 from DTO.ResumenHistoriaDTO import ResumenHistoriaDTO
 from Logic.motorJuego import Motor
@@ -39,7 +39,7 @@ class ArmadorResumen:
             armadura_equipada=None if armadura is None else armadura.id,
             efectos=motor.efectos.visibles(jugador),
             enemigos=[enemigo.a_dto() for enemigo in motor.mazmorra.enemigos_vivos(id_sala)],
-            mapa_conocido=ArmadorResumen._copiar_mapa(mapa_conocido),
+            mapa_conocido=mapa_conocido,
             terminada_antes=terminada_antes,
             instante_pedido=instante_pedido,
         )
@@ -51,10 +51,3 @@ class ArmadorResumen:
         if motor.terminado and motor.reloj < instante_pedido:
             return motor.reloj                                  # la partida terminó antes: el reloj del final
         return instante_pedido
-
-    @staticmethod
-    def _copiar_mapa(mapa: object | None) -> object | None:
-        """Copia a mano (sin `copy`) del mapa conocido. La spec 002 define su forma; una lista se copia, lo demás pasa tal cual."""
-        if isinstance(mapa, list):
-            return list(mapa)
-        return mapa

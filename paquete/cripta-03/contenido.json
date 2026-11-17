@@ -51,9 +51,9 @@
       "sala": 7,
       "enemigos": [
         {
-          "instancia": "e-rata-cripta-03-1",
+          "instancia": "e-cripta-03-1",
           "tipo": "ent_rata_gigante",
-          "vida": 12
+          "vida": 8
         }
       ],
       "objetos": [],
@@ -79,9 +79,9 @@
       "sala": 10,
       "enemigos": [
         {
-          "instancia": "e-rata-cripta-03-2",
+          "instancia": "e-cripta-03-2",
           "tipo": "ent_rata_gigante",
-          "vida": 12
+          "vida": 8
         }
       ],
       "objetos": [],
@@ -96,14 +96,14 @@
       "sala": 11,
       "enemigos": [
         {
-          "instancia": "e-rata-cripta-03-4",
+          "instancia": "e-cripta-03-4",
           "tipo": "ent_rata_gigante",
-          "vida": 12
+          "vida": 8
         },
         {
-          "instancia": "e-rata-cripta-03-5",
+          "instancia": "e-cripta-03-5",
           "tipo": "ent_rata_gigante",
-          "vida": 12
+          "vida": 8
         }
       ],
       "objetos": [],
@@ -121,19 +121,24 @@
       "sala": 13,
       "enemigos": [
         {
-          "instancia": "e-guard-cripta-03-6",
+          "instancia": "e-cripta-03-6",
           "tipo": "ent_guardian_oseo"
         }
       ],
-      "objetos": [],
+      "objetos": [
+        "itm_pocion_menor"
+      ],
       "trampas": []
     },
     {
       "sala": 14,
-      "enemigos": [],
-      "objetos": [
-        "itm_pocion_menor"
+      "enemigos": [
+        {
+          "instancia": "e-cripta-03-7",
+          "tipo": "ent_sabueso_oseo"
+        }
       ],
+      "objetos": [],
       "trampas": []
     },
     {
@@ -146,9 +151,8 @@
       "sala": 16,
       "enemigos": [
         {
-          "instancia": "e-rata-cripta-03-7",
-          "tipo": "ent_rata_gigante",
-          "vida": 12
+          "instancia": "e-cripta-03-8",
+          "tipo": "ent_carcelero_errante"
         }
       ],
       "objetos": [],
@@ -164,14 +168,14 @@
       "sala": 18,
       "enemigos": [
         {
-          "instancia": "e-rata-cripta-03-8",
+          "instancia": "e-cripta-03-9",
           "tipo": "ent_rata_gigante",
-          "vida": 12
+          "vida": 8
         },
         {
-          "instancia": "e-rata-cripta-03-9",
+          "instancia": "e-cripta-03-10",
           "tipo": "ent_rata_gigante",
-          "vida": 12
+          "vida": 8
         }
       ],
       "objetos": [],
@@ -181,9 +185,9 @@
       "sala": 19,
       "enemigos": [
         {
-          "instancia": "e-rata-cripta-03-10",
+          "instancia": "e-cripta-03-11",
           "tipo": "ent_rata_gigante",
-          "vida": 12
+          "vida": 8
         }
       ],
       "objetos": [],
@@ -207,7 +211,7 @@
       "sala": 22,
       "enemigos": [
         {
-          "instancia": "e-guard-cripta-03-11",
+          "instancia": "e-cripta-03-12",
           "tipo": "ent_guardian_oseo"
         }
       ],
@@ -232,14 +236,14 @@
       "sala": 25,
       "enemigos": [
         {
-          "instancia": "e-rata-cripta-03-12",
+          "instancia": "e-cripta-03-13",
           "tipo": "ent_rata_gigante",
-          "vida": 12
+          "vida": 8
         },
         {
-          "instancia": "e-rata-cripta-03-13",
+          "instancia": "e-cripta-03-14",
           "tipo": "ent_rata_gigante",
-          "vida": 12
+          "vida": 8
         }
       ],
       "objetos": [],
@@ -261,20 +265,25 @@
       "sala": 28,
       "enemigos": [
         {
-          "instancia": "e-rata-cripta-03-14",
+          "instancia": "e-cripta-03-15",
           "tipo": "ent_rata_gigante",
-          "vida": 12
+          "vida": 8
         }
       ],
-      "objetos": [],
+      "objetos": [
+        "itm_pocion_menor"
+      ],
       "trampas": []
     },
     {
       "sala": 29,
-      "enemigos": [],
-      "objetos": [
-        "itm_pocion_menor"
+      "enemigos": [
+        {
+          "instancia": "e-cripta-03-16",
+          "tipo": "ent_sabueso_oseo"
+        }
       ],
+      "objetos": [],
       "trampas": []
     },
     {
@@ -287,9 +296,9 @@
       "sala": 31,
       "enemigos": [
         {
-          "instancia": "e-rata-cripta-03-15",
+          "instancia": "e-cripta-03-17",
           "tipo": "ent_rata_gigante",
-          "vida": 12
+          "vida": 8
         }
       ],
       "objetos": [],
@@ -299,14 +308,14 @@
       "sala": 32,
       "enemigos": [
         {
-          "instancia": "e-rata-cripta-03-16",
+          "instancia": "e-cripta-03-18",
           "tipo": "ent_rata_gigante",
-          "vida": 12
+          "vida": 8
         },
         {
-          "instancia": "e-rata-cripta-03-17",
+          "instancia": "e-cripta-03-19",
           "tipo": "ent_rata_gigante",
-          "vida": 12
+          "vida": 8
         }
       ],
       "objetos": [],
@@ -365,8 +374,8 @@
       "sala": 40,
       "enemigos": [],
       "objetos": [
-        "itm_pergamino_retroceso",
-        "itm_antidoto"
+        "itm_pocion_menor",
+        "itm_pocion_menor"
       ],
       "trampas": []
     }

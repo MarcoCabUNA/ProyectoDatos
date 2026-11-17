@@ -168,7 +168,7 @@ def resumen_vivo(contexto: ContextoPartida):
         armadura_equipada=estado.inventario.armadura_equipada,
         efectos=list(estado.efectos),
         enemigos=list(estado.enemigos),
-        mapa_conocido=None,
+        mapa_conocido=contexto.motor.mapa.a_dto(),
         terminada_antes=False,
         instante_pedido=estado.reloj,
     )

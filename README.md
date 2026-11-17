@@ -67,9 +67,14 @@ se escribe como `uv run python main.py ...`.
 | Reproduce la partida solo hasta el instante `T` (entero mayor o igual a 0) y muestra el resumen del estado en ese instante, sin abrir la ventana. Solo se acepta junto con `--replay`. | `.venv\Scripts\python.exe main.py --replay logs/partida_001.log --hasta 300 --offline` | `.venv/bin/python main.py --replay logs/partida_001.log --hasta 300 --offline` |
 | Cambia cada cuántas acciones del jugador la línea de tiempo toma un punto de control (entero mayor o igual a 1; por defecto 20). Se puede combinar con los demás modos. | `.venv\Scripts\python.exe main.py --checkpoint-cada 50` | `.venv/bin/python main.py --checkpoint-cada 50` |
 | Corre las mediciones de rendimiento con cargas sintéticas, sin abrir la ventana, y muestra una tabla por subsistema. | `.venv\Scripts\python.exe main.py --bench` | `.venv/bin/python main.py --bench` |
+| Dice si la cripta se puede terminar (si se pueden conseguir las llaves en algún orden hasta llegar a la salida), sin abrir la ventana ni iniciar una partida, y sale. Con `--offline` la lee de `paquete/`. | `.venv\Scripts\python.exe main.py --verificar cripta-02 --offline` | `.venv/bin/python main.py --verificar cripta-02 --offline` |
+| Inicia una partida nueva aunque la cripta no sea resoluble o su verificación no haya concluido, mostrando el reporte como advertencia. | `.venv\Scripts\python.exe main.py --forzar` | `.venv/bin/python main.py --forzar` |
 | Muestra las opciones. | `.venv\Scripts\python.exe main.py --ayuda` | `.venv/bin/python main.py --ayuda` |
 
 `--replay` y `--bench` no se pueden usar juntos. Con uv, cada comando se escribe `uv run python main.py ...`.
+
+`--verificar` tampoco se combina con `--replay` ni con `--bench`. `--forzar` se acepta con cualquier opción, pero solo
+lo usa una partida nueva (ver «Modo `--verificar` y `--forzar`»).
 
 **Sobre `--replay`:** `logs/` está vacía en una copia nueva del repositorio (se llena al jugar). Para probarlo sin jugar
 antes, el repositorio incluye una partida de muestra hecha con el paquete local:
@@ -102,37 +107,66 @@ Durante la partida (el inventario está siempre visible; la ventana muestra este
 | Soltar | `G` | `Mayús` + clic sobre la casilla |
 | Cambiar la vista del inventario | `V` (real, peso, valor, nombre; el orden real no cambia) | |
 | Pergamino de retroceso | `Retroceso` o `Ctrl + Z` | |
-| Abrir la línea de comandos (`historia`) | `Enter` (acepta con `Enter`, se cierra con `Esc`) | |
+| Abrir la línea de comandos (`historia`, `mapa`, `ir a`) | `Enter` (acepta con `Enter`, se cierra con `Esc`) | |
 | Guardar / Cargar | `Ctrl + S` o `F5` / `Ctrl + L` o `F9` | botones de la pausa |
 | Pausa | `Esc` (Continuar, Guardar, Cargar, Salir al menú) | |
 
 Para salir: `Salir` en el menú principal, `Salir al menú` en la pausa, o cerrar la ventana.
 
-### Historia de la partida
+### Línea de comandos: `historia`, `mapa` e `ir a`
 
-Durante la partida se puede consultar cómo estaba la partida en un instante o antes de una acción, sin cambiarla.
 `Enter` abre la línea de comandos (un campo de texto abajo en la ventana), `Enter` ejecuta lo escrito y `Esc` la cierra
 sin pausar el juego. Mientras está abierta, las teclas del juego se escriben en la línea y no actúan.
 
-| Comando | Qué muestra |
+| Comando | Qué hace |
 |---|---|
-| `historia <t>` | El estado en el instante `t` (entero mayor o igual a 0, hasta el reloj actual). |
-| `historia #k` | El estado justo antes de la acción `k` del jugador (entero mayor o igual a 1, hasta las acciones hechas). |
+| `historia <t>` | Muestra el estado en el instante `t` (entero mayor o igual a 0, hasta el reloj actual). |
+| `historia #k` | Muestra el estado justo antes de la acción `k` del jugador (entero mayor o igual a 1, hasta las acciones hechas). |
+| `mapa` | Abre o cierra el mapa de lo que el jugador conoce. |
+| `ir a <sala>` | Lleva al jugador a una sala que ya exploró, paso a paso. |
 
-El resultado aparece en un panel de solo lectura con el reloj, la sala, la vida y las estadísticas del jugador, el
-inventario (con el arma y la armadura equipadas), los efectos activos y los enemigos de la sala. `Esc` cierra el panel
-y el juego sigue tal cual estaba. Una consulta no consume tiempo, no cuenta como acción y no se escribe en la bitácora.
-Si el número está fuera de rango, la línea muestra un aviso con el rango válido.
+Un comando que no se entiende deja un aviso de uso y no hace nada. Ejemplos: `historia 300`, `historia #4`, `mapa`,
+`ir a Pasillo de las urnas`.
+
+**`historia`.** El resultado aparece en un panel de solo lectura con el reloj, la sala, la vida y las estadísticas del
+jugador, el inventario (con el arma y la armadura equipadas), los efectos activos y los enemigos de la sala. `Esc` cierra el
+panel y el juego sigue tal cual estaba. Una consulta no consume tiempo, no cuenta como acción y no se escribe en la
+bitácora. Si el número está fuera de rango, la línea muestra un aviso con el rango válido. Sin abrir la ventana, el mismo
+resumen sale de `--replay ARCHIVO --hasta T` (ver «Modo `--replay`»).
 
 La línea de tiempo toma un punto de control cada 20 acciones (se cambia con `--checkpoint-cada N`, entero mayor o igual a
-1): una consulta nunca re-simula más de `N` acciones. El valor por defecto salió de `--bench` (con 5 000 acciones,
-`historia` tarda menos de 1 ms; ver `DECISIONES.md`).
+1; por ejemplo `main.py --checkpoint-cada 50`): una consulta nunca re-simula más de `N` acciones. El valor por defecto
+salió de `--bench` (con 5 000 acciones, `historia` tarda menos de 1 ms; ver `DECISIONES.md`).
+
+**`mapa`.** Dibuja un panel con las salas exploradas (con su nombre y el costo de cada salida cuando hay espacio), cada salida hacia una
+sala avistada como un hueco «sin explorar» (sin nombre ni número), la sala donde estás en dorado y cada puerta con el
+estado en que la viste por última vez: verde abierta, roja cerrada, gris sin observar. Una puerta que se cerró sola
+mientras estabas lejos sigue figurando abierta hasta que vuelvas a verla. Si el mapa no cabe, se recorta alrededor de tu
+sala y el panel lo avisa. Se cierra con `mapa` otra vez, con `Esc` o al hacer cualquier acción. No consume tiempo, no
+cuenta como acción y no se escribe en la bitácora. Con la partida terminada no está disponible (igual que `historia`).
+
+**`ir a <sala>`.** El destino debe ser una sala ya explorada; mayúsculas y espacios sobrantes no importan, pero las tildes
+sí (`sotano` no encuentra `Sótano`). El viaje elige la ruta de menor costo usando solo lo que el mapa recuerda (salas
+exploradas y puertas recordadas abiertas), no abre puertas aunque tengas la llave, y da un paso cada 350 ms para que se
+vea cómo cambias de sala. Cada paso es un movimiento normal: gasta su tiempo, deja pasar los eventos y cuenta como acción.
+
+- *Cuándo para.* Cuando llegas, cuando entras a una sala con enemigos (activos o dormidos), cuando recibes daño de cualquier
+  origen, o cuando ya no hay una ruta conocida (por ejemplo, vuelves a ver una puerta de tu ruta cerrada y no hay otra).
+  El motivo, o todos si coinciden varios, aparece en el panel de mensajes («Llegaste a ...», «Viaje detenido: hay
+  enemigos.», «...recibiste daño.», «...sin ruta conocida a ...»).
+- *Cómo se corta.* Pulsando cualquier tecla o haciendo clic: el viaje se corta («Viaje interrumpido.») y la orden se
+  ejecuta (por ejemplo `Z` espera). `Esc` solo corta el viaje y no abre la pausa. Un pergamino de retroceso revierte únicamente
+  el último paso y el viaje no continúa.
+- *Si se rechaza.* Una sala no explorada, desconocida o que no existe da el mismo aviso (no revela si existe); un nombre que
+  designa varias salas exploradas, o la sala donde ya estás, tienen su propio aviso. No gastan tiempo ni quedan en la bitácora.
+- *En la bitácora.* Cada paso se escribe como un movimiento más, y la orden como un comentario (`# ir a Pasillo de las
+  urnas`) justo después del primer paso. `--replay` repite los pasos y llega a la misma partida; el comentario no cambia nada.
 
 ### Modo `--offline`
 
-Lee las criptas desde la carpeta `paquete/`, que viene en el repositorio con las cuatro publicadas al 18 de octubre
-(`cripta-01` a `cripta-04`, de 6 a 50 salas). Las lecturas locales no cuentan como solicitudes de red, así que el
-reporte final muestra 0 solicitudes.
+Lee las criptas desde la carpeta `paquete/`, que viene en el repositorio con `cripta-02` a `cripta-06` (publicadas el
+15 de noviembre, de 20 a 300 salas) y con `cripta-01` (6 salas), que ya no está publicada y no trae `llaves.json`. Las
+lecturas locales no cuentan como solicitudes de red, así que el reporte final muestra 0 solicitudes.
 
 Para agregar o actualizar una cripta en el paquete (esto sí usa la red; el catálogo se comparte entre criptas y se
 completa con las fichas nuevas):
@@ -163,6 +197,29 @@ completa. Códigos de salida de `--replay ... --hasta`:
 
 Al cargar una partida guardada, la bitácora continúa en un archivo nuevo que incluye las acciones anteriores,
 así que ese log también se puede reproducir completo.
+
+### Modo `--verificar` y `--forzar`
+
+`--verificar <cripta>` revisa, sin abrir la ventana ni iniciar una partida, si se pueden conseguir todas las llaves en
+algún orden hasta llegar a la salida. Sin `--offline`, pide la cripta y sus llaves al servicio web (cuenta como
+solicitudes de red); con `--offline`, las lee de `paquete/`. El reporte va a la salida estándar: si es resoluble, el
+orden en que se obtienen las llaves; si no, el motivo, las llaves que no se pueden obtener, las puertas que quedan
+bloqueadas y los ciclos de llaves. Códigos de salida:
+
+| Código | Cuándo |
+|---|---|
+| 0 | La cripta es resoluble. |
+| 3 | La cripta no es resoluble. |
+| 1 | La verificación no concluyó: no se pudo obtener la cripta o sus llaves, o los datos tienen un error. El mensaje dice por qué. |
+| 2 | Error en las opciones: `--verificar` sin el id de la cripta, o junto con `--replay` o `--bench`. |
+
+Con `--offline`, `--verificar cripta-01` termina con código 1 porque el paquete no trae su `llaves.json` (la cripta ya
+no está publicada en el servicio web).
+
+Al iniciar una partida nueva, el juego hace la misma verificación: si la cripta no es resoluble o la verificación no
+concluyó, la partida no se inicia y se muestra el reporte. Con `--forzar` la partida se inicia igual y el reporte se
+muestra como advertencia. `--forzar` no permite jugar una cripta cuyo esqueleto tiene un error de datos, y no tiene
+efecto con `--verificar`, `--replay` ni `--bench`, ni al cargar una partida guardada.
 
 ## Terreno y cazador (001, integrante 1)
 
@@ -211,6 +268,7 @@ y qué campo, y el programa no se cae.
 | Ficha de cazador sin `rango` o con `rango` que no es entero ≥ 0 (o un objeto con `duracion` que no es entero ≥ 1, incluidos un no entero y un `bool`, o un enemigo cuya `suelta` quedó rechazada) | La ficha se rechaza y no se vuelve a pedir. Si está en la sala inicial, la partida no inicia; en otra sala, esa sala queda como contenido no disponible y entrar se rechaza con el mensaje, sin gastar tiempo ni escribir en la bitácora. |
 
 Ejemplo: `Datos inválidos en 'esqueleto de cripta-02': la salida E de la sala 2 declara costo 0: debe ser un entero >= 1`.
+
 
 ## Archivos que genera el programa
 

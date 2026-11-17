@@ -11,6 +11,7 @@ Cada integrante tiene SU archivo de mediciones, así nadie edita el de otro:
                                  mismo método, porque Lógica no importa Servicios)
     Service/BenchInventario.py   Integrante 3: inventario, historial de retroceso y ordenamientos
     Logic/BenchResolubilidad.py  Integrante 2 (feature 003): verificación de resolubilidad, B1 a B6 (research R7)
+    Logic/BenchViaje.py          Integrante 3 (feature 002): el paso de «ir a», V1 a V3 (NFR-250), después de BenchMapaConocido
 Todos miden igual: mejor y mediana de N repeticiones (Service/Cronometro.py).
 
 Además, justo después de las filas de BenchResolubilidad, la fila de la verificación de la CRIPTA CON MÁS SALAS DEL
@@ -30,7 +31,7 @@ from Data.FuenteOffline import CARPETA_POR_DEFECTO, FuenteOffline
 from Data.GestorEsqueleto import GestorEsqueleto
 from Data.GestorLlaves import GestorLlaves
 from DTO.ResultadoBenchDTO import ResultadoBenchDTO
-from Logic import BenchLogica, BenchMapaConocido, BenchResolubilidad, VerificadorResolubilidad
+from Logic import BenchLogica, BenchMapaConocido, BenchResolubilidad, BenchViaje, VerificadorResolubilidad
 from Service import BenchDatos, BenchInventario
 from Service.Cronometro import REPETICIONES_POR_DEFECTO, medir
 
@@ -50,7 +51,7 @@ class ServicioBench:
         """
         self._mediciones = (mediciones if mediciones is not None
                             else [BenchDatos.medir, BenchLogica.medir, BenchResolubilidad.medir,
-                                  BenchMapaConocido.medir, BenchInventario.medir])
+                                  BenchMapaConocido.medir, BenchViaje.medir, BenchInventario.medir])
         self._carpeta_paquete = carpeta_paquete
 
     def ejecutar(self, al_avanzar=None) -> list[ResultadoBenchDTO]:
@@ -63,6 +64,8 @@ class ServicioBench:
             resultados.extend(self._mediciones[i]())
             if self._mediciones[i] is BenchResolubilidad.medir:
                 resultados.extend(self.medir_cripta_del_paquete())
+            if self._mediciones[i] is BenchViaje.medir:
+                resultados.extend(self.medir_viaje_en_la_cripta_de_referencia())
             if al_avanzar is not None:
                 al_avanzar(i + 1, len(self._mediciones))
         return resultados
@@ -109,6 +112,22 @@ class ServicioBench:
                 f"la de más salas entre {con_llaves} criptas del paquete con llaves.json; leída sin red; "
                 f"{repeticiones} repeticiones")
         return [ResultadoBenchDTO(BenchResolubilidad.SUBSISTEMA, _CASO_PAQUETE, len(salas), mejor, mediana, nota)]
+
+    def medir_viaje_en_la_cripta_de_referencia(self, repeticiones: int = 9) -> list[ResultadoBenchDTO]:
+        # SC-252: V1 a V3 de BenchViaje con el mapa conocido completo de cripta-06 del paquete (sin red), de su sala inicial a su salida; si no la trae, una fila sin tiempos que lo dice
+        try:
+            fuente = FuenteOffline(self._carpeta_paquete)
+            cripta = fuente.obtener_datos_generales(BenchViaje.CRIPTA_REFERENCIA)
+            esqueleto = GestorEsqueleto(fuente)
+            esqueleto.cargar(cripta)
+        except ErrorRed as error:
+            return [ResultadoBenchDTO(BenchViaje.SUBSISTEMA, f"{BenchViaje.CRIPTA_REFERENCIA} del paquete (no medida)", 0,
+                                      0.0, 0.0, f"{BenchViaje.CRIPTA_REFERENCIA} no está en el paquete local ({error}): "
+                                                f"vale la cuadrícula sintética de 300 salas, su mismo tamaño")]
+        salas = [esqueleto.obtener_sala(i) for i in esqueleto.ids_salas()]
+        mazmorra = BenchViaje.mazmorra_de(salas)
+        etiqueta = f"{cripta.id} versión {cripta.version} del paquete, leída sin red"
+        return BenchViaje.medir_en(mazmorra, repeticiones, etiqueta, True, cripta.sala_inicial, cripta.sala_salida)
 
     @staticmethod
     def tabla_texto(resultados: list[ResultadoBenchDTO]) -> str:

@@ -30,21 +30,27 @@ programación NO se esconden: siguen rompiendo con su traza.
 
 Los métodos de acciones devuelven el EstadoJuegoDTO resultante; los del inventario, el InventarioDTO.
 """
+from dataclasses import replace
+
 from DTO.AccionDTO import AccionDTO
 from DTO.ConfiguracionDTO import ConfiguracionDTO
 from DTO.Direcciones import DIRECCIONES
 from DTO.EstadoJuegoDTO import EstadoJuegoDTO
 from DTO.InventarioDTO import InventarioDTO
+from DTO.MapaConocidoDTO import MapaConocidoDTO
 from DTO.PuntajeDTO import PuntajeDTO
 from DTO.ReporteDatosDTO import ReporteDatosDTO
 from DTO.ReporteResolubilidadDTO import ReporteResolubilidadDTO
 from DTO.ResultadoBenchDTO import ResultadoBenchDTO
 from DTO.ResultadoReplayDTO import ResultadoReplayDTO
 from DTO.ResumenHistoriaDTO import ResumenHistoriaDTO
+from DTO.ViajeDTO import (AMBIGUO, DANO, ENEMIGOS, INTERRUMPIDO, LLEGO, PASO_RECHAZADO, SIN_RUTA, YA_AQUI, PasoViajeDTO,
+                          ViajeDTO)
 from Service.ErroresServicio import ERRORES_ESPERADOS
 from Service.ServicioBench import ServicioBench
 from Service.ServicioGuardado import ServicioGuardado
 from Service.ServicioInventario import ServicioInventario
+from Service.ServicioIrA import ServicioIrA
 from Service.ServicioLineaTiempo import ServicioLineaTiempo
 from Service.ServicioPartida import ServicioPartida
 from Service.ServicioPuntajes import ServicioPuntajes
@@ -78,6 +84,8 @@ class ControladorBackend:
         self._contexto = None  # la partida en curso (opaca); None si no hay
         self._terminada = False
         self._puntaje_registrado = False
+        self._ir_a = ServicioIrA()
+        self._viaje = None  # el ViajeDTO vigente de la sesión (feature 002); None si no hay viaje
         # feature 003: --forzar (solo lo usa iniciar) y el reporte de un inicio que no se hizo (FR-311)
         self._forzar = config.forzar
         self._reporte_no_iniciada = None
@@ -191,6 +199,7 @@ class ControladorBackend:
 
     # ================================================================== interno
     def _ejecutar(self, accion: AccionDTO) -> EstadoJuegoDTO:
+        self._viaje = None                               # cualquier otra orden descarta el viaje (feature 002, FR-262)
         estado = self._llamar(self._acciones.ejecutar, self._activa(), accion)
         self._terminada = estado.terminado
         return estado
@@ -199,6 +208,7 @@ class ControladorBackend:
         """La partida nueva (o cargada) pasa a ser la vigente. Solo se llega aquí si el servicio no falló."""
         estado = self._llamar(self._partida.estado, contexto)
         self._contexto = contexto
+        self._viaje = None
         self._terminada = estado.terminado
         self._puntaje_registrado = False
         return estado
@@ -305,3 +315,67 @@ class ControladorBackend:
             raise
         self._reporte_no_iniciada = None
         return self._empezar(contexto)
+
+    # ================================================================== feature 002 (mapa conocido)
+    def ver_mapa(self) -> MapaConocidoDTO:
+        # comando `mapa` (feature 002, FR-219, FR-220): solo lee motor.mapa.a_dto(); no consume tiempo, no es una acción, no se anota en el log ni toca el historial
+        return self._activa().motor.mapa.a_dto()
+
+    # ================================================================== feature 002 («ir a»)
+    def ir_a(self, nombre: str) -> ViajeDTO:
+        # `ir a <sala>` (feature 002, FR-250 a FR-252): empieza el viaje y no da ningún paso; solo valida la forma del texto y un destino no válido sale como ErrorOperacion
+        contexto = self._activa()
+        if not isinstance(nombre, str) or nombre.strip() == "" or "\n" in nombre or "\r" in nombre:
+            raise ErrorOperacion("Falta indicar a qué sala ir.")
+        self._viaje = None
+        inicio = self._llamar(self._ir_a.iniciar, contexto, nombre)
+        if inicio.viaje is None:
+            raise ErrorOperacion(self._mensaje_de_destino(inicio.motivos[0]))
+        self._viaje = inicio.viaje
+        return inicio.viaje
+
+    def dar_paso_viaje(self) -> PasoViajeDTO:
+        # un paso del viaje vigente (un `mover` ordinario) o el motivo de la parada; sin viaje vigente no continúa nada: INTERRUMPIDO
+        contexto = self._activa()
+        if self._viaje is None:
+            return PasoViajeDTO(None, [INTERRUMPIDO], self._llamar(self._partida.estado, contexto))
+        destino = self._viaje.nombre_destino
+        paso = self._llamar(self._ir_a.dar_paso, contexto, self._viaje)
+        self._viaje = paso.viaje
+        if paso.viaje is None:
+            for texto in self._textos_de_parada(paso.motivos, destino):
+                self._ir_a.anotar(contexto, texto)
+            paso = replace(paso, estado=self._llamar(self._partida.estado, contexto))
+        self._terminada = paso.estado.terminado
+        return paso
+
+    def cancelar_viaje(self) -> EstadoJuegoDTO:
+        contexto = self._activa()
+        if self._viaje is not None:
+            self._viaje = None
+            self._ir_a.anotar(contexto, "Viaje interrumpido.")
+        return self._llamar(self._partida.estado, contexto)
+
+    @staticmethod
+    def _textos_de_parada(motivos: list[str], destino: str) -> list[str]:
+        textos = []
+        for motivo in motivos:
+            if motivo == LLEGO:
+                textos.append(f"Llegaste a {destino}.")
+            elif motivo == ENEMIGOS:
+                textos.append("Viaje detenido: hay enemigos.")
+            elif motivo == DANO:
+                textos.append("Viaje detenido: recibiste daño.")
+            elif motivo == SIN_RUTA:
+                textos.append(f"Viaje detenido: sin ruta conocida a {destino}.")
+            elif motivo == PASO_RECHAZADO:
+                textos.append("Viaje detenido: no se pudo dar el paso.")
+        return textos
+
+    @staticmethod
+    def _mensaje_de_destino(motivo: str) -> str:
+        if motivo == AMBIGUO:
+            return "Hay más de una sala explorada con ese nombre."
+        if motivo == YA_AQUI:
+            return "Ya estás en esa sala."
+        return "No conoces ninguna sala explorada con ese nombre."

@@ -30,6 +30,12 @@ pantalla actual quedan en su valor por omisión (None o vacío).
                panel de solo lectura sin calcular nada. None si no hay ninguno
     linea_comandos   lo que el jugador lleva escrito en la línea de comandos ("juego"); None si está cerrada, "" si está
                abierta y vacía
+    mapa       el MapaConocidoDTO del comando `mapa` ("juego", feature 002, FR-219); la Vista lo dibuja sin calcular nada del
+               juego. None si el panel está cerrado
+    reporte_resolubilidad   las líneas del reporte de resolubilidad (feature 003, FR-311 a FR-313), ya con el formato de
+               TextoResolubilidad: en "juego", antes de la primera acción de una partida nueva; en "nombre", el reporte
+               completo de una partida que no se inició. None si no hay nada que mostrar (al cargar, no)
+    reporte_advertencia   True si ese reporte no es «resoluble» (advertencia con --forzar, o el motivo de que no se inició)
 
 Regla de los DTOs: solo transportan datos.
 """
@@ -37,6 +43,7 @@ from dataclasses import dataclass, field
 
 from DTO.ElementoDTO import ElementoDTO
 from DTO.EstadoJuegoDTO import EstadoJuegoDTO
+from DTO.MapaConocidoDTO import MapaConocidoDTO
 from DTO.PuntajeDTO import PuntajeDTO
 from DTO.ReporteDatosDTO import ReporteDatosDTO
 from DTO.ResumenHistoriaDTO import ResumenHistoriaDTO
@@ -61,3 +68,6 @@ class PantallaDTO:
     activaciones: int = 0
     resumen: ResumenHistoriaDTO | None = None
     linea_comandos: str | None = None
+    mapa: MapaConocidoDTO | None = None
+    reporte_resolubilidad: list[str] | None = None
+    reporte_advertencia: bool = False

@@ -27,7 +27,7 @@ class PruebasArmadorResumen(unittest.TestCase):
         def prueba(carpeta):
             _, ctx = partida_de_prueba(carpeta, semilla=2026)
             jugar(ctx, 40)
-            resumen = _armar(ctx, ctx.motor.reloj)
+            resumen = _armar(ctx, ctx.motor.reloj, mapa=ctx.motor.mapa.a_dto())
             self.assertIsInstance(resumen, ResumenHistoriaDTO)
             self.assertEqual(resumen, resumen_vivo(ctx))                   # lo mismo que muestra el estado vivo
             self.assertEqual(resumen.sala_id, ctx.jugador.Sala_Actual)
@@ -86,10 +86,9 @@ class PruebasArmadorResumen(unittest.TestCase):
             _, ctx = partida_de_prueba(carpeta, semilla=2026)
             jugar(ctx, 10)
             self.assertIsNone(_armar(ctx, ctx.motor.reloj).mapa_conocido)
-            mapa = [1, 2, 3]                                   # el mapa conocido (spec 002), si el estado lo trae, se copia
+            mapa = ctx.motor.mapa.a_dto()                      # el mapa conocido se lleva tal cual (es inmutable)
             resumen = _armar(ctx, ctx.motor.reloj, mapa=mapa)
-            self.assertEqual(resumen.mapa_conocido, [1, 2, 3])
-            self.assertIsNot(resumen.mapa_conocido, mapa)
+            self.assertIs(resumen.mapa_conocido, mapa)
         _correr(prueba)
 
 

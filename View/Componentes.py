@@ -46,7 +46,7 @@ AYUDA_PARA_MEDIR = (
     "Clic en un enemigo (o Espacio): atacar",
     "Clic en un objeto del suelo: recoger",
     "E (o clic en la puerta): abrir una puerta",
-    "Z: esperar   Enter: línea de comandos (historia)",
+    "Z: esperar   Enter: historia, mapa, ir a",
     "Rueda o Tab: recorrer el inventario",
     "U (o doble clic): usar   Q (o clic derecho): equipar",
     "G (o Mayús + clic): soltar   V: cambiar el orden",
@@ -54,9 +54,16 @@ AYUDA_PARA_MEDIR = (
     "Ctrl + S / F5: guardar   Ctrl + L / F9: cargar",
     "Esc: menú (o cierra la línea o el panel)",
 )
-# Los peores mensajes del motor (tiempo de 4 cifras, enemigo #99, daño de 999 y los nombres más largos del paquete offline);
+# Los peores mensajes del motor (tiempo de 4 cifras, enemigo #99, daño de 999 y los nombres más largos del catálogo de la
+# Parte II, que incluye los del paquete offline: Espectro acechador y Carcelero errante son los más anchos);
 # test_vista_hud comprueba que con ellos se elige el mismo tamaño que con TODAS las plantillas
 MENSAJES_PARA_MEDIR = (
+    "[t=9999] Espectro acechador #99 ataca a Jugador: 999 de daño",
+    "[t=9999] Jugador ataca a Espectro acechador #99: 999 de daño",
+    "[t=9999] El veneno hace 999 de daño a Espectro acechador #99",
+    "[t=9999] Carcelero errante #99 ataca a Jugador: 999 de daño",
+    "[t=9999] Jugador ataca a Carcelero errante #99: 999 de daño",
+    "[t=9999] El veneno hace 999 de daño a Carcelero errante #99",
     "[t=9999] Guardián óseo #99 ataca a Jugador: 999 de daño",
     "[t=9999] Jugador ataca a Guardián óseo #99: 999 de daño",
     "[t=9999] El veneno hace 999 de daño a Guardián óseo #99",
@@ -165,6 +172,9 @@ HUD_PANELES = [HUD_ESTADISTICAS, HUD_EFECTOS, HUD_MENSAJES, HUD_INVENTARIO, HUD_
 HUD_HISTORIA = pygame.Rect(8, 296, 350, 168)
 HUD_HISTORIA_ARRIBA = 24                     # donde empieza la primera línea del resumen (debajo del rótulo)
 HUD_LINEA = pygame.Rect(380, 712, 640, 40)
+HUD_REPORTE_JUEGO = pygame.Rect(374, 16, 644, 300)    # el reporte de resolubilidad antes de la primera acción (feature 003)
+HUD_REPORTE_MENU = pygame.Rect(118, 388, ANCHO - 236, 232)   # el reporte completo de una partida que no se inició
+HUD_MAPA = pygame.Rect(374, 16, 644, 688)       # el panel del comando `mapa` (feature 002): entre los paneles de los lados
 HUD_RELLENO = 8                              # margen interior de los paneles
 HUD_MENSAJES_LINEAS = 20                     # capacidad del panel de mensajes
 HUD_MENSAJES_INTERLINEA = 13

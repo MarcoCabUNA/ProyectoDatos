@@ -44,7 +44,7 @@ class PuntoControl:
     acciones_completadas: int
     partida: PartidaGuardadaDTO      # estado global, con el estado del azar
     salas: list[SalaGuardadaDTO]     # un bloque por sala del esqueleto
-    mapa_conocido: object | None = None   # copia del mapa conocido (spec 002); ausente hasta que exista
+    mapa_conocido: object | None = None   # sin uso: el mapa de un punto viaja dentro de `partida` (PartidaGuardadaDTO)
 
 
 @dataclass
@@ -156,7 +156,7 @@ class LineaTiempo:
         Copia a mano cada arreglo (sin `copy`): seguir jugando después de guardar no cambia lo guardado. Los puntos de
         control, las salas y las fichas se comparten por referencia porque nunca se modifican una vez tomados (la
         reconstrucción solo los lee). El mapa conocido del punto (`mapa_conocido`) no se guarda aquí: viaja dentro de
-        `partida.mapa` cuando exista (spec 002)."""
+        `partida.mapa`."""
         acciones = [AccionGuardadaDTO(a.tiempo, a.accion.tipo, a.accion.direccion, a.accion.objetivo, a.accion.objeto)
                     for a in self.acciones]
         puntos = [PuntoControlGuardadoDTO(p.acciones_completadas, p.partida, [sala for sala in p.salas])

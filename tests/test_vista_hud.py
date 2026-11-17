@@ -339,6 +339,9 @@ def _mensajes_peores_del_motor():
     mensajes += [f"{t}{m}" for m in ("Entras a ", "Comienzas en ", "Partida cargada: estás en ")
                  for m in [m + s for s in salas]]
     mensajes += [f"{t}{verbo} {o}" for o in objetos for verbo in ("Recoges", "Sueltas", "Equipas", "Usas")]
+    mensajes += [f"{t}{m}{s}{fin}" for (m, fin) in (("Llegaste a ", "."), ("Viaje detenido: sin ruta conocida a ", ".")) for s in salas]
+    mensajes += [f"{t}Viaje detenido: hay enemigos.", f"{t}Viaje detenido: recibiste daño.", f"{t}Viaje interrumpido.",
+                 f"{t}Viaje detenido: no se pudo dar el paso."]
     mensajes += [f"{t}{x}: 999 de daño" for x in trampas]
     mensajes += [f"{t}{x} envenena a Jugador (999)" for x in trampas] + [f"{t}Se activa {x}" for x in trampas]
     return mensajes
@@ -368,11 +371,14 @@ def probar_todos_los_mensajes_reales_del_motor_caben_en_el_ancho_util_del_panel_
     assert fuente.size(mas_ancho)[0] + c.HUD_HOLGURA <= ancho_util, (mas_ancho, fuente.size(mas_ancho)[0], ancho_util)   # cabe con holgura
     assert c.HUD_MENSAJES_INTERLINEA >= fuente.get_height() + 1
     assert c.HUD_MENSAJES_ARRIBA + c.HUD_MENSAJES_LINEAS * c.HUD_MENSAJES_INTERLINEA <= c.HUD_MENSAJES.height
-    # ... y es el mayor del rango que cabe con TODAS las plantillas reales (no solo con las de MENSAJES_PARA_MEDIR)
+    # ... y es el mayor del rango que cabe con TODAS las plantillas reales (no solo con las de MENSAJES_PARA_MEDIR) y con los
+    # mensajes de medida: el tamaño se mide con los nombres del catálogo de la Parte II aunque el paquete traiga el catálogo viejo
+    todos = mensajes + list(c.MENSAJES_PARA_MEDIR)
     for mayor in range(tam + 1, c.TAM_HUD_MAX + 1):
         f = _fuente(mayor)
         assert (f.get_height() + 1 > c.HUD_MENSAJES_INTERLINEA
-                or max(f.size(m)[0] for m in mensajes) + c.HUD_HOLGURA > ancho_util), f"el tamaño {mayor} también cabe"
+                or max(f.size(m)[0] for m in todos) + c.HUD_HOLGURA > ancho_util), f"el tamaño {mayor} también cabe"
+    assert fuente.size(max(todos, key=lambda m: fuente.size(m)[0]))[0] + c.HUD_HOLGURA <= ancho_util   # nada se recorta
 
 
 def probar_un_mensaje_mas_ancho_que_el_panel_se_recorta_con_puntos_suspensivos():

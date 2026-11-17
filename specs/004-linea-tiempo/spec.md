@@ -357,26 +357,26 @@ que ninguna consulta exige procesar más de K acciones.
 
 | # | Caso del Apéndice B | Escenario | Requisitos | Prueba |
 |---|---|---|---|---|
-| 1 | `historia <t>` con t mayor que el reloj actual: se rechaza | H1-1 | FR-409 | Se define en `tasks.md` |
-| 2 | `historia` después de usar un pergamino: no muestra las acciones revertidas | H3-1 | FR-404, FR-409, FR-413 | Se define en `tasks.md` |
-| 3 | Varios eventos en el mismo instante t: `historia <t>` muestra el estado después de todos ellos | H1-2 | FR-402, FR-405 | Se define en `tasks.md` |
-| 4 | `historia` no consume tiempo virtual, no se registra en `partida.log` y no modifica el historial de retroceso | H1-3 | FR-407, FR-408 | Se define en `tasks.md` |
-| 5 | `--replay … --hasta t` con t posterior al final: muestra el estado final e indica que la partida terminó antes | H2-2 | FR-405, FR-412 | Se define en `tasks.md` |
-| 6 | Se carga un archivo de la primera parte: incompatibilidad reportada o migración explícita; nunca en silencio | H4-3 | FR-421 | Se define en `tasks.md` |
+| 1 | `historia <t>` con t mayor que el reloj actual: se rechaza | H1-1 | FR-409 | `test_h1_1_apendiceB_caso1_fr409_instante_posterior` (`tests/test_linea_tiempo_consultas.py`), `test_h1_5_fr409_accion_fuera_de_rango` (`tests/test_linea_tiempo_consultas.py`) |
+| 2 | `historia` después de usar un pergamino: no muestra las acciones revertidas | H3-1 | FR-404, FR-409, FR-413 | `test_h3_1_apendiceB_caso2_fr413_fr409` (`tests/test_linea_tiempo_pergamino.py`) |
+| 3 | Varios eventos en el mismo instante t: `historia <t>` muestra el estado después de todos ellos | H1-2 | FR-402, FR-405 | `test_h1_2_apendiceB_caso3_fr402` (`tests/test_linea_tiempo_motor.py`) |
+| 4 | `historia` no consume tiempo virtual, no se registra en `partida.log` y no modifica el historial de retroceso | H1-3 | FR-407, FR-408 | `test_h1_3_apendiceB_caso4_fr407_fr408_no_altera_la_partida` (`tests/test_linea_tiempo_consultas.py`) |
+| 5 | `--replay … --hasta t` con t posterior al final: muestra el estado final e indica que la partida terminó antes | H2-2 | FR-405, FR-412 | `test_h2_2_apendiceB_caso5_fr412_t_posterior_al_final` (`tests/test_servicio_replay_hasta.py`) |
+| 6 | Se carga un archivo de la primera parte: incompatibilidad reportada o migración explícita; nunca en silencio | H4-3 | FR-421 | `test_h4_3_apendiceB_caso6_fr421_archivo_de_la_primera_parte` (`tests/test_linea_tiempo_guardado.py`) |
 
 Escenarios adicionales (no provienen del Apéndice B):
 
 | # | Comportamiento | Escenario | Requisitos | Prueba |
 |---|---|---|---|---|
-| 7 | `historia <t>` con decisión del jugador en t: estado justo antes de la decisión, igual a `historia #k` | H1-9 | FR-402 | Se define en `tasks.md` |
-| 8 | El resumen no muestra el cursor del inventario ni los mensajes | H1-10 | FR-406 | Se define en `tasks.md` |
-| 9 | La interfaz ofrece `historia <t>` e `historia #k` y muestra el resumen | H1-11 | FR-423 | Se define en `tasks.md` |
-| 13 | Partida terminada en t: el estado es el del momento en que terminó; los demás eventos de t no cuentan | H1-12 | FR-402, FR-405 | Se define en `tasks.md` |
-| 10 | `--hasta` inválido o sin `--replay`: error de uso (código 2) | H2-3 | FR-410 | Se define en `tasks.md` |
-| 11 | Archivo inexistente o ilegible: error con contexto, código 1 | H2-4 | FR-410 | Se define en `tasks.md` |
-| 12 | `--replay` sin `--hasta` reproduce la partida completa | H2-6 | FR-410 | Se define en `tasks.md` |
-| 14 | Un pergamino recogido en una acción revertida se conserva y el consumido no aparece | H3-5 | FR-413, FR-419, FR-424 | Se define en `tasks.md` |
-| 15 | Un pergamino soltado en una acción revertida queda fuera de la reversión (inventario y suelo) y, al recogerlo, el resumen coincide con la partida viva | H3-6 | FR-413, FR-419, FR-424 | Se define en `tasks.md` |
+| 7 | `historia <t>` con decisión del jugador en t: estado justo antes de la decisión, igual a `historia #k` | H1-9 | FR-402 | `test_h1_9_fr402_decision_del_jugador_en_t` (`tests/test_linea_tiempo_motor.py`), `test_h1_9_fr402_historia_t_igual_a_historia_k` (`tests/test_linea_tiempo_consultas.py`) |
+| 8 | El resumen no muestra el cursor del inventario ni los mensajes | H1-10 | FR-406 | `test_h1_10_fr406_sin_cursor_ni_mensajes` (`tests/test_armador_resumen.py`) |
+| 9 | La interfaz ofrece `historia <t>` e `historia #k` y muestra el resumen | H1-11 | FR-423 | `test_h1_11_fr423_historia_t` (`tests/test_controles_historia.py`), `test_h1_11_fr423_historia_k` (`tests/test_controles_historia.py`) |
+| 13 | Partida terminada en t: el estado es el del momento en que terminó; los demás eventos de t no cuentan | H1-12 | FR-402, FR-405 | `test_h1_12_fr402_fr405_partida_terminada_en_t` (`tests/test_linea_tiempo_motor.py`) |
+| 10 | `--hasta` inválido o sin `--replay`: error de uso (código 2) | H2-3 | FR-410 | `test_h2_3_fr410_hasta_no_entero_o_negativo_es_error_de_uso` (`tests/test_banderas_linea_tiempo.py`, `tests/test_lector_hasta.py`), `test_h2_3_fr410_hasta_sin_replay_es_error_de_uso` (`tests/test_banderas_linea_tiempo.py`, `tests/test_lector_hasta.py`), `test_h2_3_fr410_codigo_2_hasta_invalido` (`tests/test_main_hasta.py`), `test_h2_3_fr410_codigo_2_hasta_sin_replay` (`tests/test_main_hasta.py`) |
+| 11 | Archivo inexistente o ilegible: error con contexto, código 1 | H2-4 | FR-410 | `test_h2_4_fr410_codigo_1_archivo_inexistente` (`tests/test_main_hasta.py`), `test_h2_4_fr410_codigo_1_archivo_ilegible` (`tests/test_main_hasta.py`) |
+| 12 | `--replay` sin `--hasta` reproduce la partida completa | H2-6 | FR-410 | `test_h2_6_fr410_sin_hasta_reproduce_todo` (`tests/test_servicio_replay_hasta.py`), `test_h2_6_fr410_replay_sin_hasta_es_la_partida_completa` (`tests/test_banderas_linea_tiempo.py`, `tests/test_lector_hasta.py`) |
+| 14 | Un pergamino recogido en una acción revertida se conserva y el consumido no aparece | H3-5 | FR-413, FR-419, FR-424 | `test_h3_5_fr413_fr419_fr424_pergamino_recogido_en_la_accion_revertida` (`tests/test_linea_tiempo_pergamino.py`) |
+| 15 | Un pergamino soltado en una acción revertida queda fuera de la reversión (inventario y suelo) y, al recogerlo, el resumen coincide con la partida viva | H3-6 | FR-413, FR-419, FR-424 | `test_h3_6_fr413_fr419_fr424_pergamino_soltado_en_la_accion_revertida` (`tests/test_linea_tiempo_pergamino.py`) |
 
 Cada prueba citará el identificador del requisito que verifica (Principio X).
 

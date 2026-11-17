@@ -172,7 +172,7 @@ class PruebasGrabadoresConLaPartida(unittest.TestCase):
             estado = ArmadorEstado().armar_estado(ctx)
             salidas = [d for d in range(4) if estado.sala.salidas[d] is not None and not estado.sala.salidas[d].cerrada]
             self.assertTrue(salidas)
-            destino = estado.sala.salidas[salidas[0]].sala_destino
+            destino = ctx.mazmorra.salida(ctx.jugador.Sala_Actual, salidas[0]).destino    # el estado no revela salas sin explorar
             servicio.ejecutar(ctx, AccionDTO("mover", direccion=salidas[0]))
             self.assertEqual(ctx.jugador.Sala_Actual, destino)
             self.assertEqual([(c.ordinal, c.sala.id) for c in linea.cargas], [(0, destino)])

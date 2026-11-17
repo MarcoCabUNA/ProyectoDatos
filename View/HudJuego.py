@@ -22,6 +22,8 @@ import pygame
 from DTO.ElementoDTO import ELEMENTO_BOTON, ELEMENTO_INVENTARIO, ElementoDTO
 from DTO.PantallaDTO import PantallaDTO
 from View import Componentes as c
+from View import ReporteResolubilidad
+from View.MapaJuego import PanelMapa
 
 TEXTURA_CASILLA = "inventario"           # ui/inventario.png: la textura de las casillas
 SIN_CRITERIO = "real"
@@ -145,6 +147,7 @@ class HudJuego:
         self._colores_de_velo: list[tuple] = []      # un velo por color, creado la primera vez que hace falta
         self._velos: list[pygame.Surface] = []
         self._inicio = 0                             # la primera casilla real de la ventana del inventario
+        self._panel_mapa = PanelMapa(fuentes)
 
     def dibujar(self, superficie: pygame.Surface, pantalla: PantallaDTO) -> None:
         estado = pantalla.estado
@@ -161,6 +164,11 @@ class HudJuego:
         self._ayuda(superficie, pantalla.ayuda)
         if pantalla.resumen is not None:
             self._historia(superficie, pantalla.resumen)
+        if pantalla.reporte_resolubilidad is not None:
+            ReporteResolubilidad.dibujar(superficie, self._fuentes, pantalla, c.HUD_REPORTE_JUEGO,
+                                         "Se oculta con tu primera acción")
+        if pantalla.mapa is not None:
+            self._panel_mapa.dibujar(superficie, pantalla.mapa, estado.sala.id)
         if pantalla.linea_comandos is not None:
             self._linea_de_comandos(superficie, pantalla.linea_comandos)
 

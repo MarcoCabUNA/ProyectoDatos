@@ -125,15 +125,16 @@ def probar_el_estado_trae_la_sala_inicial_y_la_de_salida(carpeta):
     partida, acciones, ctx = _crear(carpeta)
     estado = partida.estado(ctx)
     assert estado.sala_inicial == estado.sala.id == general["sala_inicial"]
-    assert estado.sala_salida == general["sala_salida"] != estado.sala_inicial
+    assert general["sala_salida"] != estado.sala_inicial
+    assert estado.sala_salida is None                                # la salida no está explorada: no se revela (H-2, FR-217)
     estado = acciones.ejecutar(ctx, AccionDTO("mover", direccion=NORTE))
     assert estado.sala.id != general["sala_inicial"]                 # se movió de verdad...
-    assert (estado.sala_inicial, estado.sala_salida) == (general["sala_inicial"], general["sala_salida"])
+    assert (estado.sala_inicial, estado.sala_salida) == (general["sala_inicial"], None)
     ruta = os.path.join(carpeta, "saves", "partida.sav")
     ServicioGuardado(partida).guardar(ctx, ruta)
     nueva, _, _ = _crear(os.path.join(carpeta, "b"))
     estado2 = nueva.estado(ServicioGuardado(nueva).cargar(ruta, "Ana"))
-    assert (estado2.sala_inicial, estado2.sala_salida) == (general["sala_inicial"], general["sala_salida"])
+    assert (estado2.sala_inicial, estado2.sala_salida) == (general["sala_inicial"], None)
 
 
 def probar_la_bitacora_nace_con_su_encabezado(carpeta):

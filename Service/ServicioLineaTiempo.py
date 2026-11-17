@@ -65,10 +65,10 @@ class ServicioLineaTiempo:
         """`historia <t>`: el resumen del estado en el instante t. ValueError si t no está entre 0 y el reloj actual."""
         contexto.linea.validar_instante(t, contexto.motor.reloj)
         motor = ReconstructorEstado(contexto).hasta_instante(t)
-        return ArmadorResumen.armar(motor, contexto.esqueleto, t, False, False, getattr(motor, "mapa_conocido", None))
+        return ArmadorResumen.armar(motor, contexto.esqueleto, t, False, False, motor.mapa.a_dto())
 
     def consultar_por_accion(self, contexto: ContextoPartida, k: int) -> ResumenHistoriaDTO:
         """`historia #k`: el resumen justo antes de la acción k. ValueError si k no está entre 1 y las acciones hechas."""
         contexto.linea.validar_accion(k)
         motor = ReconstructorEstado(contexto).hasta_accion(k)
-        return ArmadorResumen.armar(motor, contexto.esqueleto, k, True, False, getattr(motor, "mapa_conocido", None))
+        return ArmadorResumen.armar(motor, contexto.esqueleto, k, True, False, motor.mapa.a_dto())
