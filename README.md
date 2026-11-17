@@ -178,7 +178,8 @@ acciones siguen costando lo de la primera parte. La ventana muestra el costo jun
 
 - si está en la sala del jugador, ataca (no se mueve);
 - si no, calcula d, el costo mínimo hasta la sala del jugador por salidas abiertas (no abre puertas cerradas). Si no
-  hay ruta o d > `rango`, espera (100). Si d ≤ `rango`, da un paso por una ruta de costo d;
+  hay ruta o d > `rango`, espera (100). Si d ≤ `rango` (incluido d = `rango`), se mueve un paso por
+  una ruta de costo d;
 - **desempate**: entre las vecinas que están sobre una ruta de costo d, va a la de **menor id**; si varias salidas
   llevan a la misma vecina, usa la más barata. La decisión es determinista y no consume el generador aleatorio;
 - los demás actores no le bloquean el paso, y al llegar a la sala del jugador no ataca en ese mismo turno.
@@ -192,8 +193,11 @@ abre o cierra una puerta que toca la parte ya resuelta; el pergamino de retroces
 algo de eso. En todos los casos la decisión es la misma que la de un cálculo desde cero.
 
 **Mediciones.** `--bench` (ver «Cómo ejecutar») incluye las filas del costo por salida y del cazador
-(`Logic/BenchRutas.py`); `uv run python -m Service.ServicioBench` corre las mismas mediciones. Las cifras y su análisis están en
-[`specs/001-terreno-cazador/bench-2026-11-15.txt`](specs/001-terreno-cazador/bench-2026-11-15.txt) (tabla completa),
+(`Logic/BenchRutas.py`); `uv run python -m Service.ServicioBench` corre las mismas mediciones. Hay dos tablas completas:
+[`specs/001-terreno-cazador/bench-2026-11-13.txt`](specs/001-terreno-cazador/bench-2026-11-13.txt), con las cifras
+que citan R1 a R6 de research.md y §5.1 y §5.2 de `DECISIONES.md`, y
+[`specs/001-terreno-cazador/bench-2026-11-15.txt`](specs/001-terreno-cazador/bench-2026-11-15.txt), con las mismas
+mediciones con el mapa conocido de la 002 conectado (mismos conteos). El análisis está en
 [`specs/001-terreno-cazador/research.md`](specs/001-terreno-cazador/research.md) (R1 a R6) y `DECISIONES.md`
 (sección del integrante 1, §5.1, §5.2 y §5.6). Los tiempos dependen de la máquina; los conteos son reproducibles
 (semilla 2026).
@@ -204,7 +208,7 @@ y qué campo, y el programa no se cae.
 | Dato inválido | Qué pasa |
 |---|---|
 | `costo` menor que 1 o no entero, costos distintos en las dos caras, o `cierre_automatico` menor que 1 o no entero | Error del esqueleto: la partida no inicia, **ni siquiera con `--forzar`**. `--verificar` informa que la verificación no concluyó y termina con código 1. |
-| Ficha de cazador sin `rango` o con `rango` que no es entero ≥ 0 (o un objeto con `duracion` < 1, o un enemigo cuya `suelta` quedó rechazada) | La ficha se rechaza y no se vuelve a pedir. Si está en la sala inicial, la partida no inicia; en otra sala, esa sala queda como contenido no disponible y entrar se rechaza con el mensaje, sin gastar tiempo ni escribir en la bitácora. |
+| Ficha de cazador sin `rango` o con `rango` que no es entero ≥ 0 (o un objeto con `duracion` que no es entero ≥ 1, incluidos un no entero y un `bool`, o un enemigo cuya `suelta` quedó rechazada) | La ficha se rechaza y no se vuelve a pedir. Si está en la sala inicial, la partida no inicia; en otra sala, esa sala queda como contenido no disponible y entrar se rechaza con el mensaje, sin gastar tiempo ni escribir en la bitácora. |
 
 Ejemplo: `Datos inválidos en 'esqueleto de cripta-02': la salida E de la sala 2 declara costo 0: debe ser un entero >= 1`.
 

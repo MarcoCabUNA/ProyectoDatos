@@ -3452,3 +3452,31 @@ Al final: resultado del punto 1, la suite y cuántos commits hay sin push.
 **Uso de la respuesta:** el merge de `origin/derek` (T054, T059 a T063 y T066 de la 003, y el merge de kris con T101 a T106 de la 002) no trajo la regeneración de `paquete/`; el único conflicto fue `PROMPTS_LLM.md`, resuelto con las 4 entradas nuevas de esta rama (15/11, hasta las 15:43) y después las 9 de derek (15/11 desde las 17:08 y 16/11), sin duplicados y en UTF-8. Punto 1: a nivel de servicio ya lo cubrían `test_h4_5_fr323_costos_distintos_no_inicia_ni_con_forzar` y `test_fr323_cierre_automatico_invalido_no_inicia_ni_con_forzar` (`tests/test_resolubilidad_servicio.py`), pero no el costo inválido ni `ControladorBackend.iniciar`; se agregó `tests/test_fr122_forzar.py` (FR-122): los tres casos, con y sin `--forzar`, dan `ErrorOperacion` causado por `ErrorDatos`, sin partida ni log, y pasa sin cambiar código. Punto 2: sección «Terreno y cazador (001, integrante 1)» en `README.md`.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+Revisión SOLO LECTURA (no modifiques nada, no ejecutes pruebas). Rama local Marco, commits de hoy 17/11: 07f28e5 (merge de origin/derek), e0129c4 (tests/test_fr122_forzar.py), bbaea49 (README, sección 001), 4746c3f (PROMPTS_LLM.md). Revisá con git show. (1) 07f28e5: que el merge no haya cambiado archivos de la 001 (Logic/RutasHaciaJugador.py, BusquedaCostoMinimo.py, GrafoEsqueleto.py, BenchRutas.py, MonticuloMinimo.py, Comportamientos.py, Mazmorra.py, GestorContenido.py) respecto de lo que había en Marco antes del merge; si alguno cambió, mostrá el diff. Que PROMPTS_LLM.md no haya perdido entradas de ninguno de los dos lados. (2) e0129c4: que la prueba cite FR-122, pase por ControladorBackend.iniciar (camino de la T054) con y sin --forzar, y compruebe mensaje, que no hay partida y que no se crean logs; que no use estructuras prohibidas fuera de lo permitido en tests. (3) bbaea49: leé la sección «Terreno y cazador (001, integrante 1)» del README y contrastala con specs/001-terreno-cazador/spec.md y DECISIONES.md: costo por defecto 100 e igualado entre caras; intervalo max(1, costo*100//velocidad); cazador: ataca si comparte sala, espera si no hay ruta o d > rango, se mueve si d == rango, desempate por vecina de menor id del primer paso y salida más barata, la decisión no usa RNG; búsqueda compartida, invalidación por puertas y pergamino; FR-122; cifras del bench (que coincidan con bench-2026-11-15.txt). Señalá cualquier dato incorrecto, comando que no exista o regla nueva que no esté en la spec. Salida corta: primero lo que está bien, luego ALTA/MEDIA/BAJA con archivo y línea.
+
+**Uso de la respuesta:** consulta `1a1e838abf4`, respuesta en `.claude-bridge/outbox/1a1e838abf4.txt`. Revisión de `07f28e5`, `e0129c4` y `bbaea49`, sin observaciones ALTAS ni MEDIAS: el merge no cambió ningún archivo de la 001 y `PROMPTS_LLM.md` no perdió entradas de ningún lado; la prueba de FR-122 con `--forzar` pasa por `ControladorBackend.iniciar` y comprueba lo pedido; el README coincide con la spec y con `DECISIONES.md`. Las cuatro observaciones BAJAS (nombrar los dos benches en el README, «incluido d = `rango`», `duracion` no entera o `bool`, y buscar «costo 0» en la prueba) se aplicaron en el pedido siguiente.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Cuatro ajustes chicos, un solo commit, suite en verde con uv run, PROMPTS_LLM.md, no push:
+1) README.md ~196: nombrá los dos benches: bench-2026-11-13.txt (cifras citadas en R1–R6 y DECISIONES §5.1
+   y §5.2) y bench-2026-11-15.txt (mismas mediciones con el mapa conocido conectado, mismos conteos).
+2) README.md ~184: «se mueve si d ≤ rango (incluido d = rango)».
+3) README.md ~206: duracion inválida si no es entero ≥ 1 (incluye no entero y bool), igual que costo y
+   cierre_automatico.
+4) tests/test_fr122_forzar.py:45: en el caso de costo inválido buscá "costo 0" en el mensaje, no solo
+   "costo".
+Registrá también la consulta del puente 1a1e838abf4 (revisión de 07f28e5, e0129c4, bbaea49).
+
+**Uso de la respuesta:** se aplicaron las cuatro observaciones BAJAS de la consulta `1a1e838abf4`: el README de la 001 nombra `bench-2026-11-13.txt` (cifras de R1 a R6 y §5.1 y §5.2) y `bench-2026-11-15.txt` (mismas mediciones con el mapa conocido, mismos conteos), dice que el cazador se mueve si d ≤ `rango` (incluido d = `rango`) y que una `duracion` es inválida si no es entero ≥ 1 (incluidos un no entero y un `bool`); `tests/test_fr122_forzar.py` busca «costo 0» en el caso de costo inválido. Un solo commit.
+
+-----------------------------------------------------------------------------------------------------------------------

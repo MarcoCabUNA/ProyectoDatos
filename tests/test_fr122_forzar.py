@@ -43,7 +43,7 @@ def cripta_cierre_invalido():
     return cripta(3, [abierta(1, E, 2), puerta(2, E, 3, "S", cierre_automatico=0)], [ubic("S", 2)], sala_salida=3)
 
 
-CASOS = ((cripta_costo_invalido, "costo"), (cripta_costos_distintos, "costo 150"),
+CASOS = ((cripta_costo_invalido, "costo 0"), (cripta_costos_distintos, "costo 150"),
          (cripta_cierre_invalido, "cierre_automatico"))
 
 
