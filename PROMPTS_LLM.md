@@ -2719,40 +2719,6 @@ Reporta el commit. No hagas push.
 
 **Herramienta:** Claude Code
 
-/speckit-implement Feature 002-niebla-ir-a, parte del integrante 2. Primer lote, según «Estrategia» y «Entrega incremental» de specs/002-niebla-ir-a/tasks.md: solo estas tareas y en este orden.
-
-1. T001: tests/ayudas_mapa.py.
-2. Fase 2: T009 y T010 (las pruebas primero; comprobá que fallan), después T011 y T012, y T013 (la suite completa en verde).
-3. Guardado adelantado:
-   - las cuatro primeras pruebas de T035 (DTO y linea). Las de restaurar NO, esas van con T037 en otro lote;
-   - T036: PartidaGuardadaDTO con mapa antes de linea, con el import local de LineaTiempoGuardadaDTO. Es T002 de la 004;
-   - T038: las pruebas del binario, que también son las de T003 y T047 de la 004. Comprobá que fallan;
-   - T039: GuardadoBinario versión 2. Es T003 de la 004.
-   El formato v2 se implementa con el diseño de data-model.md §6 y research R4 (cabecera de 58 bytes, bloque propio del mapa y de la línea, y el orden de los bloques de cada punto de control). El integrante 3 todavía no actualizó el texto del §1 y del §2 de su contrato de la 004 (T007), pero aceptó ese diseño el 14/11. Si encontrás algo de su contrato de la 004 que contradiga el diseño, avisame en vez de elegir uno.
-
-Después de T039, PARÁ. No hagas T037, T040 ni nada de las fases 3 en adelante.
-
-Reglas:
-- Constitución v1.2.0: sin dict ni set como índice, sin heapq, bisect ni collections, sin sorted ni list.sort, sin copy fuera de tests/, y Logic no importa Data.
-- Pruebas primero, con el FR en el nombre, como dice cada tarea.
-- Solo archivos del integrante 2: tests/ayudas_mapa.py, tests/test_guardado_mapa.py, tests/test_mapa_conocido_estados.py, DTO/MapaConocidoDTO.py, Logic/MapaConocido.py, DTO/PartidaGuardadaDTO.py, Data/GuardadoBinario.py y tests/TestGuardadoBinario.py (solo la aserción de la versión). No toques archivos de otros integrantes; si alguno tuviera que cambiar, avisame.
-- Marcá con [x] en tasks.md solo las tareas que quedaron completas. T035 queda sin marcar, porque le faltan las pruebas de restaurar; anotalo en la tarea.
-- Antes de terminar corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8 en Windows) y el replay de ejemplo (python main.py --replay ejemplos/partida_ejemplo.log --offline), que debe dar lo mismo que antes. Comprobá también que guardar y cargar una partida real con ServicioGuardado sigue funcionando con la versión 2. La versión 1 ahora se rechaza: decime si eso afecta algún archivo guardado del repositorio (partidas/, ejemplos/ o tests/).
-
-Al final decime:
-- los archivos de cada grupo, separados para dos commits: (a) T001 y la fase 2, y (b) el guardado adelantado;
-- las pruebas nuevas, con su resultado antes y después;
-- el resultado de la suite y del replay;
-- cualquier diferencia con el plan.
-No hagas commit.
-
-**Uso de la respuesta:** primer lote de la 002, con las pruebas primero. Las 24 pruebas nuevas fallaban antes del código. Se hicieron T001 (`tests/ayudas_mapa.py`); la fase 2, con T009 a T013 (`DTO/MapaConocidoDTO.py` y el núcleo de `Logic/MapaConocido.py`: dos arreglos, escrituras que registran su reversión en el historial); y el guardado adelantado: T036 (`PartidaGuardadaDTO` con `mapa` antes de `linea` e import local, T002 de la 004), T038 y T039 (`GuardadoBinario` versión 2 con cabecera de 58 bytes y bloques propios del mapa y de la línea, la versión 1 rechazada sin tocar la partida actual; T003 y T047 de la 004). En `tests/TestGuardadoBinario.py` cambiaron tres aserciones de versión. T035 queda abierta hasta las pruebas de `restaurar`. Resultado: 641 OK (skipped=2) y 32/32 scripts; el replay de ejemplo es idéntico, y guardar y cargar una partida real funciona con la versión 2. Revisé el diff antes del commit.
-
------------------------------------------------------------------------------------------------------------------------
-**Fecha:** Sábado 14 de noviembre 2026
-
-**Herramienta:** Claude Code
-
 /speckit-implement T043 a T048 (H4: guardado con línea) de specs/004-linea-tiempo/tasks.md. Antes: confirma que la rama incluye origin/derek (T002: PartidaGuardadaDTO con mapa antes de linea; T003: VERSION_FORMATO = 2) y que la suite pasa. Marca T002 y T003 como [X] en tasks.md solo si verificas que están hechas y con sus pruebas (TestGuardadoBinario.py: ida y vuelta con línea, línea vacía y archivo de versión 1 rechazado). T047 es del integrante 2: verifica que esas pruebas existen y marca [X] solo si es así.
 Pruebas primero (T043, T045), luego implementa (T044, T046). Reglas: constitución v1.2.0, MVC n-capas, solo estructuras y librerías permitidas, sin copy. T044: LineaTiempo.a_guardada() y desde_guardada(dto) con copia manual. T046: ServicioGuardado.guardar incluye la línea; ServicioGuardado.cargar crea la línea desde el archivo y INSTALA los grabadores (hoy el docstring de GrabadoresLinea lo afirma pero ServicioGuardado.cargar no lo hace). Una partida cargada debe poder responder historia <t> e historia #k con los mismos resúmenes que antes de guardar (H4-1). Después de PartidaGuardada.cargar, toma contexto.motor otra vez (el mapa es un objeto nuevo). El mapa conocido todavía no tiene a_dto(): el resumen sigue omitiéndolo (no inventes el campo). T048: corre la suite y el quickstart §4. Arregla el docstring de GrabadoresLinea si hace falta. Commits: uno por bloque, «feat(004): ...». No empieces H2 ni «ir a». Reporte con tareas, pruebas, decisiones y pendientes de Marco o Derek.
 
@@ -3207,6 +3173,69 @@ No hagas commit. Al final, los dos grupos de archivos definitivos.
 
 **Fecha:** Domingo 15 de noviembre 2026
 
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+SOLO LECTURA (no modifiques nada, no ejecutes nada). Rama local Marco, commits 80b0c56..401e20d (T058). Leé Data/GestorContenido.py (asegurar_sala, el bloque nuevo de las líneas ~203-216), Data/ResolvedorCatalogo.py (ficha) y quién llama a asegurar_sala. (1) ¿El bloque nuevo corre solo la primera vez que se entrega una sala (al pasar a CARGADA) o en cada llamada a asegurar_sala (cada vez que el jugador entra a una sala ya cargada)? Si es en cada llamada, ¿ficha() lee del disco cada vez o usa lo que ya tiene en memoria? Estimá el costo por movimiento. (2) En Logic/BenchRutas.py y los demás Bench*.py: ¿los motores que se cronometran (NFR-101/SC-104, ciclo de 1 024 salas) tienen un GestorContenido con _resolvedor distinto de None? Es decir, ¿el bloque nuevo entra en lo que mide el bench? (3) El reporte de caché ahora da 3 aciertos en vez de 1 con caché: buscá en specs/ (todas las features), DECISIONES.md, research.md, bench-*.txt y tests/ si algún FR, prueba, bench o texto usa o cita cifras de aciertos/fallos de la caché del catálogo. Decime archivo y línea. Salida corta en lista.
+
+**Uso de la respuesta:** consulta `1a1e0c281d6`, respuesta en `.claude-bridge/outbox/1a1e0c281d6.txt`. Sobre T058 (`a27b859`). (1) El bloque nuevo de `asegurar_sala` (`Data/GestorContenido.py:203-216`) corre en cada llamada, no solo al pasar a CARGADA; `ficha()` usa lo que está en memoria y solo va al disco si la ficha salió de la caché (tope 25), así que cuesta unas e + t + o búsquedas por movimiento, microsegundos con todo en memoria. (2) Ningún motor que cronometra NFR-101/SC-104 (`BenchRutas`, `BenchLogica`, `BenchMapaConocido`) usa `GestorContenido`, y `BenchDatos` lo arma sin resolvedor; solo una medición de `Service/BenchLineaTiempo.py` (004) pasa por el bloque. (3) La única cifra de aciertos que cambia está en `DECISIONES.md:223` («3 aciertos en lugar de 1»); ningún FR, bench ni prueba con cifras fijas pasa por `asegurar_sala`, y `tests/test_servicios.py:343-346` sigue igual por `contar_acierto=False`. No se cambió nada.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+git fetch y git merge origin/derek (trae --verificar de la 003). Si hay conflictos en archivos de la 001,
+pará y avisame. Si el merge trae un commit que regenera paquete/ (cripta-02 a 06, catálogo nuevo), pará
+antes de mezclar y avisame: eso lo vamos a probar aparte.
+Luego, un commit por paso, suite en verde con uv run antes de cada commit, no push:
+1) Quitá el skipTest de H3-7 (solo esa línea) y corré la suite. Si H3-7 falla, no la cambies: decime qué
+   espera la prueba y qué devuelve --verificar (reporte y código de salida 0/3/1) para avisarle al
+   integrante 2.
+2) T048: completala con las pruebas que faltaban: --verificar (H3-7) y --replay … --hasta (de Kristel, 90b8bbf,
+   ya en la rama). Confirmá que las cuatro corridas sin vista de la constitución V (--replay,
+   --replay … --hasta, --verificar, --bench) tengan prueba en la 001 y marcá T048 en tasks.md.
+3) PROMPTS_LLM.md: este pedido y la consulta del puente 1a1e0c281d6 (T058: cuándo corre la validación y quién
+   usa los aciertos).
+Al final decime: resultado de H3-7, el estado de T048 y la suite.
+
+**Uso de la respuesta:** `git merge origin/derek` fue un fast-forward sin conflictos hasta `7ceaf3e` (003: `--verificar` y `--forzar`, T001 a T053 de la 003, más un arreglo de mensajes de la 002). Ningún commit regenera `paquete/`. (1) `b11fc99`: se quitó el `skipTest` de H3-7. La prueba solo tenía esa línea, así que sin ella pasaba sin comprobar nada; el cuerpo se escribió en el paso 2. (2) `a9ba07d`: H3-7 en `tests/test_terreno_cazador.py` corre `main.main(["--verificar", ...])` sobre dos criptas de la 003 (resoluble, código 0, y con ciclo, código 3): da la misma salida sin costos que con costos de 1 a 300 (3 semillas) y un cazador en cada sala, sin pedir contenido ni catálogo. Con costo 0 y con costos 5 y 7 en las dos caras de una salida da «NO CONCLUYÓ» y código 1; el segundo caso también se corre en otro proceso con `--offline` (paquete temporal), con código de salida 1 y sin pygame ni `View`. `tests/test_modos_sin_vista_terreno.py` (T048) suma `--replay … --hasta t` (`ServicioReplayHasta` de `90b8bbf`, comparado con el resumen de la partida viva en 6 instantes de cada una de las 6 partidas, más un t posterior al final) y `--verificar` (el mismo reporte, resoluble con `[itm_llave]`, en la cuadrícula de cada semilla con costos y cazador que sin ellos). Se quitó la línea `PENDIENTE`. T048 quedó marcada en `tasks.md` con la nota de qué prueba cubre cada una de las cuatro corridas sin vista del Principio V: `--replay`, `--hasta` y `--verificar` en ese script, `--verificar` con FR-122 en H3-7 y `--bench` en H3-8 y `tests/test_bench_rutas.py`. Se actualizó `quickstart.md` §6. Suite antes de cada commit: 952 pruebas OK (6 skip, ninguno de la 001: 2 de la 002 y 4 de la 003 por T054), 31 de 31 scripts. (3) Este registro, en su propio commit. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+En tasks.md, en T048, anotá que --verificar corresponde a la T051 de la 003 (integrante 2).
+
+**Uso de la respuesta:** en `specs/001-terreno-cazador/tasks.md`, la nota de T048 dice ahora que lo de `--verificar` (el script de los modos sin vista y H3-7) corresponde a la T051 de la 003 (integrante 2), el aviso de que `--verificar` ya existía para quitar el `skipTest` de H3-7 y cerrar T048.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Sí, commiteá tasks.md y PROMPTS_LLM.md en un solo commit (suite en verde con uv run, no push).
+Antes, confirmame: ¿ya está mezclado origin/derek con --verificar en la rama Marco? ¿H3-7 ya no tiene
+skipTest y pasa? ¿T048 quedó marcada [X]? Si falta alguna de las tres, hacé esto, un commit por paso:
+1) git fetch y git merge origin/derek. Si hay conflicto solo en PROMPTS_LLM.md (UTF-16, merge=union no
+   funciona): conservá todas las entradas de los dos lados por hora, sin duplicados ni separadores dobles, y
+   sin cambiar la codificación. Cualquier otro conflicto, o si el merge trae la regeneración de paquete/:
+   pará y avisame.
+2) Quitá el skipTest de H3-7 (solo esa línea). Si falla, no cambies la prueba: decime qué espera y qué
+   devuelve --verificar (reporte y código 0/3/1).
+3) Confirmá que las cuatro corridas sin vista (--replay, --replay … --hasta, --verificar, --bench) tengan
+   prueba en la 001 y marcá T048.
+4) PROMPTS_LLM.md con este pedido y la consulta del puente 1a1e0c281d6.
+
+**Uso de la respuesta:** las tres cosas ya estaban hechas, así que los pasos 1 a 4 no hicieron falta (solo se registró este pedido). Después de `git fetch`, `origin/derek` no trae nada nuevo y `dadf468` (`--verificar`) ya está en Marco desde el fast-forward a `7ceaf3e`. H3-7 no tiene `skipTest` desde `b11fc99` y pasa con su cuerpo de `a9ba07d`. T048 está marcada [X] desde `a9ba07d`, con las cuatro corridas sin vista cubiertas. La consulta `1a1e0c281d6` ya estaba registrada en `93c2d34`. `PROMPTS_LLM.md` está en UTF-8 con CRLF, no en UTF-16. Un solo commit con la nota de T051 de la 003 en T048 (`tasks.md`) y este registro. Suite en verde antes del commit. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
 **Herramienta:** Claude Code
 
 Feature 003-resolubilidad. Solo documentación de la spec, sin código ni pruebas, sin commit. Contexto: el 15/11 el API publica cripta-02 a cripta-06 (cripta-01 ya no está: responde 404) y el catálogo pasó a la versión 4b9e75a42be5. Con el integrante 1 acordamos cómo armar el paquete. Antes de hacerlo, la spec tiene que decirlo (Principio IX).
@@ -3481,6 +3510,7 @@ Corre la suite completa y dime los números medidos y si cumplen NFR-250.
 **Uso de la respuesta:** se usó la respuesta para implementar el banco de pruebas de «ir a» con 300 salas (NFR-250, SC-252).
 
 -----------------------------------------------------------------------------------------------------------------------
+
 **Fecha:** Martes 17 de noviembre 2026
 
 **Herramienta:** Claude Code
@@ -3502,6 +3532,35 @@ Corre la suite completa (catálogo viejo) y dime resultados y decisiones.
 **Uso de la respuesta:** se usó la respuesta para decidir el alcance del comando mapa con la partida terminada y para implementar T055 de la 003 (mostrar el reporte de resolubilidad).
 
 -----------------------------------------------------------------------------------------------------------------------
+git fetch y git merge origin/derek (trae la 003 completa, T054 y el merge de kris). Si hay conflicto solo en
+PROMPTS_LLM.md, conservá todas las entradas de los dos lados por hora, sin duplicados ni cambiar la
+codificación. Cualquier otro conflicto, o si el merge trae la regeneración de paquete/: pará y avisame.
+Luego, un commit por paso, suite en verde con uv run antes de cada commit, no push:
+1) FR-122 con --forzar: verificá que con la T054 (iniciar pasa por la verificación) una cripta con costo
+   inválido o distinto entre caras, o cierre_automatico inválido, sigue sin iniciar también con --forzar. Si
+   ya hay prueba que lo cubra, decime cuál; si no, agregala citando FR-122. Si falla, no cambies código de la
+   003: pará y avisame.
+2) README.md: agregá la sección de la 001 (integrante 1), corta: costo por salida y cómo se iguala entre
+   caras (costo por defecto 100), comportamiento cazador (rango, desempates), búsqueda compartida e
+   invalidación, cómo correr --bench y dónde están las cifras (bench-2026-11-15.txt, research.md,
+   DECISIONES.md §5.6), y errores de datos de FR-122. Solo tu sección; no toques las de los demás.
+3) PROMPTS_LLM.md con este pedido.
+Al final: resultado del punto 1, la suite y cuántos commits hay sin push.
+
+**Uso de la respuesta:** el merge de `origin/derek` (T054, T059 a T063 y T066 de la 003, y el merge de kris con T101 a T106 de la 002) no trajo la regeneración de `paquete/`; el único conflicto fue `PROMPTS_LLM.md`, resuelto con las 4 entradas nuevas de esta rama (15/11, hasta las 15:43) y después las 9 de derek (15/11 desde las 17:08 y 16/11), sin duplicados y en UTF-8. Punto 1: a nivel de servicio ya lo cubrían `test_h4_5_fr323_costos_distintos_no_inicia_ni_con_forzar` y `test_fr323_cierre_automatico_invalido_no_inicia_ni_con_forzar` (`tests/test_resolubilidad_servicio.py`), pero no el costo inválido ni `ControladorBackend.iniciar`; se agregó `tests/test_fr122_forzar.py` (FR-122): los tres casos, con y sin `--forzar`, dan `ErrorOperacion` causado por `ErrorDatos`, sin partida ni log, y pasa sin cambiar código. Punto 2: sección «Terreno y cazador (001, integrante 1)» en `README.md`.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+Revisión SOLO LECTURA (no modifiques nada, no ejecutes pruebas). Rama local Marco, commits de hoy 17/11: 07f28e5 (merge de origin/derek), e0129c4 (tests/test_fr122_forzar.py), bbaea49 (README, sección 001), 4746c3f (PROMPTS_LLM.md). Revisá con git show. (1) 07f28e5: que el merge no haya cambiado archivos de la 001 (Logic/RutasHaciaJugador.py, BusquedaCostoMinimo.py, GrafoEsqueleto.py, BenchRutas.py, MonticuloMinimo.py, Comportamientos.py, Mazmorra.py, GestorContenido.py) respecto de lo que había en Marco antes del merge; si alguno cambió, mostrá el diff. Que PROMPTS_LLM.md no haya perdido entradas de ninguno de los dos lados. (2) e0129c4: que la prueba cite FR-122, pase por ControladorBackend.iniciar (camino de la T054) con y sin --forzar, y compruebe mensaje, que no hay partida y que no se crean logs; que no use estructuras prohibidas fuera de lo permitido en tests. (3) bbaea49: leé la sección «Terreno y cazador (001, integrante 1)» del README y contrastala con specs/001-terreno-cazador/spec.md y DECISIONES.md: costo por defecto 100 e igualado entre caras; intervalo max(1, costo*100//velocidad); cazador: ataca si comparte sala, espera si no hay ruta o d > rango, se mueve si d == rango, desempate por vecina de menor id del primer paso y salida más barata, la decisión no usa RNG; búsqueda compartida, invalidación por puertas y pergamino; FR-122; cifras del bench (que coincidan con bench-2026-11-15.txt). Señalá cualquier dato incorrecto, comando que no exista o regla nueva que no esté en la spec. Salida corta: primero lo que está bien, luego ALTA/MEDIA/BAJA con archivo y línea.
+
+**Uso de la respuesta:** consulta `1a1e838abf4`, respuesta en `.claude-bridge/outbox/1a1e838abf4.txt`. Revisión de `07f28e5`, `e0129c4` y `bbaea49`, sin observaciones ALTAS ni MEDIAS: el merge no cambió ningún archivo de la 001 y `PROMPTS_LLM.md` no perdió entradas de ningún lado; la prueba de FR-122 con `--forzar` pasa por `ControladorBackend.iniciar` y comprueba lo pedido; el README coincide con la spec y con `DECISIONES.md`. Las cuatro observaciones BAJAS (nombrar los dos benches en el README, «incluido d = `rango`», `duracion` no entera o `bool`, y buscar «costo 0» en la prueba) se aplicaron en el pedido siguiente.
+
+-----------------------------------------------------------------------------------------------------------------------
+
 **Fecha:** Martes 17 de noviembre 2026
 
 **Herramienta:** Claude Code
@@ -3711,6 +3770,23 @@ Al final: el apartado completo tal como quedó, el diff de tasks.md y la lista d
 
 **Herramienta:** Claude Code
 
+Cierre de las features 002 y 003 (parte del integrante 2). Sin commit. La rama derek ya tiene todo origin/kris y origin/Marco y el paquete de la Parte II.
+
+Feature 002 (specs/002-niebla-ir-a/tasks.md):
+1. T050: quitá la guarda de T118 de test_h4_4_a9_fr223_… (T042) y la de H-2 de test_sc202_… (T045). Las pruebas no cambian. Si alguna falla, PARÁ y decime el caso; no edites archivos del integrante 3.
+2. T006, T007 y T008: comprobá en el código y en los contratos que lo acordado ya está (T006: ArmadorEstado pone sala_destino = SIN_EXPLORAR y sala_salida = None, con SIN_EXPLORAR en DTO/EstadoJuegoDTO.py; T007: §1 y §2 de specs/004-linea-tiempo/contracts/contrato-linea-tiempo.md con el texto acordado; T008: ArmadorResumen y ServicioLineaTiempo usan motor.mapa.a_dto()). Si está, marcá cada una con una nota «Hecho (17/11): …» que diga dónde (archivo y commit del integrante 3). Si falta algo, no la marques y decime qué.
+3. T060: suite, replay de ejemplo (el log ya es el regrabado con la cripta-02 nueva: compará con lo que da hoy y anotalo así) y los pasos del quickstart de la 002 que se pueden correr sin ventana. Decime qué pasos necesitan la ventana, para hacerlos yo a mano. Marcá T060 solo si todo lo automático pasa y anotá qué quedó manual.
+
+Feature 003 (specs/003-resolubilidad/tasks.md):
+4. T068: lo mismo para la 003 (suite, replay, quickstart sin ventana; §4 ya está en bench-2026-11-16.txt). Decime los pasos de la ventana (quickstart §3, que es T056 con el integrante 3). Marcá T068 solo si todo lo automático pasa.
+5. T069: comprobá que PROMPTS_LLM.md tiene los prompts de /speckit-specify, /speckit-plan, /speckit-tasks, /speckit-analyze y la corrección del análisis de la 003, y los de la implementación (lotes 1 y 2, guarda de T053, documentación de T057/T058, paquete, bench, T054, T063 a T067). No agregues entradas: decime cuáles faltan, si falta alguna.
+
+Al final: el diff de las pruebas y de los dos tasks.md, el resultado de la suite y del replay, la lista de pasos manuales de cada quickstart y el resultado de T069.
+
+**Uso de la respuesta:** cierre de la parte del integrante 2. 002: T050 (sin las guardas de H4-4 y SC-202, que ya pasan con T116 y T118 del integrante 3), T006 y T008 marcadas con su commit, T060 (suite 1079 OK sin skip y 32/32, replay de ejemplo con victoria; quedan manuales los pasos de la ventana del quickstart). T007 no se marcó: el §1 y el §2 del contrato de la 004 todavía no tienen el texto acordado (se le avisó al integrante 3). 003: T068 (§2 con y sin red como se esperaba; queda manual §3, que es T056 con el integrante 3). T069: están todas las entradas de la 003, pero había 7 repetidas (las seis de T063 a T067, pegadas dos veces, y una de la 002 del 14/11), que se quitaron.
+
+-----------------------------------------------------------------------------------------------------------------------
+
 Dos cosas, cada una en su commit.
 
 1) DECISIONES.md, mi sección de la 002: agrega una nota corta de limitación conocida: tras cargar una partida, el log nuevo solo trae los comentarios "# ir a <sala>" de las órdenes dadas desde entonces, porque continuar_desde copia solo las acciones; los comentarios anteriores quedan en el log previo. No afecta al replay (los comentarios son informativos y el replay usa solo las acciones). Verifica con grep que es cierto antes de escribirlo. Commit: "docs: limitación conocida, comentarios de ir a tras cargar".
@@ -3726,6 +3802,14 @@ Corre la suite completa y dime resultados.
 
 **Herramienta:** Claude Code
 
+Dos cosas más, sin commit:
+1. tests/test_mapa_conocido_vista.py: quitá también la guarda de test_h5_7 (el if importlib.util.find_spec("Service.ServicioResolubilidad") is None: self.skipTest(...)) y la condición hay_resumen de test_sc202 (Service/ArmadorResumen.py ya existe), sin cambiar lo que comprueban. Actualizá el docstring del módulo (línea 8) y los que las mencionen; si importlib queda sin usar, sacá el import. Corré ese archivo y la suite completa.
+2. specs/003-resolubilidad/tasks.md: marcá [x] T069 con la nota «Hecho (17/11): están todas las entradas de la 003; se quitaron 7 entradas repetidas (las seis de T063 a T067 y una de la 002 del 14/11).» No toques PROMPTS_LLM.md: lo arreglo yo.
+Al final, el diff y el resultado de la suite.
+
+**Uso de la respuesta:** se quitaron también la guarda de H5-7 (la 003 ya existe) y la condición de `ArmadorResumen` en SC-202, con sus docstrings, y se marcó T069.
+
+-----------------------------------------------------------------------------------------------------------------------
 Actualiza specs/004-linea-tiempo/contracts/contrato-linea-tiempo.md §1 y §2. Es solo texto de spec: NO cambies ningún archivo de código. Verifica cada dato contra Data/GuardadoBinario.py y DTO/PartidaGuardadaDTO.py antes de escribirlo.
 
 §1: PartidaGuardadaDTO gana, al final y con None por defecto, primero `mapa: MapaConocidoGuardadoDTO | None` y después `linea: LineaTiempoGuardadaDTO | None`, que sigue siendo el ÚLTIMO campo. Agrega la fila de `mapa` a la tabla (hoy solo tiene `linea`) y quita "falta confirmar el orden de campos". Cada punto de control es un PartidaGuardadaDTO y lleva su propio mapa (su `partida.linea` sigue siendo None).
@@ -3812,6 +3896,10 @@ Al final: qué cripta y cazador usaste, cuántas decisiones comprobó, la suite 
 **Uso de la respuesta:** merge de `origin/derek` sin conflictos (PROMPTS_LLM.md tiene `merge=union`; quedó con todas las entradas de las dos ramas y sin repetidas). Con el paquete nuevo no falla nada de la 001 (1079 pruebas unittest OK); el único script que falla es `test_sonidos_motor.py`, por tiempo (arranque de ~810 ms con meta de 800 ms), intermitente y ajeno a la 001. Las criptas 02 a 06 tienen cazadores y salidas con costo (la 06: 42 cazadores; sabueso óseo con rango 600 y espectro acechador con 2400). Se agregó `tests/test_paquete_real_cazador.py` (T059): cripta-06, espectro de la sala 123 y sabueso de la sala 41, 26 decisiones de cazador iguales a `paso_desde_cero` y el replay con los mismos estados y decisiones. Revisé el diff antes del commit.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
 Tres cosas, en orden. Si hay conflictos en archivos que no sean PROMPTS_LLM.md o tasks.md, DETENTE y muéstramelos. Si el conflicto es solo en tasks.md (marcas de tareas), conserva las marcas de ambos lados y avísame. Nunca uses git add -A; agrega por nombre.
 
 1) git fetch origin. Muéstrame git log --oneline HEAD..origin/derek y HEAD..origin/Marco. Luego git merge origin/derek -m "merge: trae origin/derek (paquete con cripta-02 a 06, T050 sin guardas, doc de la 003)". Haz lo mismo con origin/Marco si trae algo. Corre la suite completa con el paquete nuevo (que ahora viene de Derek) y dime resultados. Si falla algo, dime qué y por qué; no cambies pruebas de Derek ni de Marco.
@@ -3861,6 +3949,3 @@ Al final corre la suite completa, dime el recuento de unittest y scripts, y el g
 se usó la respuesta para revisar los reportes de los Prompts 29 a 32, y para completar el banco de «ir a» con cripta-06, la prueba de humo, la línea del mapa en --hasta y el quickstart de la 004.
 
 -----------------------------------------------------------------------------------------------------------------------
-**Fecha:** Martes 17 de noviembre 2026
-
-**Herramienta:** Claude Code
