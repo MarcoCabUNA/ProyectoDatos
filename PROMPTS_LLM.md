@@ -3514,3 +3514,21 @@ Implementa T119–T122 de specs/002-niebla-ir-a/tasks.md (banco de «ir a», NFR
 Corre la suite completa y dime los números medidos y si cumplen NFR-250.
 
 **Uso de la respuesta:** se usó la respuesta para decidir el alcance del comando mapa con la partida terminada y para implementar T055 de la 003 (mostrar el reporte de resolubilidad).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Quiero comprobar que «ir a» se puede USAR en el juego, no solo que el servicio funcione. Primero solo lectura, luego arregla lo mínimo.
+
+1) Lee en specs/002-niebla-ir-a/ (spec.md, plan.md, tasks.md, quickstart si existe) cómo se escribe y cómo se ve «ir a <sala>»: nombre del comando, cómo avanza el viaje (un paso por fotograma o por tick), cómo se interrumpe (tecla, Esc, otra orden) y qué mensaje se muestra al parar (LLEGO, ENEMIGOS, DANO, SIN_RUTA, destino inválido, ambiguo, ya aquí).
+2) Comprueba que existe todo el camino: línea de comandos (ControlesJuego.procesar_comando) -> ControladorPygame -> ControladorBackend.ir_a / dar_paso_viaje -> PantallaDTO -> vista. Dime qué eslabones existen y cuáles faltan.
+3) Si falta alguno, impleméntalo con el cambio MÁS PEQUEÑO (KISS/YAGNI, MVC de n capas, vista solo recibe DTO y dibuja, sin docstrings en P1, solo estructuras y librerías permitidas). El viaje debe verse paso a paso (que el jugador vea cómo cambia de sala), cortarse con Esc o cualquier otra orden, y mostrar el motivo de parada en el panel de mensajes.
+4) Prueba de punta a punta con el ControladorPygame real y una partida real (cuadrícula sin enemigos): escribir «ir a Sala 25» llega a la sala; con una cara cerrada recordada rodea o devuelve SIN_RUTA; una orden o Esc a mitad de viaje lo descarta; el log contiene un comentario «# ir a ...» y se puede reproducir con --replay igual.
+5) Un commit por grupo lógico: "feat(002): ..." o "test(002): ...". Si no falta nada, no cambies nada y dímelo.
+Corre la suite completa (catálogo viejo) y dime resultados y lo que decidiste.
+
+**Uso de la respuesta:** se usó la respuesta para comprobar que «ir a» se puede escribir y ver en el juego de punta a punta (línea de comandos, controlador, DTO y vista).
+
+-----------------------------------------------------------------------------------------------------------------------
