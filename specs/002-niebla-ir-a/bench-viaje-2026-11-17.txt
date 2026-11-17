@@ -1,6 +1,6 @@
 Tabla de --bench (T122, feature 002, parte del integrante 3: el paso de «ir a», V1 a V3)
 Comando: uv run python main.py --bench (PYTHONIOENCODING=utf-8); aquí solo las filas del subsistema «viaje automático»
-Fecha: 2026-11-17 · Rama kris, sobre el commit 79e24a5 · duración de --bench: 87 s
+Fecha: 2026-11-17 · Rama kris, sobre el commit 79e24a5 (las filas de cripta-06 se midieron después, sobre el merge ecb78e7 con el paquete de Derek)
 Máquina: AMD Ryzen 4600G (APU) con 15 GB de RAM utilizables, Windows 11 Pro, Python 3.15.0 (el de uv, .venv del proyecto).
 No es la máquina de la tabla del 15/11 del integrante 2 (Ryzen 5 5500, 32 GB): los tiempos de las dos tablas no son comparables
 fila por fila; la B11 de esa tabla (armar el grafo + un paso con 1 024 salas, 4.518 ms) era la referencia de este banco.
@@ -8,12 +8,18 @@ Semilla: SEMILLA = 2026 (Logic/BenchLogica.py); costos entre 1 y 300 por par de 
 completo (todas las salas exploradas, todas las puertas recordadas como son); el paso va de la sala 1 (esquina) hacia la sala
 opuesta. Los conteos y las decisiones de las notas son reproducibles; los tiempos dependen de la máquina.
 
-Cripta de referencia (SC-252): cripta-06 (300 salas) NO está en el paquete local (paquete/ trae cripta-01 a cripta-04). Se mide
-la cuadrícula sintética de 15 × 20 = 300 salas, el tamaño de cripta-06; la fila «cripta-06 del paquete (no medida)» lo dice.
-Cuando el paquete traiga cripta-06, --bench la mide solo (misma V1 a V3, desde su sala inicial hacia su salida) sin cambiar
-código, y esa fila reemplaza a la nota de «no medida».
+Cripta de referencia (SC-252): con el paquete de Derek (merge ecb78e7) cripta-06 (300 salas) YA está en el paquete local y
+--bench la mide sola, sin cambiar código: sala inicial 141, sala de salida 160, mapa conocido completo, puertas recordadas como
+son. Se conserva la cuadrícula sintética de 15 × 20 = 300 salas (mismo tamaño) porque mide una ruta de verdad (ver abajo).
 
 Criterios:
+  NFR-250 / SC-252 con cripta-06 REAL del paquete: V3 mediana 0.164 ms (mejor 0.163 ms) contra 5 ms: cumple. V1 0.160 ms y
+          V2 0.002 ms. ATENCIÓN, la medición no es representativa del peor caso: en esa configuración (sala 141 hacia la 160,
+          con las puertas cerradas tal como son) decidir_paso devuelve None (no hay ruta: la fila lo dice, «decisión None»),
+          así que V2 solo cuesta consultar y V3 es casi V1. Con el mapa completo, desde la sala 141 solo 74 de las 299 salas
+          son alcanzables. Con una medición aparte, fuera de --bench (guion ad hoc, no versionado), al destino alcanzable más
+          caro (sala 105) V3 dio 0.26 ms y V2 0.10 ms: también muy por debajo de 5 ms. El número que mide una ruta completa
+          con 300 salas sigue siendo el de la cuadrícula sintética (V3 0.957 ms).
   NFR-250 / SC-252 / A32  V3 con 300 salas (cuadrícula sintética del tamaño de cripta-06): mediana 1.001 ms (mejor 0.953 ms)
           contra 5 ms: CUMPLE, con 5 veces de margen. V1 0.199 ms y V2 0.756 ms.
   T122  V3 con 1 024 salas: mediana 3.763 ms (mejor 3.586 ms) contra 5 ms: queda por debajo (evidencia, no es el criterio), con
@@ -40,4 +46,6 @@ viaje automático                             | V3 un paso completo: grafo nuevo
 viaje automático                             | V1 armar el grafo (una vez por viaje)                                              |    300 |    0.199 |      0.199 | cuadrícula sintética 15 × 20 = 300 salas, el tamaño de cripta-06; constructor + índice inverso de entradas, O(S + E); 664.7 ns por sala
 viaje automático                             | V2 un paso con el grafo armado                                                     |    300 |    0.748 |      0.756 | cuadrícula sintética 15 × 20 = 300 salas, el tamaño de cripta-06; decidir_paso desde la sala 1 hacia la sala 300; decisión (1, 21, 61)
 viaje automático                             | V3 un paso completo: grafo nuevo + un paso                                         |    300 |    0.953 |      1.001 | cuadrícula sintética 15 × 20 = 300 salas, el tamaño de cripta-06; grafo nuevo + decidir_paso (peor caso: ServicioIrA arma el grafo una vez por viaje); mediana 1.001 ms contra 5 ms (NFR-250, SC-252): cumple
-viaje automático                             | cripta-06 del paquete (no medida)                                                  |      0 |    0.000 |      0.000 | cripta-06 no está en el paquete local (Falló 'datos generales de cripta-06': falta el archivo 'paquete\\cripta-06\\general.json' en el paquete offline): vale la cuadrícula sintética de 300 salas, su mismo tamaño
+viaje automático                             | V1 armar el grafo (una vez por viaje)                                              |    300 |    0.159 |      0.160 | cripta-06 versión f9ed9afa683d del paquete, leída sin red; constructor + índice inverso de entradas, O(S + E); 534.3 ns por sala
+viaje automático                             | V2 un paso con el grafo armado                                                     |    300 |    0.002 |      0.002 | cripta-06 versión f9ed9afa683d del paquete, leída sin red; decidir_paso desde la sala 141 hacia la sala 160; decisión None
+viaje automático                             | V3 un paso completo: grafo nuevo + un paso                                         |    300 |    0.163 |      0.164 | cripta-06 versión f9ed9afa683d del paquete, leída sin red; grafo nuevo + decidir_paso (peor caso: ServicioIrA arma el grafo una vez por viaje); mediana 0.164 ms contra 5 ms (NFR-250, SC-252): cumple
