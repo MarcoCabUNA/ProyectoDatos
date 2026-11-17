@@ -802,6 +802,8 @@ quitan tildes (`sotano` no encuentra `Sótano`; es el comportamiento de `casefol
 espacios internos: el comando de la interfaz conserva los espacios internos del nombre (`test_solo_ir_a_con_un_destino_es_el_comando`).
 Si el grupo quiere tildes o espacios, el cambio es de una línea en `buscar_exploradas` (integrante 2).
 
+**8. Limitación conocida: los comentarios `# ir a` tras cargar una partida.** Al cargar, `BitacoraReplayIO.continuar_desde` copia al log nuevo solo las acciones, no los comentarios (`ServicioGuardado` lo llama con la cantidad de acciones). Por eso el log nuevo trae únicamente los `# ir a <sala>` de las órdenes dadas desde la carga; los anteriores quedan en el log previo. No afecta al replay: los comentarios son informativos y `--replay` usa solo las acciones.
+
 **8. H-2, opción A: la interfaz no ve ids de salas no exploradas.** *Problema:* `EstadoJuegoDTO.sala.salidas[d].sala_destino` traía
 el id real de las salas avistadas y `sala_salida` el de la salida de la cripta (FR-204, FR-217). *Decisión:* `ArmadorEstado` pone
 `SIN_EXPLORAR = -1` (constante en `DTO/EstadoJuegoDTO.py`) en cada salida hacia una sala no explorada y deja `sala_salida = None`
