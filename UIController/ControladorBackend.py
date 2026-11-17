@@ -41,10 +41,12 @@ from DTO.ReporteResolubilidadDTO import ReporteResolubilidadDTO
 from DTO.ResultadoBenchDTO import ResultadoBenchDTO
 from DTO.ResultadoReplayDTO import ResultadoReplayDTO
 from DTO.ResumenHistoriaDTO import ResumenHistoriaDTO
+from DTO.ViajeDTO import AMBIGUO, INTERRUMPIDO, YA_AQUI, PasoViajeDTO, ViajeDTO
 from Service.ErroresServicio import ERRORES_ESPERADOS
 from Service.ServicioBench import ServicioBench
 from Service.ServicioGuardado import ServicioGuardado
 from Service.ServicioInventario import ServicioInventario
+from Service.ServicioIrA import ServicioIrA
 from Service.ServicioLineaTiempo import ServicioLineaTiempo
 from Service.ServicioPartida import ServicioPartida
 from Service.ServicioPuntajes import ServicioPuntajes
@@ -78,6 +80,8 @@ class ControladorBackend:
         self._contexto = None  # la partida en curso (opaca); None si no hay
         self._terminada = False
         self._puntaje_registrado = False
+        self._ir_a = ServicioIrA()
+        self._viaje = None  # el ViajeDTO vigente de la sesión (feature 002); None si no hay viaje
 
     # ================================================================== partida
     def criptas(self) -> list:
@@ -187,6 +191,7 @@ class ControladorBackend:
 
     # ================================================================== interno
     def _ejecutar(self, accion: AccionDTO) -> EstadoJuegoDTO:
+        self._viaje = None                               # cualquier otra orden descarta el viaje (feature 002, FR-262)
         estado = self._llamar(self._acciones.ejecutar, self._activa(), accion)
         self._terminada = estado.terminado
         return estado
@@ -195,6 +200,7 @@ class ControladorBackend:
         """La partida nueva (o cargada) pasa a ser la vigente. Solo se llega aquí si el servicio no falló."""
         estado = self._llamar(self._partida.estado, contexto)
         self._contexto = contexto
+        self._viaje = None
         self._terminada = estado.terminado
         self._puntaje_registrado = False
         return estado
@@ -279,3 +285,38 @@ class ControladorBackend:
         lanza por datos ni por red: esos fallos llegan como un reporte NO_CONCLUYO con el mensaje."""
         id_cripta = self._texto(id_cripta, "Falta indicar la cripta.")
         return ServicioResolubilidad(self._partida).verificar(id_cripta)
+
+
+    # ================================================================== feature 002 («ir a»)
+    def ir_a(self, nombre: str) -> ViajeDTO:
+        """`ir a <sala>` (feature 002, FR-250 a FR-252): empieza un viaje hacia una sala ya explorada y devuelve el
+        ViajeDTO vigente; no da ningún paso ni consume tiempo. Solo valida la FORMA del texto; si la sala no se puede
+        elegir (no explorada, ambigua o la actual), sale como ErrorOperacion y la partida no se toca."""
+        contexto = self._activa()
+        if not isinstance(nombre, str) or nombre.strip() == "" or "\n" in nombre or "\r" in nombre:
+            raise ErrorOperacion("Falta indicar a qué sala ir.")
+        self._viaje = None
+        inicio = self._llamar(self._ir_a.iniciar, contexto, nombre)
+        if inicio.viaje is None:
+            raise ErrorOperacion(self._mensaje_de_destino(inicio.motivos[0]))
+        self._viaje = inicio.viaje
+        return inicio.viaje
+
+    def dar_paso_viaje(self) -> PasoViajeDTO:
+        """Da un paso del viaje vigente (un `mover` ordinario) o devuelve el motivo de la parada. Sin viaje vigente
+        (otra orden, un pergamino, una partida nueva) no continúa nada: INTERRUMPIDO con el estado actual."""
+        contexto = self._activa()
+        if self._viaje is None:
+            return PasoViajeDTO(None, [INTERRUMPIDO], self._llamar(self._partida.estado, contexto))
+        paso = self._llamar(self._ir_a.dar_paso, contexto, self._viaje)
+        self._viaje = paso.viaje
+        self._terminada = paso.estado.terminado
+        return paso
+
+    @staticmethod
+    def _mensaje_de_destino(motivo: str) -> str:
+        if motivo == AMBIGUO:
+            return "Hay más de una sala explorada con ese nombre."
+        if motivo == YA_AQUI:
+            return "Ya estás en esa sala."
+        return "No conoces ninguna sala explorada con ese nombre."
