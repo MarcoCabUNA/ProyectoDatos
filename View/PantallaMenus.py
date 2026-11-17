@@ -17,6 +17,7 @@ import pygame
 from DTO.ElementoDTO import ELEMENTO_BOTON, ElementoDTO
 from DTO.PantallaDTO import PantallaDTO
 from View import Componentes as c
+from View import ReporteResolubilidad
 from View.ZonasClic import ZonasClic
 
 FONDO_MENU = "fondo_menu"
@@ -88,6 +89,9 @@ class PantallaMenus:
         cursor = "|" if (ms // _PERIODO_CURSOR_MS) % 2 == 0 else " "
         c.texto_en(superficie, self._fuentes.titulo, pantalla.texto + cursor, c.TEXTO, _CAMPO_NOMBRE.center)
         self._botones(superficie, pantalla, c.distribuir_botones(len(pantalla.opciones), _AREA_NOMBRE))
+        if pantalla.reporte_resolubilidad is not None:
+            ReporteResolubilidad.dibujar(superficie, self._fuentes, pantalla, c.HUD_REPORTE_MENU,
+                                         "La partida no se inició")
 
     def _puntajes(self, superficie, pantalla):
         superficie.blit(self._velo_suave, (0, 0))

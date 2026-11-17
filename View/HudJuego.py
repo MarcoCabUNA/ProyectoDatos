@@ -22,6 +22,7 @@ import pygame
 from DTO.ElementoDTO import ELEMENTO_BOTON, ELEMENTO_INVENTARIO, ElementoDTO
 from DTO.PantallaDTO import PantallaDTO
 from View import Componentes as c
+from View import ReporteResolubilidad
 from View.MapaJuego import PanelMapa
 
 TEXTURA_CASILLA = "inventario"           # ui/inventario.png: la textura de las casillas
@@ -163,6 +164,9 @@ class HudJuego:
         self._ayuda(superficie, pantalla.ayuda)
         if pantalla.resumen is not None:
             self._historia(superficie, pantalla.resumen)
+        if pantalla.reporte_resolubilidad is not None:
+            ReporteResolubilidad.dibujar(superficie, self._fuentes, pantalla, c.HUD_REPORTE_JUEGO,
+                                         "Se oculta con tu primera acción")
         if pantalla.mapa is not None:
             self._panel_mapa.dibujar(superficie, pantalla.mapa, estado.sala.id)
         if pantalla.linea_comandos is not None:
