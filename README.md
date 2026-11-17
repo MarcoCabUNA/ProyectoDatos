@@ -67,9 +67,14 @@ se escribe como `uv run python main.py ...`.
 | Reproduce la partida solo hasta el instante `T` (entero mayor o igual a 0) y muestra el resumen del estado en ese instante, sin abrir la ventana. Solo se acepta junto con `--replay`. | `.venv\Scripts\python.exe main.py --replay logs/partida_001.log --hasta 300 --offline` | `.venv/bin/python main.py --replay logs/partida_001.log --hasta 300 --offline` |
 | Cambia cada cuántas acciones del jugador la línea de tiempo toma un punto de control (entero mayor o igual a 1; por defecto 20). Se puede combinar con los demás modos. | `.venv\Scripts\python.exe main.py --checkpoint-cada 50` | `.venv/bin/python main.py --checkpoint-cada 50` |
 | Corre las mediciones de rendimiento con cargas sintéticas, sin abrir la ventana, y muestra una tabla por subsistema. | `.venv\Scripts\python.exe main.py --bench` | `.venv/bin/python main.py --bench` |
+| Dice si la cripta se puede terminar (si se pueden conseguir las llaves en algún orden hasta llegar a la salida), sin abrir la ventana ni iniciar una partida, y sale. Con `--offline` la lee de `paquete/`. | `.venv\Scripts\python.exe main.py --verificar cripta-02 --offline` | `.venv/bin/python main.py --verificar cripta-02 --offline` |
+| Inicia una partida nueva aunque la cripta no sea resoluble o su verificación no haya concluido, mostrando el reporte como advertencia. | `.venv\Scripts\python.exe main.py --forzar` | `.venv/bin/python main.py --forzar` |
 | Muestra las opciones. | `.venv\Scripts\python.exe main.py --ayuda` | `.venv/bin/python main.py --ayuda` |
 
 `--replay` y `--bench` no se pueden usar juntos. Con uv, cada comando se escribe `uv run python main.py ...`.
+
+`--verificar` tampoco se combina con `--replay` ni con `--bench`. `--forzar` se acepta con cualquier opción, pero solo
+lo usa una partida nueva (ver «Modo `--verificar` y `--forzar`»).
 
 **Sobre `--replay`:** `logs/` está vacía en una copia nueva del repositorio (se llena al jugar). Para probarlo sin jugar
 antes, el repositorio incluye una partida de muestra hecha con el paquete local:
@@ -159,9 +164,9 @@ vea cómo cambias de sala. Cada paso es un movimiento normal: gasta su tiempo, d
 
 ### Modo `--offline`
 
-Lee las criptas desde la carpeta `paquete/`, que viene en el repositorio con las cuatro publicadas al 18 de octubre
-(`cripta-01` a `cripta-04`, de 6 a 50 salas). Las lecturas locales no cuentan como solicitudes de red, así que el
-reporte final muestra 0 solicitudes.
+Lee las criptas desde la carpeta `paquete/`, que viene en el repositorio con `cripta-02` a `cripta-06` (publicadas el
+15 de noviembre, de 20 a 300 salas) y con `cripta-01` (6 salas), que ya no está publicada y no trae `llaves.json`. Las
+lecturas locales no cuentan como solicitudes de red, así que el reporte final muestra 0 solicitudes.
 
 Para agregar o actualizar una cripta en el paquete (esto sí usa la red; el catálogo se comparte entre criptas y se
 completa con las fichas nuevas):
@@ -192,6 +197,78 @@ completa. Códigos de salida de `--replay ... --hasta`:
 
 Al cargar una partida guardada, la bitácora continúa en un archivo nuevo que incluye las acciones anteriores,
 así que ese log también se puede reproducir completo.
+
+### Modo `--verificar` y `--forzar`
+
+`--verificar <cripta>` revisa, sin abrir la ventana ni iniciar una partida, si se pueden conseguir todas las llaves en
+algún orden hasta llegar a la salida. Sin `--offline`, pide la cripta y sus llaves al servicio web (cuenta como
+solicitudes de red); con `--offline`, las lee de `paquete/`. El reporte va a la salida estándar: si es resoluble, el
+orden en que se obtienen las llaves; si no, el motivo, las llaves que no se pueden obtener, las puertas que quedan
+bloqueadas y los ciclos de llaves. Códigos de salida:
+
+| Código | Cuándo |
+|---|---|
+| 0 | La cripta es resoluble. |
+| 3 | La cripta no es resoluble. |
+| 1 | La verificación no concluyó: no se pudo obtener la cripta o sus llaves, o los datos tienen un error. El mensaje dice por qué. |
+| 2 | Error en las opciones: `--verificar` sin el id de la cripta, o junto con `--replay` o `--bench`. |
+
+Con `--offline`, `--verificar cripta-01` termina con código 1 porque el paquete no trae su `llaves.json` (la cripta ya
+no está publicada en el servicio web).
+
+Al iniciar una partida nueva, el juego hace la misma verificación: si la cripta no es resoluble o la verificación no
+concluyó, la partida no se inicia y se muestra el reporte. Con `--forzar` la partida se inicia igual y el reporte se
+muestra como advertencia. `--forzar` no permite jugar una cripta cuyo esqueleto tiene un error de datos, y no tiene
+efecto con `--verificar`, `--replay` ni `--bench`, ni al cargar una partida guardada.
+
+## Terreno y cazador (001, integrante 1)
+
+Spec y diseño: `specs/001-terreno-cazador/` (`spec.md`, `plan.md`, `research.md`).
+
+**Costo por salida.** Cada salida puede declarar un `costo` (entero ≥ 1) en el esqueleto, en una o en sus dos caras,
+y vale lo mismo en los dos sentidos: si solo una cara lo declara, ese valor se copia a la otra; si ninguna lo declara,
+vale **100**; si las dos declaran valores distintos, es un error de datos (ver abajo). Moverse por una salida cuesta su
+costo, para el jugador y para los enemigos (intervalo `max(1, costo × 100 // velocidad)`); esperar, atacar y las demás
+acciones siguen costando lo de la primera parte. La ventana muestra el costo junto a cada salida de la sala actual.
+
+**Cazador.** Cuarto comportamiento de enemigo; su ficha trae `rango` (entero ≥ 0, en unidades de costo). En su turno:
+
+- si está en la sala del jugador, ataca (no se mueve);
+- si no, calcula d, el costo mínimo hasta la sala del jugador por salidas abiertas (no abre puertas cerradas). Si no
+  hay ruta o d > `rango`, espera (100). Si d ≤ `rango` (incluido d = `rango`), se mueve un paso por
+  una ruta de costo d;
+- **desempate**: entre las vecinas que están sobre una ruta de costo d, va a la de **menor id**; si varias salidas
+  llevan a la misma vecina, usa la más barata. La decisión es determinista y no consume el generador aleatorio;
+- los demás actores no le bloquean el paso, y al llegar a la sala del jugador no ataca en ese mismo turno.
+
+En la ventana, cada enemigo muestra su comportamiento en texto y el cazador lleva un marcador propio.
+
+**Búsqueda compartida e invalidación.** Como el costo es igual en los dos sentidos, una sola búsqueda de costo mínimo
+desde el jugador (montículo binario propio, `Estructuras/MonticuloMinimo.py`) sirve a todos los cazadores, y cada uno
+la extiende solo hasta su sala o hasta pasar su `rango`. La búsqueda se descarta si el jugador cambia de sala o si se
+abre o cierra una puerta que toca la parte ya resuelta; el pergamino de retroceso también la descarta cuando deshace
+algo de eso. En todos los casos la decisión es la misma que la de un cálculo desde cero.
+
+**Mediciones.** `--bench` (ver «Cómo ejecutar») incluye las filas del costo por salida y del cazador
+(`Logic/BenchRutas.py`); `uv run python -m Service.ServicioBench` corre las mismas mediciones. Hay dos tablas completas:
+[`specs/001-terreno-cazador/bench-2026-11-13.txt`](specs/001-terreno-cazador/bench-2026-11-13.txt), con las cifras
+que citan R1 a R6 de research.md y §5.1 y §5.2 de `DECISIONES.md`, y
+[`specs/001-terreno-cazador/bench-2026-11-15.txt`](specs/001-terreno-cazador/bench-2026-11-15.txt), con las mismas
+mediciones con el mapa conocido de la 002 conectado (mismos conteos). El análisis está en
+[`specs/001-terreno-cazador/research.md`](specs/001-terreno-cazador/research.md) (R1 a R6) y `DECISIONES.md`
+(sección del integrante 1, §5.1, §5.2 y §5.6). Los tiempos dependen de la máquina; los conteos son reproducibles
+(semilla 2026).
+
+**Errores de datos (FR-122).** No hay valores por defecto para datos inválidos; el mensaje dice qué ficha o qué salida
+y qué campo, y el programa no se cae.
+
+| Dato inválido | Qué pasa |
+|---|---|
+| `costo` menor que 1 o no entero, costos distintos en las dos caras, o `cierre_automatico` menor que 1 o no entero | Error del esqueleto: la partida no inicia, **ni siquiera con `--forzar`**. `--verificar` informa que la verificación no concluyó y termina con código 1. |
+| Ficha de cazador sin `rango` o con `rango` que no es entero ≥ 0 (o un objeto con `duracion` que no es entero ≥ 1, incluidos un no entero y un `bool`, o un enemigo cuya `suelta` quedó rechazada) | La ficha se rechaza y no se vuelve a pedir. Si está en la sala inicial, la partida no inicia; en otra sala, esa sala queda como contenido no disponible y entrar se rechaza con el mensaje, sin gastar tiempo ni escribir en la bitácora. |
+
+Ejemplo: `Datos inválidos en 'esqueleto de cripta-02': la salida E de la sala 2 declara costo 0: debe ser un entero >= 1`.
+
 
 ## Archivos que genera el programa
 

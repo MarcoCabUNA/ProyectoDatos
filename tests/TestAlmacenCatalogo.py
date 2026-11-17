@@ -58,7 +58,7 @@ class PruebasAlmacenCatalogo(unittest.TestCase):
 
     def test_formato_en_disco(self):
         a = self.almacen()
-        a.guardar(fichas_reales()[1])                    # ent_rata_gigante
+        a.guardar([f for f in fichas_reales() if f.id == "ent_rata_gigante"][0])
         with open(self.ruta(VERSION, "ent_rata_gigante.json"), encoding="utf-8") as f:
             datos = json.load(f)
         self.assertEqual((datos["id"], datos["clase"]), ("ent_rata_gigante", "enemigo"))
