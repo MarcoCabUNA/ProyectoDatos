@@ -2719,40 +2719,6 @@ Reporta el commit. No hagas push.
 
 **Herramienta:** Claude Code
 
-/speckit-implement Feature 002-niebla-ir-a, parte del integrante 2. Primer lote, según «Estrategia» y «Entrega incremental» de specs/002-niebla-ir-a/tasks.md: solo estas tareas y en este orden.
-
-1. T001: tests/ayudas_mapa.py.
-2. Fase 2: T009 y T010 (las pruebas primero; comprobá que fallan), después T011 y T012, y T013 (la suite completa en verde).
-3. Guardado adelantado:
-   - las cuatro primeras pruebas de T035 (DTO y linea). Las de restaurar NO, esas van con T037 en otro lote;
-   - T036: PartidaGuardadaDTO con mapa antes de linea, con el import local de LineaTiempoGuardadaDTO. Es T002 de la 004;
-   - T038: las pruebas del binario, que también son las de T003 y T047 de la 004. Comprobá que fallan;
-   - T039: GuardadoBinario versión 2. Es T003 de la 004.
-   El formato v2 se implementa con el diseño de data-model.md §6 y research R4 (cabecera de 58 bytes, bloque propio del mapa y de la línea, y el orden de los bloques de cada punto de control). El integrante 3 todavía no actualizó el texto del §1 y del §2 de su contrato de la 004 (T007), pero aceptó ese diseño el 14/11. Si encontrás algo de su contrato de la 004 que contradiga el diseño, avisame en vez de elegir uno.
-
-Después de T039, PARÁ. No hagas T037, T040 ni nada de las fases 3 en adelante.
-
-Reglas:
-- Constitución v1.2.0: sin dict ni set como índice, sin heapq, bisect ni collections, sin sorted ni list.sort, sin copy fuera de tests/, y Logic no importa Data.
-- Pruebas primero, con el FR en el nombre, como dice cada tarea.
-- Solo archivos del integrante 2: tests/ayudas_mapa.py, tests/test_guardado_mapa.py, tests/test_mapa_conocido_estados.py, DTO/MapaConocidoDTO.py, Logic/MapaConocido.py, DTO/PartidaGuardadaDTO.py, Data/GuardadoBinario.py y tests/TestGuardadoBinario.py (solo la aserción de la versión). No toques archivos de otros integrantes; si alguno tuviera que cambiar, avisame.
-- Marcá con [x] en tasks.md solo las tareas que quedaron completas. T035 queda sin marcar, porque le faltan las pruebas de restaurar; anotalo en la tarea.
-- Antes de terminar corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8 en Windows) y el replay de ejemplo (python main.py --replay ejemplos/partida_ejemplo.log --offline), que debe dar lo mismo que antes. Comprobá también que guardar y cargar una partida real con ServicioGuardado sigue funcionando con la versión 2. La versión 1 ahora se rechaza: decime si eso afecta algún archivo guardado del repositorio (partidas/, ejemplos/ o tests/).
-
-Al final decime:
-- los archivos de cada grupo, separados para dos commits: (a) T001 y la fase 2, y (b) el guardado adelantado;
-- las pruebas nuevas, con su resultado antes y después;
-- el resultado de la suite y del replay;
-- cualquier diferencia con el plan.
-No hagas commit.
-
-**Uso de la respuesta:** primer lote de la 002, con las pruebas primero. Las 24 pruebas nuevas fallaban antes del código. Se hicieron T001 (`tests/ayudas_mapa.py`); la fase 2, con T009 a T013 (`DTO/MapaConocidoDTO.py` y el núcleo de `Logic/MapaConocido.py`: dos arreglos, escrituras que registran su reversión en el historial); y el guardado adelantado: T036 (`PartidaGuardadaDTO` con `mapa` antes de `linea` e import local, T002 de la 004), T038 y T039 (`GuardadoBinario` versión 2 con cabecera de 58 bytes y bloques propios del mapa y de la línea, la versión 1 rechazada sin tocar la partida actual; T003 y T047 de la 004). En `tests/TestGuardadoBinario.py` cambiaron tres aserciones de versión. T035 queda abierta hasta las pruebas de `restaurar`. Resultado: 641 OK (skipped=2) y 32/32 scripts; el replay de ejemplo es idéntico, y guardar y cargar una partida real funciona con la versión 2. Revisé el diff antes del commit.
-
------------------------------------------------------------------------------------------------------------------------
-**Fecha:** Sábado 14 de noviembre 2026
-
-**Herramienta:** Claude Code
-
 /speckit-implement T043 a T048 (H4: guardado con línea) de specs/004-linea-tiempo/tasks.md. Antes: confirma que la rama incluye origin/derek (T002: PartidaGuardadaDTO con mapa antes de linea; T003: VERSION_FORMATO = 2) y que la suite pasa. Marca T002 y T003 como [X] en tasks.md solo si verificas que están hechas y con sus pruebas (TestGuardadoBinario.py: ida y vuelta con línea, línea vacía y archivo de versión 1 rechazado). T047 es del integrante 2: verifica que esas pruebas existen y marca [X] solo si es así.
 Pruebas primero (T043, T045), luego implementa (T044, T046). Reglas: constitución v1.2.0, MVC n-capas, solo estructuras y librerías permitidas, sin copy. T044: LineaTiempo.a_guardada() y desde_guardada(dto) con copia manual. T046: ServicioGuardado.guardar incluye la línea; ServicioGuardado.cargar crea la línea desde el archivo y INSTALA los grabadores (hoy el docstring de GrabadoresLinea lo afirma pero ServicioGuardado.cargar no lo hace). Una partida cargada debe poder responder historia <t> e historia #k con los mismos resúmenes que antes de guardar (H4-1). Después de PartidaGuardada.cargar, toma contexto.motor otra vez (el mapa es un objeto nuevo). El mapa conocido todavía no tiene a_dto(): el resumen sigue omitiéndolo (no inventes el campo). T048: corre la suite y el quickstart §4. Arregla el docstring de GrabadoresLinea si hace falta. Commits: uno por bloque, «feat(004): ...». No empieces H2 ni «ir a». Reporte con tareas, pruebas, decisiones y pendientes de Marco o Derek.
 
@@ -3801,84 +3767,36 @@ Al final: el apartado completo tal como quedó, el diff de tasks.md y la lista d
 
 -----------------------------------------------------------------------------------------------------------------------
 
-**Fecha:** Lunes 16 de noviembre 2026
+**Fecha:** Martes 17 de noviembre 2026
 
 **Herramienta:** Claude Code
 
-Feature 003, T065, T066 y T067 de specs/003-resolubilidad/tasks.md. Sin commit.
+Cierre de las features 002 y 003 (parte del integrante 2). Sin commit. La rama derek ya tiene todo origin/kris y origin/Marco y el paquete de la Parte II.
 
-Estado de la carpeta: hay cambios SIN commit del paquete de la Parte II (paquete/, tests/Utilidades.py, tests/TestAlmacenCatalogo.py, DECISIONES.md, ejemplos/partida_ejemplo.log, specs/003-resolubilidad/paquete-2026-11-15.md). No los toques.
+Feature 002 (specs/002-niebla-ir-a/tasks.md):
+1. T050: quitá la guarda de T118 de test_h4_4_a9_fr223_… (T042) y la de H-2 de test_sc202_… (T045). Las pruebas no cambian. Si alguna falla, PARÁ y decime el caso; no edites archivos del integrante 3.
+2. T006, T007 y T008: comprobá en el código y en los contratos que lo acordado ya está (T006: ArmadorEstado pone sala_destino = SIN_EXPLORAR y sala_salida = None, con SIN_EXPLORAR en DTO/EstadoJuegoDTO.py; T007: §1 y §2 de specs/004-linea-tiempo/contracts/contrato-linea-tiempo.md con el texto acordado; T008: ArmadorResumen y ServicioLineaTiempo usan motor.mapa.a_dto()). Si está, marcá cada una con una nota «Hecho (17/11): …» que diga dónde (archivo y commit del integrante 3). Si falta algo, no la marques y decime qué.
+3. T060: suite, replay de ejemplo (el log ya es el regrabado con la cripta-02 nueva: compará con lo que da hoy y anotalo así) y los pasos del quickstart de la 002 que se pueden correr sin ventana. Decime qué pasos necesitan la ventana, para hacerlos yo a mano. Marcá T060 solo si todo lo automático pasa y anotá qué quedó manual.
 
-1. T065: en README.md, documentar --verificar <cripta> y --forzar como dice la tarea (con y sin --offline; códigos 0 resoluble, 3 no resoluble, 1 no concluyó, 2 argumentos inválidos; el reporte va a la salida estándar; qué hace --forzar y cuándo no tiene efecto; --verificar no se combina con --replay ni --bench). Agregá una línea: con --offline, cripta-01 termina con código 1 porque el paquete no trae su llaves.json (ya no está publicada). Ponelo donde el README describe las opciones de la línea de comandos, siguiendo su formato, sin cambiar lo de los otros integrantes. El equipo acordó que yo agrego solo la parte de la 003.
-2. T066: en specs/003-resolubilidad/spec.md, tabla «Trazabilidad del Apéndice B», cambiar «Se define en tasks.md» por el nombre completo de cada prueba: caso 1 test_h2_1_apendiceB_caso1_fr304_fr307_fr308_fr309_fr310_llave_salida_detras_de_su_puerta (tests/test_resolubilidad_reporte.py), caso 2 test_h1_4_apendiceB_caso2_fr303_fr316_llave_de_enemigo_errante y caso 3 test_h1_5_apendiceB_caso3_fr305_fr306_mismo_orden_en_dos_ejecuciones (tests/test_resolubilidad_logica.py), caso 4 test_h4_1_apendiceB_caso4_fr311_no_resoluble_no_inicia (tests/test_resolubilidad_servicio.py). Comprobá que esos nombres existen. Nada más de spec.md cambia.
-3. T067: corré los tres grep de la tarea y el chequeo de «No se tocan» sobre los commits de la 003 (desde el primer commit de la feature hasta HEAD). Si no hay coincidencias nuevas, marcá T067 con una nota de lo que corriste. Si las hay, NO cambies código: decímelo.
-4. En tasks.md marcá [x] T065 y T066.
+Feature 003 (specs/003-resolubilidad/tasks.md):
+4. T068: lo mismo para la 003 (suite, replay, quickstart sin ventana; §4 ya está en bench-2026-11-16.txt). Decime los pasos de la ventana (quickstart §3, que es T056 con el integrante 3). Marcá T068 solo si todo lo automático pasa.
+5. T069: comprobá que PROMPTS_LLM.md tiene los prompts de /speckit-specify, /speckit-plan, /speckit-tasks, /speckit-analyze y la corrección del análisis de la 003, y los de la implementación (lotes 1 y 2, guarda de T053, documentación de T057/T058, paquete, bench, T054, T063 a T067). No agregues entradas: decime cuáles faltan, si falta alguna.
 
-Al final: el diff de README.md y de spec.md, el resultado de cada grep y los archivos para dos commits: (a) spec(003) solo con spec.md; (b) docs(003) con README.md y tasks.md.
+Al final: el diff de las pruebas y de los dos tasks.md, el resultado de la suite y del replay, la lista de pasos manuales de cada quickstart y el resultado de T069.
 
-**Uso de la respuesta:** T065 (README: `--verificar` y `--forzar`, con los códigos 0, 3, 1 y 2, la salida estándar, qué no se combina y la excepción de `cripta-01` con `--offline`; el equipo acordó que cada uno documenta su feature), T066 (los nombres reales de las cuatro pruebas del Apéndice B en la trazabilidad de `spec.md`, en el commit `spec(003)` aparte) y T067 (los tres grep y el chequeo de «No se tocan» sobre los commits de la 003: sin coincidencias nuevas; las 5 que aparecen son comentarios de antes de la feature). Claude Code avisó que el ejemplo del README con `cripta-02 --offline` necesita el paquete nuevo y que la sección «Modo --offline» estaba desactualizada.
+**Uso de la respuesta:** cierre de la parte del integrante 2. 002: T050 (sin las guardas de H4-4 y SC-202, que ya pasan con T116 y T118 del integrante 3), T006 y T008 marcadas con su commit, T060 (suite 1079 OK sin skip y 32/32, replay de ejemplo con victoria; quedan manuales los pasos de la ventana del quickstart). T007 no se marcó: el §1 y el §2 del contrato de la 004 todavía no tienen el texto acordado (se le avisó al integrante 3). 003: T068 (§2 con y sin red como se esperaba; queda manual §3, que es T056 con el integrante 3). T069: están todas las entradas de la 003, pero había 7 repetidas (las seis de T063 a T067, pegadas dos veces, y una de la 002 del 14/11), que se quitaron.
 
 -----------------------------------------------------------------------------------------------------------------------
 
-**Fecha:** Lunes 16 de noviembre 2026
+**Fecha:** Martes 17 de noviembre 2026
 
 **Herramienta:** Claude Code
 
-Ahora T063 de specs/003-resolubilidad/tasks.md. Sin commit. Corré .venv\Scripts\python.exe main.py --bench con PYTHONIOENCODING=utf-8 (tarda; dejalo terminar) y guardá la tabla completa en specs/003-resolubilidad/bench-2026-11-16.txt, con un encabezado como el de specs/002-niebla-ir-a/bench-2026-11-15.txt: qué es, el comando, la fecha, la rama y el commit sobre el que corre (con el paquete de la Parte II sin commitear en la carpeta), la duración, la máquina (leela con PowerShell, no la inventes), la versión de Python y la semilla. Después de la tabla, una sección «Comprobaciones (quickstart §4)» con cada criterio de T063 y si se cumple, con los números: la fila de la cripta con más salas del paquete con mediana < 200 ms; B1 de 1 000 a 10 000 salas crece ≤ ×20; B2 crece al menos el doble que B1; B3 crece como B1; B5 y B6 muestran el crecimiento de su fila de research R7; y el determinismo (dos llamadas a cripta_en_cuadricula y a cripta_en_peine con la misma semilla dan lo mismo: comparalas en Python, sin correr el bench dos veces). Si algún criterio no se cumple, NO cambies código ni umbrales: decímelo. Marcá T063 solo si todo se cumple. No toques ningún otro archivo.
+Dos cosas más, sin commit:
+1. tests/test_mapa_conocido_vista.py: quitá también la guarda de test_h5_7 (el if importlib.util.find_spec("Service.ServicioResolubilidad") is None: self.skipTest(...)) y la condición hay_resumen de test_sc202 (Service/ArmadorResumen.py ya existe), sin cambiar lo que comprueban. Actualizá el docstring del módulo (línea 8) y los que las mencionen; si importlib queda sin usar, sacá el import. Corré ese archivo y la suite completa.
+2. specs/003-resolubilidad/tasks.md: marcá [x] T069 con la nota «Hecho (17/11): están todas las entradas de la 003; se quitaron 7 entradas repetidas (las seis de T063 a T067 y una de la 002 del 14/11).» No toques PROMPTS_LLM.md: lo arreglo yo.
+Al final, el diff y el resultado de la suite.
 
-**Uso de la respuesta:** primera corrida de T063 (`--bench`, tabla en `bench-2026-11-16.txt`). Se cumplieron SC-306, SC-307, NFR-303 y el determinismo, pero B5 y B6 crecían menos que el «~×100» que research R7 daba para el tramo de 100 a 1 000 (por la parte fija en el tamaño chico), y un script corrió en paralelo con el bench. No se marcó T063; se decidió corregir R7 primero (Principio IX) y repetir la corrida.
-
------------------------------------------------------------------------------------------------------------------------
-
-**Fecha:** Lunes 16 de noviembre 2026
-
-**Herramienta:** Claude Code
-
-Opción 2. Sin commit:
-1. specs/003-resolubilidad/research.md, R7, fila B6: después de «de 1 000 a 3 000, ~×3 frente a ~×9» agregá: «. Con 100 dientes pesa la parte que no depende de la frontera (unos 0,25 ms en las dos variantes), así que el factor medido de la lista única entre 100 y 1 000 queda por debajo de ×100 (×47 el 16/11, unos ×78 sin esa parte); lo que respalda la decisión es ese tramo frente al ~×11 de la agrupada, el de 1 000 a 3 000 y el tiempo a 2 000 salas». Fila B5: después de «lo que respalda la decisión es el crecimiento y el tamaño de 1 000 salas» agregá: « (por lo mismo, el factor de la lineal entre 100 y 1 000 queda por debajo de ×100: ×76 el 16/11)». Nada más de research.md.
-2. README.md, sección «Modo --offline»: solo la frase de «cuatro publicadas al 18 de octubre», que pase a decir lo que trae el paquete: cripta-02 a cripta-06 (publicadas el 15/11) y cripta-01, que ya no está publicada y no trae llaves.json.
-3. Volvé a correr --bench SOLO, sin nada en paralelo, y reemplazá la tabla y las comprobaciones de specs/003-resolubilidad/bench-2026-11-16.txt con esa corrida (sacá la nota del script en paralelo). Las comprobaciones de B5 y B6 se leen contra R7 ya corregido. Si se cumple todo, marcá T063.
-Al final: el diff de research.md y de README.md, la tabla de comprobaciones nueva y si marcaste T063.
-
-**Uso de la respuesta:** R7 explica el crecimiento de B5 y B6 en el tamaño chico (lo que respalda la decisión es el tramo grande y el tiempo a 1 000 o 2 000 salas); el README dice qué trae el paquete de la Parte II; el bench se volvió a correr solo (122 s) y cumple todos los criterios: la `cripta-06` en 1,371 ms, B1 ×14,1, B2 ×98,5, B5 lineal ×100,9 de 1 000 a 10 000, B6 lista única ×8,4 de 1 000 a 3 000. Se marcó T063.
-
------------------------------------------------------------------------------------------------------------------------
-
-**Fecha:** Lunes 16 de noviembre 2026
-
-**Herramienta:** Claude Code
-
-Dos ajustes, sin commit y sin volver a correr el bench:
-1. research.md, R7: que cite la corrida que queda como evidencia (bench-2026-11-16.txt). Fila B5: «×76 el 16/11» pasa a «×50 en bench-2026-11-16.txt». Fila B6: «(×47 el 16/11, unos ×78 sin esa parte)» pasa a «(×55 en bench-2026-11-16.txt, unos ×98 sin esa parte)» y «frente al ~×11 de la agrupada» pasa a «frente al ~×13 de la agrupada». Nada más.
-2. README.md, «Modo --offline»: reacomodá solo ese párrafo para que ninguna línea pase el ancho de las demás, sin cambiar el texto.
-Al final, el diff de los dos.
-
-**Uso de la respuesta:** R7 cita los números de la corrida que queda como evidencia (×50 y ×55), y el párrafo del README queda con el ancho de las demás líneas. `research.md` fue en el commit `research(003)`.
-
------------------------------------------------------------------------------------------------------------------------
-
-**Fecha:** Lunes 16 de noviembre 2026
-
-**Herramienta:** Claude Code
-
-Sí, sacá de bench-2026-11-16.txt la nota de las comprobaciones de B6 que dice que R7 cita «×47» y «×76»: ya no es cierto. Nada más del archivo. Sin commit.
-
-**Uso de la respuesta:** se quitó del archivo del bench una nota que ya no era cierta.
-
------------------------------------------------------------------------------------------------------------------------
-
-**Fecha:** Lunes 16 de noviembre 2026
-
-**Herramienta:** Claude Code
-
-Ahora T064 de specs/003-resolubilidad/tasks.md. Sin commit.
-
-1. En DECISIONES.md, sección del integrante 2, apartado «### §5.4 Resolubilidad»: escribí el apartado completo como dice T064, a partir de research R0 a R9 y de los números de specs/003-resolubilidad/bench-2026-11-16.txt (enlace a ese archivo), con el mismo estilo y ancho de línea que «§5.3 Mapa conocido» de la misma sección. Por cada decisión: el problema, las alternativas con su complejidad, la decisión, la evidencia de B1 a B6 y si coincide con el plan. Incluí todo lo que pide la tarea: R0; el enlace (sin repetirla) a «Diferencia conocida entre la verificación y el motor de P1» del integrante 1; el límite conocido de la puerta con cierre automático y llaves distintas por cara; los hallazgos H-2 y H-3; los veredictos de T058 (02, 03, 04 y 06 RESOLUBLE con código 0; 05 NO RESOLUBLE con el ciclo hierro↔negra, código 3; 01 código 1 sin llaves.json); y la interpretación del Principio I sobre validar_ubicaciones con el precedente de 001 FR-122. El párrafo que ya está («Paquete de la Parte II y excepción de cripta-01») se queda, integrado donde corresponda; sacá la línea «(pendiente: el resto de la 003, T064.)». No toques las secciones de los integrantes 1 y 3 ni el §5.3. No inventes números: todos salen del archivo del bench, del reporte paquete-2026-11-15.md o de research.
-2. tasks.md, en T057: «Commit **propio** con paquete/, ejemplos/partida_ejemplo.log, el reporte, DECISIONES.md y esos dos archivos de pruebas» pasa a «Commit **propio** con paquete/, ejemplos/partida_ejemplo.log, el reporte y esos dos archivos de pruebas; la nota de (7) va en DECISIONES.md en el commit docs(003) siguiente, con el resto de §5.4 (T064)». En la lista de commits sugeridos (línea ~389), sacá DECISIONES.md de la lista de T057. Marcá [x] T064. No marques T057 ni T058 todavía.
-3. Revisá que todos los enlaces del apartado apunten a archivos y encabezados que existen.
-
-Al final: el apartado completo tal como quedó, el diff de tasks.md y la lista de enlaces comprobados.
-
-**Uso de la respuesta:** T064, el apartado «§5.4 Resolubilidad» de `DECISIONES.md`: la revisión de estructuras (R0) y siete decisiones (contrato y persistencia de las llaves; índice por ordenar y compactar; recorrido por oleadas con la frontera agrupada; orden determinista; puerta que bloquea y ciclos sin recursión; dónde vive cada parte, con la interpretación del Principio I sobre `validar_ubicaciones`; nada en el historial), cada una con problema, alternativas, complejidad, evidencia de B1 a B6 y si coincide con el plan; el paquete y los veredictos de T058; los límites conocidos (enlace a la diferencia con el motor del integrante 1, la puerta con cierre automático y llaves distintas por cara) y los hallazgos H-2 y H-3. T057 se ajustó: la nota del paquete va en `DECISIONES.md` en este commit. Revisé el apartado contra el archivo del bench (todos los números coinciden) y los enlaces.
+**Uso de la respuesta:** se quitaron también la guarda de H5-7 (la 003 ya existe) y la condición de `ArmadorResumen` en SC-202, con sus docstrings, y se marcó T069.
 
 -----------------------------------------------------------------------------------------------------------------------
