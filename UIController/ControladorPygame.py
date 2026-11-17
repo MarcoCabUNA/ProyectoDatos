@@ -351,17 +351,17 @@ class ControladorPygame:
             else:
                 estado = self._backend.iniciar(self._id_cripta, self._texto)
         except ErrorOperacion:
-            self._tomar_el_reporte()                    # si la partida no inició, se ve el reporte completo (FR-311)
+            self._tomar_el_reporte(False)               # si la partida no inició, se ve el reporte completo (FR-311), sin ser una advertencia
             raise
         self._nombre = self._texto.strip()
         self._juego = self._fabrica_controles(self._backend, estado)
         self._ir_a(JUEGO)
-        self._tomar_el_reporte()                        # el de la partida nueva, antes de su primera acción (FR-313); al cargar, ninguno
+        self._tomar_el_reporte(True)                    # el de la partida nueva, antes de su primera acción (FR-313); al cargar, ninguno
 
-    def _tomar_el_reporte(self) -> None:
+    def _tomar_el_reporte(self, inicio: bool) -> None:
         reporte = self._backend.resolubilidad()
         self._reporte_resolubilidad = None if reporte is None else lineas_reporte(reporte)
-        self._reporte_advertencia = reporte is not None and reporte.veredicto != RESOLUBLE
+        self._reporte_advertencia = inicio and reporte is not None and reporte.veredicto != RESOLUBLE   # advertencia: la partida SÍ inició (FR-312)
 
     # ================================================================== partida, pausa y fin
     def _en_juego(self, evento) -> None:

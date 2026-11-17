@@ -111,6 +111,9 @@ def reproducir_hasta(config: ConfiguracionDTO) -> int:
     print(f"Efectos: {', '.join(efectos) if efectos else '(ninguno)'}")
     enemigos = [f"{enemigo.nombre} {enemigo.vida}/{enemigo.vida_max}" for enemigo in resumen.enemigos]
     print(f"Enemigos en la sala: {', '.join(enemigos) if enemigos else '(ninguno)'}")
+    if resumen.mapa_conocido is not None:                    # FR-223: el mapa de ese instante (una línea)
+        n = len(resumen.mapa_conocido.salas)
+        print(f"Mapa conocido: {n} sala explorada" if n == 1 else f"Mapa conocido: {n} salas exploradas")
     if resumen.terminada_antes:
         print(f"La partida terminó antes de t={resumen.instante_pedido}: este es el estado final (reloj {resumen.reloj}).")
     return 0

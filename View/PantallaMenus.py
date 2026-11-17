@@ -91,7 +91,7 @@ class PantallaMenus:
         self._botones(superficie, pantalla, c.distribuir_botones(len(pantalla.opciones), _AREA_NOMBRE))
         if pantalla.reporte_resolubilidad is not None:
             ReporteResolubilidad.dibujar(superficie, self._fuentes, pantalla, c.HUD_REPORTE_MENU,
-                                         "La partida no se inició")
+                                         "La partida no se inició", no_inicio=True)
 
     def _puntajes(self, superficie, pantalla):
         superficie.blit(self._velo_suave, (0, 0))

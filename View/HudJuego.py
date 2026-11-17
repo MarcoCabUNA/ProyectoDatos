@@ -148,6 +148,7 @@ class HudJuego:
         self._velos: list[pygame.Surface] = []
         self._inicio = 0                             # la primera casilla real de la ventana del inventario
         self._panel_mapa = PanelMapa(fuentes)
+        self._panel_mapa_historia = PanelMapa(fuentes)       # aparte, para que cada uno conserve su disposición
 
     def dibujar(self, superficie: pygame.Surface, pantalla: PantallaDTO) -> None:
         estado = pantalla.estado
@@ -164,6 +165,9 @@ class HudJuego:
         self._ayuda(superficie, pantalla.ayuda)
         if pantalla.resumen is not None:
             self._historia(superficie, pantalla.resumen)
+            if pantalla.resumen.mapa_conocido is not None:     # el mapa de ese instante, en el panel central (FR-223)
+                self._panel_mapa_historia.dibujar(superficie, pantalla.resumen.mapa_conocido, pantalla.resumen.sala_id,
+                                                  cierre="Historia: el mapa de ese instante")
         if pantalla.reporte_resolubilidad is not None:
             ReporteResolubilidad.dibujar(superficie, self._fuentes, pantalla, c.HUD_REPORTE_JUEGO,
                                          "Se oculta con tu primera acción")

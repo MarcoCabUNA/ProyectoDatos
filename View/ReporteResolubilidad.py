@@ -16,11 +16,13 @@ def lineas_a_dibujar(fuente, lineas: list[str], ancho: int, capacidad: int) -> l
     return cortadas
 
 
-def dibujar(superficie, fuentes: c.Fuentes, pantalla: PantallaDTO, marco, pista: str) -> list[str]:
+def dibujar(superficie, fuentes: c.Fuentes, pantalla: PantallaDTO, marco, pista: str, no_inicio: bool = False) -> list[str]:
     advertencia = pantalla.reporte_advertencia
     c.panel(superficie, marco, ROJO_ADVERTENCIA if advertencia else c.PANEL, c.ROJO_VIVO if advertencia else c.ORO, 2)
     titulo = "Advertencia: la cripta no es resoluble" if advertencia else "Verificación de resolubilidad"
-    c.texto_en(superficie, fuentes.chico, titulo, c.AVISO if advertencia else c.ORO,
+    if no_inicio:
+        titulo = "La partida no inició: la cripta no es resoluble"          # FR-311: no es la advertencia de FR-312
+    c.texto_en(superficie, fuentes.chico, titulo, c.AVISO if advertencia or no_inicio else c.ORO,
                (marco.x + c.HUD_RELLENO + 2, marco.y + 6), "topleft")
     fuente = fuentes.ayuda_juego
     ancho = marco.width - 2 * c.HUD_RELLENO

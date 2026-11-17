@@ -115,13 +115,63 @@ class PruebasReporteAlIniciar(ConEntorno):
                          (sin.reporte_resolubilidad, sin.reporte_advertencia))
 
 
+def dibujar_y_anotar(e, pantalla):
+    """Dibuja con la Vista real y devuelve los textos que se pusieron (con c.texto_en anotando)."""
+    textos = []
+    original = c.texto_en
+
+    def anotando(superficie, fuente, texto, *args, **kwargs):
+        textos.append(texto)
+        return original(superficie, fuente, texto, *args, **kwargs)
+
+    c.texto_en = anotando
+    try:
+        e.vista.dibujar(pantalla)
+    finally:
+        c.texto_en = original
+    return textos
+
+
+def borde_del_panel(e, marco):
+    return tuple(e.vista._superficie.get_at((marco.x, marco.centery)))[:3]
+
+
+class PruebasTituloDelPanel(ConEntorno):
+
+    def test_fr313_la_partida_que_inicia_resoluble_dice_verificacion_y_no_advertencia(self):
+        e = self.entorno(criptas.cripta_resoluble())
+        pantalla = e.empezar()
+        textos = dibujar_y_anotar(e, pantalla)
+        self.assertIn("Verificación de resolubilidad", textos)
+        self.assertNotIn("Advertencia: la cripta no es resoluble", textos)
+        self.assertEqual(borde_del_panel(e, c.HUD_REPORTE_JUEGO), c.ORO)           # borde dorado
+
+    def test_fr312_la_partida_que_inicia_con_forzar_dice_advertencia_en_rojo(self):
+        e = self.entorno(criptas.cripta_ciclo(), forzar=True)
+        pantalla = e.empezar()
+        self.assertEqual(pantalla.pantalla, "juego")
+        textos = dibujar_y_anotar(e, pantalla)
+        self.assertIn("Advertencia: la cripta no es resoluble", textos)
+        self.assertNotIn("La partida no inició: la cripta no es resoluble", textos)
+        self.assertEqual(borde_del_panel(e, c.HUD_REPORTE_JUEGO), c.ROJO_VIVO)
+
+    def test_fr311_la_partida_que_no_inicia_dice_que_no_inicio_y_no_es_advertencia(self):
+        e = self.entorno(criptas.cripta_ciclo())
+        pantalla = e.empezar()
+        self.assertEqual(pantalla.pantalla, "nombre")
+        textos = dibujar_y_anotar(e, pantalla)
+        self.assertIn("La partida no inició: la cripta no es resoluble", textos)
+        self.assertNotIn("Advertencia: la cripta no es resoluble", textos)
+        self.assertEqual(borde_del_panel(e, c.HUD_REPORTE_MENU), c.ORO)            # sin el rojo de la advertencia
+
+
 class PruebasPartidaQueNoInicia(ConEntorno):
 
     def test_h4_1_fr311_si_no_inicia_el_menu_muestra_el_reporte_completo(self):
         e = self.entorno(criptas.cripta_ciclo())
         pantalla = e.empezar()
         self.assertEqual(pantalla.pantalla, "nombre")                              # sigue en el menú: no hay partida
-        self.assertTrue(pantalla.reporte_advertencia)
+        self.assertFalse(pantalla.reporte_advertencia)                             # la advertencia es de la partida que SÍ inició
         texto = "\n".join(pantalla.reporte_resolubilidad)
         self.assertIn("NO RESOLUBLE", texto)
         self.assertIn("A está en la sala 6 → la puerta 2–6 requiere B → B está en la sala 7", texto)   # el ciclo, completo
