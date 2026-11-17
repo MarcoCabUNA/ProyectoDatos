@@ -3551,3 +3551,5 @@ Cierra la documentación de mi parte. Lee primero las tareas T123–T127 de spec
 Al final corre la suite completa (catálogo viejo) y dime resultados, lo que no cumplió T125 si hubo algo, y qué tareas marcaste.
 
 **Uso de la respuesta:** se usó la respuesta para cerrar DECISIONES de la 002, verificar las restricciones de la constitución (T125), escribir la trazabilidad de la 002 y la 004 y agregar mi sección del README.
+
+-----------------------------------------------------------------------------------------------------------------------
