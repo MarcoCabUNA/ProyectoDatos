@@ -741,9 +741,122 @@ lee. Costo: O(1). Pruebas: `tests/test_danio_recibido.py`.
 **Nota sobre las pruebas.** La mutación que quita `Evento_pendiente` del daño solo se nota contando los cambios del intervalo, y el
 helper de la prueba lee atributos privados del historial (se rompe si cambia el buffer).
 
+**Prueba con Regeneración real y mutación.** `test_h7_5_a34_fr258_dano_compensado_por_regeneracion_detiene` (`tests/test_servicio_ir_a.py`) pone una
+`Regeneracion` real (+20, con su primer pulso a los 95) y un guardián que golpea a los 90 dentro de un paso: la vida queda igual
+(el pulso la devuelve al máximo), `danio_recibido` sube y el viaje se detiene con `DANO`. Su contraparte,
+`test_fr258_regeneracion_activa_sin_dano_el_viaje_sigue`, con Regeneración activa y sin daño, no lo detiene (el contador no sube
+al curarse). Se comprobó con una mutación: si `ServicioIrA` compara `jugador.vida` en lugar de `danio_recibido`, la primera falla.
+T110A sigue sin marcarse: falta la revisión del integrante 1.
+
+### Viaje automático «ir a» (002, integrante 3)
+
+Spec FR-250 a FR-264, NFR-250 y NFR-251; plan en `specs/002-niebla-ir-a/plan.md` («Viaje automático «ir a»»). Todo lo de abajo
+existe en el código y lo cubren las pruebas que se nombran.
+
+**1. Tres piezas, y el viaje viaja en un DTO.** *Problema:* decidir cada paso y cuándo parar sin reimplementar el movimiento.
+*Decisión:* «ir a» es una orden que se descompone en movimientos ordinarios. `Logic/ViajeAutomatico.py` (funciones puras, sin I/O:
+`resolver_destino`, `decidir_paso`, `motivos_de_parada`), `Service/ServicioIrA.py` (`iniciar(contexto, nombre)` y
+`dar_paso(contexto, viaje)`; no guarda el viaje) y `DTO/ViajeDTO.py` (`ViajeDTO(destino, nombre_destino, pasos_dados,
+acciones_esperadas)`, `InicioViajeDTO`, `PasoViajeDTO` y los motivos de parada). Cada paso es un `mover` que pasa por
+`ServicioLineaTiempo.ejecutar`, así que gasta su tiempo, deja correr los eventos, se anota en `partida.log` y en la línea de
+tiempo, y cuenta como acción (FR-254, FR-263, FR-264). *Alternativa descartada:* guardar el estado del viaje en el servicio;
+con un `ViajeDTO` que viaja de una llamada a la siguiente, cargar una partida o leer un pergamino no pueden dejar un viaje
+«a medias» dentro del servicio. *Pruebas:* `tests/test_servicio_ir_a.py`, `tests/test_viaje_logica.py`.
+
+**2. `dar_paso(contexto, viaje)` y `acciones_esperadas`: así se detecta el pergamino.** El `ViajeDTO` guarda cuántas acciones
+llevaba el jugador tras el último paso. Si `jugador.acciones` es otro valor (un pergamino la bajó en 1, o hubo otra orden), el
+paso se detiene con `INTERRUMPIDO` sin tocar nada (FR-262). Con solo el destino no habría cómo saberlo. Después: partida
+terminada → `TERMINADA`; sin ruta → `SIN_RUTA` sin tiempo; el `mover` rechazado → `PASO_RECHAZADO`; y, con el paso dado,
+`motivos_de_parada`. *Pruebas:* `test_h7_7_apendiceB_caso6_fr222_fr262_pergamino_revierte_solo_el_ultimo_paso`
+(`tests/test_ir_a_pergamino.py`), `test_dar_paso_con_la_partida_cambiada_por_fuera_para_con_interrumpido`.
+
+**3. Búsqueda desde cero en cada paso.** *Problema:* la ruta debe usar solo lo que el jugador conoce y recalcularse antes de cada
+paso (FR-252, FR-255). *Decisión:* `paso_desde_cero(grafo, destino, sala_actual, None)` sobre `GrafoMapaConocido`, sin guardar
+ninguna búsqueda entre pasos (la decisión es idéntica a un cálculo desde cero, SC-251). *Alternativa descartada:* reutilizar
+`BusquedaCostoMinimo` con `observador_rutas`; **no se implementó ni se midió**, porque el paso cabe en 5 ms (T122 la manda medir
+solo si no cabe). *Pruebas:* `test_sc251_cada_paso_igual_a_paso_desde_cero`, `test_sc251_fr255_cada_decision_igual_a_paso_desde_cero`.
+
+**4. El grafo se arma una vez por viaje y de nuevo tras cargar.** El plan lo armaba en cada paso. `ServicioIrA` guarda solo un
+caché de un valor: el `GrafoMapaConocido` y el mapa del que salió. `iniciar` lo borra (un grafo por viaje) y `dar_paso` lo
+rehace si `contexto.motor.mapa` es otro objeto, que es lo que pasa después de cargar una partida (hay un `Motor` nuevo).
+El grafo lee el mapa en vivo, así que reutilizarlo entre pasos no cambia la decisión. *Pruebas:* `test_el_grafo_se_arma_una_vez_por_viaje`,
+`test_viaje_tras_cargar_toma_el_mapa_del_motor_nuevo_y_arma_un_grafo_nuevo` (`tests/test_servicio_ir_a.py`).
+
+**5. La dirección del paso sale de `Mazmorra.salida` (D-1) y de la cara recordada.** `paso_desde_cero` devuelve `(vecina,
+costo)`, no la dirección. `decidir_paso` toma la primera dirección, por número, cuya salida lleva a la vecina, tiene ese costo y
+cuya cara de origen se recuerda abierta (`mapa.estado_cara == ABIERTA`); así, con dos salidas a la misma vecina (H-4), no elige una
+cara recordada cerrada. Solo mira la sala actual, que está explorada. *Pruebas:* `test_fr252_direccion_de_menor_numero_con_ese_costo`,
+`test_fr252_h4_cara_recordada_cerrada_de_menor_direccion_no_se_elige`.
+
+**6. Decisiones I3-4, I3-5 e I3-7.** *I3-4:* «ir a» desde una sala con enemigos vivos da el primer paso; solo se detiene al
+**entrar** a una sala con enemigos (`test_i3_4_la_sala_de_partida_con_enemigos_permite_el_primer_paso`). *I3-5:* el comentario
+`# ir a <sala>` se escribe justo después del primer paso aceptado, con el nombre real de la sala destino y solo si la bitácora
+existe; una orden rechazada o sin pasos no escribe nada (`test_h7_8_a36_fr261_log_con_tres_movimientos_y_un_comentario`,
+`test_fr261_orden_sin_pasos_no_se_registra`, `test_el_comentario_se_escribe_una_sola_vez_por_orden`). *I3-7:* `INTERRUMPIDO`,
+`TERMINADA` y `PASO_RECHAZADO` son motivos internos, no mensajes de la spec; `TERMINADA` sale junto a `DANO` o `LLEGO`, en el
+orden fijo `LLEGO`, `ENEMIGOS`, `DANO`, `TERMINADA` (`test_i3_7_fr258_terminada_junto_con_dano_o_llego`,
+`test_i3_6_fr258_paso_rechazado_para_sin_tiempo_ni_comentario`).
+
+**7. Límites de H-3 (I3-9).** El nombre se compara con `strip().casefold()` en los dos lados (`MapaConocido.buscar_exploradas`). No se
+quitan tildes (`sotano` no encuentra `Sótano`; es el comportamiento de `casefold`, no hay una prueba que lo fije) ni se colapsan
+espacios internos: el comando de la interfaz conserva los espacios internos del nombre (`test_solo_ir_a_con_un_destino_es_el_comando`).
+Si el grupo quiere tildes o espacios, el cambio es de una línea en `buscar_exploradas` (integrante 2).
+
+**8. H-2, opción A: la interfaz no ve ids de salas no exploradas.** *Problema:* `EstadoJuegoDTO.sala.salidas[d].sala_destino` traía
+el id real de las salas avistadas y `sala_salida` el de la salida de la cripta (FR-204, FR-217). *Decisión:* `ArmadorEstado` pone
+`SIN_EXPLORAR = -1` (constante en `DTO/EstadoJuegoDTO.py`) en cada salida hacia una sala no explorada y deja `sala_salida = None`
+mientras esa sala no esté explorada, con `mapa.es_explorada` (O(1) por salida; no usa `a_dto()`). La vista no cambia: `-1` no coincide con
+ningún id ni con `sala_salida`. *Costo conocido:* la puerta final no se distingue hasta explorar la sala de salida. *Alternativas descartadas*
+(plan, tabla del H-2): `sala_destino: int | None`, un campo nuevo con los destinos conocidos, o que `ArmadorEstado` calcule los hechos que
+la vista compara. *Pruebas:* `tests/test_estado_sin_filtrar.py` (200 acciones con y sin antorcha), y se ajustaron tres pruebas viejas
+que leían ids reales del estado (`test_servicios.py`, `test_grabadores_linea.py`, `test_dto_terreno.py`).
+
+**9. Interfaz de «ir a»: supuestos míos (la spec no los fija).** La spec dice que el viaje es paso a paso y que se muestra el motivo
+de parada (FR-260); el resto lo decidí yo, y se puede cambiar:
+- *Ritmo:* un paso cada `PASO_VIAJE_MS` = 350 ms (`UIController/ControladorPygame.py`), medidos con el reloj del controlador,
+  en `avanzar_viaje()`, que el bucle principal llama una vez por cuadro. El primer paso sale en el primer cuadro.
+- *Corte:* cualquier tecla, clic o rueda corta el viaje y además se ejecuta como siempre (`Z` espera, `D` mueve); **Esc solo corta el
+  viaje y no abre la pausa**. Sin viaje, Esc vuelve a pedir la pausa. El backend descarta el viaje (`cancelar_viaje`) y anota
+  «Viaje interrumpido.».
+- *Rechazos:* una orden rechazada (destino no válido, ambiguo, «ya estás aquí», comando vacío) sale como aviso, como los demás
+  comandos, sin tiempo ni bitácora. Un destino inexistente, avistado o desconocido da el **mismo** mensaje (FR-251), y no se puede
+  distinguir uno de otro; ambiguo y «ya estás aquí» tienen el suyo.
+- *Motivos de parada:* `ControladorBackend.dar_paso_viaje` anota un mensaje por motivo («Llegaste a ...», «Viaje detenido: hay
+  enemigos.», «...recibiste daño.», «...sin ruta conocida a ...», y «...no se pudo dar el paso.» para el `mover` rechazado) con
+  `ServicioIrA.anotar`, que los agrega al buffer de mensajes de la partida viva (el panel de mensajes). No son parte del estado del
+  motor, así que `--replay` no los reproduce. Son cortos a propósito y `test_vista_hud` los mide con los nombres de sala reales.
+- *Pruebas de punta a punta:* `tests/test_ir_a_interfaz.py` (`ControladorPygame` y `VistaPygame` reales, partida real de 5 × 5 salas).
+  Esas pruebas arrancan con `forzar=True` porque desde T054 `iniciar` verifica la resolubilidad y la fuente de la cuadrícula no trae llaves.
+
+**10. Banco del paso (NFR-250, NFR-251, SC-252).** `Logic/BenchViaje.py` mide, con el mapa conocido completo y desde la esquina hacia la sala
+opuesta, V1 armar el grafo, V2 un paso con el grafo armado y V3 un paso completo (grafo nuevo + `decidir_paso`), con cuadrículas de 100,
+1 024 y 10 000 salas y una de 15 × 20 = 300 salas, el tamaño de cripta-06. **cripta-06 no está en el paquete local** (trae cripta-01 a
+cripta-04): se midió la sintética de 300 salas, y cuando el paquete traiga cripta-06, `--bench` la mide sola (`ServicioBench`), desde su
+sala inicial hacia su salida, sin cambiar código (hasta entonces la tabla trae una fila «cripta-06 del paquete (no medida)»). Resultados
+(mediana): **300 salas, V3 = 1.001 ms contra 5 ms: cumple NFR-250 y SC-252** (V1 0.199 ms, V2 0.756 ms); 1 024 salas, V3 = 3.763 ms
+(por debajo de 5 ms, con poco margen; evidencia, no criterio); 10 000 salas, 50.363 ms. La tabla completa está en
+`specs/002-niebla-ir-a/bench-viaje-2026-11-17.txt`; se midió en otra máquina (Ryzen 4600G, 15 GB, Python 3.15.0) que la tabla del
+integrante 2 del 15/11 (Ryzen 5 5500), así que los tiempos de las dos no son comparables fila por fila. Complejidad: V1 O(S + E) (la primera
+`entradas` arma el índice inverso); un paso es una búsqueda de costo mínimo sobre las salas exploradas. *Pruebas:* `tests/test_bench_viaje.py`.
+
 ### Comando `mapa` de la 002 (interfaz)
 
-**Supuesto: con la partida terminada el comando `mapa` no está disponible**, igual que `historia`. T048 punto 1 lo pide «también con la partida terminada», pero FR-219 y FR-220 no lo exigen. Al terminar la partida, `ControladorPygame` pasa a la pantalla de victoria o derrota (o ignora todos los eventos durante la demora del fin) y esa pantalla no tiene línea de comandos. Habilitar `mapa` ahí obliga a darle teclas, un campo en `PantallaDTO` y un dibujo a las pantallas de fin, es decir, tocar la navegación de victoria y derrota por una consulta que el jugador ya pudo hacer mientras jugaba. Si el grupo lo quiere, el cambio es de esas pantallas y no de `ver_mapa`, que no mira si la partida terminó.
+- *Nombre y alcance.* La spec pide «un comando para ver el mapa conocido» (FR-219) sin fijar el nombre: elegí `mapa` (sin argumentos), en la
+  misma línea de comandos que `historia`. Repetirlo lo cierra; también lo cierran `Esc` (antes que la pausa) y cualquier acción.
+- *Qué lee.* `ControladorBackend.ver_mapa()` devuelve `motor.mapa.a_dto()` y nada más: no pasa por servicios, no toca Data, no consume tiempo,
+  no es una acción, no se anota en `partida.log` ni en la línea de tiempo, no toca el historial y no descarta un viaje en curso (FR-220).
+  `PantallaDTO.mapa` (campo final con valor por defecto) lleva el `MapaConocidoDTO` a la vista, que solo dibuja.
+- *Dibujo* (`View/MapaJuego.py`). El DTO no trae coordenadas: cada sala se pone junto a la que la nombra según N, S, E y O, a partir de la sala
+  actual, y una sala que no cabe junto a su vecina se corre en la misma dirección. Una salida hacia una sala avistada es una celda hueca sin
+  id ni nombre; cada conexión lleva el color de la puerta recordada. La celda va de 56 a 16 px; con 44 px o más se escriben nombres y costos.
+  Si ni a 16 px cabe, se recorta alrededor de la sala actual y el panel lo dice (300 salas en cuadrícula caben enteras a unos 34 px).
+- *Supuesto: con la partida terminada el comando no está disponible*, igual que `historia`. T048 punto 1 lo pide «también con la partida
+  terminada», pero FR-219 y FR-220 no lo exigen. Al terminar, `ControladorPygame` pasa a la pantalla de victoria o derrota (o ignora todos los eventos
+  durante la demora del fin) y esa pantalla no tiene línea de comandos. Habilitar `mapa` ahí obliga a darle teclas, un campo en `PantallaDTO`
+  y un dibujo a las pantallas de fin, es decir, tocar la navegación de victoria y derrota. Si el grupo lo quiere, el cambio es de esas pantallas
+  y no de `ver_mapa`, que no mira si la partida terminó (`test_con_la_partida_terminada_el_comando_no_esta_disponible_pero_ver_mapa_no_falla`).
+- *Pruebas:* `tests/test_comando_mapa.py`, con dos pruebas que parchean `ver_mapa` para que anote en el log o gaste tiempo y comprueban que la
+  comparación del reloj, las acciones, `partida.log`, la línea, el historial y el mapa lo detecta (la mutación de FR-220).
 
 ### Reporte de resolubilidad en la interfaz (003, T055)
 
