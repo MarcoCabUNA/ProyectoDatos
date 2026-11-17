@@ -985,7 +985,12 @@ versión 2 y se revisará si ese valor cambia la elección de K.
 
 ### Contador de daño recibido (`ActorBase.danio_recibido`, para «ir a» de la 002)
 
-Cambio a la primera entrega (Principio III), propuesto por el integrante 3 y **pendiente de la revisión del integrante 1**.
+Cambio a la primera entrega (Principio III), propuesto por el integrante 3 y **revisado por el integrante 1 (Marco) y aprobado**, con los
+ajustes que se aplicaron en el commit `06b1eff`: el campo y su explicación van como comentario de una línea y no como docstring
+(`Logic/ActorBase.py`); una prueba con la Regeneración real dentro de un paso del motor (`test_la_regeneracion_real_dentro_de_un_paso_del_motor_no_lo_sube`);
+los textos del plan y de `tasks.md` (T110A) corregidos; «tres sitios» que llaman a `Recibir_Dannio` (eran «cuatro» en el texto); una prueba de
+guardar y cargar (`test_guardar_y_cargar_no_cambian_el_contador`); y, en `tests/test_linea_tiempo_guardado.py`, la comparación con el valor de antes
+(`acciones_antes`).
 
 **Problema.** «Ir a» debe detenerse cuando el jugador recibe daño (spec 002 FR-258 c, §3.4). Comparar `jugador.vida` antes y
 después de un paso no basta: una Regeneración (`Logic/Efectos.py`, +vida por pulso) puede devolver la vida dentro del mismo
@@ -1127,6 +1132,15 @@ sala inicial hacia su salida, sin cambiar código (hasta entonces la tabla trae 
 `specs/002-niebla-ir-a/bench-viaje-2026-11-17.txt`; se midió en otra máquina (Ryzen 4600G, 15 GB, Python 3.15.0) que la tabla del
 integrante 2 del 15/11 (Ryzen 5 5500), así que los tiempos de las dos no son comparables fila por fila. Complejidad: V1 O(S + E) (la primera
 `entradas` arma el índice inverso); un paso es una búsqueda de costo mínimo sobre las salas exploradas. *Pruebas:* `tests/test_bench_viaje.py`.
+
+**11. Los mensajes de parada no van a `partida.log`.** «Llegaste a …», «Viaje detenido: hay enemigos.», «Viaje detenido: recibiste daño.»,
+«Viaje detenido: sin ruta conocida a …» y «Viaje interrumpido.» los arma el backend (`ControladorBackend._textos_de_parada`, líneas 360 a 374,
+y `cancelar_viaje`, línea 356) y los escribe en el panel de mensajes con `ServicioIrA.anotar` (`Service/ServicioIrA.py:28-29`:
+`contexto.mensajes.agregar(...)`, con el reloj del momento). Lo único que `ServicioIrA` escribe en la bitácora es el comentario `# ir a <sala>`
+(`Service/ServicioIrA.py:49`) y las acciones `mover` de cada paso. Por eso `--replay` no repite esos mensajes: el estado que reproduce
+(reloj, sala, jugador, mapa) es el mismo, porque depende solo de las acciones (`test_el_log_trae_el_comentario_y_se_reproduce_igual`,
+`test_h7_8_a36_fr261_sc253_replay_da_la_misma_partida_y_el_mismo_mapa`), pero el panel de mensajes de un replay no dice por qué se detuvo
+un viaje.
 
 ### Comando `mapa` de la 002 (interfaz)
 
