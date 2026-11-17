@@ -18,6 +18,7 @@ if RAIZ not in sys.path:
 import Service.ServicioIrA as modulo_servicio  # noqa: E402
 from DTO.AccionDTO import AccionDTO  # noqa: E402
 from DTO.Direcciones import E as ESTE_DIR  # noqa: E402
+from DTO.EstadoJuegoDTO import SIN_EXPLORAR  # noqa: E402
 from DTO.ObjetoDTO import ObjetoDTO  # noqa: E402
 from DTO.ViajeDTO import (AMBIGUO, DANO, DESTINO_INVALIDO, ENEMIGOS, INTERRUMPIDO, LLEGO, PASO_RECHAZADO,  # noqa: E402
                           SIN_RUTA, TERMINADA, YA_AQUI)
@@ -430,7 +431,7 @@ class PruebasControlador(unittest.TestCase):
 
     def test_h6_1_apendiceB_caso1_fr251_fr260_controlador_mismo_mensaje(self):
         estado = self.backend.estado()
-        self.assertEqual(estado.sala.salidas[ESTE_DIR].sala_destino, 2)       # «Sala 2» está avistada
+        self.assertEqual(estado.sala.salidas[ESTE_DIR].sala_destino, SIN_EXPLORAR)    # «Sala 2» solo está avistada
         mensajes = []
         for nombre in ("Sala 2", "Sala 20", "Nada de nada"):                    # avistada, desconocida, inexistente
             with self.assertRaises(ErrorOperacion) as contexto:

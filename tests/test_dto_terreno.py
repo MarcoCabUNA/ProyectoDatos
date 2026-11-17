@@ -44,7 +44,8 @@ class TestSalidaDTOTerreno(unittest.TestCase):
         mazmorra = Mazmorra(sala_salida=5, llave_salida="llave_final")
         mazmorra.cargar_esqueleto(esqueleto)
         contexto = SimpleNamespace(esqueleto=SimpleNamespace(obtener_sala=lambda i: esqueleto[i - 1]),
-                                   mazmorra=mazmorra)
+                                   mazmorra=mazmorra,
+                                   motor=SimpleNamespace(mapa=SimpleNamespace(es_explorada=lambda sala: True)))
         sala = ArmadorEstado()._sala_con_estado_actual(contexto, 1)
         self.assertIsNone(esqueleto[0].salidas[O].costo)          # el esqueleto trae lo declarado
         self.assertEqual([sala.salidas[d].costo for d in (N, S, E, O)], [100, 250, 100, 300])

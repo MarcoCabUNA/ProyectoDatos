@@ -22,6 +22,9 @@ la Vista no conoce el buffer.
 resultado: "victoria", "derrota" o el mensaje de una acción rechazada; None si no aplica.
 sala_inicial, sala_salida: ids de la sala de entrada y de la sala de salida de la cripta (CriptaDTO). La Vista los
 compara con sala.id para elegir el fondo de la sala y la puerta final; None si no se conocen.
+    sala_salida es None mientras la sala de salida no esté explorada (feature 002, FR-217).
+SIN_EXPLORAR: valor de SalidaDTO.sala_destino en las salidas de `sala` hacia una sala que el jugador no ha explorado
+(feature 002, FR-204, FR-217): nunca coincide con el id de una sala ni con sala_salida.
 """
 from dataclasses import dataclass
 
@@ -30,6 +33,8 @@ from DTO.EfectoDTO import EfectoDTO
 from DTO.InventarioDTO import InventarioDTO
 from DTO.ObjetoDTO import ObjetoDTO
 from DTO.SalaDTO import SalaDTO
+
+SIN_EXPLORAR = -1
 
 
 @dataclass(frozen=True)

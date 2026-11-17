@@ -16,7 +16,7 @@ El resultado de la acción es:
 """
 from dataclasses import replace
 
-from DTO.EstadoJuegoDTO import EstadoJuegoDTO
+from DTO.EstadoJuegoDTO import SIN_EXPLORAR, EstadoJuegoDTO
 from DTO.InventarioDTO import InventarioDTO
 
 
@@ -39,7 +39,7 @@ class ArmadorEstado:
             terminado=motor.terminado,
             resultado=self._resultado(motor, resultado),
             sala_inicial=contexto.cripta.sala_inicial,
-            sala_salida=contexto.cripta.sala_salida,
+            sala_salida=self._sala_salida_conocida(contexto),
         )
 
     def armar_inventario(self, contexto, criterio: str | None) -> InventarioDTO:
@@ -63,6 +63,13 @@ class ArmadorEstado:
 
     # ---- interno ----
 
+    @staticmethod
+    def _sala_salida_conocida(contexto):
+        sala_salida = contexto.cripta.sala_salida
+        if sala_salida is not None and not contexto.motor.mapa.es_explorada(sala_salida):
+            return None
+        return sala_salida
+
     def _sala_con_estado_actual(self, contexto, id_sala):
         base = contexto.esqueleto.obtener_sala(id_sala)
         viva = contexto.mazmorra.sala(id_sala)
@@ -72,6 +79,8 @@ class ArmadorEstado:
                 # el esqueleto trae el costo DECLARADO (puede ser None en un lado); la vista muestra el igualado (FR-116)
                 salidas[direccion] = replace(salidas[direccion], cerrada=viva.salidas[direccion].cerrada,
                                              costo=viva.salidas[direccion].costo)
+                if not contexto.motor.mapa.es_explorada(salidas[direccion].sala_destino):
+                    salidas[direccion] = replace(salidas[direccion], sala_destino=SIN_EXPLORAR)   # H-2, FR-217
         # enemigos y trampas quedan VACÍOS a propósito: el SalaDTO del esqueleto puede traer el contenido INICIAL
         # (ratas con toda su vida, trampas armadas...), que ya no es cierto. Los enemigos vivos van aparte, en
         # EstadoJuegoDTO.enemigos, y las trampas no se muestran.
