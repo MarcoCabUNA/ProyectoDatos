@@ -3383,6 +3383,11 @@ Mensajes de commit: "feat(002): H-2 sala_destino enmascarada hasta explorar (T11
 **Uso de la respuesta:** se usó la respuesta para implementar H-2 (enmascarar sala_destino hasta explorar), cambiar el resumen a motor.mapa.a_dto() y limpiar comentarios viejos (T115–T118).
 Feature 003, T054 de specs/003-resolubilidad/tasks.md. Sin commit. El integrante 3 ya puso forzar=True en tests/ayudas_controladores.py:24 y tests/test_controlador_pygame.py:181 (ya está en esta rama).
 
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
 Estado de la carpeta: hay cambios SIN commit del paquete de la Parte II (paquete/, tests/Utilidades.py, tests/TestAlmacenCatalogo.py, DECISIONES.md, ejemplos/partida_ejemplo.log y specs/003-resolubilidad/paquete-2026-11-15.md). No los toques. Con ese paquete falla solo el script test_vista_hud.py (del integrante 3, lo arregla ella): no lo toques.
 
 1. El parche está en "D:\2 ciclo 2026\Estructura de datos\parches\controlador_T049_T054.diff". Incluye T049 (verificar), que YA está aplicado: NO lo apliques entero. De ahí tomá SOLO lo de T054 en UIController/ControladorBackend.py: los tres atributos al final de __init__, el cambio de iniciar (pasa a self._iniciar_verificando(id_cripta, nombre)) y los métodos resolubilidad() e _iniciar_verificando() al final de la clase. Nada más del archivo cambia.
@@ -3396,3 +3401,47 @@ Al final: el diff de los tres archivos, el resultado de la suite y el del punto 
 **Uso de la respuesta:** T054 de la 003, cuando el integrante 3 puso `forzar=True` en sus configuraciones offline de `cripta-01`. Del parche que había guardado el 15/11 se aplicó solo la parte de T054 en `UIController/ControladorBackend.py` (archivo del integrante 3, cambio acordado con ella el 14/11 y revisado por ella): `iniciar` pasa por `ServicioResolubilidad.iniciar_partida_nueva` con `config.forzar`, y `resolubilidad()` devuelve el reporte de la partida nueva o el del último iniciar que no se hizo (FR-311 a FR-313). Se quitó la guarda de las 4 pruebas de T053, que ahora corren y pasan. Suite: 984 pruebas OK (3 skip), 31 de 32 scripts (solo `test_vista_hud.py`, por el paquete nuevo todavía sin commit). Con el paquete local: `cripta-02` inicia; `cripta-05` no inicia sin `--forzar` (no resoluble) y con `--forzar` inicia con la advertencia; `cripta-01` no inicia (no concluyó, falta `llaves.json`). Revisé el diff antes del commit.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Tres cosas, en orden. Si algo falla o hay conflictos fuera de PROMPTS_LLM.md, DETENTE y muéstrame el error; no resuelvas conflictos de código por tu cuenta.
+
+A) Merges:
+1. git status. Verifica que paquete/catalogo.json aparece modificado: es el catálogo nuevo de Derek, solo para probar. NO lo agregues a ningún commit (nunca uses git add -A mientras esté modificado; agrega archivos por nombre).
+2. git fetch origin. Muéstrame git log --oneline HEAD..origin/derek y HEAD..origin/Marco.
+3. git merge origin/derek -m "merge: trae origin/derek (T054 resolubilidad en iniciar, bench de la 003, trazabilidad)". Si ya está integrada, sigue. Haz lo mismo con origin/Marco (-m "merge: trae origin/Marco").
+Si el merge se queja por el catalogo.json modificado, guárdalo aparte (cópialo fuera del repo), restaura con git checkout -- paquete/catalogo.json, haz el merge y vuelve a copiarlo.
+4. Corre la suite completa (PYTHONIOENCODING=utf-8 python tests/correr_pruebas.py) CON el catálogo nuevo y dime cuántas pasan y cuáles fallan. Debe fallar probar_todos_los_mensajes_reales_del_motor_caben_en_el_ancho_util_del_panel_de_mensajes. Si falla algo más (por ejemplo pruebas con offline=True sin forzar tras T054), dime cuáles y por qué, y arréglalas poniendo forzar=True SOLO si son pruebas de controlador o vista, no de resolubilidad.
+
+B) Arreglo del HUD:
+La prueba lee los nombres de enemigos del paquete/catalogo.json nuevo y elige el tamaño con MENSAJES_PARA_MEDIR (View/Componentes.py). Agrega a MENSAJES_PARA_MEDIR el mensaje peor del enemigo con el nombre más largo del catálogo nuevo ("Espectro acechador": ataque, daño del jugador, veneno) y cualquier otro nombre del catálogo nuevo que sea más ancho que los actuales; calcula cuál es con la fuente real, no a ojo. Actualiza el comentario de arriba de la tupla. La Vista no debe recortar mensajes reales: el recorte con "..." queda como protección. Verifica que probar_todos_los_mensajes_reales... pasa con el catálogo nuevo Y con el viejo (restaura el viejo con git checkout -- paquete/catalogo.json y vuelve a correr test_vista_hud.py). Agrega una línea en DECISIONES.md, en mi §5.5, diciendo que el tamaño de letra se mide con los nombres del catálogo de la Parte II.
+Commit: "fix(004): el tamaño de letra del HUD se mide con los nombres del catálogo nuevo (Espectro acechador)". Agrega los archivos por nombre.
+
+C) Al final:
+1. Deja paquete/catalogo.json como estaba en git (git checkout -- paquete/catalogo.json) y verifica con git status que no queda nada modificado salvo PROMPTS_LLM.md y verificar_prompts.py.
+2. Corre la suite completa con el catálogo viejo y dame el resultado.
+3. NO hagas push.
+
+**Uso de la respuesta:** se usó la respuesta para revisar los reportes de Derek y Marco (T054, paquete nuevo, falla del HUD con «Espectro acechador») y para fusionar sus ramas y arreglar el tamaño de letra del HUD con los nombres del catálogo nuevo.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Implementa el comando de ver el mapa y su dibujo, que tasks.md de specs/002-niebla-ir-a asigna a mi parte (T006, T045, T048; FR-219 y FR-220). Antes de escribir código, lee esas tareas, esos FR y el contrato de MapaConocido.a_dto() (MapaConocidoDTO, que es frozen), y dime en 5 líneas qué vas a hacer. No cambies nada de Derek (MapaConocido, GrafoMapaConocido).
+
+Requisitos:
+- El comando se escribe en la línea de comandos que ya existe (ControlesJuego.procesar_comando) con el nombre que fije la spec. Muestra el mapa conocido: salas exploradas, avistadas, conexiones recordadas y la sala actual. Lee solo motor.mapa.a_dto(); no accede a Data.
+- NO consume tiempo, NO cambia el estado del motor y NO se registra en partida.log ni en la línea de tiempo (FR-220). Esto debe verificarse con una prueba: el reloj, las acciones y el contenido de partida.log son idénticos antes y después.
+- Respeta la niebla: no muestra el id de salas no exploradas (usa lo que ya hace ArmadorEstado con SIN_EXPLORAR).
+- El dibujo va en la View siguiendo la arquitectura MVC de n capas: la vista solo recibe un DTO (agrega a PantallaDTO el campo mínimo, con valor por defecto y al final) y dibuja. Sin lógica de negocio en la vista. Se cierra con Esc o con el mismo comando, sin pausar el juego ni cambiar el estado.
+- KISS y YAGNI: sin zoom, sin desplazamiento, sin animaciones. Si el mapa conocido es grande (hasta 300 salas), que el dibujo siga cabiendo con un tamaño de celda mínimo o un recorte claro; dime qué elegiste.
+- Pruebas: comando válido y abrir/cerrar el panel; que no registre en el log ni gaste tiempo (con mutación: si se registra, la prueba debe fallar); que no revele ids no explorados; que el DTO del mapa conocido llegue a la vista. Prueba de la vista con superficie sin ventana, como las demás.
+- Sin docstrings en código de P1. Solo estructuras de datos y librerías permitidas. Un commit por grupo lógico, con "feat(002): ..." y marca en tasks.md solo las tareas cuyas pruebas pasen.
+
+Al final corre la suite completa (con el catálogo viejo) y dime resultados y decisiones.
+
+**Uso de la respuesta:** se usó la respuesta para implementar el comando de ver el mapa conocido y su dibujo (FR-219/220), sin tiempo y fuera de partida.log
+
