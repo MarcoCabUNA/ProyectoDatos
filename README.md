@@ -67,9 +67,14 @@ se escribe como `uv run python main.py ...`.
 | Reproduce la partida solo hasta el instante `T` (entero mayor o igual a 0) y muestra el resumen del estado en ese instante, sin abrir la ventana. Solo se acepta junto con `--replay`. | `.venv\Scripts\python.exe main.py --replay logs/partida_001.log --hasta 300 --offline` | `.venv/bin/python main.py --replay logs/partida_001.log --hasta 300 --offline` |
 | Cambia cada cuántas acciones del jugador la línea de tiempo toma un punto de control (entero mayor o igual a 1; por defecto 20). Se puede combinar con los demás modos. | `.venv\Scripts\python.exe main.py --checkpoint-cada 50` | `.venv/bin/python main.py --checkpoint-cada 50` |
 | Corre las mediciones de rendimiento con cargas sintéticas, sin abrir la ventana, y muestra una tabla por subsistema. | `.venv\Scripts\python.exe main.py --bench` | `.venv/bin/python main.py --bench` |
+| Dice si la cripta se puede terminar (si se pueden conseguir las llaves en algún orden hasta llegar a la salida), sin abrir la ventana ni iniciar una partida, y sale. Con `--offline` la lee de `paquete/`. | `.venv\Scripts\python.exe main.py --verificar cripta-02 --offline` | `.venv/bin/python main.py --verificar cripta-02 --offline` |
+| Inicia una partida nueva aunque la cripta no sea resoluble o su verificación no haya concluido, mostrando el reporte como advertencia. | `.venv\Scripts\python.exe main.py --forzar` | `.venv/bin/python main.py --forzar` |
 | Muestra las opciones. | `.venv\Scripts\python.exe main.py --ayuda` | `.venv/bin/python main.py --ayuda` |
 
 `--replay` y `--bench` no se pueden usar juntos. Con uv, cada comando se escribe `uv run python main.py ...`.
+
+`--verificar` tampoco se combina con `--replay` ni con `--bench`. `--forzar` se acepta con cualquier opción, pero solo
+lo usa una partida nueva (ver «Modo `--verificar` y `--forzar`»).
 
 **Sobre `--replay`:** `logs/` está vacía en una copia nueva del repositorio (se llena al jugar). Para probarlo sin jugar
 antes, el repositorio incluye una partida de muestra hecha con el paquete local:
@@ -159,9 +164,9 @@ vea cómo cambias de sala. Cada paso es un movimiento normal: gasta su tiempo, d
 
 ### Modo `--offline`
 
-Lee las criptas desde la carpeta `paquete/`, que viene en el repositorio con las cuatro publicadas al 18 de octubre
-(`cripta-01` a `cripta-04`, de 6 a 50 salas). Las lecturas locales no cuentan como solicitudes de red, así que el
-reporte final muestra 0 solicitudes.
+Lee las criptas desde la carpeta `paquete/`, que viene en el repositorio con `cripta-02` a `cripta-06` (publicadas el
+15 de noviembre, de 20 a 300 salas) y con `cripta-01` (6 salas), que ya no está publicada y no trae `llaves.json`. Las
+lecturas locales no cuentan como solicitudes de red, así que el reporte final muestra 0 solicitudes.
 
 Para agregar o actualizar una cripta en el paquete (esto sí usa la red; el catálogo se comparte entre criptas y se
 completa con las fichas nuevas):
@@ -192,6 +197,29 @@ completa. Códigos de salida de `--replay ... --hasta`:
 
 Al cargar una partida guardada, la bitácora continúa en un archivo nuevo que incluye las acciones anteriores,
 así que ese log también se puede reproducir completo.
+
+### Modo `--verificar` y `--forzar`
+
+`--verificar <cripta>` revisa, sin abrir la ventana ni iniciar una partida, si se pueden conseguir todas las llaves en
+algún orden hasta llegar a la salida. Sin `--offline`, pide la cripta y sus llaves al servicio web (cuenta como
+solicitudes de red); con `--offline`, las lee de `paquete/`. El reporte va a la salida estándar: si es resoluble, el
+orden en que se obtienen las llaves; si no, el motivo, las llaves que no se pueden obtener, las puertas que quedan
+bloqueadas y los ciclos de llaves. Códigos de salida:
+
+| Código | Cuándo |
+|---|---|
+| 0 | La cripta es resoluble. |
+| 3 | La cripta no es resoluble. |
+| 1 | La verificación no concluyó: no se pudo obtener la cripta o sus llaves, o los datos tienen un error. El mensaje dice por qué. |
+| 2 | Error en las opciones: `--verificar` sin el id de la cripta, o junto con `--replay` o `--bench`. |
+
+Con `--offline`, `--verificar cripta-01` termina con código 1 porque el paquete no trae su `llaves.json` (la cripta ya
+no está publicada en el servicio web).
+
+Al iniciar una partida nueva, el juego hace la misma verificación: si la cripta no es resoluble o la verificación no
+concluyó, la partida no se inicia y se muestra el reporte. Con `--forzar` la partida se inicia igual y el reporte se
+muestra como advertencia. `--forzar` no permite jugar una cripta cuyo esqueleto tiene un error de datos, y no tiene
+efecto con `--verificar`, `--replay` ni `--bench`, ni al cargar una partida guardada.
 
 ## Terreno y cazador (001, integrante 1)
 
@@ -240,6 +268,7 @@ y qué campo, y el programa no se cae.
 | Ficha de cazador sin `rango` o con `rango` que no es entero ≥ 0 (o un objeto con `duracion` que no es entero ≥ 1, incluidos un no entero y un `bool`, o un enemigo cuya `suelta` quedó rechazada) | La ficha se rechaza y no se vuelve a pedir. Si está en la sala inicial, la partida no inicia; en otra sala, esa sala queda como contenido no disponible y entrar se rechaza con el mensaje, sin gastar tiempo ni escribir en la bitácora. |
 
 Ejemplo: `Datos inválidos en 'esqueleto de cripta-02': la salida E de la sala 2 declara costo 0: debe ser un entero >= 1`.
+
 
 ## Archivos que genera el programa
 
