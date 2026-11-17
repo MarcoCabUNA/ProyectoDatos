@@ -3634,3 +3634,27 @@ Tres arreglos que encontró Derek en la ventana, cada uno en su commit. Sin toca
 Corre la suite completa (con el paquete nuevo si ya hiciste el merge) y dime resultados y qué decidiste en el punto 1.
 
 **Uso de la respuesta:** se usó la respuesta para hacer que el panel de historia dibuje el mapa conocido del resumen (FR-223), corregir el singular del título del mapa y distinguir en el panel de resolubilidad la partida que no inicia de la advertencia con --forzar.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Sí, haz lo pendiente. Tres grupos, en este orden, cada uno con sus commits. No corras nada más mientras corre --bench (distorsiona los tiempos) y no uses un timeout menor a 300 s; lánzalo en segundo plano y espera su resultado.
+
+1) Banco de «ir a» con cripta-06 real (T122): corre `python main.py --bench`. Toma las filas V1, V2 y V3 de cripta-06 del paquete (300 salas) y reemplaza en specs/002-niebla-ir-a/bench-viaje-2026-11-17.txt la fila "cripta-06 del paquete (no medida)", conservando la medición sintética. Evalúa NFR-250 (< 5 ms) y SC-252 con los números medidos; si no cumple, NO lo maquilles y dímelo. Commit: "docs(002): medición de ir a con cripta-06 real del paquete".
+
+2) Prueba de humo SIN cambiar código: con el controlador y la vista reales sin ventana, inicia cripta-06, cripta-02 y cripta-03 (con --offline --forzar), escribe "mapa" y un "ir a" a una sala conocida de cada una. En cripta-03 prueba también un "ir a" que cruce la puerta de hierro cerrada (debe parar con «sin ruta conocida» o rodear). Dime qué viste; no cambies nada.
+
+3) Quickstart de la 004 (T068) y FR-223:
+   a. En main.py (reproducir_hasta), agrega al resumen impreso de --replay … --hasta UNA línea del mapa conocido (por ejemplo «Mapa conocido: N salas exploradas») usando resumen.mapa_conocido; si es None no imprime nada. Prueba en tests/test_main_hasta.py y comprueba que ninguna prueba que compara la salida exacta se rompe. Commit de código: "feat(004): --hasta imprime una línea del mapa conocido (FR-223)".
+   b. En commit APARTE (spec), actualiza specs/004-linea-tiempo/quickstart.md: donde dice que el panel de historia y la salida de --hasta no dibujan el mapa, corrígelo (el panel de historia dibuja el mapa de ese instante en el panel central; --hasta imprime una línea). Agrega a la sección 7 un paso manual: abrir "historia #k" temprano y ver que el mapa tiene MENOS salas que el mapa actual (comparar con el comando "mapa"). NO marques T068. Commit: "spec(004): quickstart al día con el mapa en historia y --hasta (T068)".
+
+Al final corre la suite completa, dime el recuento de unittest y scripts, y el git status. No hagas push.
+
+se usó la respuesta para revisar los reportes de los Prompts 29 a 32, y para completar el banco de «ir a» con cripta-06, la prueba de humo, la línea del mapa en --hasta y el quickstart de la 004.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
