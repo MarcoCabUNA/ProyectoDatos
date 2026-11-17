@@ -3346,3 +3346,23 @@ Un commit por grupo lógico, con mensaje: "feat(002): ViajeAutomatico y ViajeDTO
 **Uso de la respuesta:** se usó la respuesta para implementar la lógica pura de «ir a» (ViajeAutomatico, ViajeDTO y sus pruebas).
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Feature 003, T054 de specs/003-resolubilidad/tasks.md. Sin commit. El integrante 3 ya puso forzar=True en tests/ayudas_controladores.py:24 y tests/test_controlador_pygame.py:181 (ya está en esta rama).
+
+Estado de la carpeta: hay cambios SIN commit del paquete de la Parte II (paquete/, tests/Utilidades.py, tests/TestAlmacenCatalogo.py, DECISIONES.md, ejemplos/partida_ejemplo.log y specs/003-resolubilidad/paquete-2026-11-15.md). No los toques. Con ese paquete falla solo el script test_vista_hud.py (del integrante 3, lo arregla ella): no lo toques.
+
+1. El parche está en "D:\2 ciclo 2026\Estructura de datos\parches\controlador_T049_T054.diff". Incluye T049 (verificar), que YA está aplicado: NO lo apliques entero. De ahí tomá SOLO lo de T054 en UIController/ControladorBackend.py: los tres atributos al final de __init__, el cambio de iniciar (pasa a self._iniciar_verificando(id_cripta, nombre)) y los métodos resolubilidad() e _iniciar_verificando() al final de la clase. Nada más del archivo cambia.
+2. tests/test_resolubilidad_cli.py: quitá la guarda de PruebasControlador.setUp (el if not hasattr(ControladorBackend, "resolubilidad"): self.skipTest(...)). Las pruebas no cambian.
+3. specs/003-resolubilidad/tasks.md: marcá [x] T054 y reemplazá su nota «Pendiente (15/11): …» por «Hecho (16/11): el integrante 3 puso forzar=True en sus configuraciones offline de cripta-01 (tests/ayudas_controladores.py:24 y tests/test_controlador_pygame.py:181); las pruebas de T053 ya no tienen guarda.»
+4. Corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8). Se espera: 984 pruebas con 3 skips (las 4 de T053 ahora corren y pasan) y 31 de 32 scripts (solo test_vista_hud.py). Si falla cualquier otra cosa, PARÁ y decime qué prueba y por qué, sin cambiar pruebas de otros integrantes ni agregar atajos que se salten la verificación.
+5. Sin abrir ventana, decime qué hace hoy ControladorBackend.iniciar con el paquete local: cripta-02 sin --forzar (debe iniciar), cripta-05 sin --forzar (no inicia: ErrorOperacion con el reporte NO_RESOLUBLE), cripta-05 con --forzar (inicia con la advertencia en resolubilidad()) y cripta-01 sin --forzar (no inicia: no concluyó). Usá un script temporal fuera de tests/ y borralo después.
+
+Al final: el diff de los tres archivos, el resultado de la suite y el del punto 5. No hagas commit.
+
+**Uso de la respuesta:** T054 de la 003, cuando el integrante 3 puso `forzar=True` en sus configuraciones offline de `cripta-01`. Del parche que había guardado el 15/11 se aplicó solo la parte de T054 en `UIController/ControladorBackend.py` (archivo del integrante 3, cambio acordado con ella el 14/11 y revisado por ella): `iniciar` pasa por `ServicioResolubilidad.iniciar_partida_nueva` con `config.forzar`, y `resolubilidad()` devuelve el reporte de la partida nueva o el del último iniciar que no se hizo (FR-311 a FR-313). Se quitó la guarda de las 4 pruebas de T053, que ahora corren y pasan. Suite: 984 pruebas OK (3 skip), 31 de 32 scripts (solo `test_vista_hud.py`, por el paquete nuevo todavía sin commit). Con el paquete local: `cripta-02` inicia; `cripta-05` no inicia sin `--forzar` (no resoluble) y con `--forzar` inicia con la advertencia; `cripta-01` no inicia (no concluyó, falta `llaves.json`). Revisé el diff antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
