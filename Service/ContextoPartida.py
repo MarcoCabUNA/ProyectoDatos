@@ -12,7 +12,9 @@ Solo agrupa referencias; no tiene lógica. No es un DTO: guarda objetos vivos de
     bitacora                            BitacoraReplayIO de esta partida, o None (por ejemplo al reproducir un replay)
     criterio_vista                      criterio de la vista del inventario: None (orden real), "peso", "valor" o "nombre"
     linea                               LineaTiempo de la partida (feature 004), o None si no se lleva (p. ej. en las pruebas
-                                        que arman el contexto a mano). Siempre es el ÚLTIMO campo y tiene valor por defecto.
+                                        que arman el contexto a mano). Tiene valor por defecto.
+    resolubilidad                       ReporteResolubilidadDTO de la verificación al iniciar una partida nueva (feature 003), o None.
+                                        Es el ÚLTIMO campo y tiene valor por defecto.
 """
 from dataclasses import dataclass
 
