@@ -92,6 +92,32 @@ class PruebasMainHasta(unittest.TestCase):
             self.assertEqual(codigo, 1)
             self.assertIn("100000", texto)
 
+    def test_fr223_hasta_imprime_una_linea_del_mapa_conocido_de_ese_instante(self):
+        with en_carpeta_temporal() as carpeta:
+            ruta, estados = replay_ayudas._jugar(os.path.join(carpeta, "origen"), 3, pasos=40)
+            _, al_inicio = correr_main(["--offline", "--replay", ruta, "--hasta", "0"])
+            _, al_final = correr_main(["--offline", "--replay", ruta, "--hasta", str(estados[-1].reloj)])
+        self.assertEqual([l for l in al_inicio.splitlines() if l.startswith("Mapa conocido")],
+                         ["Mapa conocido: 1 sala explorada"])
+        lineas = [l for l in al_final.splitlines() if l.startswith("Mapa conocido")]
+        self.assertEqual(len(lineas), 1, al_final)
+        self.assertRegex(lineas[0], r"^Mapa conocido: \d+ salas? explorad[ao]s?$")
+        self.assertGreater(int(lineas[0].split()[2]), 1)                          # al final sabe más que al inicio
+
+    def test_fr223_sin_mapa_conocido_no_imprime_la_linea_ni_falla(self):
+        from dataclasses import replace
+        from unittest import mock
+        from UIController.ControladorBackend import ControladorBackend
+        with en_carpeta_temporal() as carpeta:
+            ruta, _ = replay_ayudas._jugar(os.path.join(carpeta, "origen"), 3, pasos=10)
+            original = ControladorBackend.reproducir_hasta
+            with mock.patch.object(ControladorBackend, "reproducir_hasta",
+                                   lambda self, r, t: replace(original(self, r, t), mapa_conocido=None)):
+                codigo, texto = correr_main(["--offline", "--replay", ruta, "--hasta", "0"])
+        self.assertEqual(codigo, 0, texto)
+        self.assertNotIn("Mapa conocido", texto)
+        self.assertIn("Enemigos en la sala", texto)
+
 
 if __name__ == "__main__":
     unittest.main()
