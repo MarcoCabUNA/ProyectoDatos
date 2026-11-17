@@ -3532,3 +3532,22 @@ Corre la suite completa (catálogo viejo) y dime resultados y lo que decidiste.
 **Uso de la respuesta:** se usó la respuesta para comprobar que «ir a» se puede escribir y ver en el juego de punta a punta (línea de comandos, controlador, DTO y vista).
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Cierra la documentación de mi parte. Lee primero las tareas T123–T127 de specs/002-niebla-ir-a/tasks.md y T066 de specs/004-linea-tiempo/tasks.md. Cada grupo va en su propio commit. NO marques T110A (falta el visto bueno de Marco). No toques archivos de Derek salvo donde una tarea lo pida.
+
+1) T123: DECISIONES.md, mi sección de la 002. Escribe solo lo que existe en el código y las pruebas, sin inventar. Cubre: ViajeAutomatico/ServicioIrA/ViajeDTO; dar_paso(contexto, viaje) con acciones_esperadas (así se detecta el pergamino); grafo armado una vez por viaje y de nuevo tras cargar; contador danio_recibido (antes/después del cambio a ActorBase, la prueba con Regeneración real y la mutación); H-2 opción A (SIN_EXPLORAR = -1, sala_salida None hasta explorar); comando "mapa" (nombre elegido por mí, no gasta tiempo, fuera de partida.log, no disponible con la partida terminada); ritmo de 350 ms y corte con cualquier tecla o clic, y Esc sin pausa (SUPUESTOS míos, la spec no los fija); rechazos como aviso y motivos de parada en el panel de mensajes; destino inexistente y avistado dan el mismo mensaje; resultados del banco (300 salas sintéticas, 1.0 ms contra 5 ms, y que cripta-06 se mide sola cuando esté en el paquete; la tabla está en specs/002-niebla-ir-a/bench-viaje-2026-11-17.txt, máquina distinta a la de Derek). Commit: "docs: DECISIONES de la 002 (ir a, mapa, H-2, banco)".
+
+2) T125: comprueba con grep, en mis archivos de 002 y 004 (Logic/ViajeAutomatico, Service/ServicioIrA, DTO/ViajeDTO, View/MapaJuego, BenchViaje, y los de la línea de tiempo), que se cumple la constitución v1.2.0: sin dict, set, sorted, list.sort, heapq, colecciones ni librerías no permitidas, sin imports de Data en Logic ni de pygame fuera de View/UIController, sin docstrings nuevos en código de P1. Muéstrame el comando y el resultado. Si algo no cumple, dime el archivo y la línea y propón el arreglo mínimo; no lo cambies sin decírmelo.
+
+3) T126 y T127 (lee qué piden y hazlas si son de mi parte). T127 es registrar los prompts en PROMPTS_LLM.md: NO lo toques, lo hago yo a mano.
+
+4) T124 (mi mitad) y T066: la trazabilidad (requisito -> prueba que lo cubre) de la 002 y de la 004 en el formato que ya usa el Apéndice B de la 003 de Derek (mira su archivo y copia su formato). Usa los nombres reales de las pruebas, verificando con grep que existen. Para la 002 llena solo mis filas y deja las de Derek como están. Commits separados: "spec(002): trazabilidad de ir a, mapa y H-2" y "spec(004): trazabilidad de la línea de tiempo (T066)".
+
+5) README.md: agrega UNA sección mía (no toques la de Derek de --verificar y --forzar) con: historia (comando y --hasta), checkpoint-cada, ir a (cómo escribirlo, cuándo para, cómo se corta), mapa, y las teclas Enter y Esc de la línea de comandos. Corto y con ejemplos. Commit: "docs: README, sección de línea de tiempo, ir a y mapa".
+
+Al final corre la suite completa (catálogo viejo) y dime resultados, lo que no cumplió T125 si hubo algo, y qué tareas marcaste.
+
+**Uso de la respuesta:** se usó la respuesta para cerrar DECISIONES de la 002, verificar las restricciones de la constitución (T125), escribir la trazabilidad de la 002 y la 004 y agregar mi sección del README.
