@@ -114,11 +114,7 @@ class ServicioBench:
         return [ResultadoBenchDTO(BenchResolubilidad.SUBSISTEMA, _CASO_PAQUETE, len(salas), mejor, mediana, nota)]
 
     def medir_viaje_en_la_cripta_de_referencia(self, repeticiones: int = 9) -> list[ResultadoBenchDTO]:
-        """
-        SC-252: el paso de «ir a» (V1 a V3 de BenchViaje) con el mapa conocido completo de cripta-06 del paquete, leída
-        sin red; desde su sala inicial hacia su sala de salida. Si el paquete no la trae, una fila sin tiempos que lo
-        dice y remite a la cuadrícula sintética de 300 salas de BenchViaje.medir.
-        """
+        # SC-252: V1 a V3 de BenchViaje con el mapa conocido completo de cripta-06 del paquete (sin red), de su sala inicial a su salida; si no la trae, una fila sin tiempos que lo dice
         try:
             fuente = FuenteOffline(self._carpeta_paquete)
             cripta = fuente.obtener_datos_generales(BenchViaje.CRIPTA_REFERENCIA)

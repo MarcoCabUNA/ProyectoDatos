@@ -318,16 +318,12 @@ class ControladorBackend:
 
     # ================================================================== feature 002 (mapa conocido)
     def ver_mapa(self) -> MapaConocidoDTO:
-        """El comando `mapa` (feature 002, FR-219, FR-220): el mapa conocido de la partida en curso. Solo lee
-        `motor.mapa.a_dto()`: no consume tiempo, no es una acción, no se anexa a partida.log ni a la línea de tiempo,
-        no toca el historial y no descarta un viaje en curso."""
+        # comando `mapa` (feature 002, FR-219, FR-220): solo lee motor.mapa.a_dto(); no consume tiempo, no es una acción, no se anota en el log ni toca el historial
         return self._activa().motor.mapa.a_dto()
 
     # ================================================================== feature 002 («ir a»)
     def ir_a(self, nombre: str) -> ViajeDTO:
-        """`ir a <sala>` (feature 002, FR-250 a FR-252): empieza un viaje hacia una sala ya explorada y devuelve el
-        ViajeDTO vigente; no da ningún paso ni consume tiempo. Solo valida la FORMA del texto; si la sala no se puede
-        elegir (no explorada, ambigua o la actual), sale como ErrorOperacion y la partida no se toca."""
+        # `ir a <sala>` (feature 002, FR-250 a FR-252): empieza el viaje y no da ningún paso; solo valida la forma del texto y un destino no válido sale como ErrorOperacion
         contexto = self._activa()
         if not isinstance(nombre, str) or nombre.strip() == "" or "\n" in nombre or "\r" in nombre:
             raise ErrorOperacion("Falta indicar a qué sala ir.")
@@ -339,8 +335,7 @@ class ControladorBackend:
         return inicio.viaje
 
     def dar_paso_viaje(self) -> PasoViajeDTO:
-        """Da un paso del viaje vigente (un `mover` ordinario) o devuelve el motivo de la parada. Sin viaje vigente
-        (otra orden, un pergamino, una partida nueva) no continúa nada: INTERRUMPIDO con el estado actual."""
+        # un paso del viaje vigente (un `mover` ordinario) o el motivo de la parada; sin viaje vigente no continúa nada: INTERRUMPIDO
         contexto = self._activa()
         if self._viaje is None:
             return PasoViajeDTO(None, [INTERRUMPIDO], self._llamar(self._partida.estado, contexto))

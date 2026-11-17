@@ -98,7 +98,8 @@ _AYUDA_PUNTAJES = ("Izquierda / Derecha: cambiar el orden", "Enter o clic: acept
 class ControladorPygame:
 
     def __init__(self, vista, config: ConfiguracionDTO, fabrica_backend=ControladorBackend, fabrica_controles=ControlesJuego,
-                 demora_fin_ms: int = 0, reloj_ms=None, paso_viaje_ms: int = PASO_VIAJE_MS):
+                 demora_fin_ms: int = 0, reloj_ms=None,
+                 paso_viaje_ms: int = PASO_VIAJE_MS):   # paso_viaje_ms: espera entre pasos de un viaje de `ir a` (feature 002)
         """
         vista: cualquier objeto con abrir(), dibujar(pantalla), cerrar() y elemento_en(posicion).
         config: lo que dejó LectorArgumentos (offline, cache_size...).
@@ -109,7 +110,6 @@ class ControladorPygame:
         demora_fin_ms: al terminar la partida, cuánto tiempo más se sigue mostrando la pantalla de juego (con el estado final)
         antes de pasar a la victoria o la derrota; 0 pasa de inmediato. El puntaje se guarda al terminar, no después.
         reloj_ms: función que devuelve los milisegundos actuales (por omisión pygame.time.get_ticks); mide esa demora.
-        paso_viaje_ms: cuánto se espera entre un paso y el siguiente de un viaje de `ir a` (feature 002), para que se vea.
         """
         self._vista = vista
         self._config = config
