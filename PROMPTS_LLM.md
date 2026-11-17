@@ -3553,3 +3553,20 @@ Al final corre la suite completa (catálogo viejo) y dime resultados, lo que no 
 **Uso de la respuesta:** se usó la respuesta para cerrar DECISIONES de la 002, verificar las restricciones de la constitución (T125), escribir la trazabilidad de la 002 y la 004 y agregar mi sección del README.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Cuatro cambios, cada uno en su commit. Los de spec/docs van separados de los de código (Principio IX).
+
+1) Código (T125, docstrings): pasa a comentarios # de una línea los docstrings nuevos que agregué en archivos de P1: UIController/ControladorBackend.py (ver_mapa, ir_a, dar_paso_viaje), UIController/ControladorPygame.py (la línea de paso_viaje_ms en el docstring de __init__: déjala como comentario junto al parámetro) y Service/ServicioBench.py (medir_viaje_en_la_cripta_de_referencia). NO cambies los docstrings de módulo de Logic/BenchViaje.py ni View/MapaJuego.py. No cambies ninguna lógica. Corre la suite. Commit: "refactor(002): docstrings nuevos de archivos P1 pasan a comentarios (T125)".
+
+2) Plan (Principio III): en specs/002-niebla-ir-a/plan.md agrega a la tabla de cambios al código de la primera entrega las filas de ControladorBackend.py que no están al final de la clase (imports, 2 líneas en __init__, 1 en _ejecutar y 1 en _empezar), con la justificación FR-262 ("cualquier otra orden descarta el viaje"). Ajusta el texto de T125 en tasks.md para que diga que esas líneas son la excepción justificada. Luego marca T125. Commit: "spec(002): filas de ControladorBackend en la tabla del plan y T125 cerrada".
+
+3) Prueba: renombra test_h1_1_apendiceB_caso3_fr409_instante_posterior a un nombre que diga caso1 (busca con grep todas las referencias, incluida la trazabilidad de specs/004-linea-tiempo/spec.md) y comprueba que la prueba sigue pasando. Commit: "test(004): el nombre de la prueba del caso 1 del Apéndice B dice caso1".
+
+4) Quickstart: en specs/002-niebla-ir-a/quickstart.md escribe la sección de «ir a» y «mapa» con pasos que yo pueda seguir a mano en la ventana (python main.py --offline --forzar, con la cripta que corresponda): escribir "ir a <sala>", ver que avanza un paso cada 350 ms y llega; "ir a" con sala inexistente y con la sala actual (aviso rojo, sin gastar tiempo); cortar el viaje con una tecla y con Esc; que pare al entrar a una sala con enemigos y al recibir daño; "mapa" (abrir, cerrar, no gasta tiempo); pergamino a mitad de un viaje; guardar, cargar y ver que el mapa sigue; --replay del log que quedó. Cada paso con lo que debo ver. Usa solo lo que existe en el código; verifica con grep los mensajes exactos. NO marques T126 (la marco yo tras seguirlo). Commit: "spec(002): quickstart con ir a y mapa (T126, pasos manuales)".
+
+Al final corre la suite completa (catálogo viejo) y dime resultados.
+
+**Uso de la respuesta:** se usó la respuesta para pasar a comentarios los docstrings nuevos de P1, justificar en el plan los cambios de ControladorBackend, corregir el nombre de una prueba y escribir los pasos manuales de «ir a» y «mapa» en el quickstart.
