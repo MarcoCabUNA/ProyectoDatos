@@ -357,7 +357,7 @@ que ninguna consulta exige procesar más de K acciones.
 
 | # | Caso del Apéndice B | Escenario | Requisitos | Prueba |
 |---|---|---|---|---|
-| 1 | `historia <t>` con t mayor que el reloj actual: se rechaza | H1-1 | FR-409 | `test_h1_1_apendiceB_caso3_fr409_instante_posterior` (`tests/test_linea_tiempo_consultas.py`), `test_h1_5_fr409_accion_fuera_de_rango` (`tests/test_linea_tiempo_consultas.py`) |
+| 1 | `historia <t>` con t mayor que el reloj actual: se rechaza | H1-1 | FR-409 | `test_h1_1_apendiceB_caso1_fr409_instante_posterior` (`tests/test_linea_tiempo_consultas.py`), `test_h1_5_fr409_accion_fuera_de_rango` (`tests/test_linea_tiempo_consultas.py`) |
 | 2 | `historia` después de usar un pergamino: no muestra las acciones revertidas | H3-1 | FR-404, FR-409, FR-413 | `test_h3_1_apendiceB_caso2_fr413_fr409` (`tests/test_linea_tiempo_pergamino.py`) |
 | 3 | Varios eventos en el mismo instante t: `historia <t>` muestra el estado después de todos ellos | H1-2 | FR-402, FR-405 | `test_h1_2_apendiceB_caso3_fr402` (`tests/test_linea_tiempo_motor.py`) |
 | 4 | `historia` no consume tiempo virtual, no se registra en `partida.log` y no modifica el historial de retroceso | H1-3 | FR-407, FR-408 | `test_h1_3_apendiceB_caso4_fr407_fr408_no_altera_la_partida` (`tests/test_linea_tiempo_consultas.py`) |
