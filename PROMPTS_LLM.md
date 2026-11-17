@@ -3766,9 +3766,6 @@ Al final: el apartado completo tal como quedó, el diff de tasks.md y la lista d
 **Uso de la respuesta:** T064, el apartado «§5.4 Resolubilidad» de `DECISIONES.md`: la revisión de estructuras (R0) y siete decisiones (contrato y persistencia de las llaves; índice por ordenar y compactar; recorrido por oleadas con la frontera agrupada; orden determinista; puerta que bloquea y ciclos sin recursión; dónde vive cada parte, con la interpretación del Principio I sobre `validar_ubicaciones`; nada en el historial), cada una con problema, alternativas, complejidad, evidencia de B1 a B6 y si coincide con el plan; el paquete y los veredictos de T058; los límites conocidos (enlace a la diferencia con el motor del integrante 1, la puerta con cierre automático y llaves distintas por cara) y los hallazgos H-2 y H-3. T057 se ajustó: la nota del paquete va en `DECISIONES.md` en este commit. Revisé el apartado contra el archivo del bench (todos los números coinciden) y los enlaces.
 
 -----------------------------------------------------------------------------------------------------------------------
-
-
------------------------------------------------------------------------------------------------------------------------
 **Fecha:** Martes 17 de noviembre 2026
 
 **Herramienta:** Claude Code
@@ -3822,4 +3819,55 @@ Actualiza specs/004-linea-tiempo/contracts/contrato-linea-tiempo.md §1 y §2. E
 Después revisa que no queden otras frases tipo "falta confirmar" en ese archivo. Commit: "spec(004): contrato con el orden acordado de mapa y linea (§1) y de la cabecera v2 (§2)". Dime qué cambió.
 
 **Uso de la respuesta:** se usó la respuesta para dejar el contrato de la 004 con el orden acordado de mapa y linea y la cabecera v2, y así cerrar T007 de Derek.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 y domingo 15 de noviembre 2026
+
+**Herramienta:** Claude
+
+Durante esos días le pedí a Claude que revisara cada respuesta de Claude Code (txt, zip y salida de las pruebas) y las capturas de PyCharm antes de cada commit y push, que armara los prompts de Claude Code y las entradas de esta bitácora, y que redactara los mensajes para Marco y Kristel. Prompts principales, textuales:
+- «ok ahi adonde?» y «asi el push?», con capturas del Log y de la ventana de push.
+- «ok antes de eso mira lo que me acaba de mandar…», con los mensajes de Kristel sobre `motor.mapa` y `mapa_conocido`.
+- «dime si con esto terminamos 002 y ma;ana empezamos con 003» y «por donde vamos y que falta… totalmente sincero».
+- «ok dime como ver esas versiones que necesitas», con capturas del Swagger con las versiones de la Parte II.
+- «ok me parece el plan, revisa que sea correcto y lo mejor», sobre el plan del paquete de la Parte II acordado con Marco.
+- «ok mira, nosotros implementamos un grafo no? eso no deberia ir en la carpeta estrcuturas?»
+- «ok listo, no necesitas las pruebas?», con la salida del paquete armado y de la suite.
+
+**Uso de la respuesta:** revisar el cierre de la 002 y los lotes 1 y 2 de la 003 antes de commitear; resolver a mano los conflictos de `PROMPTS_LLM.md` en los merges sin perder entradas; entender por qué `GrafoLlaves` va en Logic y no en `Estructuras/` (depende de DTO y de `Mazmorra`, y `Estructuras/` no depende de ninguna capa); armar el reporte de diferencias del paquete de la Parte II (catálogo nuevo, `cripta-01` ya no publicada, `cripta-05` no resoluble) y los avisos al equipo.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude
+
+Le pedí a Claude que revisara cada paso de los merges, de los commits y de las respuestas de Claude Code. Prompts principales, textuales:
+- «asi el push? y si kris me mando mensajes, analizalos y dime si seguimos con el promt que me habias mandado despues del push(T063) o no», con los mensajes de Kristel.
+- «ok estoy en el paso 1.3 en el merge, mira el conflicto».
+- «no encuentro el de task md», después de un Rollback que deshizo `tasks.md`.
+- «hagamos todo eso ahorita, creo que podemos seguir con todo esto, solo dime que podemos hacer y que depende de alguien».
+- «ok mientras claude code trabaja, el orden seria ese entonces? no ocupamos nada de marco vd? solo de kris y ya?»
+
+**Uso de la respuesta:** hacer el merge de `origin/kris` guardando el paquete sin commit con Shelve; armar `PROMPTS_LLM.md` con las entradas de los dos; revisar T054, el bench (B5 y B6 frente a research R7, que se corrigió primero) y el apartado §5.4 de `DECISIONES.md` contra el archivo del bench; recuperar el cambio de `tasks.md`; ordenar los commits que esperaban el arreglo del HUD del integrante 3.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude
+
+Prompts principales, textuales:
+- «hola volvi… aparte de ese mensaje kris y marco me pusieron otros, te los mando».
+- «ok hice mal el primer commit, como lo revierto?» y «en promt llm me sale esto».
+- «ok mientras claude cod trabaja te paso las ramas de kris y marco para ver si de verdad hicimos bien todo y los merge».
+- «ok te mando los pasos del 003, quickstart §3 (es tu T056 con Kris):. pero no entendi como hacer los del 002», con capturas del juego.
+- «entonces no podemos seguir con nada mas? estas seguro? revisa muy bien y dime que falta».
+
+**Uso de la respuesta:** hacer los merges de `origin/kris` y `origin/Marco` antes de los commits del paquete y de `docs(003)`; deshacer un commit sin push (Undo Commit); comprobar que las ramas de Kristel y Marco quedaron completas en `derek`; quitar 7 entradas repetidas de esta bitácora; hacer las pruebas manuales del quickstart (T056 de la 003 y los pasos del mapa de la 002), donde se vio que `historia #k` no dibuja el mapa del resumen (se le avisó al integrante 3); revisar qué quedaba pendiente.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+
 
