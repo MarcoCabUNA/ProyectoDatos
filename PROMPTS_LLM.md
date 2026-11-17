@@ -3250,3 +3250,25 @@ Al final, el diff de estos cambios.
 **Uso de la respuesta:** el comando de los requisitos previos del quickstart usa la forma `<id> <carpeta>` y `cripta-02`, el paso 6 pasa a `cripta-02` y el commit sugerido de T057 lista todo lo que lleva. El paso 1 espera RESOLUBLE porque ya verifiqué la `cripta-02` nueva con el paquete armado fuera del proyecto. Solo documentación: no hace falta correr la suite.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement Feature 003-resolubilidad, fase 9: T059, T060, T061 y T062 de specs/003-resolubilidad/tasks.md, en ese orden y como dice cada tarea. T063 (correr --bench y guardar la tabla) NO: lo hago yo después. .specify/feature.json ya apunta a specs/003-resolubilidad.
+
+Estado de la carpeta: hay cambios SIN commit del paquete de la Parte II (T057: paquete/, tests/Utilidades.py, tests/TestAlmacenCatalogo.py, DECISIONES.md, ejemplos/partida_ejemplo.log y specs/003-resolubilidad/paquete-2026-11-15.md). No los toques ni los commitees: son de otro commit. Con ese paquete, la cripta con más salas que trae llaves.json es la de 300 salas. Antes de empezar, corré python tests/correr_pruebas.py y anotá la línea base: hoy falla solo el script test_vista_hud.py (es del integrante 3 y lo arregla ella; no lo toques).
+
+1. T059: las 7 pruebas primero, en tests/test_resolubilidad_bench.py (si ya existe, agregalas al final); comprobá que fallan.
+2. T060 y T061 en Logic/BenchResolubilidad.py (hoy solo tiene el generador de cuadrícula). Reutilizá de Logic/BenchLogica.py solo _cronometrar, _mejor_y_mediana y SEMILLA, sin modificar BenchLogica.py. Las variantes descartadas (B2 ingenua, B5 lineal y B6 con una sola lista) viven solo en el bench. Sin dict, set, sorted, list.sort, copy, bisect, heapq ni collections, también en el bench. Logic no importa Data ni Service.
+3. T062 en Service/ServicioBench.py: BenchResolubilidad.medir en la lista por defecto, JUSTO DESPUÉS de BenchLogica.medir (el integrante 3 va a poner su BenchViaje después de BenchMapaConocido; así no chocan en el mismo punto). Actualizá el docstring de __init__. La fila de la cripta con más salas del paquete la arma Service (FuenteOffline, GestorEsqueleto, GestorLlaves sin almacén y VerificadorResolubilidad), elegida por cantidad de salas y sin nombrar ids, sin red y sin crear partida.log.
+4. tests/TestServicioBench.py: test_por_defecto_usa_los_tres_archivos compara la lista completa; actualizá esa lista con BenchResolubilidad.medir en su lugar (y el import), sin cambiar nada más de la prueba. No está en tasks.md: anotalo como nota al final de T062 («también se actualizó la lista esperada de tests/TestServicioBench.py»).
+5. Marcá con [x] solo T059 a T062 si quedaron completas.
+
+Para comprobar los tamaños grandes NO corras el bench completo (lo corro yo en T063); alcanza con las pruebas de tamaños chicos. Antes de terminar: python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8), que tiene que dar lo mismo que la línea base más las pruebas nuevas en verde, y el grep de restricciones de T067 sobre Logic/BenchResolubilidad.py y Service/ServicioBench.py.
+
+Al final decime: los archivos que cambiaste o creaste (separados de los del paquete), las pruebas nuevas con su resultado antes y después, el resultado de la suite comparado con la línea base, el grep, y cualquier diferencia con tasks.md, research R7 o el quickstart §4. No hagas commit.
+
+**Uso de la respuesta:** fase 9 de la 003 (T059 a T062). `Logic/BenchResolubilidad.py`: el generador `cripta_en_peine` (research R7) y las mediciones B1 (verificación resoluble), B2 (alternativa descartada: repetir el recorrido completo en cada oleada), B3 (no resoluble), B4 (desglose a 1 000 salas, sobre la no resoluble porque es la única que pasa por las cuatro fases), B5 (índice ordenando y compactando frente a la búsqueda lineal) y B6 (frontera agrupada por llave frente a una sola lista); las alternativas viven solo en el bench y dan el mismo resultado que la decisión (lo comprueban las pruebas). `Service/ServicioBench.py`: `BenchResolubilidad.medir` justo después de `BenchLogica.medir` (el integrante 3 pone su `BenchViaje` después de `BenchMapaConocido`) y la fila de la cripta con más salas del paquete, elegida por cantidad de salas y leída sin red (con el paquete nuevo, la de 300 salas: mediana 1,18 ms); si no hay criptas con `llaves.json`, una fila sin tiempos cuya nota dice por qué. Se actualizó la lista esperada de `tests/TestServicioBench.py`. 7 pruebas nuevas (fallaron primero); suite 959 OK (7 skip), grep de T067 limpio. Revisé el diff antes del commit; los cambios del paquete quedaron fuera de este commit.
+
+-----------------------------------------------------------------------------------------------------------------------

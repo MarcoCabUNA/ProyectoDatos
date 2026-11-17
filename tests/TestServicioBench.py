@@ -10,7 +10,7 @@ import tempfile
 import unittest
 
 from DTO.ResultadoBenchDTO import ResultadoBenchDTO
-from Logic import BenchLogica, BenchMapaConocido
+from Logic import BenchLogica, BenchMapaConocido, BenchResolubilidad
 from Service import BenchDatos, BenchInventario
 from Service.Cronometro import medir, mejor_y_mediana
 from Service.ServicioBench import ServicioBench
@@ -129,8 +129,8 @@ class PruebasServicioBench(unittest.TestCase):
 
     def test_por_defecto_usa_los_tres_archivos(self):
         servicio = ServicioBench()
-        self.assertEqual(servicio._mediciones, [BenchDatos.medir, BenchLogica.medir, BenchMapaConocido.medir,
-                                                BenchInventario.medir])
+        self.assertEqual(servicio._mediciones, [BenchDatos.medir, BenchLogica.medir, BenchResolubilidad.medir,
+                                                BenchMapaConocido.medir, BenchInventario.medir])
 
     def test_tabla_texto(self):
         resultados = [ResultadoBenchDTO("caché", "búsqueda binaria", 25, 0.3, 0.32, "500 consultas"),
