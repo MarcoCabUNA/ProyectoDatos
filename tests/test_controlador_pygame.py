@@ -583,6 +583,9 @@ class _BackendDeVictoria:
     def reporte(self):
         return ReporteDatosDTO(solicitudes_realizadas=4, presupuesto=9, aciertos_cache=10, fallos_cache=2)
 
+    def resolubilidad(self):
+        return None
+
     def tabla_puntajes(self, criterio):
         return []
 
@@ -608,6 +611,9 @@ class _BackendDeDosCriptas:
     def iniciar(self, id_cripta, nombre):
         _BackendDeDosCriptas.elegidas.append(id_cripta)
         return _estado_de_prueba()
+
+    def resolubilidad(self):
+        return None
 
 
 def probar_se_inicia_la_cripta_que_se_eligio_con_el_teclado_o_con_el_raton():
