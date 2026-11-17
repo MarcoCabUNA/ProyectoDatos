@@ -3207,6 +3207,69 @@ No hagas commit. Al final, los dos grupos de archivos definitivos.
 
 **Fecha:** Domingo 15 de noviembre 2026
 
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+SOLO LECTURA (no modifiques nada, no ejecutes nada). Rama local Marco, commits 80b0c56..401e20d (T058). Leé Data/GestorContenido.py (asegurar_sala, el bloque nuevo de las líneas ~203-216), Data/ResolvedorCatalogo.py (ficha) y quién llama a asegurar_sala. (1) ¿El bloque nuevo corre solo la primera vez que se entrega una sala (al pasar a CARGADA) o en cada llamada a asegurar_sala (cada vez que el jugador entra a una sala ya cargada)? Si es en cada llamada, ¿ficha() lee del disco cada vez o usa lo que ya tiene en memoria? Estimá el costo por movimiento. (2) En Logic/BenchRutas.py y los demás Bench*.py: ¿los motores que se cronometran (NFR-101/SC-104, ciclo de 1 024 salas) tienen un GestorContenido con _resolvedor distinto de None? Es decir, ¿el bloque nuevo entra en lo que mide el bench? (3) El reporte de caché ahora da 3 aciertos en vez de 1 con caché: buscá en specs/ (todas las features), DECISIONES.md, research.md, bench-*.txt y tests/ si algún FR, prueba, bench o texto usa o cita cifras de aciertos/fallos de la caché del catálogo. Decime archivo y línea. Salida corta en lista.
+
+**Uso de la respuesta:** consulta `1a1e0c281d6`, respuesta en `.claude-bridge/outbox/1a1e0c281d6.txt`. Sobre T058 (`a27b859`). (1) El bloque nuevo de `asegurar_sala` (`Data/GestorContenido.py:203-216`) corre en cada llamada, no solo al pasar a CARGADA; `ficha()` usa lo que está en memoria y solo va al disco si la ficha salió de la caché (tope 25), así que cuesta unas e + t + o búsquedas por movimiento, microsegundos con todo en memoria. (2) Ningún motor que cronometra NFR-101/SC-104 (`BenchRutas`, `BenchLogica`, `BenchMapaConocido`) usa `GestorContenido`, y `BenchDatos` lo arma sin resolvedor; solo una medición de `Service/BenchLineaTiempo.py` (004) pasa por el bloque. (3) La única cifra de aciertos que cambia está en `DECISIONES.md:223` («3 aciertos en lugar de 1»); ningún FR, bench ni prueba con cifras fijas pasa por `asegurar_sala`, y `tests/test_servicios.py:343-346` sigue igual por `contar_acierto=False`. No se cambió nada.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+git fetch y git merge origin/derek (trae --verificar de la 003). Si hay conflictos en archivos de la 001,
+pará y avisame. Si el merge trae un commit que regenera paquete/ (cripta-02 a 06, catálogo nuevo), pará
+antes de mezclar y avisame: eso lo vamos a probar aparte.
+Luego, un commit por paso, suite en verde con uv run antes de cada commit, no push:
+1) Quitá el skipTest de H3-7 (solo esa línea) y corré la suite. Si H3-7 falla, no la cambies: decime qué
+   espera la prueba y qué devuelve --verificar (reporte y código de salida 0/3/1) para avisarle al
+   integrante 2.
+2) T048: completala con las pruebas que faltaban: --verificar (H3-7) y --replay … --hasta (de Kristel, 90b8bbf,
+   ya en la rama). Confirmá que las cuatro corridas sin vista de la constitución V (--replay,
+   --replay … --hasta, --verificar, --bench) tengan prueba en la 001 y marcá T048 en tasks.md.
+3) PROMPTS_LLM.md: este pedido y la consulta del puente 1a1e0c281d6 (T058: cuándo corre la validación y quién
+   usa los aciertos).
+Al final decime: resultado de H3-7, el estado de T048 y la suite.
+
+**Uso de la respuesta:** `git merge origin/derek` fue un fast-forward sin conflictos hasta `7ceaf3e` (003: `--verificar` y `--forzar`, T001 a T053 de la 003, más un arreglo de mensajes de la 002). Ningún commit regenera `paquete/`. (1) `b11fc99`: se quitó el `skipTest` de H3-7. La prueba solo tenía esa línea, así que sin ella pasaba sin comprobar nada; el cuerpo se escribió en el paso 2. (2) `a9ba07d`: H3-7 en `tests/test_terreno_cazador.py` corre `main.main(["--verificar", ...])` sobre dos criptas de la 003 (resoluble, código 0, y con ciclo, código 3): da la misma salida sin costos que con costos de 1 a 300 (3 semillas) y un cazador en cada sala, sin pedir contenido ni catálogo. Con costo 0 y con costos 5 y 7 en las dos caras de una salida da «NO CONCLUYÓ» y código 1; el segundo caso también se corre en otro proceso con `--offline` (paquete temporal), con código de salida 1 y sin pygame ni `View`. `tests/test_modos_sin_vista_terreno.py` (T048) suma `--replay … --hasta t` (`ServicioReplayHasta` de `90b8bbf`, comparado con el resumen de la partida viva en 6 instantes de cada una de las 6 partidas, más un t posterior al final) y `--verificar` (el mismo reporte, resoluble con `[itm_llave]`, en la cuadrícula de cada semilla con costos y cazador que sin ellos). Se quitó la línea `PENDIENTE`. T048 quedó marcada en `tasks.md` con la nota de qué prueba cubre cada una de las cuatro corridas sin vista del Principio V: `--replay`, `--hasta` y `--verificar` en ese script, `--verificar` con FR-122 en H3-7 y `--bench` en H3-8 y `tests/test_bench_rutas.py`. Se actualizó `quickstart.md` §6. Suite antes de cada commit: 952 pruebas OK (6 skip, ninguno de la 001: 2 de la 002 y 4 de la 003 por T054), 31 de 31 scripts. (3) Este registro, en su propio commit. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+En tasks.md, en T048, anotá que --verificar corresponde a la T051 de la 003 (integrante 2).
+
+**Uso de la respuesta:** en `specs/001-terreno-cazador/tasks.md`, la nota de T048 dice ahora que lo de `--verificar` (el script de los modos sin vista y H3-7) corresponde a la T051 de la 003 (integrante 2), el aviso de que `--verificar` ya existía para quitar el `skipTest` de H3-7 y cerrar T048.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Sí, commiteá tasks.md y PROMPTS_LLM.md en un solo commit (suite en verde con uv run, no push).
+Antes, confirmame: ¿ya está mezclado origin/derek con --verificar en la rama Marco? ¿H3-7 ya no tiene
+skipTest y pasa? ¿T048 quedó marcada [X]? Si falta alguna de las tres, hacé esto, un commit por paso:
+1) git fetch y git merge origin/derek. Si hay conflicto solo en PROMPTS_LLM.md (UTF-16, merge=union no
+   funciona): conservá todas las entradas de los dos lados por hora, sin duplicados ni separadores dobles, y
+   sin cambiar la codificación. Cualquier otro conflicto, o si el merge trae la regeneración de paquete/:
+   pará y avisame.
+2) Quitá el skipTest de H3-7 (solo esa línea). Si falla, no cambies la prueba: decime qué espera y qué
+   devuelve --verificar (reporte y código 0/3/1).
+3) Confirmá que las cuatro corridas sin vista (--replay, --replay … --hasta, --verificar, --bench) tengan
+   prueba en la 001 y marcá T048.
+4) PROMPTS_LLM.md con este pedido y la consulta del puente 1a1e0c281d6.
+
+**Uso de la respuesta:** las tres cosas ya estaban hechas, así que los pasos 1 a 4 no hicieron falta (solo se registró este pedido). Después de `git fetch`, `origin/derek` no trae nada nuevo y `dadf468` (`--verificar`) ya está en Marco desde el fast-forward a `7ceaf3e`. H3-7 no tiene `skipTest` desde `b11fc99` y pasa con su cuerpo de `a9ba07d`. T048 está marcada [X] desde `a9ba07d`, con las cuatro corridas sin vista cubiertas. La consulta `1a1e0c281d6` ya estaba registrada en `93c2d34`. `PROMPTS_LLM.md` está en UTF-8 con CRLF, no en UTF-16. Un solo commit con la nota de T051 de la 003 en T048 (`tasks.md`) y este registro. Suite en verde antes del commit. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
 **Herramienta:** Claude Code
 
 Feature 003-resolubilidad. Solo documentación de la spec, sin código ni pruebas, sin commit. Contexto: el 15/11 el API publica cripta-02 a cripta-06 (cripta-01 ya no está: responde 404) y el catálogo pasó a la versión 4b9e75a42be5. Con el integrante 1 acordamos cómo armar el paquete. Antes de hacerlo, la spec tiene que decirlo (Principio IX).
@@ -3481,6 +3544,7 @@ Corre la suite completa y dime los números medidos y si cumplen NFR-250.
 **Uso de la respuesta:** se usó la respuesta para implementar el banco de pruebas de «ir a» con 300 salas (NFR-250, SC-252).
 
 -----------------------------------------------------------------------------------------------------------------------
+
 **Fecha:** Martes 17 de noviembre 2026
 
 **Herramienta:** Claude Code
@@ -3502,6 +3566,35 @@ Corre la suite completa (catálogo viejo) y dime resultados y decisiones.
 **Uso de la respuesta:** se usó la respuesta para decidir el alcance del comando mapa con la partida terminada y para implementar T055 de la 003 (mostrar el reporte de resolubilidad).
 
 -----------------------------------------------------------------------------------------------------------------------
+git fetch y git merge origin/derek (trae la 003 completa, T054 y el merge de kris). Si hay conflicto solo en
+PROMPTS_LLM.md, conservá todas las entradas de los dos lados por hora, sin duplicados ni cambiar la
+codificación. Cualquier otro conflicto, o si el merge trae la regeneración de paquete/: pará y avisame.
+Luego, un commit por paso, suite en verde con uv run antes de cada commit, no push:
+1) FR-122 con --forzar: verificá que con la T054 (iniciar pasa por la verificación) una cripta con costo
+   inválido o distinto entre caras, o cierre_automatico inválido, sigue sin iniciar también con --forzar. Si
+   ya hay prueba que lo cubra, decime cuál; si no, agregala citando FR-122. Si falla, no cambies código de la
+   003: pará y avisame.
+2) README.md: agregá la sección de la 001 (integrante 1), corta: costo por salida y cómo se iguala entre
+   caras (costo por defecto 100), comportamiento cazador (rango, desempates), búsqueda compartida e
+   invalidación, cómo correr --bench y dónde están las cifras (bench-2026-11-15.txt, research.md,
+   DECISIONES.md §5.6), y errores de datos de FR-122. Solo tu sección; no toques las de los demás.
+3) PROMPTS_LLM.md con este pedido.
+Al final: resultado del punto 1, la suite y cuántos commits hay sin push.
+
+**Uso de la respuesta:** el merge de `origin/derek` (T054, T059 a T063 y T066 de la 003, y el merge de kris con T101 a T106 de la 002) no trajo la regeneración de `paquete/`; el único conflicto fue `PROMPTS_LLM.md`, resuelto con las 4 entradas nuevas de esta rama (15/11, hasta las 15:43) y después las 9 de derek (15/11 desde las 17:08 y 16/11), sin duplicados y en UTF-8. Punto 1: a nivel de servicio ya lo cubrían `test_h4_5_fr323_costos_distintos_no_inicia_ni_con_forzar` y `test_fr323_cierre_automatico_invalido_no_inicia_ni_con_forzar` (`tests/test_resolubilidad_servicio.py`), pero no el costo inválido ni `ControladorBackend.iniciar`; se agregó `tests/test_fr122_forzar.py` (FR-122): los tres casos, con y sin `--forzar`, dan `ErrorOperacion` causado por `ErrorDatos`, sin partida ni log, y pasa sin cambiar código. Punto 2: sección «Terreno y cazador (001, integrante 1)» en `README.md`.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+Revisión SOLO LECTURA (no modifiques nada, no ejecutes pruebas). Rama local Marco, commits de hoy 17/11: 07f28e5 (merge de origin/derek), e0129c4 (tests/test_fr122_forzar.py), bbaea49 (README, sección 001), 4746c3f (PROMPTS_LLM.md). Revisá con git show. (1) 07f28e5: que el merge no haya cambiado archivos de la 001 (Logic/RutasHaciaJugador.py, BusquedaCostoMinimo.py, GrafoEsqueleto.py, BenchRutas.py, MonticuloMinimo.py, Comportamientos.py, Mazmorra.py, GestorContenido.py) respecto de lo que había en Marco antes del merge; si alguno cambió, mostrá el diff. Que PROMPTS_LLM.md no haya perdido entradas de ninguno de los dos lados. (2) e0129c4: que la prueba cite FR-122, pase por ControladorBackend.iniciar (camino de la T054) con y sin --forzar, y compruebe mensaje, que no hay partida y que no se crean logs; que no use estructuras prohibidas fuera de lo permitido en tests. (3) bbaea49: leé la sección «Terreno y cazador (001, integrante 1)» del README y contrastala con specs/001-terreno-cazador/spec.md y DECISIONES.md: costo por defecto 100 e igualado entre caras; intervalo max(1, costo*100//velocidad); cazador: ataca si comparte sala, espera si no hay ruta o d > rango, se mueve si d == rango, desempate por vecina de menor id del primer paso y salida más barata, la decisión no usa RNG; búsqueda compartida, invalidación por puertas y pergamino; FR-122; cifras del bench (que coincidan con bench-2026-11-15.txt). Señalá cualquier dato incorrecto, comando que no exista o regla nueva que no esté en la spec. Salida corta: primero lo que está bien, luego ALTA/MEDIA/BAJA con archivo y línea.
+
+**Uso de la respuesta:** consulta `1a1e838abf4`, respuesta en `.claude-bridge/outbox/1a1e838abf4.txt`. Revisión de `07f28e5`, `e0129c4` y `bbaea49`, sin observaciones ALTAS ni MEDIAS: el merge no cambió ningún archivo de la 001 y `PROMPTS_LLM.md` no perdió entradas de ningún lado; la prueba de FR-122 con `--forzar` pasa por `ControladorBackend.iniciar` y comprueba lo pedido; el README coincide con la spec y con `DECISIONES.md`. Las cuatro observaciones BAJAS (nombrar los dos benches en el README, «incluido d = `rango`», `duracion` no entera o `bool`, y buscar «costo 0» en la prueba) se aplicaron en el pedido siguiente.
+
+-----------------------------------------------------------------------------------------------------------------------
+
 **Fecha:** Martes 17 de noviembre 2026
 
 **Herramienta:** Claude Code
@@ -3570,3 +3663,16 @@ Cuatro cambios, cada uno en su commit. Los de spec/docs van separados de los de 
 Al final corre la suite completa (catálogo viejo) y dime resultados.
 
 **Uso de la respuesta:** se usó la respuesta para pasar a comentarios los docstrings nuevos de P1, justificar en el plan los cambios de ControladorBackend, corregir el nombre de una prueba y escribir los pasos manuales de «ir a» y «mapa» en el quickstart.
+Cuatro ajustes chicos, un solo commit, suite en verde con uv run, PROMPTS_LLM.md, no push:
+1) README.md ~196: nombrá los dos benches: bench-2026-11-13.txt (cifras citadas en R1–R6 y DECISIONES §5.1
+   y §5.2) y bench-2026-11-15.txt (mismas mediciones con el mapa conocido conectado, mismos conteos).
+2) README.md ~184: «se mueve si d ≤ rango (incluido d = rango)».
+3) README.md ~206: duracion inválida si no es entero ≥ 1 (incluye no entero y bool), igual que costo y
+   cierre_automatico.
+4) tests/test_fr122_forzar.py:45: en el caso de costo inválido buscá "costo 0" en el mensaje, no solo
+   "costo".
+Registrá también la consulta del puente 1a1e838abf4 (revisión de 07f28e5, e0129c4, bbaea49).
+
+**Uso de la respuesta:** se aplicaron las cuatro observaciones BAJAS de la consulta `1a1e838abf4`: el README de la 001 nombra `bench-2026-11-13.txt` (cifras de R1 a R6 y §5.1 y §5.2) y `bench-2026-11-15.txt` (mismas mediciones con el mapa conocido, mismos conteos), dice que el cazador se mueve si d ≤ `rango` (incluido d = `rango`) y que una `duracion` es inválida si no es entero ≥ 1 (incluidos un no entero y un `bool`); `tests/test_fr122_forzar.py` busca «costo 0» en el caso de costo inválido. Un solo commit.
+
+-----------------------------------------------------------------------------------------------------------------------
