@@ -46,7 +46,7 @@ AYUDA_PARA_MEDIR = (
     "Clic en un enemigo (o Espacio): atacar",
     "Clic en un objeto del suelo: recoger",
     "E (o clic en la puerta): abrir una puerta",
-    "Z: esperar   Enter: comandos (historia, mapa)",
+    "Z: esperar   Enter: historia, mapa, ir a",
     "Rueda o Tab: recorrer el inventario",
     "U (o doble clic): usar   Q (o clic derecho): equipar",
     "G (o Mayús + clic): soltar   V: cambiar el orden",

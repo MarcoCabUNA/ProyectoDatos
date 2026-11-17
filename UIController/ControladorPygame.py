@@ -90,6 +90,7 @@ _AYUDA_MENU = ("Arriba / Abajo o ratón: elegir", "Enter o clic: aceptar")
 _AYUDA_CRIPTAS = ("Arriba / Abajo o ratón: elegir", "Enter o clic: aceptar", "Esc: volver")
 _AYUDA_NOMBRE = ("Escribe tu nombre", "Enter o clic en Aceptar: aceptar", "Esc: volver")
 _AYUDA_PAUSA = ("Arriba / Abajo o ratón: elegir", "Enter o clic: aceptar", "Esc: volver a la partida")
+PASO_VIAJE_MS = 350               # entre un paso y otro de un viaje de `ir a`: se ve cómo cambia de sala
 _AYUDA_FIN = ("Arriba / Abajo o ratón: elegir", "Enter o clic: aceptar", "Esc: menú principal")
 _AYUDA_PUNTAJES = ("Izquierda / Derecha: cambiar el orden", "Enter o clic: aceptar", "Esc: volver")
 
@@ -97,7 +98,7 @@ _AYUDA_PUNTAJES = ("Izquierda / Derecha: cambiar el orden", "Enter o clic: acept
 class ControladorPygame:
 
     def __init__(self, vista, config: ConfiguracionDTO, fabrica_backend=ControladorBackend, fabrica_controles=ControlesJuego,
-                 demora_fin_ms: int = 0, reloj_ms=None):
+                 demora_fin_ms: int = 0, reloj_ms=None, paso_viaje_ms: int = PASO_VIAJE_MS):
         """
         vista: cualquier objeto con abrir(), dibujar(pantalla), cerrar() y elemento_en(posicion).
         config: lo que dejó LectorArgumentos (offline, cache_size...).
@@ -108,6 +109,7 @@ class ControladorPygame:
         demora_fin_ms: al terminar la partida, cuánto tiempo más se sigue mostrando la pantalla de juego (con el estado final)
         antes de pasar a la victoria o la derrota; 0 pasa de inmediato. El puntaje se guarda al terminar, no después.
         reloj_ms: función que devuelve los milisegundos actuales (por omisión pygame.time.get_ticks); mide esa demora.
+        paso_viaje_ms: cuánto se espera entre un paso y el siguiente de un viaje de `ir a` (feature 002), para que se vea.
         """
         self._vista = vista
         self._config = config
@@ -135,10 +137,26 @@ class ControladorPygame:
         self._reloj_ms = reloj_ms if reloj_ms is not None else pygame.time.get_ticks
         self._fin_en: int | None = None               # cuándo termina la demora del fin (None: no hay demora en curso)
         self._aviso_del_fin: str | None = None        # el aviso del fin que se muestra al terminar la demora
+        self._paso_viaje_ms = paso_viaje_ms
+        self._ultimo_paso_viaje_ms: int | None = None  # cuándo se dio el último paso del viaje en curso (None: ninguno aún)
         self._activaciones = 0                        # botones activados y esperas hechas; nunca baja (PantallaDTO.activaciones)
 
     def activo(self) -> bool:
         return self._activo
+
+    def avanzar_viaje(self) -> None:
+        if self._pantalla != JUEGO or self._fin_en is not None or not self._juego.viajando:
+            self._ultimo_paso_viaje_ms = None
+            return
+        ahora = self._reloj_ms()
+        if self._ultimo_paso_viaje_ms is not None and ahora - self._ultimo_paso_viaje_ms < self._paso_viaje_ms:
+            return
+        self._ultimo_paso_viaje_ms = ahora
+        self._juego.dar_paso_de_viaje()
+        if self._juego.estado.reloj > 0:
+            self._reporte_resolubilidad = None
+        if self._juego.estado.terminado:
+            self._terminar_partida()
 
     # ================================================================== bucle principal
     def ejecutar(self, fuente_eventos=None) -> None:
@@ -151,6 +169,7 @@ class ControladorPygame:
             while self._activo:
                 for evento in obtener():
                     self.procesar_evento(evento)
+                self.avanzar_viaje()
                 self._vista.dibujar(self.pantalla())
                 reloj.tick(FPS)
         finally:
