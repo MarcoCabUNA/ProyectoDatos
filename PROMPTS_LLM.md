@@ -3429,3 +3429,26 @@ Al final: el diff de los tres archivos, el resultado de la suite y el del punto 
 **Uso de la respuesta:** T054 de la 003, cuando el integrante 3 puso `forzar=True` en sus configuraciones offline de `cripta-01`. Del parche que había guardado el 15/11 se aplicó solo la parte de T054 en `UIController/ControladorBackend.py` (archivo del integrante 3, cambio acordado con ella el 14/11 y revisado por ella): `iniciar` pasa por `ServicioResolubilidad.iniciar_partida_nueva` con `config.forzar`, y `resolubilidad()` devuelve el reporte de la partida nueva o el del último iniciar que no se hizo (FR-311 a FR-313). Se quitó la guarda de las 4 pruebas de T053, que ahora corren y pasan. Suite: 984 pruebas OK (3 skip), 31 de 32 scripts (solo `test_vista_hud.py`, por el paquete nuevo todavía sin commit). Con el paquete local: `cripta-02` inicia; `cripta-05` no inicia sin `--forzar` (no resoluble) y con `--forzar` inicia con la advertencia; `cripta-01` no inicia (no concluyó, falta `llaves.json`). Revisé el diff antes del commit.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+git fetch y git merge origin/derek (trae la 003 completa, T054 y el merge de kris). Si hay conflicto solo en
+PROMPTS_LLM.md, conservá todas las entradas de los dos lados por hora, sin duplicados ni cambiar la
+codificación. Cualquier otro conflicto, o si el merge trae la regeneración de paquete/: pará y avisame.
+Luego, un commit por paso, suite en verde con uv run antes de cada commit, no push:
+1) FR-122 con --forzar: verificá que con la T054 (iniciar pasa por la verificación) una cripta con costo
+   inválido o distinto entre caras, o cierre_automatico inválido, sigue sin iniciar también con --forzar. Si
+   ya hay prueba que lo cubra, decime cuál; si no, agregala citando FR-122. Si falla, no cambies código de la
+   003: pará y avisame.
+2) README.md: agregá la sección de la 001 (integrante 1), corta: costo por salida y cómo se iguala entre
+   caras (costo por defecto 100), comportamiento cazador (rango, desempates), búsqueda compartida e
+   invalidación, cómo correr --bench y dónde están las cifras (bench-2026-11-15.txt, research.md,
+   DECISIONES.md §5.6), y errores de datos de FR-122. Solo tu sección; no toques las de los demás.
+3) PROMPTS_LLM.md con este pedido.
+Al final: resultado del punto 1, la suite y cuántos commits hay sin push.
+
+**Uso de la respuesta:** el merge de `origin/derek` (T054, T059 a T063 y T066 de la 003, y el merge de kris con T101 a T106 de la 002) no trajo la regeneración de `paquete/`; el único conflicto fue `PROMPTS_LLM.md`, resuelto con las 4 entradas nuevas de esta rama (15/11, hasta las 15:43) y después las 9 de derek (15/11 desde las 17:08 y 16/11), sin duplicados y en UTF-8. Punto 1: a nivel de servicio ya lo cubrían `test_h4_5_fr323_costos_distintos_no_inicia_ni_con_forzar` y `test_fr323_cierre_automatico_invalido_no_inicia_ni_con_forzar` (`tests/test_resolubilidad_servicio.py`), pero no el costo inválido ni `ControladorBackend.iniciar`; se agregó `tests/test_fr122_forzar.py` (FR-122): los tres casos, con y sin `--forzar`, dan `ErrorOperacion` causado por `ErrorDatos`, sin partida ni log, y pasa sin cambiar código. Punto 2: sección «Terreno y cazador (001, integrante 1)» en `README.md`.
+
+-----------------------------------------------------------------------------------------------------------------------
