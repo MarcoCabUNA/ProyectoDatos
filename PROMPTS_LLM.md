@@ -3319,3 +3319,37 @@ Un commit por grupo lógico, con mensaje: "feat(002): ViajeAutomatico y ViajeDTO
 **Uso de la respuesta:** se usó la respuesta para implementar la lógica pura de «ir a» (ViajeAutomatico, ViajeDTO y sus pruebas).
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Implementa T107–T114 de specs/002-niebla-ir-a/tasks.md, siguiendo mi sección de specs/002-niebla-ir-a/plan.md y usando lo que ya existe (Logic/ViajeAutomatico.py y DTO/ViajeDTO.py). Un commit por grupo lógico (servicio, controlador, pruebas) con mensajes "feat(002): ...". No marques tareas como hechas hasta que su prueba pase.
+
+- Service/ServicioIrA.py, sin estado: iniciar(contexto, nombre) y dar_paso(contexto, destino). Cada paso es un `mover` ordinario que pasa por ServicioLineaTiempo.ejecutar. Arma GrafoMapaConocido UNA vez por viaje, con contexto.motor.mapa (después de cargar hay un Motor nuevo: vuelve a tomar el mapa y a armar el grafo).
+- Detecta el daño comparando ActorBase.danio_recibido antes y después de cada paso (nunca el valor absoluto).
+- hay_enemigos = Mazmorra.enemigos_vivos(sala) (incluye dormidos).
+- Justo después del primer paso aceptado, anexa el comentario con contexto.bitacora.anexar_comentario(f"ir a {sala}") (con comprobación de None).
+- Paradas: LLEGO, ENEMIGOS, DANO, SIN_RUTA; internas INTERRUMPIDO, TERMINADA, PASO_RECHAZADO.
+- ControladorBackend.ir_a al final de la clase, con un resultado ViajeDTO. El pergamino revierte solo el último paso y el viaje no continúa. Si el jugador cierra la línea o hay otra acción, el viaje se descarta.
+- Pruebas: cada motivo de parada, PASO_RECHAZADO, TERMINADA junto con DANO/LLEGO, daño con Regeneración real (el contador no sube), viaje tras cargar (grafo nuevo), pergamino a mitad de viaje, que el controlador descarte el viaje, y que el comentario "ir a X" quede en la bitácora una sola vez.
+- Sin docstrings en P1, solo estructuras y librerías permitidas.
+
+Al final corre la suite completa y dime los resultados, y cualquier decisión que hayas tenido que tomar.
+
+**Uso de la respuesta:** se usó la respuesta para implementar ServicioIrA, ControladorBackend.ir_a y sus pruebas (T107–T114).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Implementa T115–T118 de specs/002-niebla-ir-a/tasks.md y un arreglo de comentarios. Un commit por grupo.
+
+1) T115/T116 (H-2, opción A): en ArmadorEstado, enmascara sala_destino de las salidas hacia salas NO exploradas con SIN_EXPLORAR = -1 (definida en DTO/EstadoJuegoDTO.py) y deja sala_salida=None hasta que esté explorada, usando mapa.es_explorada(sala). La vista no cambia. Pruebas: salida a sala no explorada, salida a sala explorada, sala_salida None/explorada.
+2) T118: en ServicioLineaTiempo.py (líneas ~68 y ~74) cambia getattr(motor, "mapa_conocido", None) por motor.mapa.a_dto(). Revisa ArmadorResumen._copiar_mapa: si MapaConocidoDTO es inmutable, pásalo tal cual y simplifica; si no, copia. Agrega una prueba de que los resúmenes de historia ahora llevan el mapa.
+3) Comentarios "cuando exista (spec 002)" en Logic/LineaTiempo.py (líneas ~47 y ~158): cámbialos por algo cierto, sin docstring.
+4) Corre la suite completa. NO avises a Derek: eso lo hago yo (T117).
+
+Mensajes de commit: "feat(002): H-2 sala_destino enmascarada hasta explorar (T115-T116)", "fix(004): el resumen usa motor.mapa.a_dto() (T118)", "docs: comentarios de LineaTiempo al día".
+
+**Uso de la respuesta:** se usó la respuesta para implementar H-2 (enmascarar sala_destino hasta explorar), cambiar el resumen a motor.mapa.a_dto() y limpiar comentarios viejos (T115–T118).
