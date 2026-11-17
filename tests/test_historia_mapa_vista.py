@@ -101,6 +101,17 @@ class PruebasHistoriaMapaVista(unittest.TestCase):
         self.assertIn("Esc o `mapa`: cerrar", textos)
         self.assertNotIn("Historia: el mapa de ese instante", textos)
 
+    def test_el_titulo_del_panel_del_mapa_usa_el_singular_con_una_sala(self):
+        contexto, _ = self.partida(0)
+        with VistaMedida() as m:
+            uno = sobrante(m, replace(_pantalla(), mapa=contexto.motor.mapa.a_dto()))
+        self.assertIn("Mapa conocido: 1 sala explorada", uno)
+        self.assertNotIn("Mapa conocido: 1 salas exploradas", uno)
+        contexto, _ = self.partida(1)
+        with VistaMedida() as m:
+            dos = sobrante(m, replace(_pantalla(), mapa=contexto.motor.mapa.a_dto()))
+        self.assertIn("Mapa conocido: 2 salas exploradas", dos)
+
 
 if __name__ == "__main__":
     unittest.main()

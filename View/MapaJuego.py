@@ -185,7 +185,8 @@ class PanelMapa:
         marco = c.HUD_MAPA if marco is None else marco       # marco y cierre: el panel de historia usa el mismo dibujo (FR-223)
         c.panel(superficie, marco, c.PANEL, c.ORO, 2)
         fuente = self._fuentes.chico
-        c.texto_en(superficie, fuente, f"Mapa conocido: {len(mapa.salas)} salas exploradas", c.ORO,
+        n = len(mapa.salas)
+        c.texto_en(superficie, fuente, f"Mapa conocido: {n} sala explorada" if n == 1 else f"Mapa conocido: {n} salas exploradas", c.ORO,
                    (marco.x + c.HUD_RELLENO + 2, marco.y + 6), "topleft")
         c.texto_en(superficie, fuente, "Esc o `mapa`: cerrar" if cierre is None else cierre, c.TEXTO_SUAVE,
                    (marco.right - c.HUD_RELLENO - 2, marco.y + 6), "topright")
