@@ -52,9 +52,11 @@ import pygame
 from DTO.ConfiguracionDTO import ConfiguracionDTO
 from DTO.ElementoDTO import ELEMENTO_BOTON
 from DTO.PantallaDTO import PantallaDTO
+from DTO.ReporteResolubilidadDTO import RESOLUBLE
 from UIController.ControladorBackend import (CRITERIOS_PUNTAJES, LARGO_MAXIMO_NOMBRE, ControladorBackend,
                                              ErrorOperacion)
 from UIController.ControlesJuego import PIDE_CARGAR, PIDE_GUARDAR, PIDE_PAUSA, ControlesJuego
+from UIController.TextoResolubilidad import lineas_reporte
 
 MENU = "menu"
 CRIPTAS = "criptas"
@@ -116,6 +118,8 @@ class ControladorPygame:
         self._pantalla = MENU
         self._seleccion = 0
         self._aviso: str | None = None
+        self._reporte_resolubilidad: list[str] | None = None   # el reporte de resolubilidad que se muestra (feature 003)
+        self._reporte_advertencia = False
         self._criptas: list = []
         self._id_cripta: str | None = None
         self._texto = ""                              # el nombre que se está escribiendo
@@ -234,13 +238,15 @@ class ControladorPygame:
         if self._pantalla == NOMBRE:
             titulo = "Nombre para cargar la partida" if self._cargando else "¿Cómo te llamas?"
             return PantallaDTO(NOMBRE, titulo, list(_OPCIONES_NOMBRE), self._seleccion, texto=self._texto,
-                               aviso=self._aviso, ayuda=list(_AYUDA_NOMBRE))
+                               aviso=self._aviso, ayuda=list(_AYUDA_NOMBRE), reporte_resolubilidad=self._reporte_resolubilidad,
+                               reporte_advertencia=self._reporte_advertencia)
         if self._pantalla == JUEGO:
             return PantallaDTO(JUEGO, opciones=self._juego.botones(), seleccion=self._seleccion,
                                aviso=self._aviso or self._juego.aviso, ayuda=self._juego.ayuda(),
                                estado=self._juego.estado, objetivo=self._juego.objetivo(),
                                elemento_bajo_el_raton=self._bajo_el_raton, resumen=self._juego.resumen,
-                               linea_comandos=self._juego.linea, mapa=self._juego.mapa)
+                               linea_comandos=self._juego.linea, mapa=self._juego.mapa,
+                               reporte_resolubilidad=self._reporte_resolubilidad, reporte_advertencia=self._reporte_advertencia)
         if self._pantalla == PAUSA:
             return PantallaDTO(PAUSA, "Pausa", list(_OPCIONES_PAUSA), self._seleccion, aviso=self._aviso,
                                ayuda=list(_AYUDA_PAUSA), estado=self._juego.estado)
@@ -320,13 +326,23 @@ class ControladorPygame:
         if indice == _OPCION_VOLVER_DE_NOMBRE:
             self._ir_a(MENU)
             return
-        if self._cargando:
-            estado = self._backend.cargar(RUTA_GUARDADO, self._texto)
-        else:
-            estado = self._backend.iniciar(self._id_cripta, self._texto)
+        try:
+            if self._cargando:
+                estado = self._backend.cargar(RUTA_GUARDADO, self._texto)
+            else:
+                estado = self._backend.iniciar(self._id_cripta, self._texto)
+        except ErrorOperacion:
+            self._tomar_el_reporte()                    # si la partida no inició, se ve el reporte completo (FR-311)
+            raise
         self._nombre = self._texto.strip()
         self._juego = self._fabrica_controles(self._backend, estado)
         self._ir_a(JUEGO)
+        self._tomar_el_reporte()                        # el de la partida nueva, antes de su primera acción (FR-313); al cargar, ninguno
+
+    def _tomar_el_reporte(self) -> None:
+        reporte = self._backend.resolubilidad()
+        self._reporte_resolubilidad = None if reporte is None else lineas_reporte(reporte)
+        self._reporte_advertencia = reporte is not None and reporte.veredicto != RESOLUBLE
 
     # ================================================================== partida, pausa y fin
     def _en_juego(self, evento) -> None:
@@ -338,6 +354,8 @@ class ControladorPygame:
         orden = self._juego.procesar_evento(evento, elemento)
         if espera and self._juego.aviso is None:        # esperar suena; si el backend la rechazó, no
             self._activaciones += 1
+        if self._juego.estado.reloj > 0:
+            self._reporte_resolubilidad = None          # ya hubo una acción: el reporte de inicio se oculta
         if self._juego.estado.terminado:
             self._terminar_partida()
         elif orden == PIDE_PAUSA:
@@ -446,6 +464,8 @@ class ControladorPygame:
     def _ir_a(self, pantalla: str) -> None:
         self._pantalla = pantalla
         self._fin_en = None
+        self._reporte_resolubilidad = None
+        self._reporte_advertencia = False
         self._seleccion = -1 if pantalla == JUEGO else 0
         self._aviso = None
         self._bajo_el_raton = None
