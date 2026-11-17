@@ -653,6 +653,8 @@ tiempo que consultar». Anotado como supuesto en la spec de la 004 (Suposiciones
 
 **HUD con mensajes largos y vida mayor que vida_max.** Un mensaje de 342 px en un ancho útil de 334 no se arregla con más holgura (achicaría la letra de todos): `HudJuego._mensajes` ya lo recorta con `recortar_a_ancho` y «...», así que no cambió la vista; `barra_de_vida` ya limitaba la proporción a 1.0 y ahora lo cubren dos pruebas (ratas de cripta-01: vida 12, vida_max 8).
 
+**Tamaño de letra del HUD.** Se mide con los nombres del catálogo de la Parte II (`MENSAJES_PARA_MEDIR` incluye Espectro acechador y Carcelero errante): con el catálogo nuevo el peor mensaje (342 px) ya no cabe en 334 a 17 px y el tamaño baja a 15, así que la vista no recorta mensajes reales; el recorte con «...» queda como protección. `test_vista_hud` pasa con el catálogo nuevo y con el viejo.
+
 #### §5.5 (subsección) Banco de pruebas de la línea de tiempo (`--bench`)
 
 `Service/BenchLineaTiempo.py` (con `Service/Cronometro.py` y `ResultadoBenchDTO`, igual que

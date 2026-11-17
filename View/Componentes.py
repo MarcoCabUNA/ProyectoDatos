@@ -54,9 +54,16 @@ AYUDA_PARA_MEDIR = (
     "Ctrl + S / F5: guardar   Ctrl + L / F9: cargar",
     "Esc: menú (o cierra la línea o el panel)",
 )
-# Los peores mensajes del motor (tiempo de 4 cifras, enemigo #99, daño de 999 y los nombres más largos del paquete offline);
+# Los peores mensajes del motor (tiempo de 4 cifras, enemigo #99, daño de 999 y los nombres más largos del catálogo de la
+# Parte II, que incluye los del paquete offline: Espectro acechador y Carcelero errante son los más anchos);
 # test_vista_hud comprueba que con ellos se elige el mismo tamaño que con TODAS las plantillas
 MENSAJES_PARA_MEDIR = (
+    "[t=9999] Espectro acechador #99 ataca a Jugador: 999 de daño",
+    "[t=9999] Jugador ataca a Espectro acechador #99: 999 de daño",
+    "[t=9999] El veneno hace 999 de daño a Espectro acechador #99",
+    "[t=9999] Carcelero errante #99 ataca a Jugador: 999 de daño",
+    "[t=9999] Jugador ataca a Carcelero errante #99: 999 de daño",
+    "[t=9999] El veneno hace 999 de daño a Carcelero errante #99",
     "[t=9999] Guardián óseo #99 ataca a Jugador: 999 de daño",
     "[t=9999] Jugador ataca a Guardián óseo #99: 999 de daño",
     "[t=9999] El veneno hace 999 de daño a Guardián óseo #99",
