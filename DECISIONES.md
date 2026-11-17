@@ -740,3 +740,7 @@ lee. Costo: O(1). Pruebas: `tests/test_danio_recibido.py`.
 
 **Nota sobre las pruebas.** La mutación que quita `Evento_pendiente` del daño solo se nota contando los cambios del intervalo, y el
 helper de la prueba lee atributos privados del historial (se rompe si cambia el buffer).
+
+### Comando `mapa` de la 002 (interfaz)
+
+**Supuesto: con la partida terminada el comando `mapa` no está disponible**, igual que `historia`. T048 punto 1 lo pide «también con la partida terminada», pero FR-219 y FR-220 no lo exigen. Al terminar la partida, `ControladorPygame` pasa a la pantalla de victoria o derrota (o ignora todos los eventos durante la demora del fin) y esa pantalla no tiene línea de comandos. Habilitar `mapa` ahí obliga a darle teclas, un campo en `PantallaDTO` y un dibujo a las pantallas de fin, es decir, tocar la navegación de victoria y derrota por una consulta que el jugador ya pudo hacer mientras jugaba. Si el grupo lo quiere, el cambio es de esas pantallas y no de `ver_mapa`, que no mira si la partida terminó.

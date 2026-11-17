@@ -156,6 +156,15 @@ class PruebasComando(ConPartida):
             self.backend.mover(abiertas[(x >> 16) % len(abiertas)])
         self.assertGreater(len(self.backend.ver_mapa().salas), 5)
 
+    def test_con_la_partida_terminada_el_comando_no_esta_disponible_pero_ver_mapa_no_falla(self):
+        import dataclasses
+        terminado = dataclasses.replace(self.estado, terminado=True, resultado="victoria")
+        controles = ControlesJuego(self.backend, terminado)
+        self.assertIsNone(controles.procesar_evento(tecla(ENTER)))             # la línea no se abre
+        self.assertIsNone(controles.linea)
+        self.assertIsNone(controles.mapa)
+        self.assertIsInstance(self.backend.ver_mapa(), MapaConocidoDTO)         # el backend no mira si terminó
+
     def test_fr219_ver_mapa_sin_partida_es_error_de_operacion(self):
         from UIController.ControladorBackend import ErrorOperacion
         with self.assertRaises(ErrorOperacion):
