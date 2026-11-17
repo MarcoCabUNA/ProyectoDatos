@@ -30,6 +30,8 @@ pantalla actual quedan en su valor por omisión (None o vacío).
                panel de solo lectura sin calcular nada. None si no hay ninguno
     linea_comandos   lo que el jugador lleva escrito en la línea de comandos ("juego"); None si está cerrada, "" si está
                abierta y vacía
+    mapa       el MapaConocidoDTO del comando `mapa` ("juego", feature 002, FR-219); la Vista lo dibuja sin calcular nada del
+               juego. None si el panel está cerrado
 
 Regla de los DTOs: solo transportan datos.
 """
@@ -37,6 +39,7 @@ from dataclasses import dataclass, field
 
 from DTO.ElementoDTO import ElementoDTO
 from DTO.EstadoJuegoDTO import EstadoJuegoDTO
+from DTO.MapaConocidoDTO import MapaConocidoDTO
 from DTO.PuntajeDTO import PuntajeDTO
 from DTO.ReporteDatosDTO import ReporteDatosDTO
 from DTO.ResumenHistoriaDTO import ResumenHistoriaDTO
@@ -61,3 +64,4 @@ class PantallaDTO:
     activaciones: int = 0
     resumen: ResumenHistoriaDTO | None = None
     linea_comandos: str | None = None
+    mapa: MapaConocidoDTO | None = None

@@ -35,6 +35,7 @@ from DTO.ConfiguracionDTO import ConfiguracionDTO
 from DTO.Direcciones import DIRECCIONES
 from DTO.EstadoJuegoDTO import EstadoJuegoDTO
 from DTO.InventarioDTO import InventarioDTO
+from DTO.MapaConocidoDTO import MapaConocidoDTO
 from DTO.PuntajeDTO import PuntajeDTO
 from DTO.ReporteDatosDTO import ReporteDatosDTO
 from DTO.ReporteResolubilidadDTO import ReporteResolubilidadDTO
@@ -311,6 +312,13 @@ class ControladorBackend:
             raise
         self._reporte_no_iniciada = None
         return self._empezar(contexto)
+
+    # ================================================================== feature 002 (mapa conocido)
+    def ver_mapa(self) -> MapaConocidoDTO:
+        """El comando `mapa` (feature 002, FR-219, FR-220): el mapa conocido de la partida en curso. Solo lee
+        `motor.mapa.a_dto()`: no consume tiempo, no es una acción, no se anexa a partida.log ni a la línea de tiempo,
+        no toca el historial y no descarta un viaje en curso."""
+        return self._activa().motor.mapa.a_dto()
 
     # ================================================================== feature 002 («ir a»)
     def ir_a(self, nombre: str) -> ViajeDTO:

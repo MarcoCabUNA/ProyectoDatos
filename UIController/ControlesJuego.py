@@ -53,6 +53,7 @@ from DTO.ElementoDTO import (ELEMENTO_BOTON, ELEMENTO_ENEMIGO, ELEMENTO_INVENTAR
                              ELEMENTO_PUERTA, ElementoDTO)
 from DTO.EstadoJuegoDTO import EstadoJuegoDTO
 from DTO.InventarioDTO import InventarioDTO
+from DTO.MapaConocidoDTO import MapaConocidoDTO
 from DTO.ResumenHistoriaDTO import ResumenHistoriaDTO
 from UIController.ControladorBackend import CRITERIOS_INVENTARIO, ControladorBackend, ErrorOperacion
 
@@ -62,6 +63,7 @@ PIDE_CARGAR = "cargar"
 
 MENSAJE_USO_HISTORIA = "Uso: historia <t> (instante, entero >= 0) o historia #k (acción, entero >= 1)."
 _PALABRA_HISTORIA = "historia"
+_PALABRA_MAPA = "mapa"
 
 BOTONES = ("Esperar",)          # los botones de la pantalla de juego; ELEMENTO_BOTON con indice 0 es "Esperar"
 DOBLE_CLIC_MS = 400             # dos clics sobre la misma casilla en menos de esto cuentan como doble clic
@@ -80,7 +82,7 @@ AYUDA_JUEGO = (
     "Clic en un enemigo (o Espacio): atacar",
     "Clic en un objeto del suelo: recoger",
     "E (o clic en la puerta): abrir una puerta",
-    "Z: esperar   Enter: línea de comandos (historia)",
+    "Z: esperar   Enter: comandos (historia, mapa)",
     "Rueda o Tab: recorrer el inventario",
     "U (o doble clic): usar   Q (o clic derecho): equipar",
     "G (o Mayús + clic): soltar   V: cambiar el orden",
@@ -105,6 +107,7 @@ class ControlesJuego:
         self.estado = estado
         self.aviso: str | None = None
         self.resumen: ResumenHistoriaDTO | None = None       # el último `historia` consultado (solo lectura, feature 004)
+        self.mapa: MapaConocidoDTO | None = None             # el panel del comando `mapa` abierto (solo lectura, feature 002)
         self.linea: str | None = None                        # la línea de comandos: None cerrada, "" abierta y vacía
         self._objetivo: str | None = None
         self._ultimo_clic: tuple[int, int] | None = None     # (casilla, milisegundos) del último clic en el inventario
@@ -153,6 +156,9 @@ class ControlesJuego:
         muestra tal cual). Una consulta no cambia la partida: ni reloj, ni acciones, ni partida.log."""
         self.aviso = None
         partes = texto.split()
+        if len(partes) == 1 and partes[0].casefold() == _PALABRA_MAPA:
+            self._alternar_el_mapa()
+            return
         if len(partes) != 2 or partes[0].casefold() != _PALABRA_HISTORIA:
             self.aviso = MENSAJE_USO_HISTORIA
             return
@@ -167,6 +173,12 @@ class ControlesJuego:
                             else self._backend.historia_por_instante(numero))
         except ErrorOperacion as error:
             self.aviso = str(error)
+
+    def _alternar_el_mapa(self) -> None:
+        if self.mapa is not None:
+            self.mapa = None
+            return
+        self.mapa = self._backend.ver_mapa()
 
     def _teclado_en_la_linea(self, evento) -> None:
         """Con la línea abierta las teclas del juego NO actúan: W, E, Z... se escriben, Retroceso borra (no lee el
@@ -226,6 +238,9 @@ class ControlesJuego:
         elif tecla in _TECLAS_ENTER:
             self.linea = ""                 # abre la línea de comandos (feature 004)
         elif tecla == pygame.K_ESCAPE:
+            if self.mapa is not None:
+                self.mapa = None            # el panel del mapa se cierra primero: el juego sigue tal cual estaba
+                return None
             if self.resumen is not None:
                 self.resumen = None         # primero se cierra el panel de historia: el juego sigue tal cual estaba
                 return None
@@ -303,6 +318,7 @@ class ControlesJuego:
         """Una acción del jugador: el estado nuevo reemplaza al anterior. Si fue rechazada, el motivo es el aviso."""
         self.estado = estado
         self.resumen = None                 # el panel de historia describe un estado pasado: una acción nueva lo cierra
+        self.mapa = None                    # y el del mapa también: ya no es el mapa de ahora
         self._ultimo_clic = None            # el inventario pudo cambiar: un clic anterior ya no cuenta
         if not estado.terminado and estado.resultado is not None:
             self.aviso = estado.resultado

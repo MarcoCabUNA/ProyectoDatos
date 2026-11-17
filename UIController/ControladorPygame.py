@@ -240,7 +240,7 @@ class ControladorPygame:
                                aviso=self._aviso or self._juego.aviso, ayuda=self._juego.ayuda(),
                                estado=self._juego.estado, objetivo=self._juego.objetivo(),
                                elemento_bajo_el_raton=self._bajo_el_raton, resumen=self._juego.resumen,
-                               linea_comandos=self._juego.linea)
+                               linea_comandos=self._juego.linea, mapa=self._juego.mapa)
         if self._pantalla == PAUSA:
             return PantallaDTO(PAUSA, "Pausa", list(_OPCIONES_PAUSA), self._seleccion, aviso=self._aviso,
                                ayuda=list(_AYUDA_PAUSA), estado=self._juego.estado)

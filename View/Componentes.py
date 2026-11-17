@@ -46,7 +46,7 @@ AYUDA_PARA_MEDIR = (
     "Clic en un enemigo (o Espacio): atacar",
     "Clic en un objeto del suelo: recoger",
     "E (o clic en la puerta): abrir una puerta",
-    "Z: esperar   Enter: línea de comandos (historia)",
+    "Z: esperar   Enter: comandos (historia, mapa)",
     "Rueda o Tab: recorrer el inventario",
     "U (o doble clic): usar   Q (o clic derecho): equipar",
     "G (o Mayús + clic): soltar   V: cambiar el orden",
@@ -172,6 +172,7 @@ HUD_PANELES = [HUD_ESTADISTICAS, HUD_EFECTOS, HUD_MENSAJES, HUD_INVENTARIO, HUD_
 HUD_HISTORIA = pygame.Rect(8, 296, 350, 168)
 HUD_HISTORIA_ARRIBA = 24                     # donde empieza la primera línea del resumen (debajo del rótulo)
 HUD_LINEA = pygame.Rect(380, 712, 640, 40)
+HUD_MAPA = pygame.Rect(374, 16, 644, 688)       # el panel del comando `mapa` (feature 002): entre los paneles de los lados
 HUD_RELLENO = 8                              # margen interior de los paneles
 HUD_MENSAJES_LINEAS = 20                     # capacidad del panel de mensajes
 HUD_MENSAJES_INTERLINEA = 13
