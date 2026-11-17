@@ -8,13 +8,13 @@ método nuevo del motor (para Marco) y los comandos y banderas (integrante 3). A
 
 ## 1. DTO guardado (Derek)
 
-`PartidaGuardadaDTO` recibe **un campo nuevo al final**, con valor por defecto. Además tendrá el campo `mapa`
-(integrante 2, spec 002 FR-223) **antes** de `linea`, de modo que `linea` siga siendo el último campo. Cada punto
-de control es un `PartidaGuardadaDTO` y por eso lleva su propio mapa. *Acordado con el integrante 2; falta
-confirmar el orden de campos.*
+`PartidaGuardadaDTO` gana, al final y con valor por defecto `None`, dos campos, en este orden: primero `mapa`
+(integrante 2, spec 002 FR-221 y FR-223) y después `linea`, que sigue siendo el **último** campo. Cada punto de control
+es un `PartidaGuardadaDTO` y por eso lleva su propio mapa (su `partida.linea` sigue siendo `None`).
 
 | Campo | Tipo | Valor por defecto |
 |---|---|---|
+| `mapa` | `MapaConocidoGuardadoDTO \| None` | `None` |
 | `linea` | `LineaTiempoGuardadaDTO \| None` | `None` |
 
 Los DTO existentes no cambian de orden. `a_diccionario` / `desde_diccionario` se extienden con el
@@ -47,15 +47,16 @@ Restricciones que Derek puede validar al leer:
 
 - `VERSION_FORMATO` pasa de 1 a **2**. La cabecera sigue empezando por la magia `CRPT` y la versión,
   que se compara **antes** de interpretar el resto (ya ocurre hoy).
-- La cabecera v2 lleva también el **offset y el largo del bloque del mapa** (spec 002), además de los de la línea
-  (*acordado con el integrante 2; falta confirmar el orden de campos*). Cada punto de control lleva su propio mapa.
-- La cabecera gana el **offset y el largo** del bloque de la línea (campos nuevos en la cabecera; el
-  índice de salas y los bloques de sala no cambian de formato).
+- La cabecera de la versión 2 mide **58 bytes** y trae, en este orden: la magia `CRPT`, la versión, el offset y el
+  largo del bloque global, el offset y la cantidad de entradas del índice, el id de sala mínimo, el offset y el largo
+  del bloque del mapa, y el offset y el largo del bloque de la línea. Un largo 0 significa que el campo
+  (`mapa` o `linea`) es `None`. El índice de salas y los bloques de sala no cambian de formato.
+- El orden de los bloques en el archivo es: **global, mapa, línea, salas, índice**.
 - El bloque de la línea usa los mismos escritores y lectores primitivos de hoy (`entero`,
   `texto_opcional`, `cantidad`…) y escribe, en este orden: `k`, la cantidad y las acciones, la cantidad y
-  los puntos (cada uno con su `acciones_completadas`, su bloque global y sus salas), la cantidad y las
-  cargas, la cantidad y las fichas. No hay marcadores de pergamino.
-- Si `linea` es `None`, el bloque ocupa largo 0.
+  los puntos, la cantidad y las cargas, la cantidad y las fichas. Cada punto de control escribe:
+  `acciones_completadas`, su bloque global, la cantidad y sus salas, y el bloque de su mapa con el largo delante
+  (largo 0 = `None`). No hay marcadores de pergamino.
 - **Archivo de la primera parte (versión 1)**: se rechaza como incompatible con un mensaje que dice la
   versión leída y la esperada, sin cargar nada y sin modificar la partida actual (FR-421). No se migra.
 - Leer solo una sala del archivo (`cargar_sala`) no debe leer el bloque de la línea.
