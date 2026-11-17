@@ -3676,3 +3676,127 @@ Registrá también la consulta del puente 1a1e838abf4 (revisión de 07f28e5, e01
 **Uso de la respuesta:** se aplicaron las cuatro observaciones BAJAS de la consulta `1a1e838abf4`: el README de la 001 nombra `bench-2026-11-13.txt` (cifras de R1 a R6 y §5.1 y §5.2) y `bench-2026-11-15.txt` (mismas mediciones con el mapa conocido, mismos conteos), dice que el cazador se mueve si d ≤ `rango` (incluido d = `rango`) y que una `duracion` es inválida si no es entero ≥ 1 (incluidos un no entero y un `bool`); `tests/test_fr122_forzar.py` busca «costo 0» en el caso de costo inválido. Un solo commit.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Feature 003, T057 (fase 8), como dice ahora specs/003-resolubilidad/tasks.md. Sin commit. Los datos ya están descargados en "D:\2 ciclo 2026\Estructura de datos\paquete-nuevo" (cripta-02 a cripta-06, catalogo.json y catalogo_version.json del API del 15/11). No modifiques esa carpeta.
+
+1. paquete/: reemplazá cripta-02, cripta-03 y cripta-04 por las descargadas, agregá cripta-05 y cripta-06, y reemplazá catalogo.json y catalogo_version.json por los descargados. paquete/cripta-01/ NO se toca. criptas.json = la lista de criptas.json descargado con la entrada de cripta-01 del criptas.json actual al principio, escrito como DescargadorPaquete._escribir (json.dump con ensure_ascii=False e indent=2). Comprobá que git diff de paquete/cripta-01 está vacío y que el diff de criptas.json solo agrega cripta-05 y cripta-06.
+2. tests/Utilidades.py: catalogo_real() pasa a devolver solo las fichas de catalogo.json que usa ID_CRIPTA, en el orden del paquete, con este docstring y este código:
+    """Las fichas de catalogo.json que usa ID_CRIPTA, en el orden del paquete: los tipos de sus enemigos y
+    trampas, sus objetos, la llave de salida y lo que sueltan sus enemigos. catalogo.json es compartido por
+    todas las criptas del paquete, y estas pruebas cuentan solo las fichas de ID_CRIPTA."""
+    todas = leer_paquete("catalogo.json")["entidades"]
+    usados = [general_real()["llave_salida"]]
+    for sala in contenido_real():
+        usados += [e["tipo"] for e in sala["enemigos"]] + [t["tipo"] for t in sala["trampas"]] + sala["objetos"]
+    agregado = True
+    while agregado:                                   # lo que sueltan los enemigos usados, hasta que no cambie
+        agregado = False
+        for f in todas:
+            if f["id"] in usados:
+                for id_suelta in f.get("suelta") or []:
+                    if id_suelta not in usados:
+                        usados.append(id_suelta)
+                        agregado = True
+    return [f for f in todas if f["id"] in usados]
+   Comprobá que devuelve exactamente las mismas 11 fichas que el catalogo.json de antes (mismos ids).
+3. tests/TestAlmacenCatalogo.py, test_formato_en_disco: «a.guardar(fichas_reales()[1])                    # ent_rata_gigante» pasa a «a.guardar([f for f in fichas_reales() if f.id == "ent_rata_gigante"][0])».
+4. Copiá "D:\2 ciclo 2026\Estructura de datos\paquete-nuevo\reporte_paquete_parteII.md" a specs/003-resolubilidad/paquete-2026-11-15.md sin cambiarle nada.
+5. DECISIONES.md, sección del integrante 2, «### §5.4 Resolubilidad»: reemplazá «(pendiente: 003)» por estos dos párrafos (no toques nada más del archivo):
+(pendiente: el resto de la 003, T064.)
+
+**Paquete de la Parte II y excepción de cripta-01 (T057, 15/11).** El API del 15/11 publica cripta-02 a cripta-06 (catálogo 4b9e75a42be5) y ya no cripta-01 (responde 404). El paquete local conserva cripta-01/ byte idéntica, porque la usan las pruebas de los tres integrantes, y toma del API el catálogo y las demás criptas. Como el catálogo es uno solo para todas las criptas, cripta-01 usa las fichas nuevas: ent_rata_gigante (vida_max 12→8, ataque 5→3, defensa 1→0, velocidad 150→110) y ent_guardian_oseo (vida_max 20→16, ataque 7→5, defensa 3→2). Su contenido trae "vida": 12 en las ratas y Enemigo toma esa vida tal cual, así que empiezan con 12 de vida y vida_max 8. Evitarlo tocaría la primera parte sin un FR o inventaría datos; el integrante 1 lo aceptó el 15/11. Además, cripta-01 es la única cripta sin llaves.json: --verificar cripta-01 --offline termina con código 1 («falta el archivo … llaves.json», FR-320). Reporte completo, con los veredictos de T058: [paquete-2026-11-15.md](specs/003-resolubilidad/paquete-2026-11-15.md).
+   (Usá el mismo ancho de línea que el resto de la sección.)
+6. Corré python main.py --verificar <id> --offline para cripta-01 a cripta-06 y decime el resultado y el código de cada una (esperado: 01 código 1; 02, 03, 04 y 06 RESOLUBLE, código 0; 05 NO RESOLUBLE, código 3).
+7. Corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8). Se esperan solo dos fallas, que NO se arreglan acá: test_vista_hud.py (del integrante 3: el mensaje con «Espectro acechador» mide 335 px y el ancho útil es 334; lo arregla ella) y test_fr312_forzar_con_replay_sin_efecto (el log de ejemplo es de la cripta-02 vieja; lo regrabo yo jugando). Si falla cualquier otra cosa, PARÁ y decime.
+
+Después de eso PARÁ: la partida de ejemplo la juego yo. No marques T057 ni T058. Al final: la lista de archivos cambiados, los diffs de tests/Utilidades.py, tests/TestAlmacenCatalogo.py y DECISIONES.md, el resultado del punto 6 y el de la suite.
+
+**Uso de la respuesta:** T057, el paquete de la Parte II, armado como dice `tasks.md`: `paquete/cripta-01/` byte idéntica, `criptas.json` = la lista del API con `cripta-01` al principio, catálogo `4b9e75a42be5` y `cripta-02` a `cripta-06` del API (Claude Code comprobó con `diff -r` y `cmp` que son idénticos a lo descargado). En las pruebas de la primera parte, `catalogo_real()` devuelve solo las 11 fichas que usa `cripta-01` (las mismas de antes, ahora en el orden del catálogo nuevo) y `test_formato_en_disco` busca la rata por id. El reporte de diferencias quedó en `specs/003-resolubilidad/paquete-2026-11-15.md`; corregí a mano la medida del HUD (342 px en Windows, no 335, que era en Linux). La nota de `DECISIONES.md` §5.4 sobre la excepción de `cripta-01` (ratas 12/8 y código 1 de `--verificar`), aceptada por el integrante 1, quedó para el commit `docs(003)` siguiente, con el resto de §5.4. T058, `--verificar --offline`: 02, 03, 04 y 06 RESOLUBLE (código 0), 05 NO RESOLUBLE con un ciclo hierro↔negra (código 3) y 01 código 1. Después regrabé `ejemplos/partida_ejemplo.log` jugando la `cripta-02` nueva con `--offline` hasta ganar (47 acciones, victoria; el replay da lo mismo). La suite quedó con 952 pruebas OK (7 skip) y solo falló `test_vista_hud.py` del integrante 3 (el mensaje con «Espectro acechador» no cabe), que arregló ella antes de este commit. Revisé el zip antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Feature 003, T065, T066 y T067 de specs/003-resolubilidad/tasks.md. Sin commit.
+
+Estado de la carpeta: hay cambios SIN commit del paquete de la Parte II (paquete/, tests/Utilidades.py, tests/TestAlmacenCatalogo.py, DECISIONES.md, ejemplos/partida_ejemplo.log, specs/003-resolubilidad/paquete-2026-11-15.md). No los toques.
+
+1. T065: en README.md, documentar --verificar <cripta> y --forzar como dice la tarea (con y sin --offline; códigos 0 resoluble, 3 no resoluble, 1 no concluyó, 2 argumentos inválidos; el reporte va a la salida estándar; qué hace --forzar y cuándo no tiene efecto; --verificar no se combina con --replay ni --bench). Agregá una línea: con --offline, cripta-01 termina con código 1 porque el paquete no trae su llaves.json (ya no está publicada). Ponelo donde el README describe las opciones de la línea de comandos, siguiendo su formato, sin cambiar lo de los otros integrantes. El equipo acordó que yo agrego solo la parte de la 003.
+2. T066: en specs/003-resolubilidad/spec.md, tabla «Trazabilidad del Apéndice B», cambiar «Se define en tasks.md» por el nombre completo de cada prueba: caso 1 test_h2_1_apendiceB_caso1_fr304_fr307_fr308_fr309_fr310_llave_salida_detras_de_su_puerta (tests/test_resolubilidad_reporte.py), caso 2 test_h1_4_apendiceB_caso2_fr303_fr316_llave_de_enemigo_errante y caso 3 test_h1_5_apendiceB_caso3_fr305_fr306_mismo_orden_en_dos_ejecuciones (tests/test_resolubilidad_logica.py), caso 4 test_h4_1_apendiceB_caso4_fr311_no_resoluble_no_inicia (tests/test_resolubilidad_servicio.py). Comprobá que esos nombres existen. Nada más de spec.md cambia.
+3. T067: corré los tres grep de la tarea y el chequeo de «No se tocan» sobre los commits de la 003 (desde el primer commit de la feature hasta HEAD). Si no hay coincidencias nuevas, marcá T067 con una nota de lo que corriste. Si las hay, NO cambies código: decímelo.
+4. En tasks.md marcá [x] T065 y T066.
+
+Al final: el diff de README.md y de spec.md, el resultado de cada grep y los archivos para dos commits: (a) spec(003) solo con spec.md; (b) docs(003) con README.md y tasks.md.
+
+**Uso de la respuesta:** T065 (README: `--verificar` y `--forzar`, con los códigos 0, 3, 1 y 2, la salida estándar, qué no se combina y la excepción de `cripta-01` con `--offline`; el equipo acordó que cada uno documenta su feature), T066 (los nombres reales de las cuatro pruebas del Apéndice B en la trazabilidad de `spec.md`, en el commit `spec(003)` aparte) y T067 (los tres grep y el chequeo de «No se tocan» sobre los commits de la 003: sin coincidencias nuevas; las 5 que aparecen son comentarios de antes de la feature). Claude Code avisó que el ejemplo del README con `cripta-02 --offline` necesita el paquete nuevo y que la sección «Modo --offline» estaba desactualizada.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Ahora T063 de specs/003-resolubilidad/tasks.md. Sin commit. Corré .venv\Scripts\python.exe main.py --bench con PYTHONIOENCODING=utf-8 (tarda; dejalo terminar) y guardá la tabla completa en specs/003-resolubilidad/bench-2026-11-16.txt, con un encabezado como el de specs/002-niebla-ir-a/bench-2026-11-15.txt: qué es, el comando, la fecha, la rama y el commit sobre el que corre (con el paquete de la Parte II sin commitear en la carpeta), la duración, la máquina (leela con PowerShell, no la inventes), la versión de Python y la semilla. Después de la tabla, una sección «Comprobaciones (quickstart §4)» con cada criterio de T063 y si se cumple, con los números: la fila de la cripta con más salas del paquete con mediana < 200 ms; B1 de 1 000 a 10 000 salas crece ≤ ×20; B2 crece al menos el doble que B1; B3 crece como B1; B5 y B6 muestran el crecimiento de su fila de research R7; y el determinismo (dos llamadas a cripta_en_cuadricula y a cripta_en_peine con la misma semilla dan lo mismo: comparalas en Python, sin correr el bench dos veces). Si algún criterio no se cumple, NO cambies código ni umbrales: decímelo. Marcá T063 solo si todo se cumple. No toques ningún otro archivo.
+
+**Uso de la respuesta:** primera corrida de T063 (`--bench`, tabla en `bench-2026-11-16.txt`). Se cumplieron SC-306, SC-307, NFR-303 y el determinismo, pero B5 y B6 crecían menos que el «~×100» que research R7 daba para el tramo de 100 a 1 000 (por la parte fija en el tamaño chico), y un script corrió en paralelo con el bench. No se marcó T063; se decidió corregir R7 primero (Principio IX) y repetir la corrida.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Opción 2. Sin commit:
+1. specs/003-resolubilidad/research.md, R7, fila B6: después de «de 1 000 a 3 000, ~×3 frente a ~×9» agregá: «. Con 100 dientes pesa la parte que no depende de la frontera (unos 0,25 ms en las dos variantes), así que el factor medido de la lista única entre 100 y 1 000 queda por debajo de ×100 (×47 el 16/11, unos ×78 sin esa parte); lo que respalda la decisión es ese tramo frente al ~×11 de la agrupada, el de 1 000 a 3 000 y el tiempo a 2 000 salas». Fila B5: después de «lo que respalda la decisión es el crecimiento y el tamaño de 1 000 salas» agregá: « (por lo mismo, el factor de la lineal entre 100 y 1 000 queda por debajo de ×100: ×76 el 16/11)». Nada más de research.md.
+2. README.md, sección «Modo --offline»: solo la frase de «cuatro publicadas al 18 de octubre», que pase a decir lo que trae el paquete: cripta-02 a cripta-06 (publicadas el 15/11) y cripta-01, que ya no está publicada y no trae llaves.json.
+3. Volvé a correr --bench SOLO, sin nada en paralelo, y reemplazá la tabla y las comprobaciones de specs/003-resolubilidad/bench-2026-11-16.txt con esa corrida (sacá la nota del script en paralelo). Las comprobaciones de B5 y B6 se leen contra R7 ya corregido. Si se cumple todo, marcá T063.
+Al final: el diff de research.md y de README.md, la tabla de comprobaciones nueva y si marcaste T063.
+
+**Uso de la respuesta:** R7 explica el crecimiento de B5 y B6 en el tamaño chico (lo que respalda la decisión es el tramo grande y el tiempo a 1 000 o 2 000 salas); el README dice qué trae el paquete de la Parte II; el bench se volvió a correr solo (122 s) y cumple todos los criterios: la `cripta-06` en 1,371 ms, B1 ×14,1, B2 ×98,5, B5 lineal ×100,9 de 1 000 a 10 000, B6 lista única ×8,4 de 1 000 a 3 000. Se marcó T063.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Dos ajustes, sin commit y sin volver a correr el bench:
+1. research.md, R7: que cite la corrida que queda como evidencia (bench-2026-11-16.txt). Fila B5: «×76 el 16/11» pasa a «×50 en bench-2026-11-16.txt». Fila B6: «(×47 el 16/11, unos ×78 sin esa parte)» pasa a «(×55 en bench-2026-11-16.txt, unos ×98 sin esa parte)» y «frente al ~×11 de la agrupada» pasa a «frente al ~×13 de la agrupada». Nada más.
+2. README.md, «Modo --offline»: reacomodá solo ese párrafo para que ninguna línea pase el ancho de las demás, sin cambiar el texto.
+Al final, el diff de los dos.
+
+**Uso de la respuesta:** R7 cita los números de la corrida que queda como evidencia (×50 y ×55), y el párrafo del README queda con el ancho de las demás líneas. `research.md` fue en el commit `research(003)`.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Sí, sacá de bench-2026-11-16.txt la nota de las comprobaciones de B6 que dice que R7 cita «×47» y «×76»: ya no es cierto. Nada más del archivo. Sin commit.
+
+**Uso de la respuesta:** se quitó del archivo del bench una nota que ya no era cierta.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Ahora T064 de specs/003-resolubilidad/tasks.md. Sin commit.
+
+1. En DECISIONES.md, sección del integrante 2, apartado «### §5.4 Resolubilidad»: escribí el apartado completo como dice T064, a partir de research R0 a R9 y de los números de specs/003-resolubilidad/bench-2026-11-16.txt (enlace a ese archivo), con el mismo estilo y ancho de línea que «§5.3 Mapa conocido» de la misma sección. Por cada decisión: el problema, las alternativas con su complejidad, la decisión, la evidencia de B1 a B6 y si coincide con el plan. Incluí todo lo que pide la tarea: R0; el enlace (sin repetirla) a «Diferencia conocida entre la verificación y el motor de P1» del integrante 1; el límite conocido de la puerta con cierre automático y llaves distintas por cara; los hallazgos H-2 y H-3; los veredictos de T058 (02, 03, 04 y 06 RESOLUBLE con código 0; 05 NO RESOLUBLE con el ciclo hierro↔negra, código 3; 01 código 1 sin llaves.json); y la interpretación del Principio I sobre validar_ubicaciones con el precedente de 001 FR-122. El párrafo que ya está («Paquete de la Parte II y excepción de cripta-01») se queda, integrado donde corresponda; sacá la línea «(pendiente: el resto de la 003, T064.)». No toques las secciones de los integrantes 1 y 3 ni el §5.3. No inventes números: todos salen del archivo del bench, del reporte paquete-2026-11-15.md o de research.
+2. tasks.md, en T057: «Commit **propio** con paquete/, ejemplos/partida_ejemplo.log, el reporte, DECISIONES.md y esos dos archivos de pruebas» pasa a «Commit **propio** con paquete/, ejemplos/partida_ejemplo.log, el reporte y esos dos archivos de pruebas; la nota de (7) va en DECISIONES.md en el commit docs(003) siguiente, con el resto de §5.4 (T064)». En la lista de commits sugeridos (línea ~389), sacá DECISIONES.md de la lista de T057. Marcá [x] T064. No marques T057 ni T058 todavía.
+3. Revisá que todos los enlaces del apartado apunten a archivos y encabezados que existen.
+
+Al final: el apartado completo tal como quedó, el diff de tasks.md y la lista de enlaces comprobados.
+
+**Uso de la respuesta:** T064, el apartado «§5.4 Resolubilidad» de `DECISIONES.md`: la revisión de estructuras (R0) y siete decisiones (contrato y persistencia de las llaves; índice por ordenar y compactar; recorrido por oleadas con la frontera agrupada; orden determinista; puerta que bloquea y ciclos sin recursión; dónde vive cada parte, con la interpretación del Principio I sobre `validar_ubicaciones`; nada en el historial), cada una con problema, alternativas, complejidad, evidencia de B1 a B6 y si coincide con el plan; el paquete y los veredictos de T058; los límites conocidos (enlace a la diferencia con el motor del integrante 1, la puerta con cierre automático y llaves distintas por cara) y los hallazgos H-2 y H-3. T057 se ajustó: la nota del paquete va en `DECISIONES.md` en este commit. Revisé el apartado contra el archivo del bench (todos los números coinciden) y los enlaces.
+
+-----------------------------------------------------------------------------------------------------------------------
