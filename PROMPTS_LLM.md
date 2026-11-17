@@ -3445,3 +3445,72 @@ Al final corre la suite completa (con el catálogo viejo) y dime resultados y de
 
 **Uso de la respuesta:** se usó la respuesta para implementar el comando de ver el mapa conocido y su dibujo (FR-219/220), sin tiempo y fuera de partida.log
 
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Dos tareas, cada una en sus commits.
+
+A) Comando mapa con la partida terminada (T048 punto 3 / FR-219):
+Lee T048 y FR-219 en specs/002-niebla-ir-a. Si piden que "mapa" funcione con la partida terminada (victoria o derrota), implementa el cambio MÁS PEQUEÑO posible: que procesar_evento deje pasar solo el comando "mapa" (y su cierre con Esc) cuando la partida terminó, sin habilitar ninguna otra acción y sin tocar el flujo de pantallas de victoria/derrota. Si para lograrlo hay que cambiar más de unas 15 líneas o se arriesga la navegación de pantallas, NO lo hagas: agrega en DECISIONES.md (mi sección de 002) un supuesto que diga que, con la partida terminada, el comando no está disponible (igual que "historia"), y dímelo. Pruebas en cualquiera de los dos casos. Commit: "feat(002): el comando mapa funciona con la partida terminada" o "docs: supuesto, el comando mapa no está disponible con la partida terminada".
+
+B) T055 de la 003: mostrar el reporte de resolubilidad.
+Lee T055 y FR-311, FR-312 y FR-313 en specs/003-*. backend.resolubilidad() (de Derek, ya integrado) devuelve el reporte de la partida nueva, la advertencia con --forzar, el reporte completo si la partida no inició, y None al cargar o en replay. Implementa lo MÍNIMO para que:
+- antes de la primera acción de una partida nueva, la vista muestre el reporte (FR-313), como advertencia si se usó --forzar (FR-312);
+- si la partida no inicia (FR-311), el menú muestre el reporte completo. Ojo: hoy el error llega como ErrorOperacion y el aviso del menú se corta a AVISO_MAX_LINEAS = 2 líneas con "..."; comprueba si el reporte completo (por ejemplo "ciclo hierro ↔ negra") cabe o queda cortado, y si se corta, muéstralo de modo que el motivo (el ciclo o la llave que falta) se lea completo.
+- al cargar una partida o en replay, no se muestra nada.
+La vista solo recibe un DTO y dibuja (MVC de n capas, sin lógica de negocio en la vista). No toques ServicioResolubilidad ni ReporteResolubilidadDTO (son de Derek). Pruebas: reporte visible al iniciar, advertencia con forzar, no visible al cargar ni en replay, y reporte completo cuando la partida no inicia. Sin docstrings nuevos en P1. Commits "feat(003): ...". Marca T055 en tasks.md de la 003 solo si sus pruebas pasan y avísame, porque ese archivo lo comparte Derek.
+
+Corre la suite completa (catálogo viejo) y dime resultados y decisiones.
+
+**Uso de la respuesta:** se usó la respuesta para decidir el alcance del comando mapa con la partida terminada y para implementar T055 de la 003 (mostrar el reporte de resolubilidad).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Implementa T119–T122 de specs/002-niebla-ir-a/tasks.md (banco de «ir a», NFR-250, SC-252) con la cripta de referencia ya aclarada en la spec: cripta-06, 300 salas.
+- Logic/BenchViaje.py con medir(), siguiendo el mismo formato que BenchMapaConocido.medir (mira ese archivo y copia su estilo, sin inventar otro). Mide el paso de «ir a» (armar el grafo una vez, y luego un paso) con 300 salas. Usa cripta-06 del paquete con --offline si existe en paquete/; si no existe todavía (el paquete nuevo lo sube Derek), usa una cripta sintética de 300 salas y dilo claramente en la tabla.
+- Agrega BenchViaje.medir a ServicioBench después de BenchMapaConocido.medir, y actualiza tests/TestServicioBench.py:132 con la misma lista (Derek dio su visto bueno).
+- T122: agrega a la tabla de bench (specs/002-niebla-ir-a/ o donde lo indique la tarea) el resultado con el límite de NFR-250 y si cumple. No inventes números: usa los medidos.
+- Pruebas del bench como las de los otros bancos. Sin docstrings en P1. Commits "bench(002): ...".
+Corre la suite completa y dime los números medidos y si cumplen NFR-250.
+
+**Uso de la respuesta:** se usó la respuesta para implementar el banco de pruebas de «ir a» con 300 salas (NFR-250, SC-252).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Dos tareas, cada una en sus commits.
+
+A) Comando mapa con la partida terminada (T048 punto 3 / FR-219):
+Lee T048 y FR-219 en specs/002-niebla-ir-a. Si piden que "mapa" funcione con la partida terminada (victoria o derrota), implementa el cambio MÁS PEQUEÑO posible: que procesar_evento deje pasar solo el comando "mapa" (y su cierre con Esc) cuando la partida terminó, sin habilitar ninguna otra acción y sin tocar el flujo de pantallas de victoria/derrota. Si para lograrlo hay que cambiar más de unas 15 líneas o se arriesga la navegación de pantallas, NO lo hagas: agrega en DECISIONES.md (mi sección de 002) un supuesto que diga que, con la partida terminada, el comando no está disponible (igual que "historia"), y dímelo. Pruebas en cualquiera de los dos casos. Commit: "feat(002): el comando mapa funciona con la partida terminada" o "docs: supuesto, el comando mapa no está disponible con la partida terminada".
+
+B) T055 de la 003: mostrar el reporte de resolubilidad.
+Lee T055 y FR-311, FR-312 y FR-313 en specs/003-*. backend.resolubilidad() (de Derek, ya integrado) devuelve el reporte de la partida nueva, la advertencia con --forzar, el reporte completo si la partida no inició, y None al cargar o en replay. Implementa lo MÍNIMO para que:
+- antes de la primera acción de una partida nueva, la vista muestre el reporte (FR-313), como advertencia si se usó --forzar (FR-312);
+- si la partida no inicia (FR-311), el menú muestre el reporte completo. Ojo: hoy el error llega como ErrorOperacion y el aviso del menú se corta a AVISO_MAX_LINEAS = 2 líneas con "..."; comprueba si el reporte completo (por ejemplo "ciclo hierro ↔ negra") cabe o queda cortado, y si se corta, muéstralo de modo que el motivo (el ciclo o la llave que falta) se lea completo.
+- al cargar una partida o en replay, no se muestra nada.
+La vista solo recibe un DTO y dibuja (MVC de n capas, sin lógica de negocio en la vista). No toques ServicioResolubilidad ni ReporteResolubilidadDTO (son de Derek). Pruebas: reporte visible al iniciar, advertencia con forzar, no visible al cargar ni en replay, y reporte completo cuando la partida no inicia. Sin docstrings nuevos en P1. Commits "feat(003): ...". Marca T055 en tasks.md de la 003 solo si sus pruebas pasan y avísame, porque ese archivo lo comparte Derek.
+
+Corre la suite completa (catálogo viejo) y dime resultados y decisiones.
+
+**Uso de la respuesta:** se usó la respuesta para decidir el alcance del comando mapa con la partida terminada y para implementar T055 de la 003 (mostrar el reporte de resolubilidad).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Implementa T119–T122 de specs/002-niebla-ir-a/tasks.md (banco de «ir a», NFR-250, SC-252) con la cripta de referencia ya aclarada en la spec: cripta-06, 300 salas.
+- Logic/BenchViaje.py con medir(), siguiendo el mismo formato que BenchMapaConocido.medir (mira ese archivo y copia su estilo, sin inventar otro). Mide el paso de «ir a» (armar el grafo una vez, y luego un paso) con 300 salas. Usa cripta-06 del paquete con --offline si existe en paquete/; si no existe todavía (el paquete nuevo lo sube Derek), usa una cripta sintética de 300 salas y dilo claramente en la tabla.
+- Agrega BenchViaje.medir a ServicioBench después de BenchMapaConocido.medir, y actualiza tests/TestServicioBench.py:132 con la misma lista (Derek dio su visto bueno).
+- T122: agrega a la tabla de bench (specs/002-niebla-ir-a/ o donde lo indique la tarea) el resultado con el límite de NFR-250 y si cumple. No inventes números: usa los medidos.
+- Pruebas del bench como las de los otros bancos. Sin docstrings en P1. Commits "bench(002): ...".
+Corre la suite completa y dime los números medidos y si cumplen NFR-250.
+
+**Uso de la respuesta:** se usó la respuesta para decidir el alcance del comando mapa con la partida terminada y para implementar T055 de la 003 (mostrar el reporte de resolubilidad).
