@@ -3652,9 +3652,62 @@ Sí, haz lo pendiente. Tres grupos, en este orden, cada uno con sus commits. No 
 
 Al final corre la suite completa, dime el recuento de unittest y scripts, y el git status. No hagas push.
 
-se usó la respuesta para revisar los reportes de los Prompts 29 a 32, y para completar el banco de «ir a» con cripta-06, la prueba de humo, la línea del mapa en --hasta y el quickstart de la 004.
+**Uso de la respuesta:**  se usó la respuesta para revisar los reportes de los Prompts 29 a 32, y para completar el banco de «ir a» con cripta-06, la prueba de humo, la línea del mapa en --hasta y el quickstart de la 004.
 
 -----------------------------------------------------------------------------------------------------------------------
 **Fecha:** Martes 17 de noviembre 2026
 
 **Herramienta:** Claude Code
+
+Sí, revisa y corrige el quickstart de la 002 (§6, T126) con el paquete nuevo. En specs/002-niebla-ir-a/quickstart.md:
+
+1) Verifica contra el paquete actual (cripta-02 y lo que use la §6): que la cripta, sus salas, la antorcha en la Sala 1, la rata dormida en la 7 y el pergamino en la 8 siguen donde dice el texto. Si el contenido cambió, ajusta los pasos.
+2) Rehaz el ensayo de los 18 pasos sin ventana con el controlador y la vista reales, como la vez anterior, y corrige TODOS los relojes (costos por salida, no 100 fijo), los mensajes exactos (con grep), los tiempos de la parada por enemigos y por daño, y lo que se ve en el mapa. Si un paso ya no se puede reproducir con este paquete, dime cuál y propón uno equivalente.
+3) Mantén el formato de la columna «qué se espera». NO marques T126.
+Commit (spec): "spec(002): quickstart de ir a al día con el paquete nuevo (T126)". Sin cambios de código.
+Al final corre la suite completa y dime el recuento y el git status. No hagas push.
+
+**Uso de la respuesta:**  se usó la respuesta para revisar los resultados del banco con cripta-06 y de la prueba de humo, y para actualizar el quickstart de «ir a» (§6) al paquete nuevo de Derek.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Tres cambios, cada uno en su commit. Verifica cada dato con grep o git log antes de escribirlo.
+
+1) Spec (specs/002-niebla-ir-a/tasks.md): marca T110A (el integrante 1 ya revisó el contador, ver DECISIONES) y corrige el texto de T111: dice «sin estado / grafo en cada paso», pero ServicioIrA guarda el grafo entre pasos (cache de un valor por viaje; se vuelve a armar si motor.mapa cambia, por ejemplo tras cargar). Redáctalo sin inventar nada. Commit: "spec(002): T110A cerrada y T111 describe el grafo por viaje".
+
+2) DECISIONES.md:
+   a. En la sección «Contador de daño recibido» (alrededor de la línea 988) reemplaza «pendiente de la revisión del integrante 1» por que fue revisado por el integrante 1 (Marco) y aprobado, con los ajustes que se aplicaron (comentario en vez de docstring, prueba con la Regeneración real, textos de plan y tasks, «tres sitios», prueba de guardar y cargar, comparación con el valor de antes). Verifica en git log qué ajustes se aplicaron de verdad.
+   b. En mi sección de la 002 agrega una decisión: los mensajes de parada de «ir a» («Llegaste a …», «Viaje detenido: hay enemigos.», «… recibiste daño.», «… sin ruta conocida …», «Viaje interrumpido.») los escribe el backend en el panel de mensajes y no pasan por partida.log, así que --replay no los repite; el estado (reloj, sala, jugador, mapa) es el mismo. Cita las líneas reales (ServicioIrA.py y ControladorBackend.py).
+   Commit: "docs: contador de daño revisado por el integrante 1 y mensajes de parada de ir a fuera del log".
+
+3) Test: tests/test_sonidos_motor.py, función probar_se_cargan_los_nueve_efectos_reales_y_el_arranque_cumple_la_meta (límite de 800 ms en la línea ~175). Puede salir rojo por azar si la máquina está ocupada. Cámbialo para que mida el arranque hasta 3 veces (abrir y cerrar el motor cada vez) y use el MEJOR tiempo, manteniendo la meta de 800 ms y las demás aserciones. Imprime los tres tiempos. No cambies el límite. Comprueba que pasa 5 veces seguidas y también mientras corre otro proceso pesado (por ejemplo una compilación de Python en paralelo). Commit: "test: el arranque del cargador de sonidos toma el mejor de tres intentos".
+
+Al final corre la suite completa (en segundo plano, con un timeout de al menos 300 s) y dime el recuento. No hagas push.
+
+**Uso de la respuesta:** se usó la respuesta para cerrar T110A y T111, actualizar DECISIONES (contador de daño revisado, mensajes de parada fuera del log) y hacer más robusta la prueba del arranque de sonidos.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Implementa T041 de specs/001-terreno-cazador (FR-116, FR-117, SC-106, escenarios H4-1 y H4-2). Lee primero FR-116, FR-117 y SC-106 en spec.md, T038 a T041 de tasks.md, la fila de H4 del plan, View/EscenaJuego.py, View/Componentes.py, DTO/ActorDTO.py (comportamiento) y DTO/SalaDTO.py (SalidaDTO: costo y cerrada). Dime en 6 líneas qué vas a hacer antes de escribir código.
+
+Requisitos:
+1) FR-116: la escena de la sala actual muestra el costo junto a cada salida, TAMBIÉN junto a las cerradas, cerca de su puerta o marco en esa dirección (N, S, E, O). Debe leerse bien, no tapar al protagonista ni a los enemigos y no cambiar el reparto actual (las pruebas del reparto de 1 a 12 enemigos deben seguir pasando). El costo viene del EstadoJuegoDTO (ya trae el costo igualado, T038).
+2) FR-117: junto al nombre de cada enemigo, su comportamiento en texto («errante», «guardián», «rastreador», «cazador») tomado de ActorDTO.comportamiento, y SOLO el cazador lleva además un marcador visual propio (con primitivas de pygame, sin nuevos assets ni librerías). El texto debe caber en el ancho de la ficha del enemigo (NOMBRE_ANCHO_MAX y la ficha estrecha) con 1 y con 12 enemigos.
+3) Funciones puras para la parte de datos (por ejemplo las etiquetas de costo por dirección y el texto con marcador por enemigo) para poder probarlas sin dibujar, y la escena solo las dibuja. Sin lógica de negocio en la vista. Sin docstrings nuevos en archivos de la primera entrega (usa comentarios). Solo estructuras y librerías permitidas.
+4) Pruebas en tests/test_vista_escena.py (o en un archivo nuevo de vista junto a él), con la Vista REAL como las demás y nombres que citan escenario, FR y SC: test_h4_1_fr116_sc106_... (cada salida, también las cerradas, muestra su costo; una sala sin salida en una dirección no dibuja costo allí) y test_h4_2_fr117_sc106_... (cada enemigo muestra su comportamiento; solo el cazador lleva marcador; un errante y un cazador se distinguen). Haz una mutación para cada una (quitar el costo de las cerradas; poner el marcador a todos) y confirma que fallan.
+5) Genera una captura PNG de la escena con una sala de 3 salidas (una cerrada), un cazador y un errante, usando lo que ya hace tests/capturar_maqueta_hud.py o equivalente, FUERA del repositorio (carpeta temporal), y dime la ruta completa para verla.
+
+Commits:
+ a) código y pruebas: "feat(001): la escena muestra el costo de cada salida y el comportamiento del enemigo (H4-1, H4-2; FR-116, FR-117)".
+ b) spec, en commit aparte: marca T041 en specs/001-terreno-cazador/tasks.md; escribe los nombres de las pruebas en la fila de H4 del plan.md y en las filas H4-1 y H4-2 de trazabilidad de spec.md (donde dice «lo que se dibuja, en T041»); y agrega a la tabla del plan de cambios al código de la primera entrega (Principio III) la fila de View/EscenaJuego.py con la justificación FR-116 y FR-117. Mensaje: "spec(001): T041 cerrada, pruebas de vista de H4-1 y H4-2 y fila de EscenaJuego en el plan".
+Si algo choca con las medidas de la escena (por ejemplo, no hay sitio para el texto), propón la solución más simple y dímela; no cambies medidas de la escena sin decirlo.
+
+Al final corre la suite completa (en segundo plano, timeout de al menos 300 s) y dime el recuento y el git status. No hagas push.
+
+**Uso de la respuesta:** se usó la respuesta para implementar T041 de la 001: el costo de cada salida y el comportamiento del enemigo con marcador del cazador en la escena, con pruebas de vista H4-1 y H4-2.
