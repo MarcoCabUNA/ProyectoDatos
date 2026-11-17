@@ -3871,3 +3871,28 @@ Prompts principales, textuales:
 
 
 
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+git fetch y git merge origin/derek (trae el paquete de la Parte II: cripta-02 a 06 con llaves.json, catálogo
+4b9e75a42be5, cripta-01 sin cambios). Conflicto solo en PROMPTS_LLM.md: conservá todas las entradas por hora,
+sin duplicados, UTF-8 con CRLF. Cualquier otro conflicto en archivos de la 001: pará y avisame.
+Corré la suite completa con uv run y decime si algo de la 001 falla con el paquete nuevo.
+
+Luego, un commit por paso, suite en verde antes de cada commit, no push:
+1) Buscá en paquete/ qué criptas tienen ent_sabueso_oseo o ent_espectro_acechador (sala y rango) y salidas
+   con costo. Decímelo antes de seguir si ninguna los tiene.
+2) Prueba de humo (cita FR-107 a FR-111 y FR-114), offline con el paquete real, en una cripta con cazador
+   (preferí cripta-06 si lo tiene): iniciar partida, jugar acciones deterministas (esperar y moverse) hasta que
+   el cazador decida varias veces, y comprobar:
+   - que se carga sin errores de FR-122 (costos y rango válidos);
+   - que cada decisión del cazador coincide con paso_desde_cero;
+   - que --replay del log generado da el mismo resultado.
+   Sin estructuras prohibidas fuera de tests. Agregala a tasks.md como T059 (prueba con datos reales).
+3) PROMPTS_LLM.md con este pedido.
+Al final: qué cripta y cazador usaste, cuántas decisiones comprobó, la suite y los commits sin push.
+
+**Uso de la respuesta:** merge de `origin/derek` sin conflictos (PROMPTS_LLM.md tiene `merge=union`; quedó con todas las entradas de las dos ramas y sin repetidas). Con el paquete nuevo no falla nada de la 001 (1079 pruebas unittest OK); el único script que falla es `test_sonidos_motor.py`, por tiempo (arranque de ~810 ms con meta de 800 ms), intermitente y ajeno a la 001. Las criptas 02 a 06 tienen cazadores y salidas con costo (la 06: 42 cazadores; sabueso óseo con rango 600 y espectro acechador con 2400). Se agregó `tests/test_paquete_real_cazador.py` (T059): cripta-06, espectro de la sala 123 y sabueso de la sala 41, 26 decisiones de cazador iguales a `paso_desde_cero` y el replay con los mismos estados y decisiones. Revisé el diff antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
