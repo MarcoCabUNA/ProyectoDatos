@@ -113,6 +113,10 @@ def _fuente_cuadricula_con_pergamino():
     from tests.Utilidades import FuenteCuadricula
 
     class FuenteCuadriculaConPergamino(FuenteCuadricula):
+        def listar_criptas(self):
+            from DTO.CriptaDTO import ResumenCriptaDTO
+            return [ResumenCriptaDTO("cuadricula", "Cuadrícula de prueba", LADO_REAL * LADO_REAL, 1)]
+
         def obtener_catalogo(self, ids):
             return [ObjetoDTO(id=ID_PERGAMINO, nombre="Pergamino de retroceso", clase="pergamino_retroceso", peso=1,
                               valor=50) for i in ids if i == ID_PERGAMINO]

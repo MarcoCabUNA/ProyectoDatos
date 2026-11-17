@@ -339,6 +339,9 @@ def _mensajes_peores_del_motor():
     mensajes += [f"{t}{m}" for m in ("Entras a ", "Comienzas en ", "Partida cargada: estás en ")
                  for m in [m + s for s in salas]]
     mensajes += [f"{t}{verbo} {o}" for o in objetos for verbo in ("Recoges", "Sueltas", "Equipas", "Usas")]
+    mensajes += [f"{t}{m}{s}{fin}" for (m, fin) in (("Llegaste a ", "."), ("Viaje detenido: sin ruta conocida a ", ".")) for s in salas]
+    mensajes += [f"{t}Viaje detenido: hay enemigos.", f"{t}Viaje detenido: recibiste daño.", f"{t}Viaje interrumpido.",
+                 f"{t}Viaje detenido: no se pudo dar el paso."]
     mensajes += [f"{t}{x}: 999 de daño" for x in trampas]
     mensajes += [f"{t}{x} envenena a Jugador (999)" for x in trampas] + [f"{t}Se activa {x}" for x in trampas]
     return mensajes
