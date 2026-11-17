@@ -479,8 +479,8 @@ Cada prueba cita en su nombre el caso del Apéndice B y el requisito que verific
 | H2-22 | FR-122 | `test_h2_22_fr122_botin_invalido_deja_la_sala_sin_contenido` |
 | H3-7 | FR-118, FR-122 | `test_h3_7_fr118_fr122_verificar_no_depende_de_costos_ni_cazadores` |
 | H3-8 | FR-118 | `test_h3_8_fr118_bench_aplica_las_mismas_reglas` |
-| H4-1 | FR-116 | `test_h4_1_fr116_el_costo_llega_a_la_vista` (datos); lo que se dibuja, en T041 |
-| H4-2 | FR-117 | `test_h4_2_fr117_actor_dto_trae_el_comportamiento` (datos); lo que se dibuja, en T041 |
+| H4-1 | FR-116 | `test_h4_1_fr116_el_costo_llega_a_la_vista` (datos); lo que se dibuja: `test_h4_1_fr116_sc106_cada_salida_tambien_las_cerradas_muestra_su_costo`, `test_h4_1_fr116_sc106_una_direccion_sin_salida_no_dibuja_costo`, `test_h4_1_fr116_sc106_el_costo_no_tapa_al_protagonista_ni_a_los_enemigos`, `test_h4_1_fr116_sc106_el_reparto_de_enemigos_no_cambia_con_los_costos` (`tests/test_vista_terreno.py`) |
+| H4-2 | FR-117 | `test_h4_2_fr117_actor_dto_trae_el_comportamiento` (datos); lo que se dibuja: `test_h4_2_fr117_sc106_cada_enemigo_muestra_su_comportamiento_junto_a_su_nombre`, `test_h4_2_fr117_sc106_solo_el_cazador_lleva_marcador`, `test_h4_2_fr117_sc106_un_errante_y_un_cazador_se_distinguen_en_pantalla`, `test_h4_2_fr117_el_texto_de_la_ficha_conserva_el_comportamiento_y_cabe` (`tests/test_vista_terreno.py`) |
 
 ---
 
