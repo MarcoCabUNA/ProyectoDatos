@@ -102,31 +102,60 @@ Durante la partida (el inventario está siempre visible; la ventana muestra este
 | Soltar | `G` | `Mayús` + clic sobre la casilla |
 | Cambiar la vista del inventario | `V` (real, peso, valor, nombre; el orden real no cambia) | |
 | Pergamino de retroceso | `Retroceso` o `Ctrl + Z` | |
-| Abrir la línea de comandos (`historia`) | `Enter` (acepta con `Enter`, se cierra con `Esc`) | |
+| Abrir la línea de comandos (`historia`, `mapa`, `ir a`) | `Enter` (acepta con `Enter`, se cierra con `Esc`) | |
 | Guardar / Cargar | `Ctrl + S` o `F5` / `Ctrl + L` o `F9` | botones de la pausa |
 | Pausa | `Esc` (Continuar, Guardar, Cargar, Salir al menú) | |
 
 Para salir: `Salir` en el menú principal, `Salir al menú` en la pausa, o cerrar la ventana.
 
-### Historia de la partida
+### Línea de comandos: `historia`, `mapa` e `ir a`
 
-Durante la partida se puede consultar cómo estaba la partida en un instante o antes de una acción, sin cambiarla.
 `Enter` abre la línea de comandos (un campo de texto abajo en la ventana), `Enter` ejecuta lo escrito y `Esc` la cierra
 sin pausar el juego. Mientras está abierta, las teclas del juego se escriben en la línea y no actúan.
 
-| Comando | Qué muestra |
+| Comando | Qué hace |
 |---|---|
-| `historia <t>` | El estado en el instante `t` (entero mayor o igual a 0, hasta el reloj actual). |
-| `historia #k` | El estado justo antes de la acción `k` del jugador (entero mayor o igual a 1, hasta las acciones hechas). |
+| `historia <t>` | Muestra el estado en el instante `t` (entero mayor o igual a 0, hasta el reloj actual). |
+| `historia #k` | Muestra el estado justo antes de la acción `k` del jugador (entero mayor o igual a 1, hasta las acciones hechas). |
+| `mapa` | Abre o cierra el mapa de lo que el jugador conoce. |
+| `ir a <sala>` | Lleva al jugador a una sala que ya exploró, paso a paso. |
 
-El resultado aparece en un panel de solo lectura con el reloj, la sala, la vida y las estadísticas del jugador, el
-inventario (con el arma y la armadura equipadas), los efectos activos y los enemigos de la sala. `Esc` cierra el panel
-y el juego sigue tal cual estaba. Una consulta no consume tiempo, no cuenta como acción y no se escribe en la bitácora.
-Si el número está fuera de rango, la línea muestra un aviso con el rango válido.
+Un comando que no se entiende deja un aviso de uso y no hace nada. Ejemplos: `historia 300`, `historia #4`, `mapa`,
+`ir a Pasillo de las urnas`.
+
+**`historia`.** El resultado aparece en un panel de solo lectura con el reloj, la sala, la vida y las estadísticas del
+jugador, el inventario (con el arma y la armadura equipadas), los efectos activos y los enemigos de la sala. `Esc` cierra el
+panel y el juego sigue tal cual estaba. Una consulta no consume tiempo, no cuenta como acción y no se escribe en la
+bitácora. Si el número está fuera de rango, la línea muestra un aviso con el rango válido. Sin abrir la ventana, el mismo
+resumen sale de `--replay ARCHIVO --hasta T` (ver «Modo `--replay`»).
 
 La línea de tiempo toma un punto de control cada 20 acciones (se cambia con `--checkpoint-cada N`, entero mayor o igual a
-1): una consulta nunca re-simula más de `N` acciones. El valor por defecto salió de `--bench` (con 5 000 acciones,
-`historia` tarda menos de 1 ms; ver `DECISIONES.md`).
+1; por ejemplo `main.py --checkpoint-cada 50`): una consulta nunca re-simula más de `N` acciones. El valor por defecto
+salió de `--bench` (con 5 000 acciones, `historia` tarda menos de 1 ms; ver `DECISIONES.md`).
+
+**`mapa`.** Dibuja un panel con las salas exploradas (con su nombre y el costo de cada salida cuando hay espacio), cada salida hacia una
+sala avistada como un hueco «sin explorar» (sin nombre ni número), la sala donde estás en dorado y cada puerta con el
+estado en que la viste por última vez: verde abierta, roja cerrada, gris sin observar. Una puerta que se cerró sola
+mientras estabas lejos sigue figurando abierta hasta que vuelvas a verla. Si el mapa no cabe, se recorta alrededor de tu
+sala y el panel lo avisa. Se cierra con `mapa` otra vez, con `Esc` o al hacer cualquier acción. No consume tiempo, no
+cuenta como acción y no se escribe en la bitácora. Con la partida terminada no está disponible (igual que `historia`).
+
+**`ir a <sala>`.** El destino debe ser una sala ya explorada; mayúsculas y espacios sobrantes no importan, pero las tildes
+sí (`sotano` no encuentra `Sótano`). El viaje elige la ruta de menor costo usando solo lo que el mapa recuerda (salas
+exploradas y puertas recordadas abiertas), no abre puertas aunque tengas la llave, y da un paso cada 350 ms para que se
+vea cómo cambias de sala. Cada paso es un movimiento normal: gasta su tiempo, deja pasar los eventos y cuenta como acción.
+
+- *Cuándo para.* Cuando llegas, cuando entras a una sala con enemigos (activos o dormidos), cuando recibes daño de cualquier
+  origen, o cuando ya no hay una ruta conocida (por ejemplo, vuelves a ver una puerta de tu ruta cerrada y no hay otra).
+  El motivo, o todos si coinciden varios, aparece en el panel de mensajes («Llegaste a ...», «Viaje detenido: hay
+  enemigos.», «...recibiste daño.», «...sin ruta conocida a ...»).
+- *Cómo se corta.* Pulsando cualquier tecla o haciendo clic: el viaje se corta («Viaje interrumpido.») y la orden se
+  ejecuta (por ejemplo `Z` espera). `Esc` solo corta el viaje y no abre la pausa. Un pergamino de retroceso revierte únicamente
+  el último paso y el viaje no continúa.
+- *Si se rechaza.* Una sala no explorada, desconocida o que no existe da el mismo aviso (no revela si existe); un nombre que
+  designa varias salas exploradas, o la sala donde ya estás, tienen su propio aviso. No gastan tiempo ni quedan en la bitácora.
+- *En la bitácora.* Cada paso se escribe como un movimiento más, y la orden como un comentario (`# ir a Pasillo de las
+  urnas`) justo después del primer paso. `--replay` repite los pasos y llega a la misma partida; el comentario no cambia nada.
 
 ### Modo `--offline`
 
