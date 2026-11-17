@@ -4,15 +4,13 @@ interfaz y el resumen usan para el mapa (FR-217, FR-219, FR-220; contrato (b)), 
 
 Fallan hasta T046 (a_dto). El comando de ver el mapa y el dibujo son del integrante 3 (T048).
 
-Guardas, con su motivo:
-- test_h5_7_a40_…: Service/ServicioResolubilidad.py de la 003 todavía no existe; se quita cuando exista.
-- test_sc202_…: la parte del EstadoJuegoDTO espera el H-2 del integrante 3 (T116); la quita T050.
+Sin guardas (17/11): test_h5_7_a40_… usa Service/ServicioResolubilidad.py de la 003, y test_sc202_… revisa siempre el
+resumen (Service/ArmadorResumen.py) y el EstadoJuegoDTO (T050: el H-2 del integrante 3 está).
 
 También está aquí test_h1_4_a14_… (historia 1), que T045 pone en tests/test_mapa_conocido_estados.py: ese archivo no
 estaba entre los permitidos de este lote. Se puede mover sin cambiarla.
 """
 import dataclasses
-import importlib.util
 import os
 import sys
 import unittest
@@ -200,8 +198,6 @@ class PruebasVistaMapaConocido(unittest.TestCase):
         self.assertEqual(sala_del_dto(dto, A).salidas[SUR].costo, 100)
 
     def test_h5_7_a40_fr202_fr217_reporte_con_forzar_no_cambia_el_mapa(self):
-        if importlib.util.find_spec("Service.ServicioResolubilidad") is None:
-            self.skipTest("pendiente: Service/ServicioResolubilidad.py de la 003 todavía no existe")
         import tempfile
         from tests.ayudas_linea_tiempo import ID_CRIPTA, partida_de_prueba
         from Service.ServicioResolubilidad import ServicioResolubilidad
@@ -216,8 +212,6 @@ class PruebasVistaMapaConocido(unittest.TestCase):
 
     def test_sc202_doscientas_acciones_sin_datos_de_desconocidas(self):
         from DTO import EstadoJuegoDTO as modulo_estado
-        h2_listo = hasattr(modulo_estado, "SIN_EXPLORAR")
-        hay_resumen = importlib.util.find_spec("Service.ArmadorResumen") is not None
         lado = 15
         mazmorra, salas = cuadricula_mapa(lado, 2026)
         esqueleto = EsqueletoPrueba(salas)
@@ -243,32 +237,28 @@ class PruebasVistaMapaConocido(unittest.TestCase):
             acciones += 1
             try:
                 revisar_dto(self, motor.mapa, motor.mapa.a_dto())
-                if hay_resumen:
-                    from Service.ArmadorResumen import ArmadorResumen
-                    resumen = ArmadorResumen.armar(motor, esqueleto, motor.reloj, False, False,
-                                                   mapa_conocido=motor.mapa.a_dto())
-                    self.assertEqual(motor.mapa.estado[resumen.sala_id], EXPLORADA)
-                    revisar_dto(self, motor.mapa, resumen.mapa_conocido)
-                if h2_listo:
-                    from Service.ArmadorEstado import ArmadorEstado
-                    estado = ArmadorEstado().armar_estado(contexto)
-                    for s in estado.sala.salidas:
-                        if s is not None and s.sala_destino != modulo_estado.SIN_EXPLORAR:
-                            self.assertTrue(motor.mapa.es_explorada(s.sala_destino))
-                    if estado.sala_salida is not None:
-                        self.assertTrue(motor.mapa.es_explorada(estado.sala_salida))
+                from Service.ArmadorResumen import ArmadorResumen
+                resumen = ArmadorResumen.armar(motor, esqueleto, motor.reloj, False, False,
+                                               mapa_conocido=motor.mapa.a_dto())
+                self.assertEqual(motor.mapa.estado[resumen.sala_id], EXPLORADA)
+                revisar_dto(self, motor.mapa, resumen.mapa_conocido)
+                from Service.ArmadorEstado import ArmadorEstado
+                estado = ArmadorEstado().armar_estado(contexto)
+                for s in estado.sala.salidas:
+                    if s is not None and s.sala_destino != modulo_estado.SIN_EXPLORAR:
+                        self.assertTrue(motor.mapa.es_explorada(s.sala_destino))
+                if estado.sala_salida is not None:
+                    self.assertTrue(motor.mapa.es_explorada(estado.sala_salida))
             except AssertionError as error:
                 self.fail(f"acción {acciones}: {error}")
         self.assertFalse(motor.terminado)
         self.assertEqual(con_antorcha, [True, True])            # acciones sin y con antorcha
         self.assertIn(DESCONOCIDA, motor.mapa.estado[1:])       # quedaron salas desconocidas que no debían aparecer
         self.assertIn(AVISTADA, motor.mapa.estado)
-        if not h2_listo:
-            self.skipTest("pendiente: H-2 del integrante 3 (sala_destino de destinos no explorados en EstadoJuegoDTO)")
 
 
 def _contexto_de_prueba(motor, esqueleto, mensajes, lado: int):
-    """Lo que ArmadorEstado lee del contexto, armado sobre el motor de prueba (solo se usa cuando llega el H-2)."""
+    """Lo que ArmadorEstado lee del contexto, armado sobre el motor de prueba (para la parte del H-2)."""
     from types import SimpleNamespace
 
     class Mensajes:
