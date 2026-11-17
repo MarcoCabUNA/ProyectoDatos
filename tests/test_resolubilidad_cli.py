@@ -445,9 +445,6 @@ class PruebasVerificarSinEscenario(unittest.TestCase):
 class PruebasControlador(unittest.TestCase):
 
     def setUp(self):
-        if not hasattr(ControladorBackend, "resolubilidad"):
-            self.skipTest("pendiente de T054: el integrante 3 decide cómo inician sus pruebas con cripta-01 sin "
-                          "llaves.json")
         self.carpeta = tempfile.mkdtemp()
 
     def tearDown(self):

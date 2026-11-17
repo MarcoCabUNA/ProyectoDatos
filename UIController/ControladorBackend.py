@@ -78,6 +78,10 @@ class ControladorBackend:
         self._contexto = None  # la partida en curso (opaca); None si no hay
         self._terminada = False
         self._puntaje_registrado = False
+        # feature 003: --forzar (solo lo usa iniciar) y el reporte de un inicio que no se hizo (FR-311)
+        self._forzar = config.forzar
+        self._reporte_no_iniciada = None
+        self._contexto_al_fallar = None
 
     # ================================================================== partida
     def criptas(self) -> list:
@@ -87,7 +91,7 @@ class ControladorBackend:
     def iniciar(self, id_cripta: str, nombre_jugador: str) -> EstadoJuegoDTO:
         id_cripta = self._texto(id_cripta, "Falta indicar la cripta.")
         nombre = self._nombre(nombre_jugador)
-        return self._empezar(self._llamar(self._partida.iniciar_partida, id_cripta, nombre))
+        return self._iniciar_verificando(id_cripta, nombre)      # feature 003: pasa por la verificación (FR-311)
 
     def cargar(self, ruta: str, nombre_jugador: str) -> EstadoJuegoDTO:
         """Continúa una partida guardada. Si falla, la partida que estaba en curso (si había) no se toca."""
@@ -279,3 +283,25 @@ class ControladorBackend:
         lanza por datos ni por red: esos fallos llegan como un reporte NO_CONCLUYO con el mensaje."""
         id_cripta = self._texto(id_cripta, "Falta indicar la cripta.")
         return ServicioResolubilidad(self._partida).verificar(id_cripta)
+
+    def resolubilidad(self) -> ReporteResolubilidadDTO | None:
+        """El reporte para mostrar antes de la primera acción (feature 003, FR-311 a FR-313): el de la partida nueva en
+        curso (resoluble, o la advertencia con --forzar), o el completo del último iniciar que no se hizo. None si la
+        partida en curso se cargó de un archivo o no hay partida (cargar y --replay no verifican, FR-301)."""
+        if self._reporte_no_iniciada is not None and self._contexto is self._contexto_al_fallar:
+            return self._reporte_no_iniciada
+        return None if self._contexto is None else self._contexto.resolubilidad
+
+    def _iniciar_verificando(self, id_cripta: str, nombre: str) -> EstadoJuegoDTO:
+        """iniciar por ServicioResolubilidad (T054): sin --forzar, una cripta no resoluble o que no se pudo verificar no
+        inicia; ErrorPartidaNoIniciada llega como ErrorOperacion (está en ERRORES_ESPERADOS) y su reporte se guarda.
+        Si falla, la partida que estaba en curso (si había) no se toca."""
+        try:
+            contexto = self._llamar(ServicioResolubilidad(self._partida).iniciar_partida_nueva, id_cripta, nombre,
+                                    self._forzar)
+        except ErrorOperacion as error:
+            self._reporte_no_iniciada = getattr(error.__cause__, "reporte", None)
+            self._contexto_al_fallar = self._contexto
+            raise
+        self._reporte_no_iniciada = None
+        return self._empezar(contexto)

@@ -190,7 +190,9 @@ class PruebasPergaminoTrasCargar(unittest.TestCase):
             ids = [objeto.id for objeto in ctx2.inventario.objetos()]
             self.assertEqual(ids.count(ID_PERGAMINO), 1)                   # el pergamino viajó en el guardado
             servicio = ServicioLineaTiempo()
+            acciones_antes = ctx2.jugador.acciones
             servicio.ejecutar(ctx2, AccionDTO("retroceder"))               # sin acciones desde la carga no hay qué deshacer
+            self.assertEqual(ctx2.jugador.acciones, acciones_antes)        # no deshizo nada: el contador es el de antes
             self.assertEqual(ctx2.jugador.acciones, len(ctx2.linea.acciones))   # (el historial de retroceso no se guarda)
             self.assertEqual([o.id for o in ctx2.inventario.objetos()].count(ID_PERGAMINO), 1)   # y el pergamino sigue ahí
             jugar(ctx2, 3, al_decidir=lambda _estado: vivos.__setitem__(ctx2.jugador.acciones + 1, resumen_vivo(ctx2)))

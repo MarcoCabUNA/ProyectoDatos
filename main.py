@@ -6,11 +6,12 @@ Cripta: punto de entrada. Solo cablea: lee las opciones y elige el modo.
     python main.py --replay ARCHIVO      reproduce una partida desde su log, sin ventana
     python main.py --replay ARCHIVO --hasta T   lo mismo, hasta el instante T, e imprime el resumen (feature 004)
     python main.py --bench               corre las mediciones de rendimiento, sin ventana
+    python main.py --verificar CRIPTA    dice si la cripta es resoluble, sin ventana (feature 003)
     python main.py --ayuda               muestra las opciones
 
 pygame se importa SOLO en el modo interactivo, dentro de jugar(): así --replay y --bench funcionan sin pygame instalado
 (arquitectura §6). Código de salida: 0 bien, 1 si falló la operación o no se pudo abrir la interfaz, 2 si las opciones
-son inválidas.
+son inválidas, 3 si --verificar encuentra la cripta no resoluble.
 """
 import sys
 

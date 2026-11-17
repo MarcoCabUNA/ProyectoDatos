@@ -178,7 +178,7 @@ def probar_el_modo_alterna_y_cada_partida_nueva_usa_la_configuracion_vigente():
         return crear_backend(carpeta, config)
 
     try:
-        c = ControladorPygame(VistaFalsa(), ConfiguracionDTO(offline=True, cache_size=40), fabrica)
+        c = ControladorPygame(VistaFalsa(), ConfiguracionDTO(offline=True, cache_size=40, forzar=True), fabrica)
         c.procesar_evento(tecla(ABAJO))
         assert c.pantalla().opciones[1] == "Modo: Offline"
         c.procesar_evento(tecla(ENTER))

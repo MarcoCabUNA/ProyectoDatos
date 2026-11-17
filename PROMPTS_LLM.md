@@ -3267,3 +3267,165 @@ skipTest y pasa? ¿T048 quedó marcada [X]? Si falta alguna de las tres, hacé e
 **Uso de la respuesta:** las tres cosas ya estaban hechas, así que los pasos 1 a 4 no hicieron falta (solo se registró este pedido). Después de `git fetch`, `origin/derek` no trae nada nuevo y `dadf468` (`--verificar`) ya está en Marco desde el fast-forward a `7ceaf3e`. H3-7 no tiene `skipTest` desde `b11fc99` y pasa con su cuerpo de `a9ba07d`. T048 está marcada [X] desde `a9ba07d`, con las cuatro corridas sin vista cubiertas. La consulta `1a1e0c281d6` ya estaba registrada en `93c2d34`. `PROMPTS_LLM.md` está en UTF-8 con CRLF, no en UTF-16. Un solo commit con la nota de T051 de la 003 en T048 (`tasks.md`) y este registro. Suite en verde antes del commit. Sin push.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Feature 003-resolubilidad. Solo documentación de la spec, sin código ni pruebas, sin commit. Contexto: el 15/11 el API publica cripta-02 a cripta-06 (cripta-01 ya no está: responde 404) y el catálogo pasó a la versión 4b9e75a42be5. Con el integrante 1 acordamos cómo armar el paquete. Antes de hacerlo, la spec tiene que decirlo (Principio IX).
+
+1. specs/003-resolubilidad/tasks.md:
+   a. Marcar [x] T041 y agregar al final: «Hecho (15/11): aviso dado al integrante 3.»
+   b. Marcar [x] T051 y agregar al final: «Hecho (15/11): el integrante 1 quitó el skipTest de H3-7 y cerró la T048 de la 001.»
+   c. Reemplazar el texto de T057 (sigue sin marcar) por:
+   «T057 (FR-318) Paquete de la Parte II (acordado con el integrante 1 el 15/11). **Avisar antes a los integrantes 1 y 3** (cambia archivos que usan sus pruebas). (1) Descargar con python -m Data.DescargadorPaquete <id> <carpeta> cada cripta publicada (el 15/11: cripta-02 a cripta-06) en una carpeta **fuera** del proyecto y compararla con el paquete actual; el reporte queda en specs/003-resolubilidad/paquete-2026-11-15.md (fichas que cambian, fichas que usa cripta-01, criptas que cambian, veredictos de T058). (2) Armar paquete/: cripta-01/ queda **byte idéntica** (el API ya no la publica: es la única cripta sin llaves.json, excepción documentada); criptas.json es la lista del API con cripta-01 al principio; catalogo.json y catalogo_version.json son los del API (el catálogo es uno solo para todas las criptas, así que cripta-01 usa las fichas nuevas); cripta-02 a cripta-06 son las descargadas. (3) Comprobar que cada cripta publicada trae llaves.json, que hay salidas con costo y que los cazadores traen rango (001 FR-122). (4) Las pruebas de la primera parte del integrante 2 que suponían que catalogo.json son solo las fichas de cripta-01 pasan a usar solo esas: tests/Utilidades.catalogo_real() devuelve las fichas que usa cripta-01 (tipos de sus enemigos y trampas, sus objetos, la llave de salida y lo que sueltan sus enemigos) y test_formato_en_disco busca la rata por id y no por posición. (5) Regrabar ejemplos/partida_ejemplo.log jugando la cripta-02 nueva con --offline hasta ganar, y comprobar que el replay termina igual. (6) Correr python tests/correr_pruebas.py; si alguna prueba de otro integrante cambia de resultado por los datos nuevos, avisarle y esperar su arreglo antes del commit. Commit **propio** con paquete/, ejemplos/partida_ejemplo.log, el reporte y esos dos archivos de pruebas (por ejemplo datos: paquete de la Parte II con llaves.json, costos y rangos), y avisar a los tres cuando esté subido.»
+   d. En T058 (sigue sin marcar), reemplazar «Ninguna debe terminar con código 1 (la 1 es para datos que faltan); cada una con 0 o 3 y el mismo texto que en línea con la misma versión (quickstart §2, pasos 1 a 4 y 7).» por «Las criptas publicadas terminan con 0 o 3 y el mismo texto que en línea con la misma versión (quickstart §2, pasos 1 a 4 y 7); cripta-01 termina con código 1 y «falta el archivo … llaves.json» (FR-320), porque ya no está publicada (T057).»
+2. specs/003-resolubilidad/quickstart.md, §2: en los pasos 1, 2, 3, 4 y 7 cambiar cripta-01 por cripta-02 (en el paso 3, la ruta queda cache/llaves/cripta-02.json). En el «Esperado» del paso 1, «Con el paquete regenerado: el reporte y código 0 o 3» pasa a «Con el paquete regenerado: RESOLUBLE y código 0 (T058)». El resto del paso 1 no cambia. Debajo de la tabla, agregar: «cripta-01 ya no está publicada (el API responde 404): con --offline termina con código 1 porque el paquete no tiene su llaves.json (T057).»
+3. No toques nada más. Buscá además cripta-01 en el resto de quickstart.md, spec.md y plan.md de la 003 y decime dónde aparece, sin cambiarlo, para decidir si hace falta.
+
+Al final: el diff completo de los dos archivos y la lista del punto 3.
+
+**Uso de la respuesta:** antes de regenerar el paquete (Principio IX), la spec de la 003 dice cómo se arma, como lo acordé con el integrante 1: el API del 15/11 publica `cripta-02` a `cripta-06` (con `cripta-05` no resoluble) y ya no `cripta-01` (404), y el catálogo pasó a `4b9e75a42be5`. T057 queda con los pasos (descarga fuera del proyecto, reporte, `cripta-01` byte idéntica como excepción sin `llaves.json`, catálogo y criptas del API, ajuste de `catalogo_real()` en las pruebas de la primera parte, regrabar el log de ejemplo, avisar a los otros dos) y T058 acepta el código 1 de `cripta-01`. En el quickstart §2, los pasos 1 a 4 y 7 pasan a `cripta-02`. Marqué T041 y T051 (avisos dados; el integrante 1 quitó el skip de H3-7). Claude Code señaló además el comando de los requisitos previos, el paso 6 y el commit sugerido de la línea 389, que se arreglan en el prompt siguiente. Revisé el diff y el zip: solo cambian `tasks.md` y `quickstart.md`.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Agregá además en T057, después del punto (6) y antes de «Commit **propio**»: «(7) Documentar en DECISIONES.md (sección del integrante 2, apartado «§5.4 Resolubilidad», que T064 completa) la excepción de cripta-01: queda byte idéntica pero ya no está publicada; usa el catálogo nuevo, así que sus ratas traen "vida": 12 y la ficha nueva tiene vida_max 8 (empiezan con 12/8; aceptado por el integrante 1 el 15/11, porque evitarlo tocaría la primera parte sin FR o inventaría datos); y --verificar cripta-01 --offline termina con código 1 porque no tiene llaves.json.» En el «Commit **propio** con …», agregá DECISIONES.md a la lista.
+
+**Uso de la respuesta:** punto (7) de T057, pedido por el integrante 1: documentar en `DECISIONES.md` §5.4 la excepción de `cripta-01` (ratas que empiezan con 12/8 por el catálogo nuevo, aceptado por él, y código 1 de `--verificar`), en el mismo commit del paquete.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Bien. Arreglá también lo que encontraste, sin tocar nada más y sin commit:
+1. quickstart.md, requisitos previos (líneas 13 a 17): el texto queda «Para las pruebas con paquete: el paquete de la Parte II (T057). Para regenerarlo, bajar cada cripta publicada a una carpeta fuera del proyecto y armar `paquete/` como dice T057 (`cripta-01` ya no está publicada):», y el bloque de código pasa a `uv run python -m Data.DescargadorPaquete cripta-02 ../paquete-nuevo`.
+2. quickstart.md, paso 6: `cripta-01` por `cripta-02`.
+3. tasks.md, línea 389: «`datos: paquete de la Parte II` (T057, solo `paquete/`)» pasa a «`datos: paquete de la Parte II` (T057: `paquete/`, el log de ejemplo, el reporte, `DECISIONES.md` y los dos archivos de pruebas)».
+4. La cripta-02 nueva ya se verificó con el paquete armado fuera del proyecto: RESOLUBLE, código 0, así que el paso 1 queda como está. T052 queda como está (es el registro de una corrida pasada).
+Al final, el diff de estos cambios.
+
+**Uso de la respuesta:** el comando de los requisitos previos del quickstart usa la forma `<id> <carpeta>` y `cripta-02`, el paso 6 pasa a `cripta-02` y el commit sugerido de T057 lista todo lo que lleva. El paso 1 espera RESOLUBLE porque ya verifiqué la `cripta-02` nueva con el paquete armado fuera del proyecto. Solo documentación: no hace falta correr la suite.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement Feature 003-resolubilidad, fase 9: T059, T060, T061 y T062 de specs/003-resolubilidad/tasks.md, en ese orden y como dice cada tarea. T063 (correr --bench y guardar la tabla) NO: lo hago yo después. .specify/feature.json ya apunta a specs/003-resolubilidad.
+
+Estado de la carpeta: hay cambios SIN commit del paquete de la Parte II (T057: paquete/, tests/Utilidades.py, tests/TestAlmacenCatalogo.py, DECISIONES.md, ejemplos/partida_ejemplo.log y specs/003-resolubilidad/paquete-2026-11-15.md). No los toques ni los commitees: son de otro commit. Con ese paquete, la cripta con más salas que trae llaves.json es la de 300 salas. Antes de empezar, corré python tests/correr_pruebas.py y anotá la línea base: hoy falla solo el script test_vista_hud.py (es del integrante 3 y lo arregla ella; no lo toques).
+
+1. T059: las 7 pruebas primero, en tests/test_resolubilidad_bench.py (si ya existe, agregalas al final); comprobá que fallan.
+2. T060 y T061 en Logic/BenchResolubilidad.py (hoy solo tiene el generador de cuadrícula). Reutilizá de Logic/BenchLogica.py solo _cronometrar, _mejor_y_mediana y SEMILLA, sin modificar BenchLogica.py. Las variantes descartadas (B2 ingenua, B5 lineal y B6 con una sola lista) viven solo en el bench. Sin dict, set, sorted, list.sort, copy, bisect, heapq ni collections, también en el bench. Logic no importa Data ni Service.
+3. T062 en Service/ServicioBench.py: BenchResolubilidad.medir en la lista por defecto, JUSTO DESPUÉS de BenchLogica.medir (el integrante 3 va a poner su BenchViaje después de BenchMapaConocido; así no chocan en el mismo punto). Actualizá el docstring de __init__. La fila de la cripta con más salas del paquete la arma Service (FuenteOffline, GestorEsqueleto, GestorLlaves sin almacén y VerificadorResolubilidad), elegida por cantidad de salas y sin nombrar ids, sin red y sin crear partida.log.
+4. tests/TestServicioBench.py: test_por_defecto_usa_los_tres_archivos compara la lista completa; actualizá esa lista con BenchResolubilidad.medir en su lugar (y el import), sin cambiar nada más de la prueba. No está en tasks.md: anotalo como nota al final de T062 («también se actualizó la lista esperada de tests/TestServicioBench.py»).
+5. Marcá con [x] solo T059 a T062 si quedaron completas.
+
+Para comprobar los tamaños grandes NO corras el bench completo (lo corro yo en T063); alcanza con las pruebas de tamaños chicos. Antes de terminar: python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8), que tiene que dar lo mismo que la línea base más las pruebas nuevas en verde, y el grep de restricciones de T067 sobre Logic/BenchResolubilidad.py y Service/ServicioBench.py.
+
+Al final decime: los archivos que cambiaste o creaste (separados de los del paquete), las pruebas nuevas con su resultado antes y después, el resultado de la suite comparado con la línea base, el grep, y cualquier diferencia con tasks.md, research R7 o el quickstart §4. No hagas commit.
+
+**Uso de la respuesta:** fase 9 de la 003 (T059 a T062). `Logic/BenchResolubilidad.py`: el generador `cripta_en_peine` (research R7) y las mediciones B1 (verificación resoluble), B2 (alternativa descartada: repetir el recorrido completo en cada oleada), B3 (no resoluble), B4 (desglose a 1 000 salas, sobre la no resoluble porque es la única que pasa por las cuatro fases), B5 (índice ordenando y compactando frente a la búsqueda lineal) y B6 (frontera agrupada por llave frente a una sola lista); las alternativas viven solo en el bench y dan el mismo resultado que la decisión (lo comprueban las pruebas). `Service/ServicioBench.py`: `BenchResolubilidad.medir` justo después de `BenchLogica.medir` (el integrante 3 pone su `BenchViaje` después de `BenchMapaConocido`) y la fila de la cripta con más salas del paquete, elegida por cantidad de salas y leída sin red (con el paquete nuevo, la de 300 salas: mediana 1,18 ms); si no hay criptas con `llaves.json`, una fila sin tiempos cuya nota dice por qué. Se actualizó la lista esperada de `tests/TestServicioBench.py`. 7 pruebas nuevas (fallaron primero); suite 959 OK (7 skip), grep de T067 limpio. Revisé el diff antes del commit; los cambios del paquete quedaron fuera de este commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Contexto: acabo de traer origin/derek y origin/Marco. Hay cinco arreglos pequeños, cada uno en su propio commit. No toques nada fuera de lo que se pide. No agregues docstrings al código nuevo de P1; mantén KISS y YAGNI.
+
+1) tests/test_bench_inventario.py: la palabra "unittest" hace que el corredor lo trate como módulo unittest. Reescribe el mock para que no aparezca esa palabra (ni en comentarios) y verifica que el corredor vuelva a contarlo como script (32 de 32). Commit: "test: test_bench_inventario vuelve a correr como script"
+
+2) forzar=True en pruebas del controlador y la vista (no son pruebas de resolubilidad; cripta-01 no tiene llaves.json y T054 de la 003 bloquearía la partida sin --forzar):
+   - tests/ayudas_controladores.py:24 -> CONFIG_OFFLINE = ConfiguracionDTO(offline=True, forzar=True)
+   - tests/test_controlador_pygame.py:181 -> ConfiguracionDTO(offline=True, cache_size=40, forzar=True)
+   Busca con grep otras pruebas que construyan ConfiguracionDTO(offline=True ...) con cripta-01 y dime cuáles hay antes de tocarlas. Commit: "test: forzar=True en configuraciones offline de cripta-01 (T054 de la 003)"
+
+3) tests/test_vista_hud.py y la vista: el peor mensaje "[t=9999] El veneno hace 999 de daño a Espectro acechador #99" mide 342 px y el ancho útil es 334 antes de HUD_HOLGURA. Elige la solución más simple (recortar el texto al ancho útil con "..." o ajustar la holgura) y justifícala en una línea en DECISIONES.md. Además, la barra de vida debe tolerar vida > vida_max (las ratas de cripta-01 empiezan con vida 12 y vida_max 8): limita la proporción a 1.0. Agrega una prueba para ese caso. Commit: "fix(004): HUD tolera mensajes largos y vida mayor que vida_max"
+
+4) Docstrings: en ContextoPartida, "linea" ya no es el último campo (resolubilidad va después); en main.py menciona --verificar y el código de salida 3. Commit: "docs: docstrings de ContextoPartida y main.py al día"
+
+5) DECISIONES.md: renombra mi "§5.3 Banco de pruebas de la línea de tiempo" como subsección de mi §5.5 (el §5.3 es de Derek: Mapa conocido). Revisa que no queden referencias cruzadas al número viejo. Commit: "docs: banco de pruebas de la línea de tiempo pasa a la subsección de §5.5"
+
+Al final corre toda la suite y dime: cuántas pruebas pasan, y qué decisión tomaste en el punto 3.
+
+**Uso de la respuesta:** se usó la respuesta para arreglar test_bench_inventario, poner forzar=True en las pruebas offline, el ancho del HUD y la barra de vida, los docstrings y el renombrado de §5.3. Se verificó con la suite completa.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Dos grupos de cambios, en commits separados y en este orden.
+
+A) spec(002), SOLO texto de especificación, sin código:
+En specs/002-niebla-ir-a/spec.md, NFR-250 dice "con la cripta de referencia" y SC-252 depende de ella. La cripta de referencia es cripta-06 (300 salas, del paquete con --offline). Ajusta NFR-250 y SC-252 para que lo digan explícitamente, y aclara que se puede medir con una cripta sintética de 300 salas si cripta-06 no está disponible. Actualiza en tasks.md las tareas T120 y T122 (medir con 300 salas, no 50) y en T121 agrega que se debe actualizar tests/TestServicioBench.py:132 poniendo BenchViaje.medir después de BenchMapaConocido.medir (Derek dio su visto bueno). Commit: "spec(002): cripta de referencia de NFR-250 y SC-252 es cripta-06 (300 salas)"
+
+B) Correcciones del contador de daño (Marco las revisó):
+1. Logic/ActorBase.py: quita el docstring de Recibir_Dannio (la constitución prohíbe docstrings nuevos en P1) y deja un comentario de una línea en el contador que diga "daño recibido" (no "vida perdida"). Actualiza el "después" de la fila en DECISIONES.md.
+2. DECISIONES.md: "cuatro sitios" -> "tres sitios" que llaman a Recibir_Dannio. Agrega una nota: la mutación del Evento_pendiente solo se nota contando cambios del intervalo, y el helper de la prueba lee atributos privados del historial (se rompe si cambia el buffer).
+3. specs/002-niebla-ir-a/plan.md:600 y tasks.md:644: corrige el texto: el ataque usa max(1, ...), así que un daño final 0 no ocurre; el contador solo se incrementa si Cant > 0.
+4. tests/test_danio_recibido.py: agrega una prueba con el efecto Regeneración REAL de Efectos.py dentro de un paso del motor (no Curacion(100) directo) y comprueba que el contador no sube. En test_no_va_a_partida_guardada agrega: después de guardar y cargar, el contador no cambia por la carga.
+5. tests/test_linea_tiempo_guardado.py (commit 740f47b): después del primer retroceder compara jugador.acciones contra el valor de antes, no solo contra len(linea.acciones).
+Commit: "fix(004): contador danio_recibido como comentario, prueba con Regeneración real y textos corregidos"
+
+Corre la suite completa y dime cuántas pasan.
+
+**Uso de la respuesta:** se usó la respuesta para aplicar la revisión de Marco al contador (comentario, prueba con Regeneración, textos de plan y tareas, DECISIONES) y para fijar cripta-06 (300 salas) en NFR-250 y SC-252 antes del código.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Revisa solo lectura, sin cambiar nada: el diff de origin/derek en mis archivos (ControladorBackend, ConfiguracionDTO, ContextoPartida y los demás que toque; usa git diff HEAD~N..HEAD o git log para ver los merges). Derek dice que son T037, T038, T040 y T049, todas al final de cada archivo y con valores por defecto. Verifica: (1) que no cambien el comportamiento de lo que ya hacía la línea de tiempo, (2) que los valores por defecto mantengan compatibles mis pruebas, (3) que no duplique lógica mía, (4) que respete SRP y KISS. Dime en una lista corta qué está bien y qué cambiarías, con archivo y línea.
+
+**Uso de la respuesta:** se usó la respuesta para revisar los cambios de Derek en mis archivos antes de aceptar su merge.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Implementa solo T101–T106 de specs/002-niebla-ir-a/tasks.md, siguiendo mi sección de specs/002-niebla-ir-a/plan.md. Sin tocar Service/ ni el controlador todavía.
+
+- Logic/ViajeAutomatico.py: resolver_destino (nombres con strip().casefold()), decidir_paso(grafo, mapa, mazmorra, sala_actual, destino) que usa paso_desde_cero(GrafoMapaConocido, destino, sala, None) y exige que mapa.estado_cara(sala, d) == ABIERTA, y motivos_de_parada (LLEGO, ENEMIGOS con enemigos activos o dormidos en la sala, DANO, SIN_RUTA; internos INTERRUMPIDO, TERMINADA, PASO_RECHAZADO). Lógica pura, sin pygame, sin Data.
+- DTO/ViajeDTO.py: dataclass frozen.
+- Pruebas de Logic pura en tests/ usando tests/ayudas_mapa.py (mapa_de_prueba, cripta_mapa, entrar_a). Cubre cada motivo de parada, la cara cerrada, el destino ambiguo y el destino inexistente.
+- Solo estructuras de datos y librerías permitidas por la constitución v1.2.0. Sin docstrings en código de P1.
+Un commit por grupo lógico, con mensaje: "feat(002): ViajeAutomatico y ViajeDTO (T101-T106)". Al final corre la suite y dime los resultados.
+
+**Uso de la respuesta:** se usó la respuesta para implementar la lógica pura de «ir a» (ViajeAutomatico, ViajeDTO y sus pruebas).
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Feature 003, T054 de specs/003-resolubilidad/tasks.md. Sin commit. El integrante 3 ya puso forzar=True en tests/ayudas_controladores.py:24 y tests/test_controlador_pygame.py:181 (ya está en esta rama).
+
+Estado de la carpeta: hay cambios SIN commit del paquete de la Parte II (paquete/, tests/Utilidades.py, tests/TestAlmacenCatalogo.py, DECISIONES.md, ejemplos/partida_ejemplo.log y specs/003-resolubilidad/paquete-2026-11-15.md). No los toques. Con ese paquete falla solo el script test_vista_hud.py (del integrante 3, lo arregla ella): no lo toques.
+
+1. El parche está en "D:\2 ciclo 2026\Estructura de datos\parches\controlador_T049_T054.diff". Incluye T049 (verificar), que YA está aplicado: NO lo apliques entero. De ahí tomá SOLO lo de T054 en UIController/ControladorBackend.py: los tres atributos al final de __init__, el cambio de iniciar (pasa a self._iniciar_verificando(id_cripta, nombre)) y los métodos resolubilidad() e _iniciar_verificando() al final de la clase. Nada más del archivo cambia.
+2. tests/test_resolubilidad_cli.py: quitá la guarda de PruebasControlador.setUp (el if not hasattr(ControladorBackend, "resolubilidad"): self.skipTest(...)). Las pruebas no cambian.
+3. specs/003-resolubilidad/tasks.md: marcá [x] T054 y reemplazá su nota «Pendiente (15/11): …» por «Hecho (16/11): el integrante 3 puso forzar=True en sus configuraciones offline de cripta-01 (tests/ayudas_controladores.py:24 y tests/test_controlador_pygame.py:181); las pruebas de T053 ya no tienen guarda.»
+4. Corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8). Se espera: 984 pruebas con 3 skips (las 4 de T053 ahora corren y pasan) y 31 de 32 scripts (solo test_vista_hud.py). Si falla cualquier otra cosa, PARÁ y decime qué prueba y por qué, sin cambiar pruebas de otros integrantes ni agregar atajos que se salten la verificación.
+5. Sin abrir ventana, decime qué hace hoy ControladorBackend.iniciar con el paquete local: cripta-02 sin --forzar (debe iniciar), cripta-05 sin --forzar (no inicia: ErrorOperacion con el reporte NO_RESOLUBLE), cripta-05 con --forzar (inicia con la advertencia en resolubilidad()) y cripta-01 sin --forzar (no inicia: no concluyó). Usá un script temporal fuera de tests/ y borralo después.
+
+Al final: el diff de los tres archivos, el resultado de la suite y el del punto 5. No hagas commit.
+
+**Uso de la respuesta:** T054 de la 003, cuando el integrante 3 puso `forzar=True` en sus configuraciones offline de `cripta-01`. Del parche que había guardado el 15/11 se aplicó solo la parte de T054 en `UIController/ControladorBackend.py` (archivo del integrante 3, cambio acordado con ella el 14/11 y revisado por ella): `iniciar` pasa por `ServicioResolubilidad.iniciar_partida_nueva` con `config.forzar`, y `resolubilidad()` devuelve el reporte de la partida nueva o el del último iniciar que no se hizo (FR-311 a FR-313). Se quitó la guarda de las 4 pruebas de T053, que ahora corren y pasan. Suite: 984 pruebas OK (3 skip), 31 de 32 scripts (solo `test_vista_hud.py`, por el paquete nuevo todavía sin commit). Con el paquete local: `cripta-02` inicia; `cripta-05` no inicia sin `--forzar` (no resoluble) y con `--forzar` inicia con la advertencia; `cripta-01` no inicia (no concluyó, falta `llaves.json`). Revisé el diff antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------

@@ -695,10 +695,10 @@ comprobar si la partida inicia y si se muestra el reporte.
 
 | # | Caso del Apéndice B | Escenario | Requisitos | Prueba |
 |---|---|---|---|---|
-| 1 | `llave_salida` está detrás de la única puerta que ella misma abre: no resoluble; el reporte señala el ciclo | H2-1 | FR-304, FR-307, FR-308, FR-309, FR-310 | Se define en `tasks.md` |
-| 2 | Una llave está en el campo `suelta` de un enemigo errante: la verificación la ubica en la sala inicial del enemigo | H1-4 | FR-303, FR-316 | Se define en `tasks.md` |
-| 3 | Existen varios órdenes válidos de obtención de llaves: dos ejecuciones producen el mismo orden | H1-5 | FR-305, FR-306 | Se define en `tasks.md` |
-| 4 | Cripta no resoluble sin `--forzar`: la partida no inicia y se muestra el reporte | H4-1 | FR-311 | Se define en `tasks.md` |
+| 1 | `llave_salida` está detrás de la única puerta que ella misma abre: no resoluble; el reporte señala el ciclo | H2-1 | FR-304, FR-307, FR-308, FR-309, FR-310 | `test_h2_1_apendiceB_caso1_fr304_fr307_fr308_fr309_fr310_llave_salida_detras_de_su_puerta` (`tests/test_resolubilidad_reporte.py`) |
+| 2 | Una llave está en el campo `suelta` de un enemigo errante: la verificación la ubica en la sala inicial del enemigo | H1-4 | FR-303, FR-316 | `test_h1_4_apendiceB_caso2_fr303_fr316_llave_de_enemigo_errante` (`tests/test_resolubilidad_logica.py`) |
+| 3 | Existen varios órdenes válidos de obtención de llaves: dos ejecuciones producen el mismo orden | H1-5 | FR-305, FR-306 | `test_h1_5_apendiceB_caso3_fr305_fr306_mismo_orden_en_dos_ejecuciones` (`tests/test_resolubilidad_logica.py`) |
+| 4 | Cripta no resoluble sin `--forzar`: la partida no inicia y se muestra el reporte | H4-1 | FR-311 | `test_h4_1_apendiceB_caso4_fr311_no_resoluble_no_inicia` (`tests/test_resolubilidad_servicio.py`) |
 
 Cada prueba citará el identificador del requisito que verifica (Principio X).
 

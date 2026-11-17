@@ -492,19 +492,6 @@ Spec: [specs/004-linea-tiempo/spec.md](specs/004-linea-tiempo/spec.md) ·
 Plan: [specs/004-linea-tiempo/plan.md](specs/004-linea-tiempo/plan.md) ·
 Investigación: [specs/004-linea-tiempo/research.md](specs/004-linea-tiempo/research.md)
 
-### §5.3 Banco de pruebas de la línea de tiempo (`--bench`)
-
-`Service/BenchLineaTiempo.py` (con `Service/Cronometro.py` y `ResultadoBenchDTO`, igual que
-`Service/BenchInventario.py`) corre sin ventana y con cargas **sintéticas** (Principio VI): una cripta en
-cuadrícula de 4 × 4 salas, dos enemigos errantes inofensivos y un jugador que no puede morir, que juega una
-secuencia fija (esperar y dar la vuelta a una manzana de salas) con la semilla 2026. Cada partida de 5 000 acciones se
-juega una vez por K y la comparten M1, M2 y M3: como la partida es determinista, la historia de las primeras n
-acciones es la de una partida de n. `BenchInventario.medir()` devuelve también este grupo (una línea), y así `--bench`
-lo muestra sin tocar `Service/ServicioBench.py` (cambio registrado en el plan, NFR-401).
-
-Tabla completa: [bench-tabla.txt](specs/004-linea-tiempo/bench-tabla.txt) (`python -m Service.ServicioBench`, 74 s,
-Windows 11 Pro). Los tiempos son medianas y dependen de la máquina; los conteos son reproducibles.
-
 ### §5.5 Línea de tiempo y puntos de control
 
 Cada decisión sigue [research.md](specs/004-linea-tiempo/research.md) R1 a R10. «¿Coincide con el plan?» compara
@@ -664,6 +651,21 @@ el punto 0 y respondería un estado del instante 0, que engaña; la defensa mín
 es `contexto.linea = None` en `ServicioReplay.reproducir`, para que salga el mensaje claro «Esta partida no tiene línea de
 tiempo que consultar». Anotado como supuesto en la spec de la 004 (Suposiciones).
 
+**HUD con mensajes largos y vida mayor que vida_max.** Un mensaje de 342 px en un ancho útil de 334 no se arregla con más holgura (achicaría la letra de todos): `HudJuego._mensajes` ya lo recorta con `recortar_a_ancho` y «...», así que no cambió la vista; `barra_de_vida` ya limitaba la proporción a 1.0 y ahora lo cubren dos pruebas (ratas de cripta-01: vida 12, vida_max 8).
+
+#### §5.5 (subsección) Banco de pruebas de la línea de tiempo (`--bench`)
+
+`Service/BenchLineaTiempo.py` (con `Service/Cronometro.py` y `ResultadoBenchDTO`, igual que
+`Service/BenchInventario.py`) corre sin ventana y con cargas **sintéticas** (Principio VI): una cripta en
+cuadrícula de 4 × 4 salas, dos enemigos errantes inofensivos y un jugador que no puede morir, que juega una
+secuencia fija (esperar y dar la vuelta a una manzana de salas) con la semilla 2026. Cada partida de 5 000 acciones se
+juega una vez por K y la comparten M1, M2 y M3: como la partida es determinista, la historia de las primeras n
+acciones es la de una partida de n. `BenchInventario.medir()` devuelve también este grupo (una línea), y así `--bench`
+lo muestra sin tocar `Service/ServicioBench.py` (cambio registrado en el plan, NFR-401).
+
+Tabla completa: [bench-tabla.txt](specs/004-linea-tiempo/bench-tabla.txt) (`python -m Service.ServicioBench`, 74 s,
+Windows 11 Pro). Los tiempos son medianas y dependen de la máquina; los conteos son reproducibles.
+
 ### §5.6 Revisión de decisiones de la primera parte
 
 Las decisiones de la primera entrega que esta feature toca se volvieron a medir con la carga nueva (Principio VIII).
@@ -713,12 +715,12 @@ def Recibir_Dannio(self, Cant):
     self._registrar_vida()
     ...
 ```
-**Después** (`Logic/ActorBase.py`: campo en `__init__` y una línea en `Recibir_Dannio`):
+**Después** (`Logic/ActorBase.py`: campo con un comentario de una línea en `__init__` y una línea en `Recibir_Dannio`):
 ```python
+# daño recibido: suma de los daños finales > 0; no va al historial ni a PartidaGuardada
 self.danio_recibido: int = 0                 # en __init__
 
 def Recibir_Dannio(self, Cant):
-    """..."""
     if Cant <= 0:
         return
     self.danio_recibido += Cant              # la línea nueva
@@ -726,10 +728,13 @@ def Recibir_Dannio(self, Cant):
     ...
 ```
 
-**Por qué es seguro.** `Cant` ya es el daño final en los cuatro sitios que llaman a `Recibir_Dannio`: el ataque
+**Por qué es seguro.** `Cant` ya es el daño final en los tres sitios que llaman a `Recibir_Dannio`: el ataque
 (`Logic/motorJuego.py:256`, `max(1, ataque + azar - defensa_efectiva)`), la trampa (`:289`, `dano_al_activarse()`) y el veneno
 (`Logic/Efectos.py:33`, su valor por pulso); la defensa se resta antes de llamar, no dentro. La guarda `Cant <= 0` sigue
 primero, así que un daño de 0 no sube el contador. El contador **no** va al historial (deshacer con un pergamino no lo baja,
 así que el pergamino no parece daño en la comparación de un paso) ni a `PartidaGuardada` (solo importa la diferencia dentro
 de un paso; cargar una partida interrumpe el viaje). Los enemigos también lo tienen porque comparten `ActorBase`; nadie lo
-lee. Costo: O(1). Pruebas: `tests/test_danio_recibido.py` (9).
+lee. Costo: O(1). Pruebas: `tests/test_danio_recibido.py`.
+
+**Nota sobre las pruebas.** La mutación que quita `Evento_pendiente` del daño solo se nota contando los cambios del intervalo, y el
+helper de la prueba lee atributos privados del historial (se rompe si cambia el buffer).
