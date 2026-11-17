@@ -25,6 +25,9 @@ class ServicioIrA:
         nombre_real = contexto.mazmorra.sala(destino).nombre
         return InicioViajeDTO(ViajeDTO(destino, nombre_real, 0, contexto.jugador.acciones), [])
 
+    def anotar(self, contexto: ContextoPartida, texto: str) -> None:
+        contexto.mensajes.agregar(f"[t={contexto.motor.reloj}] {texto}")
+
     def dar_paso(self, contexto: ContextoPartida, viaje: ViajeDTO) -> PasoViajeDTO:
         motor = contexto.motor
         jugador = contexto.jugador

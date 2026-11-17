@@ -30,6 +30,8 @@ programación NO se esconden: siguen rompiendo con su traza.
 
 Los métodos de acciones devuelven el EstadoJuegoDTO resultante; los del inventario, el InventarioDTO.
 """
+from dataclasses import replace
+
 from DTO.AccionDTO import AccionDTO
 from DTO.ConfiguracionDTO import ConfiguracionDTO
 from DTO.Direcciones import DIRECCIONES
@@ -42,7 +44,8 @@ from DTO.ReporteResolubilidadDTO import ReporteResolubilidadDTO
 from DTO.ResultadoBenchDTO import ResultadoBenchDTO
 from DTO.ResultadoReplayDTO import ResultadoReplayDTO
 from DTO.ResumenHistoriaDTO import ResumenHistoriaDTO
-from DTO.ViajeDTO import AMBIGUO, INTERRUMPIDO, YA_AQUI, PasoViajeDTO, ViajeDTO
+from DTO.ViajeDTO import (AMBIGUO, DANO, ENEMIGOS, INTERRUMPIDO, LLEGO, PASO_RECHAZADO, SIN_RUTA, YA_AQUI, PasoViajeDTO,
+                          ViajeDTO)
 from Service.ErroresServicio import ERRORES_ESPERADOS
 from Service.ServicioBench import ServicioBench
 from Service.ServicioGuardado import ServicioGuardado
@@ -341,10 +344,38 @@ class ControladorBackend:
         contexto = self._activa()
         if self._viaje is None:
             return PasoViajeDTO(None, [INTERRUMPIDO], self._llamar(self._partida.estado, contexto))
+        destino = self._viaje.nombre_destino
         paso = self._llamar(self._ir_a.dar_paso, contexto, self._viaje)
         self._viaje = paso.viaje
+        if paso.viaje is None:
+            for texto in self._textos_de_parada(paso.motivos, destino):
+                self._ir_a.anotar(contexto, texto)
+            paso = replace(paso, estado=self._llamar(self._partida.estado, contexto))
         self._terminada = paso.estado.terminado
         return paso
+
+    def cancelar_viaje(self) -> EstadoJuegoDTO:
+        contexto = self._activa()
+        if self._viaje is not None:
+            self._viaje = None
+            self._ir_a.anotar(contexto, "Viaje interrumpido.")
+        return self._llamar(self._partida.estado, contexto)
+
+    @staticmethod
+    def _textos_de_parada(motivos: list[str], destino: str) -> list[str]:
+        textos = []
+        for motivo in motivos:
+            if motivo == LLEGO:
+                textos.append(f"Llegaste a {destino}.")
+            elif motivo == ENEMIGOS:
+                textos.append("Viaje detenido: hay enemigos.")
+            elif motivo == DANO:
+                textos.append("Viaje detenido: recibiste daño.")
+            elif motivo == SIN_RUTA:
+                textos.append(f"Viaje detenido: sin ruta conocida a {destino}.")
+            elif motivo == PASO_RECHAZADO:
+                textos.append("Viaje detenido: no se pudo dar el paso.")
+        return textos
 
     @staticmethod
     def _mensaje_de_destino(motivo: str) -> str:
