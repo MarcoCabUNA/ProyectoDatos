@@ -4,16 +4,18 @@ escenario A32; Principio VIII). Mismo cronómetro y formato que Logic/BenchMapaC
 armar_cuadricula y mapa_completo, y de Logic/BenchLogica.py, SEMILLA, _cronometrar y _mejor_y_mediana, sin modificarlos.
 
 Cargas SINTÉTICAS y deterministas (Principios VI y VIII): cuadrículas de lado 10, 32 y 100 (100, 1 024 y 10 000 salas) y una
-cuadrícula de 15 × 20 = 300 salas, el tamaño de la cripta de referencia cripta-06 (SC-252), con costos de
-random.Random(SEMILLA) entre 1 y 300 y el mapa conocido completo. El paso va desde la esquina 1 hacia la sala opuesta.
+cuadrícula de 15 × 20 = 300 salas, la cripta de referencia de NFR-250 y SC-252 (el tamaño de cripta-06; peor caso: la
+ruta la cruza de un extremo al otro), con costos de random.Random(SEMILLA) entre 1 y 300 y el mapa conocido completo.
+El paso va desde la esquina 1 hacia la sala opuesta.
 
   V1   armar el GrafoMapaConocido, con su primera entradas      una vez por viaje (ServicioIrA lo guarda)
   V2   un paso con el grafo ya armado: decidir_paso             lo que cuesta cada paso después del primero
   V3   un paso completo: grafo nuevo + decidir_paso             el peor caso; es el que se compara con NFR-250 (< 5 ms)
 
 El criterio de NFR-250 se anota en la fila V3 del tamaño de referencia (300 salas). Los demás tamaños son evidencia.
-Si cripta-06 está en el paquete, ServicioBench agrega además la medición con esa cripta (medir_paso_en). Sin dict, set ni
-sorted. Corre sin vista (Principio V).
+Si cripta-06 está en el paquete, ServicioBench agrega además la medición con esa cripta (medir_paso_en) como dato
+complementario: ahí el paso medido da «sin ruta», así que no es el peor caso. Sin dict, set ni sorted. Corre sin vista
+(Principio V).
 """
 import random
 
@@ -23,6 +25,7 @@ from DTO.SalaDTO import SalaDTO, SalidaDTO
 from Logic.BenchLogica import SEMILLA, _cronometrar, _mejor_y_mediana
 from Logic.BenchMapaConocido import armar_cuadricula, mapa_completo
 from Logic.GrafoMapaConocido import GrafoMapaConocido
+from Logic.MapaConocido import MapaConocido
 from Logic.Mazmorra import Mazmorra
 from Logic.ViajeAutomatico import decidir_paso
 
@@ -34,8 +37,9 @@ COLUMNAS_REFERENCIA = 20
 OPUESTA = [S, N, O, E]
 
 
-def medir(lados=(10, 32, 100), repeticiones: int = 9, filas: int = FILAS_REFERENCIA,
+def medir(lados: tuple[int, ...] = (10, 32, 100), repeticiones: int = 9, filas: int = FILAS_REFERENCIA,
           columnas: int = COLUMNAS_REFERENCIA) -> list[ResultadoBenchDTO]:
+    """Las filas V1 a V3 de cada cuadrícula y de la de referencia de 300 salas."""
     resultados = []
     for lado in lados:
         mazmorra = armar_cuadricula(lado)
@@ -48,6 +52,7 @@ def medir(lados=(10, 32, 100), repeticiones: int = 9, filas: int = FILAS_REFEREN
 
 
 def armar_rectangulo(filas: int, columnas: int) -> list[SalaDTO]:
+    """Las salas de una cuadrícula filas × columnas con costos sorteados con SEMILLA, iguales en las dos caras."""
     azar = random.Random(SEMILLA)
     salidas = []
     for f in range(filas):
@@ -73,17 +78,20 @@ def armar_rectangulo(filas: int, columnas: int) -> list[SalaDTO]:
 
 
 def mazmorra_de(salas: list[SalaDTO]) -> Mazmorra:
+    """Una Mazmorra con el esqueleto de esas salas."""
     mazmorra = Mazmorra(len(salas), "itm_llave")
     mazmorra.cargar_esqueleto(salas)
     return mazmorra
 
 
-def paso_completo(mapa, mazmorra: Mazmorra, origen: int, destino: int):
+def paso_completo(mapa: MapaConocido, mazmorra: Mazmorra, origen: int, destino: int) -> tuple[int, int, int] | None:
+    """V3: arma un grafo nuevo y decide un paso."""
     return decidir_paso(GrafoMapaConocido(mapa), mapa, mazmorra, origen, destino)
 
 
 def medir_en(mazmorra: Mazmorra, repeticiones: int, etiqueta: str, es_referencia: bool, origen: int = 1,
              destino: int | None = None) -> list[ResultadoBenchDTO]:
+    """Las filas V1, V2 y V3 de una mazmorra con el mapa conocido completo; en la de referencia, V3 dice si cumple."""
     n = len(mazmorra.salas) - 1
     mapa = mapa_completo(mazmorra)
     destino = n if destino is None else destino
@@ -92,10 +100,10 @@ def medir_en(mazmorra: Mazmorra, repeticiones: int, etiqueta: str, es_referencia
     decision = decidir_paso(armado, mapa, mazmorra, origen, destino)
     resultado = [None]
 
-    def solo_paso():
+    def solo_paso() -> None:
         resultado[0] = decidir_paso(armado, mapa, mazmorra, origen, destino)
 
-    def completo():
+    def completo() -> None:
         resultado[0] = paso_completo(mapa, mazmorra, origen, destino)
 
     filas = []

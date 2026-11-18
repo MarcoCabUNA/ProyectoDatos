@@ -83,7 +83,7 @@ class PruebasConsultas(unittest.TestCase):
             self.assertEqual(resumen.reloj, ctx.linea.accion(2).tiempo)
         _correr(prueba)
 
-    def test_h1_7_fr409_instante_igual_al_reloj(self):
+    def test_h1_7_fr403_fr409_instante_igual_al_reloj(self):
         def prueba(carpeta):
             _, ctx = partida_de_prueba(carpeta, semilla=2026)
             jugar(ctx, 9)
