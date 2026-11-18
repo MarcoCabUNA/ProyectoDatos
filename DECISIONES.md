@@ -1124,9 +1124,11 @@ de parada (FR-260); el resto lo decidí yo, y se puede cambiar:
 
 **10. Banco del paso (NFR-250, NFR-251, SC-252).** `Logic/BenchViaje.py` mide, con el mapa conocido completo y desde la esquina hacia la sala
 opuesta, V1 armar el grafo, V2 un paso con el grafo armado y V3 un paso completo (grafo nuevo + `decidir_paso`), con cuadrículas de 100,
-1 024 y 10 000 salas y una de 15 × 20 = 300 salas, el tamaño de cripta-06. **cripta-06 no está en el paquete local** (trae cripta-01 a
-cripta-04): se midió la sintética de 300 salas, y cuando el paquete traiga cripta-06, `--bench` la mide sola (`ServicioBench`), desde su
-sala inicial hacia su salida, sin cambiar código (hasta entonces la tabla trae una fila «cripta-06 del paquete (no medida)»). Resultados
+1 024 y 10 000 salas y una de 15 × 20 = 300 salas, el tamaño de cripta-06. **cripta-06 ya está en el paquete local** (la trajo el merge con el paquete de Derek, `ecb78e7`): `--bench` la mide sola
+(`ServicioBench`), desde su sala inicial hacia su salida, y se midió además la sintética de 300 salas (commit `b995a97`: V1 0.160 ms, V2 0.002 ms y
+V3 **0.164 ms** contra 5 ms con la cripta-06 real; cumple NFR-250 y SC-252). **cripta-06 no es representativa del peor caso:** de su entrada a su salida no hay
+camino con puertas cerradas (el banco anota «decisión None» en V2, así que V3 mide casi solo armar el grafo); la sintética de 300 salas, con
+camino largo y todas las salas conocidas, es la medida que sí exige el paso. Resultados de la sintética
 (mediana): **300 salas, V3 = 1.001 ms contra 5 ms: cumple NFR-250 y SC-252** (V1 0.199 ms, V2 0.756 ms); 1 024 salas, V3 = 3.763 ms
 (por debajo de 5 ms, con poco margen; evidencia, no criterio); 10 000 salas, 50.363 ms. La tabla completa está en
 `specs/002-niebla-ir-a/bench-viaje-2026-11-17.txt`; se midió en otra máquina (Ryzen 4600G, 15 GB, Python 3.15.0) que la tabla del
