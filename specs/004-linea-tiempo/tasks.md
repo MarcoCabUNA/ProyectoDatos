@@ -234,7 +234,7 @@ ninguna consulta reaplica más de K acciones.
 - [X] T065 [P] En `README.md`, documentar los comandos nuevos: `historia <t>`, `historia #k`, `--replay partida.log --hasta T` (con sus códigos de salida 0, 1 y 2), `--replay` sin `--hasta` y `--checkpoint-cada K` (con el valor por defecto confirmado en T062), el archivo de partida versión 2 y que los archivos de la primera parte se rechazan como incompatibles.
 - [x] T066 [P] En `specs/004-linea-tiempo/spec.md`, tabla «Trazabilidad del Apéndice B» y la de escenarios adicionales, cambiar «Se define en `tasks.md`» por el nombre de cada prueba (ver «Cobertura» al final de este archivo). Se hace en un **commit `spec(004)` aparte**, separado del código (Principio IX).
 - [X] T067 Revisión de restricciones (Principio II): `grep -rnE "import copy|from copy|bisect|heapq|collections|\bsorted\(|\.sort\(|tracemalloc" Logic Estructuras DTO Service` no debe mostrar coincidencias nuevas en el código de esta feature; y que `grep -rnE "^(from|import) (Data|Service)" Logic` no muestre nada nuevo.
-- [ ] T068 Seguir [quickstart.md](quickstart.md) de punta a punta (pruebas, 6 casos del Apéndice B, equivalencia, consultas sin alterar la partida, guardado, K, bench) y registrar en `PROMPTS_LLM.md` cada prompt usado durante la implementación (Principio XI).
+- [x] T068 Seguir [quickstart.md](quickstart.md) de punta a punta (pruebas, 6 casos del Apéndice B, equivalencia, consultas sin alterar la partida, guardado, K, bench) y registrar en `PROMPTS_LLM.md` cada prompt usado durante la implementación (Principio XI).
 
 ---
 
