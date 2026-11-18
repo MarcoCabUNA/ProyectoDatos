@@ -405,8 +405,8 @@ que muestra la interfaz.
     inválida rechaza la ficha igual que un `rango` inválido de cazador: el error indica la ficha y el
     campo, la ficha no se vuelve a pedir y la sala que contiene ese objeto queda como contenido no
     disponible (si es la sala inicial, la partida no inicia) (escenario H2-21). La duración de un efecto
-    de una ficha queda fuera de esta regla: convertir una duración ≤ 0 en `None` es comportamiento de la
-    primera parte y no programa eventos con retraso 0.
+    de una ficha queda fuera de esta regla: una duración ≤ 0 en el efecto de una ficha se trata como si
+    no tuviera duración, como en la primera parte, y no programa eventos con retraso 0.
   - *(Pedido del integrante 2)* Si alguna ficha del botín (`suelta`) de un enemigo quedó rechazada (por
     ejemplo, un objeto con `duracion` inválida), la ficha de ese enemigo DEBE contar como inválida, con el
     mismo efecto que un `rango` inválido de cazador: el error indica la ficha del enemigo, el campo
