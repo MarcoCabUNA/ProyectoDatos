@@ -1170,6 +1170,7 @@ Respuesta a la pregunta de Claude (T038 no estaba en la rama Marco, solo en orig
 Cherry-pick solo 888d763.
 
 **Uso de la respuesta:** se trajo T038 con un cherry-pick de `888d763` (commit de Kris, `89efa22` en Marco). Commit `fa52f5a` (spec): escenarios H1-9 a H1-11, H2-10 a H2-19, H3-7 y H3-8 con su tabla de trazabilidad; FR-116 y FR-117 observables; regla de FR-108 tomada del motor (dos eventos con el mismo tiempo se atienden en el orden en que se programaron, por la secuencia de `ColaEventos`); fuera de alcance, decisiones del grupo, FR-114 con el pergamino y correcciones de formato; checklist desmarcado donde falta cobertura. Commit de pruebas: docstrings con el escenario en las pruebas que ya cubrían H1-10, H1-11, H2-10 a H2-14 y H2-16; pruebas nuevas para H1-9, H2-14 (ataque), H2-15 y T036; H2-17 a H2-19 con `skip` hasta T002, y H3-7 y H3-8 con `skip` hasta la spec 003 y la fase 7.
+
 -----------------------------------------------------------------------------------------------------------------------
 **Fecha:** Jueves 12 de noviembre 2026
 
@@ -2714,6 +2715,7 @@ Actualiza SOLO mi sección del plan de «ir a» en specs/002-niebla-ir-a/plan.md
 Reporta el commit. No hagas push.
 
 **Uso de la respuesta:** Se actualiza el plan de «ir a» con la señal de daño por regeneración, la ubicación de SIN_EXPLORAR y los requisitos del grafo del mapa.
+
 -----------------------------------------------------------------------------------------------------------------------
 **Fecha:** Sábado 14 de noviembre 2026
 
@@ -3786,6 +3788,9 @@ Al final: el diff de las pruebas y de los dos tasks.md, el resultado de la suite
 **Uso de la respuesta:** cierre de la parte del integrante 2. 002: T050 (sin las guardas de H4-4 y SC-202, que ya pasan con T116 y T118 del integrante 3), T006 y T008 marcadas con su commit, T060 (suite 1079 OK sin skip y 32/32, replay de ejemplo con victoria; quedan manuales los pasos de la ventana del quickstart). T007 no se marcó: el §1 y el §2 del contrato de la 004 todavía no tienen el texto acordado (se le avisó al integrante 3). 003: T068 (§2 con y sin red como se esperaba; queda manual §3, que es T056 con el integrante 3). T069: están todas las entradas de la 003, pero había 7 repetidas (las seis de T063 a T067, pegadas dos veces, y una de la 002 del 14/11), que se quitaron.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
 
 Dos cosas, cada una en su commit.
 
@@ -3810,6 +3815,10 @@ Al final, el diff y el resultado de la suite.
 **Uso de la respuesta:** se quitaron también la guarda de H5-7 (la 003 ya existe) y la condición de `ArmadorResumen` en SC-202, con sus docstrings, y se marcó T069.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
 Actualiza specs/004-linea-tiempo/contracts/contrato-linea-tiempo.md §1 y §2. Es solo texto de spec: NO cambies ningún archivo de código. Verifica cada dato contra Data/GuardadoBinario.py y DTO/PartidaGuardadaDTO.py antes de escribirlo.
 
 §1: PartidaGuardadaDTO gana, al final y con None por defecto, primero `mapa: MapaConocidoGuardadoDTO | None` y después `linea: LineaTiempoGuardadaDTO | None`, que sigue siendo el ÚLTIMO campo. Agrega la fila de `mapa` a la tabla (hoy solo tiene `linea`) y quita "falta confirmar el orden de campos". Cada punto de control es un PartidaGuardadaDTO y lleva su propio mapa (su `partida.linea` sigue siendo None).
@@ -4005,4 +4014,76 @@ Si algo choca con las medidas de la escena (por ejemplo, no hay sitio para el te
 Al final corre la suite completa (en segundo plano, timeout de al menos 300 s) y dime el recuento y el git status. No hagas push.
 
 **Uso de la respuesta:** se usó la respuesta para implementar T041 de la 001: el costo de cada salida y el comportamiento del enemigo con marcador del cazador en la escena, con pruebas de vista H4-1 y H4-2.
+
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Necesito reconciliar PROMPTS_LLM.md con el de Derek antes de hacer push. NO hagas push. Sigue este orden y repórtame el resultado de cada paso:
+
+1) git status y git log --oneline -5. Dime si hay cambios sin commitear y en qué archivos. Si PROMPTS_LLM.md tiene cambios sin commitear, copia ese archivo a ../PROMPTS_LLM_local_sin_commit.md (fuera del repo) antes de tocar nada. Mi respaldo anterior está en ../PROMPTS_LLM_respaldo_kris.md.
+
+2) Commitea cualquier otro archivo pendiente que NO sea PROMPTS_LLM.md con su mensaje habitual. Luego descarta los cambios sin commitear de PROMPTS_LLM.md (git checkout -- PROMPTS_LLM.md).
+
+3) git fetch origin y git merge origin/derek. Si hay conflicto en PROMPTS_LLM.md, resuélvelo quedándote con la versión COMPLETA de origin/derek (git checkout --theirs PROMPTS_LLM.md) sin cambiar la codificación (UTF-8, un solo salto de línea). Si hay conflicto en cualquier otro archivo, NO lo resuelvas: detente y muéstrame el conflicto.
+
+4) Compara las entradas del archivo ya mezclado con las de ../PROMPTS_LLM_local_sin_commit.md (o con el respaldo si no existe) usando fecha + primera línea de cada entrada. Haz una lista de MIS entradas que no estén en el archivo mezclado. Muéstrame esa lista antes de agregar nada (solo los títulos de la primera línea, no el contenido completo).
+
+5) Agrega esas entradas faltantes SOLO AL FINAL de PROMPTS_LLM.md, en el orden original, copiando su texto exacto. No toques ninguna entrada que ya esté en el archivo. Además: (a) elimina la última entrada si está vacía (solo fecha y herramienta); (b) a la entrada que empieza con «Sí, haz lo pendiente» agrégale la etiqueta **Uso de la respuesta:** antes de su texto final, sin cambiar nada más.
+
+6) Ejecuta python verificar_prompts.py PROMPTS_LLM.md y muéstrame la salida completa. Debe dar: 0 repetidas, 0 marcas de conflicto, y todas las entradas nuevas con fecha y «Uso de la respuesta». (Las 3 sin fecha y 3 sin Uso que ya venían en el archivo de Derek son antiguas, no las toques.)
+
+7) Commitea el merge/arreglo con: "docs: reconcilia PROMPTS_LLM.md con origin/derek y agrega las entradas del integrante 3 al final". No hagas push.
+
+Si algo no cuadra en algún paso, detente y dímelo en vez de improvisar.
+
+**Uso de la respuesta:** se usó la respuesta para reconciliar PROMPTS_LLM.md con la versión corregida de Derek, sin perder las entradas del integrante 3 y sin duplicados.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement Feature 001-terreno-cazador, tarea T041 (integrante 3, H4-1 y H4-2). Primero revisa si T041 ya está implementada (specs/001-terreno-cazador/tasks.md, View/EscenaJuego.py, tests/test_vista_escena.py, plan.md fila H4, spec.md FR-116, FR-117, SC-106) y dime en una línea si está hecha, a medias o sin hacer. Luego, en cualquiera de los tres casos, deja la implementación y las pruebas ajustadas a esto (pautas de Marco, dueño de la spec):
+
+a) Lee el texto exacto de FR-116, FR-117 y SC-106 y prueba su criterio medible tal cual. FR-116 menciona explícitamente las salidas cerradas: respétalo. Si algo se muestra pero la spec no lo pide, no lo trates como requisito en la prueba (Principio IX).
+b) Que la escena arme la lista de etiquetas (texto + pygame.Rect) en una función pura que la prueba pueda llamar con un DTO armado a mano. Prueba el texto y los Rect, no los píxeles ni la fuente.
+c) Solapamiento con Rect.colliderect: la etiqueta de costo de cada salida no choca con los Rect de los enemigos ni con los de otras salidas. Usa el peor caso: costo de 4 dígitos y una sala con varios enemigos.
+d) El costo mostrado es el igualado entre las dos caras (SalidaViva.costo), no el que declara cada cara; vale 100 si ninguna lo declara. Agrega un caso de costo por defecto.
+e) El marcador de cazador sale del comportamiento: comportamiento == Cazador. Nunca por id (ent_sabueso_oseo) ni por nombre de enemigo (Principio VI). Prueba una sala con dos cazadores y un enemigo que no lo es: solo los cazadores llevan marcador.
+f) Las pruebas deben pasar con SDL_VIDEODRIVER=dummy.
+g) Si cambias EscenaJuego.py (primera entrega, Principio III): justifícalo con el FR correspondiente + fila en la tabla del plan + antes/después en DECISIONES.md. Sin docstrings en el código P1, KISS/YAGNI.
+h) Dos commits separados (Principio IX): primero el código y las pruebas; después el commit de spec que marca T041 como [x] y escribe los nombres de las pruebas en la fila H4 de plan.md y en las filas de trazabilidad del spec ("lo que se dibuja, en T041").
+i) Corre la suite completa en segundo plano (python tests/correr_pruebas.py con PYTHONIOENCODING=utf-8, sin timeout menor a 300 s) y reporta el total. No corras nada más mientras corre. No hagas push.
+
+Además, respondo tu pregunta pendiente: sí, actualiza el punto 10 de mi sección de la 002 en DECISIONES.md (cripta-06 ya está medida; ya no es «no medida»), citando el commit b995a97 y aclarando que cripta-06 no es representativa porque de la entrada a la salida no hay camino con puertas cerradas. Hazlo en un commit aparte.
+
+**Uso de la respuesta:** se usó la respuesta para cerrar T041 de la 001 siguiendo las pautas de Marco, y para dejar al día el punto 10 de DECISIONES.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Ensaya por script (sin ventana, con el controlador y la vista reales, y con main.py en el shell) los pasos de la sección 7 del quickstart de la 004 que NO son visuales, y compáralos con la columna «qué se espera»:
+- Paso 7: reloj y número de líneas del log antes y después de varias consultas historia (no cambian).
+- Pasos del pergamino: con un pergamino en el inventario, Z y luego retroceder; historia #M+1 con M = acciones vigentes debe rechazarse («La acción N no existe: debe estar entre 1 y M»); y SIN pergamino, retroceder debe dejar el aviso de que no tienes ninguno y la Z sigue contando (historia #M+1 sí existe).
+- Pasos de línea de comandos: --replay LOG --hasta 310, --hasta 99999 (código 1), --hasta abc (código 2), --hasta sin --replay (código 2), log inexistente (código 1), --checkpoint-cada 0, -2 y abc (código 2), y --checkpoint-cada 1 y 50 repitiendo las consultas del paso 17 (mismos resultados que con el K por defecto).
+Usa un log recién grabado por el script con el paquete actual. Devuélveme una tabla «paso | esperado | obtenido | coincide». Si algún texto del quickstart no coincide con el programa, corrígelo en un commit de spec ("spec(004): quickstart al día tras el ensayo guionado"); si es un fallo del programa, NO lo arregles: descríbelo. No marques T068. Sin push. Corre la suite en segundo plano al final y dime el recuento.
+
+**Uso de la respuesta:** se usó la respuesta para diagnosticar el paso 12 del quickstart de la 004 (pergamino no leído) y para que Claude Code ensaye por script los pasos no visuales del quickstart (T068).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Sí, agrega esas 3 entradas al final de PROMPTS_LLM.md con su texto exacto, en el orden original, sin tocar ninguna otra. Luego:
+1) Corre python verificar_prompts.py PROMPTS_LLM.md y muéstrame la salida completa. Dime cuáles son las 3 entradas sin fecha y las 2 sin «Uso de la respuesta» (número de entrada y primera línea). Si alguna es mía y reciente (de 14/11 en adelante), dime cuál; las antiguas no las toques.
+2) Las entradas que se agregaron solas desde el merge (prompts 38 y 39) déjalas como están, pero revisa que no estén repetidas.
+3) Commitea PROMPTS_LLM.md con: "docs: reconcilia PROMPTS_LLM.md con origin/derek y agrega las entradas del integrante 3 al final". Agrégalo por nombre, nunca git add -A.
+4) Dame el recuento de unittest de la última suite (sin el filtro que cortó la línea) solo si ya tienes la salida; si no, no la vuelvas a correr.
+5) git status y git log --oneline -8. No hagas push.
+
+**Uso de la respuesta:** se usó la respuesta para confirmar el merge con origin/derek y agregar al final de PROMPTS_LLM.md las 3 entradas del integrante 3 que faltaban, sin duplicados. 
