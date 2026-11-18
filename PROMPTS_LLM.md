@@ -3788,9 +3788,6 @@ Al final: el diff de las pruebas y de los dos tasks.md, el resultado de la suite
 **Uso de la respuesta:** cierre de la parte del integrante 2. 002: T050 (sin las guardas de H4-4 y SC-202, que ya pasan con T116 y T118 del integrante 3), T006 y T008 marcadas con su commit, T060 (suite 1079 OK sin skip y 32/32, replay de ejemplo con victoria; quedan manuales los pasos de la ventana del quickstart). T007 no se marcó: el §1 y el §2 del contrato de la 004 todavía no tienen el texto acordado (se le avisó al integrante 3). 003: T068 (§2 con y sin red como se esperaba; queda manual §3, que es T056 con el integrante 3). T069: están todas las entradas de la 003, pero había 7 repetidas (las seis de T063 a T067, pegadas dos veces, y una de la 002 del 14/11), que se quitaron.
 
 -----------------------------------------------------------------------------------------------------------------------
-**Fecha:** Martes 17 de noviembre 2026
-
-**Herramienta:** Claude Code
 
 Dos cosas, cada una en su commit.
 
@@ -3815,10 +3812,6 @@ Al final, el diff y el resultado de la suite.
 **Uso de la respuesta:** se quitaron también la guarda de H5-7 (la 003 ya existe) y la condición de `ArmadorResumen` en SC-202, con sus docstrings, y se marcó T069.
 
 -----------------------------------------------------------------------------------------------------------------------
-**Fecha:** Martes 17 de noviembre 2026
-
-**Herramienta:** Claude Code
-
 Actualiza specs/004-linea-tiempo/contracts/contrato-linea-tiempo.md §1 y §2. Es solo texto de spec: NO cambies ningún archivo de código. Verifica cada dato contra Data/GuardadoBinario.py y DTO/PartidaGuardadaDTO.py antes de escribirlo.
 
 §1: PartidaGuardadaDTO gana, al final y con None por defecto, primero `mapa: MapaConocidoGuardadoDTO | None` y después `linea: LineaTiempoGuardadaDTO | None`, que sigue siendo el ÚLTIMO campo. Agrega la fila de `mapa` a la tabla (hoy solo tiene `linea`) y quita "falta confirmar el orden de campos". Cada punto de control es un PartidaGuardadaDTO y lleva su propio mapa (su `partida.linea` sigue siendo None).
@@ -4066,6 +4059,36 @@ Además, respondo tu pregunta pendiente: sí, actualiza el punto 10 de mi secci�
 
 **Herramienta:** Claude Code
 
+Dos cosas, cada una en su commit.
+
+1) DECISIONES.md, mi sección de la 002: agrega una nota corta de limitación conocida: tras cargar una partida, el log nuevo solo trae los comentarios "# ir a <sala>" de las órdenes dadas desde entonces, porque continuar_desde copia solo las acciones; los comentarios anteriores quedan en el log previo. No afecta al replay (los comentarios son informativos y el replay usa solo las acciones). Verifica con grep que es cierto antes de escribirlo. Commit: "docs: limitación conocida, comentarios de ir a tras cargar".
+
+2) T068 de specs/004-linea-tiempo/tasks.md (quickstart de punta a punta de la línea de tiempo). Lee specs/004-linea-tiempo/quickstart.md (si no existe, dímelo y propón su contenido). Verifica contra el código actual que cada paso sigue siendo cierto (comandos "historia", "historia #k", "historia <t>", --hasta, --checkpoint-cada, pergamino, guardar y cargar con línea de tiempo), con los mensajes exactos hallados con grep. Ensáyalo sin ventana con el controlador y la vista reales, como hiciste con el quickstart de la 002, y corrige el texto del quickstart si algún paso quedó desactualizado (por ejemplo por H-2, T118 o el comando mapa). Agrega los pasos manuales en la ventana con la columna "qué se espera". NO marques T068 (la marco yo tras seguirlo). Commit: "spec(004): quickstart de la línea de tiempo al día y con pasos manuales (T068)".
+
+Corre la suite completa y dime resultados.
+
+**Uso de la respuesta:** se usó la respuesta para documentar la limitación de los comentarios # ir a tras cargar y para dejar al día el quickstart de la línea de tiempo (T068).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Actualiza specs/004-linea-tiempo/contracts/contrato-linea-tiempo.md §1 y §2. Es solo texto de spec: NO cambies ningún archivo de código. Verifica cada dato contra Data/GuardadoBinario.py y DTO/PartidaGuardadaDTO.py antes de escribirlo.
+
+§1: PartidaGuardadaDTO gana, al final y con None por defecto, primero `mapa: MapaConocidoGuardadoDTO | None` y después `linea: LineaTiempoGuardadaDTO | None`, que sigue siendo el ÚLTIMO campo. Agrega la fila de `mapa` a la tabla (hoy solo tiene `linea`) y quita "falta confirmar el orden de campos". Cada punto de control es un PartidaGuardadaDTO y lleva su propio mapa (su `partida.linea` sigue siendo None).
+
+§2: la cabecera de la versión 2 mide 58 bytes: magia CRPT, versión, offset y largo del bloque global, offset y cantidad de entradas del índice, id de sala mínimo, offset y largo del bloque del mapa, y offset y largo del bloque de la línea (largo 0 = None). El orden de los bloques en el archivo es: global, mapa, línea, salas, índice. Cada punto de control de la línea escribe: acciones_completadas, su bloque global, la cantidad y sus salas, y el bloque de su mapa con el largo delante (largo 0 = None). Quita la nota "falta confirmar el orden de campos" y el punto que repite la cabecera de la línea por separado: deja un solo párrafo coherente. Mantén lo demás (archivo versión 1 rechazado, cargar_sala no lee la línea).
+
+Después revisa que no queden otras frases tipo "falta confirmar" en ese archivo. Commit: "spec(004): contrato con el orden acordado de mapa y linea (§1) y de la cabecera v2 (§2)". Dime qué cambió.
+
+**Uso de la respuesta:** se usó la respuesta para dejar el contrato de la 004 con el orden acordado de mapa y linea y la cabecera v2, y así cerrar T007 de Derek.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
 Ensaya por script (sin ventana, con el controlador y la vista reales, y con main.py en el shell) los pasos de la sección 7 del quickstart de la 004 que NO son visuales, y compáralos con la columna «qué se espera»:
 - Paso 7: reloj y número de líneas del log antes y después de varias consultas historia (no cambian).
 - Pasos del pergamino: con un pergamino en el inventario, Z y luego retroceder; historia #M+1 con M = acciones vigentes debe rechazarse («La acción N no existe: debe estar entre 1 y M»); y SIN pergamino, retroceder debe dejar el aviso de que no tienes ninguno y la Z sigue contando (historia #M+1 sí existe).
@@ -4086,4 +4109,18 @@ Sí, agrega esas 3 entradas al final de PROMPTS_LLM.md con su texto exacto, en e
 4) Dame el recuento de unittest de la última suite (sin el filtro que cortó la línea) solo si ya tienes la salida; si no, no la vuelvas a correr.
 5) git status y git log --oneline -8. No hagas push.
 
-**Uso de la respuesta:** se usó la respuesta para confirmar el merge con origin/derek y agregar al final de PROMPTS_LLM.md las 3 entradas del integrante 3 que faltaban, sin duplicados. 
+**Uso de la respuesta:** se usó la respuesta para confirmar el merge con origin/derek y agregar al final de PROMPTS_LLM.md las 3 entradas del integrante 3 que faltaban, sin duplicados.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Opción (B). Hazlo en este orden y sin push:
+1) En PROMPTS_LLM.md quita las entradas #208 y #209 (las repetidas con encabezado). Conserva #210. A #193 y #195 agrégales, al inicio de la entrada, el encabezado "**Fecha:** Martes 17 de noviembre 2026" y "**Herramienta:** Claude Code", con el mismo formato que las demás. No toques ninguna otra entrada (#142, #143 y #179 son de Derek o antiguas: déjalas). Conserva CRLF y UTF-8.
+2) Corre python verificar_prompts.py PROMPTS_LLM.md y muéstrame la salida. Debe dar 0 repetidas y 0 marcas de conflicto, y sin fecha: solo #179. Revisa también que no haya entradas con el mismo texto exacto.
+3) Commitea PROMPTS_LLM.md (por nombre, nunca git add -A) con: "docs: reconcilia PROMPTS_LLM.md con origin/derek y agrega las entradas del integrante 3 al final".
+4) Marca T068 en specs/004-linea-tiempo/tasks.md (`- [ ] T068` → `- [x] T068`; ya hice a mano los pasos visuales del quickstart §7). Commit aparte con: "spec(004): T068 cerrada (pasos visuales a mano y el resto con ensayo guionado)".
+5) Si al terminar PROMPTS_LLM.md quedó modificado por la entrada de este prompt, no lo commitees todavía. Dime git status y git log --oneline -6.
+
+**Uso de la respuesta:** se usó la respuesta para dejar PROMPTS_LLM.md sin entradas repetidas, con fecha en las entradas recientes, y para cerrar T068.
