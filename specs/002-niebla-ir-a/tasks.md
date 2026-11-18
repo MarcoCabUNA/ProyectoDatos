@@ -653,7 +653,7 @@ y `JugadorPrueba` de `tests/ayudas_mapa.py`, y `GrafoMapaConocido(mapa)`.
 
 - [x] T115 Escribir `tests/test_estado_sin_filtrar.py` (depende de T033): `test_sc202_h2_doscientas_acciones_sin_ids_de_no_exploradas` (partida de 200 acciones con y sin antorcha: en cada `EstadoJuegoDTO` de `ArmadorEstado`, ningún `sala.salidas[d].sala_destino` ni `sala_salida` es el id de una sala no explorada) y `test_fr204_fr217_h2_salidas_a_exploradas_y_sala_inicial_sin_cambios` (las salidas hacia exploradas conservan su id; `sala_inicial` y el resto del estado no cambian; `sala_salida` vuelve a su id cuando se explora).
 - [x] T116 (FR-204, FR-217, SC-202) Opción A del H-2: en `DTO/EstadoJuegoDTO.py` (suyo), la constante `SIN_EXPLORAR = -1` (no en `DTO/MapaConocidoDTO.py`, D-6); en `Service/ArmadorEstado.py` (suyo), `armar_estado` pone `sala_destino = SIN_EXPLORAR` en cada salida de `EstadoJuegoDTO.sala` cuyo destino no cumple `contexto.motor.mapa.es_explorada(destino)`, y `sala_salida = None` mientras la sala de salida no esté explorada. O(1) por salida; no usa `a_dto()`. La vista no cambia. Hace pasar T115.
-- [ ] T117 **Aviso** al integrante 2: el H-2 está en `origin/kris` (T116); puede marcar T006 y quitar la guarda de la parte del `EstadoJuegoDTO` de `test_sc202_…` (T050).
+- [x] T117 **Aviso** al integrante 2: el H-2 está en `origin/kris` (T116); puede marcar T006 y quitar la guarda de la parte del `EstadoJuegoDTO` de `test_sc202_…` (T050).
 
 ### Fase 17: Resumen de `historia` con el mapa conocido
 
@@ -672,7 +672,7 @@ y `JugadorPrueba` de `tests/ayudas_mapa.py`, y `GrafoMapaConocido(mapa)`.
 - [x] T124 **(coordinar con el integrante 2)**, porque T058 edita el mismo archivo. En `specs/002-niebla-ir-a/spec.md`, tabla «Trazabilidad del Apéndice B», cambiar «Se define en `tasks.md`» por el nombre de la prueba **solo en sus filas**: casos 1, 2b, 3 y 6 y A24 a A37 (tabla de cobertura de abajo). En un commit `spec(002)` aparte (Principio IX).
 - [x] T125 Revisión de restricciones, como T059: `grep -rnE "import copy|from copy|bisect|heapq|collections|\bsorted\(|\.sort\(|\bdict\(|\bset\(" DTO/ViajeDTO.py Logic/ViajeAutomatico.py Logic/BenchViaje.py Service/ServicioIrA.py` sin coincidencias; `grep -nE "^(from|import) (Data|Service)" Logic/ViajeAutomatico.py Logic/BenchViaje.py` vacío; `grep -nE "pygame|View" Service/ServicioIrA.py` vacío; `git diff` de `UIController/ControladorBackend.py` agrega al final de la clase y, como **excepción justificada** (FR-262: «cualquier otra orden descarta el viaje») y anotada en la tabla «Cambios a código de la primera entrega» del plan, solo los imports, 2 líneas en `__init__`, 1 en `_ejecutar` y 1 en `_empezar`.
 - [x] T126 Correr `$env:PYTHONIOENCODING = "utf-8"; uv run python tests/correr_pruebas.py` (todo en verde) y el replay de ejemplo; seguir [quickstart.md](quickstart.md) con la validación de «ir a» que ella agregue allí, y comprobar la tabla de cobertura de abajo.
-- [ ] T127 (Principio XI) Registrar en `PROMPTS_LLM.md`, al final y en orden cronológico, con el formato del archivo, los prompts de su sección del plan y de la implementación de «ir a».
+- [x] T127 (Principio XI) Registrar en `PROMPTS_LLM.md`, al final y en orden cronológico, con el formato del archivo, los prompts de su sección del plan y de la implementación de «ir a».
 
 ### Dependencias de «ir a»
 
