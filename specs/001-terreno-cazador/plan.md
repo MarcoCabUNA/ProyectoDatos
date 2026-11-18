@@ -49,7 +49,7 @@ dentro del `rango` (NFR-102): al multiplicar por 10 el tamaño de la cripta, no 
 **Restricciones**: determinismo (Principio IV): la decisión del cazador no consume el azar
 (FR-115). Abierto/Cerrado (Principio III): ver la tabla de cambios a código P1.
 
-**Escala**: criptas publicadas de 6 a 50 salas, y cuadrículas sintéticas de hasta 10 000 salas en
+**Escala**: criptas del paquete de hasta 300 salas (`cripta-06`), y cuadrículas sintéticas de hasta 10 000 salas en
 el bench. Decenas de cazadores activos (pruebas del enunciado), hasta 100 en el bench.
 
 ## Verificación de la constitución
@@ -99,7 +99,7 @@ el bench. Decenas de cazadores activos (pruebas del enunciado), hasta 100 en el 
 | `SalidaDTO` | `costo` | `int \| None = None`, el costo **declarado** en ese lado | Integrante 2 |
 | `FichaEnemigoDTO` | `rango` | `int \| None = None`; a un cazador no se le inventa valor | Integrante 1 |
 | `ActorDTO` | `comportamiento` | `str \| None = None`, para que la vista distinga cazadores | Integrante 3 (hecho: T039) |
-| (`Service/ArmadorEstado.py`) | — | Copiar también `costo` (el igualado) al armar la sala para la vista | Por acordar con el integrante 3 |
+| (`Service/ArmadorEstado.py`) | — | Copiar también `costo` (el igualado) al armar la sala para la vista | Integrante 3 (hecho: T038) |
 
 La validación de FR-122 (costo entero ≥ 1, los dos lados de una salida sin costos distintos,
 `rango` entero ≥ 0 en cazadores) va en **Data** y es
@@ -156,7 +156,7 @@ el después en `DECISIONES.md`.
 | `Logic/BenchLogica.py` · `medir()` | Agregar `BenchRutas.medir()` a lo que devuelve, con `from Logic import BenchRutas` dentro de la función | Modificación (2 líneas: el import y el `return`) | NFR-103 | `ServicioBench` (del integrante 2) ya llama a `BenchLogica.medir`. Así no se edita su archivo. El import va dentro de `medir()` y no arriba del módulo porque `BenchRutas` importa de `BenchLogica` (`_cuadricula`, `_cronometrar`, `SEMILLA`…): arriba sería un import circular, y dentro de la función se resuelve al llamarla, cuando los dos módulos ya están cargados. |
 | `DTO/FichaEnemigoDTO.py` | Campo `rango`, `"rango"` en `_CAMPOS`, lectura y escritura | Extensión del DTO | FR-106 | Contrato de datos. Es del integrante 1. |
 | `DTO/SalaDTO.py` · `SalidaDTO` | Campo `costo` (declarado) | Extensión del DTO | FR-101 | Contrato de datos. **Lo hace el integrante 2.** |
-| `Service/ArmadorEstado.py` · `_sala_con_estado_actual` | Copiar `costo=viva.salidas[d].costo` junto a `cerrada` | Modificación (1 palabra) | FR-101, FR-116 | La vista debe ver el costo igualado, no el declarado. **Por acordar con el integrante 3.** |
+| `Service/ArmadorEstado.py` · `_sala_con_estado_actual` | Copiar `costo=viva.salidas[d].costo` junto a `cerrada` | Modificación (1 palabra) | FR-101, FR-116 | La vista debe ver el costo igualado, no el declarado. Hecho (T038, integrante 3). |
 | `DTO/ActorDTO.py` | Campo `comportamiento` | Extensión del DTO | FR-117 | Hecho (T039). |
 | `View/EscenaJuego.py` (y 4 constantes de `View/Componentes.py`) | Código nuevo: funciones puras `etiquetas_de_costo(estado, marcos, fuente)` (devuelve dirección, texto y `Rect` de cada etiqueta), `posicion_de_costo`, `lleva_marcador`, `texto_de_ficha` y `rombo_del_marcador`, y los métodos `_costos` (dibuja cada costo en el `Rect` de `etiquetas_de_costo`) y `_nombre_de_ficha` (dibuja «nombre (comportamiento)» y, solo para el cazador, un rombo con `pygame.draw`) | Modificación (+1 línea en `dibujar`: `self._costos(...)`; en `_ficha_de_actor`, la llamada original a `texto_sombreado` del nombre se cambia por `self._nombre_de_ficha(...)`) + extensión | FR-116, FR-117, SC-106 | La escena es el único sitio que dibuja las salidas y la ficha del enemigo; el costo y el comportamiento tienen que aparecer ahí. No cambia el reparto ni las medidas de la escena (T041, integrante 3). |
 | `Data/ValidacionDatos.py` (nuevo), `Data/GestorContenido.py` | `ValidacionDatos`: `ErrorDatos` (subclase de `ErrorRed`, con la ficha) y las reglas de FR-122 (`es_costo_valido`, `es_cierre_valido`, `error_de_ficha`, `error_de_suelta`). `GestorContenido`: estado nuevo `RECHAZADA` y array `_errores` por sala; `resolver_pendientes` resuelve el catálogo **antes** de integrar el lote y rechaza solo las salas que mencionan una ficha rechazada (enemigos y, desde T055, objetos del suelo); `asegurar_sala` relanza el error de una sala rechazada sin otra solicitud | Archivo nuevo + modificación (T052 y T055, **integrante 2**; commits `c01dc93`, `9eea7fa`). Lo de T058 en `asegurar_sala` va en su propia fila | FR-122 | Antes el formato y la red usaban el mismo `ErrorRed`, la precarga los trataba igual y `resolver_pendientes` marcaba el lote como cargado antes de resolver el catálogo. `Data/FuenteDatos.py` no cambió por esta feature. |
@@ -211,12 +211,16 @@ cuadrículas son sintéticas, con costos por salida sacados de `random.Random(SE
 | `tests/test_mazmorra_costos.py` | Costo en `SalidaViva`, igualación de los dos lados, `salidas_abiertas_con_costo` y `costo_paso` (FR-101, FR-104, FR-119). |
 | `tests/test_monticulo_minimo.py` | El montículo: orden, desempate por valor, entradas repetidas, `vaciar`. |
 | `tests/test_busqueda_costo_minimo.py` | Búsqueda reanudable, corte en el límite, generación, salidas sin vuelta, salidas repetidas (FR-108, FR-111, FR-119), y `GrafoEsqueleto`: salidas y entradas abiertas en vivo (FR-112, FR-113). |
-| `tests/test_terreno_cazador.py` | Escenarios H1-1 a H1-8, H2-1 a H2-9 y H3-6 (H2-9 con una fuente de prueba que devuelve un error de datos para una sala: T054), y los casos 1, 2, 3, 4, 6 y 7 del Apéndice B. Bordes del cazador, incluido el cierre automático en el mismo instante (FR-108). |
+| `tests/test_terreno_cazador.py` | Escenarios H1-1 a H1-9, H2-1 a H2-9, H2-14, H2-15, H2-17 a H2-22 y H3-6 a H3-8 (H2-9 con una fuente de prueba que devuelve un error de datos para una sala: T054), y los casos 1, 2, 3, 4, 6 y 7 del Apéndice B. Bordes del cazador, incluido el cierre automático en el mismo instante (FR-108). |
 | `tests/test_rutas_equivalencia.py` | Escenarios H3-1 a H3-5 (H3-1 es el **caso 5** del Apéndice B). FR-114 / SC-102: partidas sintéticas con semilla (puertas, movimientos, muertes, pergaminos), comparando cada decisión con `paso_desde_cero`. Historial. |
 | `tests/test_dto_terreno.py` | `FichaEnemigoDTO.rango` (ida y vuelta, `_CAMPOS`, ausencia). Datos para la vista de H4-1 y H4-2 (costo igualado y `comportamiento`). |
 | `tests/test_modos_sin_vista_terreno.py` | FR-118: `--replay`, `--replay … --hasta` y `--verificar` con una cripta de prueba con costos y un cazador, sin vista. |
 | `tests/test_bench_rutas.py` | Las mediciones nuevas con tamaños chicos, sin vista. |
 | `tests/test_vista_terreno.py` (integrante 3, T041) | H4-1 y H4-2 en pantalla (FR-116, FR-117, SC-106), con la escena real: `test_h4_1_fr116_sc106_escenario_literal_muestra_100_250_100_y_300_junto_a_cada_salida`, `test_h4_1_fr116_sc106_cada_salida_tambien_las_cerradas_muestra_su_costo`, `test_h4_1_fr116_sc106_la_lista_de_etiquetas_trae_texto_y_rectangulo_de_cada_salida`, `test_h4_1_fr116_sc106_la_etiqueta_con_su_sombra_cabe_en_pantalla_sin_pisar_el_hud_ni_el_suelo`, `test_h4_1_fr116_sc106_el_costo_no_choca_con_enemigos_protagonista_ni_otras_salidas`, `test_h4_1_fr116_sc106_el_reparto_de_enemigos_no_cambia_con_los_costos`; y `test_h4_2_fr117_sc106_cada_enemigo_muestra_su_comportamiento_junto_a_su_nombre`, `test_h4_2_fr117_sc106_solo_el_cazador_lleva_marcador`, `test_h4_2_fr117_el_marcador_sale_del_comportamiento_no_del_id_ni_del_nombre`, `test_h4_2_fr117_sc106_un_errante_y_un_cazador_se_distinguen_en_pantalla`, `test_h4_2_fr117_el_texto_de_la_ficha_conserva_el_comportamiento_y_cabe`, `test_h4_2_fr117_el_sufijo_cabe_completo_con_el_ancho_real_de_cada_comportamiento`. El escenario literal de H4-1 usa `sala_del_escenario_h4_1()` de `tests/ayudas_terreno.py`, el mismo montaje de `test_dto_terreno.py`. |
+| `tests/test_cache_vieja.py` (T058) | FR-122 con una caché vieja en disco: una ficha hoy inválida rechaza la sala antes de que Lógica la cargue, sin dejarla a medio cargar ni duplicar enemigos al reintentar. |
+| `tests/test_paquete_real_cazador.py` (T059) | Prueba de humo con el paquete real, en la `cripta-06` (300 salas): los dos cazadores deciden como `paso_desde_cero` (FR-107 a FR-111, FR-114) y `--replay` repite la partida. |
+| `tests/test_fr122_forzar.py` | FR-122 con `--forzar`: costo inválido, costos distintos entre caras y `cierre_automatico` inválido no dejan iniciar desde `ControladorBackend.iniciar`. |
+| `tests/TestValidacionDatos.py` (integrante 2) | FR-122 en Data (T002, T052, T055, T057): `ErrorDatos` distinto del error de red, rechazo recordado por sala sin otra solicitud, `duracion` de objeto y botín rechazado. |
 
 ## Estructura del proyecto
 
@@ -256,7 +260,7 @@ Logic/
 ├── Enemigo.py                # + a_dto con comportamiento
 └── BenchLogica.py            # medir() incluye BenchRutas
 Service/
-└── ArmadorEstado.py          # + copiar el costo igualado   (por acordar con el integrante 3)
+└── ArmadorEstado.py          # + copiar el costo igualado   (hecho: T038)
 tests/
 ├── ayudas_terreno.py
 ├── test_mazmorra_costos.py
@@ -266,7 +270,12 @@ tests/
 ├── test_rutas_equivalencia.py
 ├── test_dto_terreno.py
 ├── test_modos_sin_vista_terreno.py
-└── test_bench_rutas.py
+├── test_bench_rutas.py
+├── test_vista_terreno.py          # T041 (integrante 3)
+├── test_cache_vieja.py            # T058
+├── test_paquete_real_cazador.py   # T059
+├── test_fr122_forzar.py           # FR-122 con --forzar
+└── TestValidacionDatos.py         # T002, T052, T055, T057 (integrante 2)
 DECISIONES.md                 # NUEVO en la raíz: §5.1, §5.2 y §5.6 (Principio VIII)
 ```
 
