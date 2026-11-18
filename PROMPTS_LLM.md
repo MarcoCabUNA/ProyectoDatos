@@ -4110,3 +4110,12 @@ Opción (B). Hazlo en este orden y sin push:
 Corre python verificar_prompts.py PROMPTS_LLM.md y dime el número y la primera línea de cada entrada sin fecha. Esperado: la #179 (antigua, déjala) y 2 entradas nuevas del 17/11 mías, que quedaron sin encabezado. A esas 2 agrégales al inicio "**Fecha:** Martes 17 de noviembre 2026" y "**Herramienta:** Claude Code", con el mismo formato que las demás. No toques ninguna otra entrada ni los saltos de línea (CRLF, UTF-8). Vuelve a correr el verificador: debe dar sin fecha: 1, repetidas: 0 y 0 marcadores de conflicto. Commitea PROMPTS_LLM.md por nombre con: "docs: encabezados de fecha en las entradas 40 y 41 de la bitácora". No hagas push; muéstrame git status y git log --oneline -3.
 
 **Uso de la respuesta:** se usó la respuesta para dejar con fecha y herramienta las entradas de la bitácora de los prompts 40 y 41.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Opción (C2). Quita las entradas #193 («Dos cosas, cada una en su commit.») y #195 («Actualiza specs/004-linea-tiempo/…») que NO tienen encabezado, y deja #208 y #209, que sí lo tienen. No toques ninguna otra entrada ni el CRLF/UTF-8. Antes de quitar, comprueba que el texto de #193 y #208 (y de #195 y #209) es el mismo salvo el encabezado. Corre python verificar_prompts.py PROMPTS_LLM.md: debe dar sin fecha: 1 (la #179), repetidas: 0 y 0 marcadores de conflicto. Commitea PROMPTS_LLM.md por nombre con: "docs: quita entradas repetidas sin encabezado de la bitácora". No hagas push. Muéstrame el verificador, git status y git log --oneline -3.
+
+**Uso de la respuesta:** se usó la respuesta para quitar las entradas repetidas sin encabezado de la bitácora y dejar la versión completa de cada una. 
