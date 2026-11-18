@@ -105,14 +105,22 @@ reloj que muestra el resumen ya no es un hallazgo: lo fija FR-405 de la spec (el
   anteriores, que reflejan lo vivido en ese momento.
   - *Prueba*: H3-5 y H3-6 sin `skip` (T033), citando FR-413, FR-419 y FR-424.
   - Detalle en [research.md, R4](research.md#hallazgo-h-2--recoger-o-soltar-un-pergamino-dentro-de-la-acción-revertida).
-- **H-4** (dependencia): la spec 002 ya existe. El mapa conocido (FR-223) será un campo de
-  `PartidaGuardadaDTO` que actualiza el motor y se copia con `PartidaGuardada.guardar`, sin `copy`;
-  Derek lo agrega. Así los puntos de control y la re-simulación lo reproducen sin nada especial de la
-  004. Hasta que ese campo exista, el resumen omite esa sección (Suposiciones de la spec).
-  - **Todo camino que ejecute acciones usa `ServicioLineaTiempo.ejecutar`** (hallazgo E2): el comando
-    manual, el «ir a» de la spec 002 y el replay. Si alguno llamara directo a `ServicioAccionJugador`, la
-    línea no vería esas acciones y se desalinearía de la partida viva. Quien agregue un camino nuevo debe
-    pasar también por ahí (T053).
+- **H-4** (dependencia, resuelta): el mapa conocido (FR-223 de la 002) es el campo `mapa` de
+  `PartidaGuardadaDTO`, que actualiza el motor y se copia con `PartidaGuardada.guardar`, sin `copy`; lo
+  agregó Derek (T035 a T040 de la 002). Así los puntos de control y la re-simulación lo reproducen sin nada
+  especial de la 004, y el resumen lo lee como `motor.mapa.a_dto()` (T118 de la 002). Si un resumen no trae
+  mapa, omite esa sección (Suposiciones de la spec).
+  - **Todo camino que ejecute acciones con una línea de tiempo usa `ServicioLineaTiempo.ejecutar`**
+    (hallazgo E2): el comando manual, el «ir a» de la spec 002 y `--replay … --hasta` (`ServicioReplayHasta`).
+    Si alguno llamara directo a `ServicioAccionJugador`, la línea no vería esas acciones y se desalinearía de
+    la partida viva. Quien agregue un camino nuevo debe pasar también por ahí (T053).
+  - **El replay completo es la excepción**: `--replay partida.log` sin `--hasta` (`ServicioReplay`, de la
+    primera entrega, que esta feature no toca) ejecuta las acciones con `ServicioAccionJugador` directo, sin
+    ventana ni línea de comandos, e imprime cada acción en la consola. No alimenta la línea de tiempo, así
+    que `historia` no es alcanzable en ese modo (la spec lo fija en sus Suposiciones). Solo `--replay … --hasta T`,
+    que sí arma una línea y la deja consultable, y la partida normal responden `historia`. Si algún día el
+    replay completo se vuelve interactivo, deberá pasar por `ServicioLineaTiempo.ejecutar`
+    (`DECISIONES.md` §5.5, «Supuesto: `--replay` sin `--hasta`»).
   - **«ir a» y `partida.log`**: «ir a» registra la orden como un comentario `# ir a <sala>` (formato
     acordado con el integrante 2) y cada paso como un movimiento individual. `BitacoraReplayIO.leer` debe
     **ignorar** esas líneas (tarea del integrante 2, spec 002, T071 de esta feature): `--replay … --hasta`
@@ -169,7 +177,7 @@ Logic/
 └── motorJuego.py                 # MODIFICADO: método nuevo avanzar_hasta(t)   (FR-401, FR-402)
 
 DTO/
-├── LineaTiempoDTO.py             # NUEVO: DTO de la línea para guardar (acciones, puntos, cargas, fichas, K)
+├── LineaTiempoDTO.py             # NUEVO: LineaTiempoGuardadaDTO, la línea para guardar (acciones, puntos, cargas, fichas, K)
 ├── ResumenHistoriaDTO.py         # NUEVO: lo que muestra una consulta (FR-405)
 ├── PartidaGuardadaDTO.py         # MODIFICADO: campo nuevo AL FINAL (linea), con valor por defecto   (Derek)
 └── ConfiguracionDTO.py           # MODIFICADO: campos nuevos al final, en este orden: checkpoint_cada y después hasta (los de la 003, verificar y forzar, del integrante 2, van detrás)
@@ -201,11 +209,30 @@ Service/ (bench)
 └── BenchInventario.py            # MODIFICADO: medir() devuelve también BenchLineaTiempo.medir()   (NFR-401)
 
 tests/
-├── test_linea_tiempo_logica.py       # recorte con el punto nuevo, registros de carga, búsqueda binaria
-├── test_linea_tiempo_consultas.py    # escenarios H1, H3 y casos borde
-├── test_linea_tiempo_replay.py       # escenarios H2 y códigos de salida
+├── ayudas_linea_tiempo.py            # ayudantes (no es un archivo de pruebas): partida de prueba, fuentes con ratas y cazador
+├── test_busqueda_binaria.py          # Estructuras/BusquedaBinaria
+├── test_linea_tiempo_logica.py       # Logic/LineaTiempo: recorte con el punto nuevo, registros de carga, validación de rango
+├── test_dto_linea_tiempo.py          # ResumenHistoriaDTO y LineaTiempoGuardadaDTO
+├── test_configuracion_checkpoint.py  # campo checkpoint_cada de ConfiguracionDTO
+├── test_linea_tiempo_motor.py        # Motor.avanzar_hasta(t) (H1-2, H1-9, H1-12)
+├── test_despacho_acciones.py         # DespachoAcciones frente a ServicioAccionJugador
+├── test_grabadores_linea.py          # ContenidoGrabador y ResolvedorGrabador
+├── test_linea_tiempo_registro.py     # la partida alimenta la línea
+├── test_reconstructor_estado.py      # ReconstructorEstado
+├── test_armador_resumen.py           # ArmadorResumen (FR-405, FR-406)
+├── test_historia_con_mapa.py         # el resumen lleva motor.mapa.a_dto() (T118 de la 002)
+├── test_linea_tiempo_consultas.py    # escenarios H1 y casos borde, por el servicio
+├── test_linea_tiempo_pergamino.py    # escenarios H3 y hallazgo H-1
+├── test_linea_tiempo_cazador.py      # el cazador decide igual tras retroceder
+├── test_banderas_linea_tiempo.py     # lectura de --checkpoint-cada y --hasta
+├── test_lector_hasta.py              # --hasta en LectorArgumentos
+├── test_servicio_replay_hasta.py     # escenarios H2 por el servicio
+├── test_main_hasta.py                # --replay … --hasta en main.py: códigos 0, 1 y 2
 ├── test_linea_tiempo_guardado.py     # escenarios H4
-└── test_linea_tiempo_puntos.py       # escenarios H5 (K)
+├── test_checkpoint_cada.py           # escenarios H5 (K)
+├── test_controles_historia.py        # comando historia en los controles (H1-11)
+├── test_vista_historia.py            # panel de historia en la vista
+└── test_bench_linea_tiempo.py        # mediciones M1 a M6
 ```
 
 **Decisión de estructura**: se mantiene MVC en n capas. La línea es un dato de Logic; quien la
@@ -282,7 +309,7 @@ después en `DECISIONES.md`.
 | R-1 | **Costo de cada copia**: `PartidaGuardada.guardar` recorre todas las salas, los eventos y el inventario (O(S + E + V + I)). Con K pequeño y muchas salas, el tiempo por acción y la memoria suben. | Medirlo (M5). K por defecto elegido con M1 y M3. Si es inaceptable, alternativa para el plan siguiente: guardar solo las salas que cambiaron desde el punto anterior (no se adelanta, YAGNI). |
 | R-2 | **Duplicación del despacho** de acciones respecto de `ServicioAccionJugador`. | Una prueba compara el estado del despacho propio contra el del servicio para todas las acciones; una firma cambiada del motor la rompe. |
 | R-3 | **El motor no es perfectamente reproducible** si alguien introduce estado nuevo que `PartidaGuardada` no guarda. | La prueba de SC-402 (200+ acciones, 100 % de coincidencias) es la red de seguridad; cualquier estado nuevo del motor debe entrar en `PartidaGuardada` (aviso al equipo). |
-| R-4 | **Orden de carga de salas** (H-1). | Registros con ordinal, sin recorte, aplicados como prefijo; prueba específica. |
+| R-4 | **Orden de carga de salas** (H-1). | Registros con ordinal y sin recorte (T016). La regla del prefijo (T032) no hizo falta: el punto nuevo en `c` copia el estado vivo y ya trae las salas cargadas en la acción revertida; lo verifica `test_hallazgo_h1_numeracion_de_enemigos_tras_el_pergamino_fr419` con `FuenteConRatas` (T034). |
 | R-5 | **Pergamino recogido o soltado en la acción revertida** (H-2, FR-424). | Punto de control nuevo en `c` copiando el estado vivo, que reemplaza al que hubiera en `c`; pruebas H3-5 y H3-6 sin `skip` (T033). |
 | R-6 | **Memoria con K = 1**: una copia por acción. | Es la medición M3; el bench muestra el costo y justifica el valor por defecto. |
 | R-7 | **Archivo grande** al guardar (copias + registros). | Se mide el tamaño (M3); formato binario con tamaños fijos y contadores. |
@@ -302,7 +329,7 @@ después en `DECISIONES.md`.
 | FR-424 | Punto de control nuevo en `c` tras el pergamino (`LineaTiempo.retroceder_una(estado_guardado)`), con el estado vivo copiado por `ServicioLineaTiempo` |
 | FR-415, FR-416, FR-418 | `LectorArgumentos`; puntos de control cada K en `LineaTiempo`; el resultado no depende de K |
 | FR-419 | Punto de control con azar; re-simulación con las mismas reglas; H-1 |
-| FR-420, FR-421 | `LineaTiempoDTO`, `GuardadoBinario` versión 2 |
+| FR-420, FR-421 | `LineaTiempoGuardadaDTO` (`DTO/LineaTiempoDTO.py`), `GuardadoBinario` versión 2 |
 | FR-423 | `ControlesJuego` y la vista |
 | NFR-401 | `BenchLineaTiempo` (M1 a M6) y `DECISIONES.md` |
 | NFR-402 | Solo acciones vigentes entre puntos de control; M3 |

@@ -4,17 +4,16 @@
 
 Cómo comprobar de punta a punta que el mapa conocido funciona. Las estructuras están en
 [data-model.md](data-model.md); lo que se ofrece al integrante 3, en
-[contrato-mapa-conocido.md](contracts/contrato-mapa-conocido.md). La validación de «ir a» la agrega el integrante 3 en
-su sección del plan.
+[contrato-mapa-conocido.md](contracts/contrato-mapa-conocido.md). La validación de «ir a» y del comando `mapa` en la
+ventana está en la sección 6.
 
 ## Requisitos previos
 
 - Python 3.11 o superior con las dependencias del proyecto (`uv sync`), desde la raíz del repositorio.
-- El cambio de `Logic/motorJuego.py` y de `Logic/PartidaGuardada.py` (tabla de cambios del plan; T033 y T040) ya
-  integrado: lo escribe el integrante 2 y lo revisa el integrante 1 antes del merge (acuerdo del 14/11). Sin él, el
-  motor no crea `motor.mapa`.
-- Para H4-4 (`historia`): `Service/ArmadorResumen.py` (T023 de la 004). Mientras no exista, esa prueba queda en `skip`
-  con su motivo.
+- Los cambios de `Logic/motorJuego.py` y de `Logic/PartidaGuardada.py` (tabla de cambios del plan; T033 y T040) ya
+  están integrados y revisados por el integrante 1: el motor crea `motor.mapa` y el archivo de partida lo guarda.
+- H4-4 (`historia` con el mapa) ya corre sin `skip`: el resumen lee `motor.mapa.a_dto()` (T118 de esta feature y
+  T023 de la 004).
 
 ## 1. Pruebas automatizadas
 
@@ -53,8 +52,8 @@ Abrir el mapa no cambia el reloj, no agrega nada a `partida.log` y no cambia lo 
 ## 3. Determinismo con `--replay`
 
 ```powershell
-uv run python main.py --replay logs/partida_001.log --offline
-uv run python main.py --replay logs/partida_001.log --hasta 300 --offline
+uv run python main.py --replay ejemplos/partida_ejemplo.log --offline
+uv run python main.py --replay ejemplos/partida_ejemplo.log --hasta 300 --offline
 ```
 
 El mapa final (y el del resumen en t = 300) es igual al de la partida original, también si el log trae comentarios

@@ -136,7 +136,8 @@ resumen sale de `--replay ARCHIVO --hasta T` (ver «Modo `--replay`»).
 
 La línea de tiempo toma un punto de control cada 20 acciones (se cambia con `--checkpoint-cada N`, entero mayor o igual a
 1; por ejemplo `main.py --checkpoint-cada 50`): una consulta nunca re-simula más de `N` acciones. El valor por defecto
-salió de `--bench` (con 5 000 acciones, `historia` tarda menos de 1 ms; ver `DECISIONES.md`).
+salió de `--bench` (con 5 000 acciones, `historia` tarda menos de 1 ms en la medición del 14/11, de antes de que los
+puntos de control llevaran el mapa conocido; ver `DECISIONES.md`, §5.5).
 
 **`mapa`.** Dibuja un panel con las salas exploradas (con su nombre y el costo de cada salida cuando hay espacio), cada salida hacia una
 sala avistada como un hueco «sin explorar» (sin nombre ni número), la sala donde estás en dorado y cada puerta con el
@@ -185,14 +186,15 @@ disponible, se informa la incompatibilidad y no se reproduce. Si la última lín
 ejemplo, porque el programa se cerró), se ignora y se avisa.
 
 Con `--hasta T` el replay no recorre la partida mostrando cada acción: la reproduce hasta el instante `T` y
-imprime el resumen de ese estado (el mismo que muestra `historia T` durante la partida). Si `T` es posterior al final de
-la partida, muestra el estado final y avisa que la partida terminó antes. Sin `--hasta`, `--replay` reproduce la partida
-completa. Códigos de salida de `--replay ... --hasta`:
+imprime el resumen de ese estado (el mismo que muestra `historia T` durante la partida). Si la partida del log terminó
+(el jugador murió o ganó) y `T` es posterior a ese final, muestra el estado final y avisa que la partida terminó antes. Si
+no terminó y `T` es mayor que su último reloj, no hay final que mostrar: avisa el rango válido. Sin `--hasta`, `--replay`
+reproduce la partida completa. Códigos de salida de `--replay ... --hasta`:
 
 | Código | Cuándo |
 |---|---|
 | 0 | Imprimió el resumen. |
-| 1 | No se pudo reproducir: el log no existe o no se puede leer, o la versión de la cripta o del catálogo no coincide. El mensaje dice por qué. |
+| 1 | No se pudo reproducir: el log no existe o no se puede leer, o la versión de la cripta o del catálogo no coincide; o la partida del log no terminó y `T` es mayor que su último reloj (el mensaje da el rango válido, de 0 a ese reloj). El mensaje dice por qué. |
 | 2 | Error en las opciones: `--hasta` sin valor, negativo o que no es un entero, o usado sin `--replay`. |
 
 Al cargar una partida guardada, la bitácora continúa en un archivo nuevo que incluye las acciones anteriores,
@@ -277,7 +279,7 @@ Ninguna de estas carpetas se sube al repositorio (están en `.gitignore`). Se cr
 | Ubicación | Contenido |
 |---|---|
 | `cache/catalogo/` | Caché del catálogo en disco: una ficha por archivo, dentro de una carpeta por versión del catálogo. Cuando el catálogo cambia de versión, la anterior se borra. |
-| `saves/partida.sav` | La partida guardada (formato binario propio). |
+| `saves/partida.sav` | La partida guardada (formato binario propio, versión 2: incluye el mapa conocido y la línea de tiempo). Un archivo guardado con la primera parte (versión 1) no se carga: se informa que es incompatible y la partida en curso no cambia. |
 | `saves/puntajes.jsonl` | Los puntajes: una línea por partida terminada. |
 | `logs/partida_NNN.log` | Bitácora de cada partida para `--replay` (`partida_001.log`, `partida_002.log`, ...). |
 | `saves/bench_tmp/` | Archivos temporales de `--bench`; se borran al terminar. |

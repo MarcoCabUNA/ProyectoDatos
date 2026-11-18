@@ -950,6 +950,11 @@ rechazan como incompatibles (no se migran). **Implementado**: T002 y T003 (integ
 | 100 | 3,587 ms | 2,978 ms | 51 | 240 877 |
 | sin puntos | **147,382 ms** | **149,102 ms** | 1 | 75 627 |
 
+*Fecha de las tablas*: esta tabla de M1 (incluida su columna de bytes) y la de M5, más abajo, son del `--bench` del 14/11
+([bench-tabla.txt](specs/004-linea-tiempo/bench-tabla.txt), commit `cafa382`, 17:12), de antes de que los puntos de control
+llevaran el mapa conocido (commit `4aac926`, 14/11 a las 23:41, T040 a T044 de la 002). El párrafo «Memoria (M3)» usa el
+`--bench` del 17/11, ya con el mapa.
+
 - *Decisión*: **K = 20**, con 0,62 ms: unas 80 veces menos que el límite de 50 ms. Sin puntos de control, `historia`
   tarda 147 ms y **no cumple**: los puntos de control son necesarios. K = 100 también cumpliría (3 ms), pero K = 20 deja
   margen para estados más grandes, donde cada acción re-simulada y cada copia cuestan más (M5). La posición consultada
@@ -967,9 +972,10 @@ rechazan como incompatibles (no se migran). **Implementado**: T002 y T003 (integ
 | 1 000 | 1,268 ms | 1,414 ms | 1,518 ms |
 | 10 000 | 14,835 ms | 15,904 ms | 16,811 ms |
 
-Crece con las salas y poco con los enemigos. Para las criptas publicadas (hasta 50 salas) una copia cuesta menos de
-0,5 ms; solo con miles de salas llega a unos 15 ms, y se paga una vez cada K acciones. Si eso llegara a ser un
-problema, la alternativa que el plan deja anotada (guardar solo las salas que cambiaron desde el punto anterior) no se
+Crece con las salas y poco con los enemigos. Para las criptas de la primera parte (hasta 50 salas), con las que se midió
+el 14/11, una copia cuesta menos de 0,5 ms. El paquete de la Parte II llega a 300 salas (cripta-06), un tamaño que esta
+tabla no tiene (queda entre las filas de 50 y de 1 000 salas); solo con miles de salas llega a unos 15 ms, y se paga
+una vez cada K acciones. Si eso llegara a ser un problema, la alternativa que el plan deja anotada (guardar solo las salas que cambiaron desde el punto anterior) no se
 adelanta (YAGNI).
 
 **Memoria (M3, NFR-402).** La memoria crece con el número de puntos, no con acciones × estado: con 5 000 acciones, K = 20
@@ -1093,7 +1099,6 @@ helper de la prueba lee atributos privados del historial (se rompe si cambia el 
 (el pulso la devuelve al máximo), `danio_recibido` sube y el viaje se detiene con `DANO`. Su contraparte,
 `test_fr258_regeneracion_activa_sin_dano_el_viaje_sigue`, con Regeneración activa y sin daño, no lo detiene (el contador no sube
 al curarse). Se comprobó con una mutación: si `ServicioIrA` compara `jugador.vida` en lugar de `danio_recibido`, la primera falla.
-T110A sigue sin marcarse: falta la revisión del integrante 1.
 
 ### Viaje automático «ir a» (002, integrante 3)
 
@@ -1180,12 +1185,12 @@ de parada (FR-260); el resto lo decidí yo, y se puede cambiar:
 **11. Banco del paso (NFR-250, NFR-251, SC-252).** `Logic/BenchViaje.py` mide, con el mapa conocido completo y desde la esquina hacia la sala
 opuesta, V1 armar el grafo, V2 un paso con el grafo armado y V3 un paso completo (grafo nuevo + `decidir_paso`), con cuadrículas de 100,
 1 024 y 10 000 salas y una de 15 × 20 = 300 salas, el tamaño de cripta-06. **cripta-06 ya está en el paquete local** (la trajo el merge con el paquete de Derek, `ecb78e7`): `--bench` la mide sola
-(`ServicioBench`), desde su sala inicial hacia su salida, y se midió además la sintética de 300 salas (commit `b995a97`: V1 0.160 ms, V2 0.002 ms y
-V3 **0.164 ms** contra 5 ms con la cripta-06 real; cumple NFR-250 y SC-252). **cripta-06 no es representativa del peor caso:** de su entrada a su salida no hay
+(`ServicioBench`), desde su sala inicial hacia su salida, y se midió además la sintética de 300 salas (commit `b995a97`: V1 0,160 ms, V2 0,002 ms y
+V3 **0,164 ms** contra 5 ms con la cripta-06 real; cumple NFR-250 y SC-252). **cripta-06 no es representativa del peor caso:** de su entrada a su salida no hay
 camino con puertas cerradas (el banco anota «decisión None» en V2, así que V3 mide casi solo armar el grafo); la sintética de 300 salas, con
 camino largo y todas las salas conocidas, es la medida que sí exige el paso. Resultados de la sintética
-(mediana): **300 salas, V3 = 1.001 ms contra 5 ms: cumple NFR-250 y SC-252** (V1 0.199 ms, V2 0.756 ms); 1 024 salas, V3 = 3.763 ms
-(por debajo de 5 ms, con poco margen; evidencia, no criterio); 10 000 salas, 50.363 ms. La tabla completa está en
+(mediana): **300 salas, V3 = 1,001 ms contra 5 ms: cumple NFR-250 y SC-252** (V1 0,199 ms, V2 0,756 ms); 1 024 salas, V3 = 3,763 ms
+(por debajo de 5 ms, con poco margen; evidencia, no criterio); 10 000 salas, 50,363 ms. La tabla completa está en
 `specs/002-niebla-ir-a/bench-viaje-2026-11-17.txt`; se midió en otra máquina (Ryzen 4600G, 15 GB, Python 3.15.0) que la tabla del
 integrante 2 del 15/11 (Ryzen 5 5500), así que los tiempos de las dos no son comparables fila por fila. Complejidad: V1 O(S + E) (la primera
 `entradas` arma el índice inverso); un paso es una búsqueda de costo mínimo sobre las salas exploradas. *Pruebas:* `tests/test_bench_viaje.py`.
@@ -1198,6 +1203,60 @@ y `cancelar_viaje`, línea 356) y los escribe en el panel de mensajes con `Servi
 (reloj, sala, jugador, mapa) es el mismo, porque depende solo de las acciones (`test_el_log_trae_el_comentario_y_se_reproduce_igual`,
 `test_h7_8_a36_fr261_sc253_replay_da_la_misma_partida_y_el_mismo_mapa`), pero el panel de mensajes de un replay no dice por qué se detuvo
 un viaje.
+
+**13. Cambios de «ir a» a `ControladorBackend` fuera del final de la clase (primera entrega, Principio III).** Los métodos nuevos
+(`ir_a`, `dar_paso_viaje`, `cancelar_viaje`, `ver_mapa`) van al final de la clase. Además, como excepción anotada en la tabla «Cambios a
+código de la primera entrega» del plan de la 002, «ir a» toca tres métodos de la primera entrega (comparados con el commit de la primera
+entrega, `86b017e`; los cambios entraron en `adf7add`, T112). *Por qué:* FR-262 pide que cualquier otra orden descarte el viaje, y una
+partida nueva o cargada no debe heredarlo; el Controlador guarda el `ViajeDTO` vigente porque `ServicioIrA` no guarda el viaje (punto 1).
+
+*Antes* (`__init__`, al final):
+```python
+        self._contexto = None  # la partida en curso (opaca); None si no hay
+        self._terminada = False
+        self._puntaje_registrado = False
+```
+*Después* (dos líneas nuevas):
+```python
+        self._contexto = None  # la partida en curso (opaca); None si no hay
+        self._terminada = False
+        self._puntaje_registrado = False
+        self._ir_a = ServicioIrA()
+        self._viaje = None  # el ViajeDTO vigente de la sesión (feature 002); None si no hay viaje
+```
+*Antes* (`_ejecutar`):
+```python
+    def _ejecutar(self, accion: AccionDTO) -> EstadoJuegoDTO:
+        estado = self._llamar(self._acciones.ejecutar, self._activa(), accion)
+        self._terminada = estado.terminado
+        return estado
+```
+*Después* (una línea nueva al principio: `_ejecutar` es el único camino por el que pasan las demás órdenes):
+```python
+    def _ejecutar(self, accion: AccionDTO) -> EstadoJuegoDTO:
+        self._viaje = None                               # cualquier otra orden descarta el viaje (feature 002, FR-262)
+        estado = self._llamar(self._acciones.ejecutar, self._activa(), accion)
+        self._terminada = estado.terminado
+        return estado
+```
+*Antes* (`_empezar`):
+```python
+        estado = self._llamar(self._partida.estado, contexto)
+        self._contexto = contexto
+        self._terminada = estado.terminado
+```
+*Después* (una línea nueva):
+```python
+        estado = self._llamar(self._partida.estado, contexto)
+        self._contexto = contexto
+        self._viaje = None
+        self._terminada = estado.terminado
+```
+Se suman los imports que usan los métodos nuevos (`dataclasses.replace`, `ServicioIrA`, los de `DTO/ViajeDTO.py` y
+`DTO/MapaConocidoDTO.py`). Las demás
+diferencias de esos métodos con la primera entrega no son de «ir a»: `self._acciones` pasó de `ServicioAccionJugador()` a
+`ServicioLineaTiempo()` en la 004 (T053), y las líneas de `--forzar` y del reporte en `__init__` son de la 003 (T054, en §5.4).
+*Pruebas:* `test_r_i3_4_fr262_controlador_descarta_el_viaje_ante_otra_orden` (`tests/test_servicio_ir_a.py`).
 
 ### Comando `mapa` de la 002 (interfaz)
 

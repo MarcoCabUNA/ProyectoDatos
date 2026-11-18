@@ -361,10 +361,10 @@ spec no cambia):
 | I3-7 | `INTERRUMPIDO`, `TERMINADA` y `PASO_RECHAZADO` son **motivos internos**, no mensajes nuevos de la spec (FR-260 sigue con sus cinco motivos) |
 | H-2 | **Opción A**: `ArmadorEstado` enmascara los destinos y la sala de salida no explorados; la vista no cambia (ver la sección del H-2) |
 | D-1 (I3-1) | **No se pide `direccion_hacia`**: la dirección del paso se obtiene con `Mazmorra.salida` sobre las salas exploradas |
-| M-2 (I3-3) | **Señal de daño**: un **contador entero nuevo** `danio_recibido` en `ActorBase.Recibir_Dannio` (`Logic/ActorBase.py`): sube cuando `Cant > 0`, no va al historial ni a `PartidaGuardada`. Service lo compara antes y después de cada paso. Cambio mínimo a la primera entrega, justificado por §3.4 («el viaje se detiene cuando recibe daño»), anotado en «Cambios a código de la primera entrega» y pendiente de la revisión del integrante 1. La señal con Regeneración activa queda como alternativa descartada |
+| M-2 (I3-3) | **Señal de daño**: un **contador entero nuevo** `danio_recibido` en `ActorBase.Recibir_Dannio` (`Logic/ActorBase.py`): sube cuando `Cant > 0`, no va al historial ni a `PartidaGuardada`. Service lo compara antes y después de cada paso. Cambio mínimo a la primera entrega, justificado por §3.4 («el viaje se detiene cuando recibe daño»), anotado en «Cambios a código de la primera entrega» y **aprobado** por el integrante 1 (T110A). La señal con Regeneración activa queda como alternativa descartada |
 | D-6 | `SIN_EXPLORAR = -1` vive en `DTO/EstadoJuegoDTO.py` (mío), no en `MapaConocidoDTO.py`; `ArmadorEstado` usa `mapa.es_explorada(sala)`, que Derek agrega al contrato (D-2) |
 | M-1 | Requisito de contrato de `GrafoMapaConocido`: `cantidad_salas()` devuelve el **total** de salas (ids de 0 a n − 1) y `entradas`/`salidas` son coherentes entre sí (ver «Componentes») |
-| D-4 | Después de `PartidaGuardada.cargar` el mapa es un objeto nuevo: «ir a» y el reconstructor vuelven a tomar `contexto.motor` en cada paso o consulta y no guardan referencias; el mapa se lee **solo** como `motor.mapa` (`ServicioLineaTiempo` hoy usa `mapa_conocido`: cambio pendiente con T023; ver I3-8) |
+| D-4 | Después de `PartidaGuardada.cargar` el mapa es un objeto nuevo: «ir a» y el reconstructor vuelven a tomar `contexto.motor` en cada paso o consulta y no guardan referencias; el mapa se lee **solo** como `motor.mapa` (`ServicioLineaTiempo` lo lee como `motor.mapa.a_dto()` desde T118; ver D-4 en «Hallazgos») |
 
 ### Verificación de la constitución (v1.2.0)
 
@@ -386,12 +386,12 @@ spec no cambia):
 
 | Archivo | Cambio | Motivo | Quién |
 |---|---|---|---|
-| `Logic/ActorBase.py` · `Recibir_Dannio` | Campo entero `danio_recibido = 0` en `__init__` y **una línea** de incremento (`self.danio_recibido += Cant`) después de la guarda `Cant <= 0` (es decir, **sube solo cuando `Cant > 0`**). **No** se registra en el historial de retroceso y **no** va a `PartidaGuardada`. `ActorBase` también lo usan los enemigos (el contador solo cuenta en ellos y nadie lo lee) | §3.4: «el viaje se detiene cuando recibe daño» (FR-258 c). Es la única señal exacta con un cambio de una línea: por `Recibir_Dannio` pasa todo daño al jugador (ataque de enemigo, veneno y trampa) y la comparación de `jugador.vida` no ve un daño compensado por una Regeneración en el mismo paso. No va al historial ni al guardado porque solo importa la diferencia dentro de **un** paso (un pergamino o cargar una partida interrumpen el viaje antes: `acciones_esperadas`, FR-262) | Integrante 3 propone; **revisión del integrante 1**. Tarea **T110A**: `Cant` ya es el daño final (la defensa se resta antes, en `Motor.atacar`), con una prueba que lo fija (`tests/test_danio_recibido.py`), type hint y docstring, y antes/después en `DECISIONES.md` |
+| `Logic/ActorBase.py` · `Recibir_Dannio` | Campo entero `danio_recibido = 0` en `__init__` y **una línea** de incremento (`self.danio_recibido += Cant`) después de la guarda `Cant <= 0` (es decir, **sube solo cuando `Cant > 0`**). **No** se registra en el historial de retroceso y **no** va a `PartidaGuardada`. `ActorBase` también lo usan los enemigos (el contador solo cuenta en ellos y nadie lo lee) | §3.4: «el viaje se detiene cuando recibe daño» (FR-258 c). Es la única señal exacta con un cambio de una línea: por `Recibir_Dannio` pasa todo daño al jugador (ataque de enemigo, veneno y trampa) y la comparación de `jugador.vida` no ve un daño compensado por una Regeneración en el mismo paso. No va al historial ni al guardado porque solo importa la diferencia dentro de **un** paso (un pergamino o cargar una partida interrumpen el viaje antes: `acciones_esperadas`, FR-262) | Integrante 3 propone; **revisado y aprobado por el integrante 1**. Tarea **T110A**: `Cant` ya es el daño final (la defensa se resta antes, en `Motor.atacar`), con una prueba que lo fija (`tests/test_danio_recibido.py`), type hint y un comentario de una línea en lugar de docstring (es un método de la primera entrega), y antes/después en `DECISIONES.md` |
 | `UIController/ControladorBackend.py` · imports (parte alta del archivo) | Los imports que usan los métodos nuevos de «ir a» y del mapa: `dataclasses.replace`, `DTO.ViajeDTO` (motivos, `ViajeDTO`, `PasoViajeDTO`), `DTO.MapaConocidoDTO` y `Service.ServicioIrA` | Los métodos nuevos (`ir_a`, `dar_paso_viaje`, `cancelar_viaje`, `ver_mapa`) van al final de la clase y necesitan esos nombres | Integrante 3 |
 | `UIController/ControladorBackend.py` · `__init__` | **Dos líneas**: `self._ir_a = ServicioIrA()` y `self._viaje = None` (el `ViajeDTO` vigente de la sesión) | El Controlador guarda el viaje vigente y el servicio que lo avanza (sección «Viaje automático»); sin estas dos líneas no hay dónde guardarlo | Integrante 3 |
 | `UIController/ControladorBackend.py` · `_ejecutar` | **Una línea** al principio: `self._viaje = None` | FR-262: cualquier otra orden que cambie la partida (un pergamino, un `esperar`, un `mover` a mano) descarta el viaje vigente; `_ejecutar` es el único camino por el que pasan todas esas órdenes | Integrante 3 |
 | `UIController/ControladorBackend.py` · `_empezar` | **Una línea**: `self._viaje = None` | FR-262: una partida nueva o cargada no hereda el viaje de la anterior | Integrante 3 |
-| `Service/ServicioLineaTiempo.py` · `consultar_por_instante`, `consultar_por_accion` (código de la 004, no de la primera entrega) | Leer el mapa del motor aparte como `motor.mapa.a_dto()` en lugar de `getattr(motor, "mapa_conocido", None)` (líneas 68 y 74). **Cambio pendiente**: se hace con T023 de la 004, cuando exista `a_dto()` | El mapa se lee solo como `motor.mapa` (FR-223, T023); hoy el `getattr` devuelve `None` y el resumen sale sin mapa | Integrante 3 |
+| `Service/ServicioLineaTiempo.py` · `consultar_por_instante`, `consultar_por_accion` (código de la 004, no de la primera entrega) | Leer el mapa del motor aparte como `motor.mapa.a_dto()` en lugar de `getattr(motor, "mapa_conocido", None)` (líneas 68 y 74). **Hecho** con T118 | El mapa se lee solo como `motor.mapa` (FR-223); con el `getattr` el resumen salía sin mapa | Integrante 3 |
 
 ### Componentes
 
@@ -457,7 +457,7 @@ UIController/
 1. Si contexto.jugador.acciones != viaje.acciones_esperadas        → parar con INTERRUMPIDO (un pergamino u otra orden
                                                                      tocó la partida: el viaje no continúa, FR-262)
 2. Si la partida terminó                                            → parar con TERMINADA
-3. grafo = GrafoMapaConocido(contexto.motor.mapa)                   (se arma en cada paso y no se guarda; su primera `entradas` paga O(S + E), I3-8)
+3. grafo = el GrafoMapaConocido(contexto.motor.mapa) del viaje      (se arma una vez por viaje y se guarda entre pasos; se rehace si motor.mapa es otro objeto, por ejemplo tras cargar; su primera `entradas` paga O(S + E), I3-8)
    paso  = ViajeAutomatico.decidir_paso(grafo, motor.mapa, motor.mazmorra, sala_actual, viaje.destino)
    si paso es None                                                  → parar con SIN_RUTA, sin tiempo (FR-256, FR-259)
 4. danio_antes = jugador.danio_recibido                                                 (I3-3)
@@ -474,7 +474,7 @@ UIController/
 
 - **No hay recálculo aparte**: el paso 3 de la **siguiente** llamada ya es el recálculo con el conocimiento vigente
   (FR-255) y no consume tiempo (FR-256): consultar el mapa y buscar no llaman al motor.
-- **Daño de cualquier origen** (enemigo, trampa, veneno): se mide con el contador `jugador.danio_recibido` antes y después de que `ServicioAccionJugador` dejó correr los eventos hasta la siguiente decisión, que es donde caen los daños sostenidos. El viaje se detiene **antes de dar el paso siguiente** porque la comprobación es del paso actual (FR-258 c). **Señal decidida** (I3-3, R-I3-7): todo daño al jugador pasa por `ActorBase.Recibir_Dannio` (`Logic/ActorBase.py:19`; sus tres orígenes: `Logic/motorJuego.py:256` ataque de enemigo, `:289` trampa y `Logic/Efectos.py:33` veneno), y el contador sube cuando `Cant > 0`. A diferencia de comparar `jugador.vida`, no lo compensa ninguna curación del mismo paso. Cambio de una línea a la primera entrega, anotado en «Cambios a código de la primera entrega» y pendiente de la revisión del integrante 1.
+- **Daño de cualquier origen** (enemigo, trampa, veneno): se mide con el contador `jugador.danio_recibido` antes y después de que `ServicioAccionJugador` dejó correr los eventos hasta la siguiente decisión, que es donde caen los daños sostenidos. El viaje se detiene **antes de dar el paso siguiente** porque la comprobación es del paso actual (FR-258 c). **Señal decidida** (I3-3, R-I3-7): todo daño al jugador pasa por `ActorBase.Recibir_Dannio` (`Logic/ActorBase.py:19`; sus tres orígenes: `Logic/motorJuego.py:256` ataque de enemigo, `:289` trampa y `Logic/Efectos.py:33` veneno), y el contador sube cuando `Cant > 0`. A diferencia de comparar `jugador.vida`, no lo compensa ninguna curación del mismo paso. Cambio de una línea a la primera entrega, anotado en «Cambios a código de la primera entrega» y aprobado por el integrante 1 (T110A).
 - **«Ir a» solo usa `mover`**: la poción (que sube la vida, `Logic/motorJuego.py:345-347`) solo actúa en la acción `usar`, así que no interviene en un paso; y con el contador tampoco importa una Regeneración (`Logic/Efectos.py:78-85`).
 - **Alternativas descartadas**: (1) **comparar `jugador.vida` y detenerse si hay Regeneración activa** (`motor.efectos.tiene(jugador, "regeneracion")`, en Service y sin tocar Logic): no cambia la primera entrega, pero es conservadora: con Regeneración activa el viaje se detiene tras cada paso aunque no haya daño. (2) **Contar mensajes de daño del buffer**: el buffer guarda solo los últimos 20 y no tiene contador total (`BufferCircular` solo expone `a_array()`); el texto de la trampa no nombra a la víctima y los otros dos dependen de que el jugador se llame «Jugador» y de que la redacción de P1 no cambie.
 - **Enemigos**: se cuentan los vivos de la sala de llegada **después** del paso, con `motor.mazmorra.enemigos_vivos(jugador.Sala_Actual)`: se verificó en el código que `Mazmorra.enemigos_vivos(id_sala)` (`Logic/Mazmorra.py:131-136`) recorre solo `self.salas[id_sala].enemigos`, es decir, **la lista de esa sala y no la de todo el mapa**, y filtra por `Vivo()` (no por `activo`). Los dormidos ya fueron activados por
@@ -486,8 +486,8 @@ UIController/
 ### Puerta recordada abierta que está cerrada (FR-256)
 
 El caso no necesita lógica propia. Al llegar a B, `Motor.mover_jugador` observa las puertas de B (FR-207, parte de
-Derek) y el mapa deja de recordar la salida como abierta. El `dar_paso` siguiente arma el grafo con el mapa **ya
-actualizado**: `salidas(B)` no ofrece esa salida y `paso_desde_cero` busca otra ruta o devuelve `None`. Con otra ruta
+Derek) y el mapa deja de recordar la salida como abierta. El `dar_paso` siguiente consulta el grafo del viaje, que lee el
+mapa en vivo, **ya actualizado**: `salidas(B)` no ofrece esa salida y `paso_desde_cero` busca otra ruta o devuelve `None`. Con otra ruta
 (H7-1) el viaje continúa; sin ella (H7-2) se detiene con `SIN_RUTA`, el reloj queda donde lo dejó el último paso y el
 jugador sigue en B. Lo mismo vale para una puerta de la sala actual que se cierra sola entre dos pasos: `puerta_cambio`
 actualiza el mapa en su instante (FR-207) y el recálculo la evita. **El viaje nunca abre puertas ni usa llaves**
@@ -539,8 +539,8 @@ Como el viaje no guarda estado, no hay nada que «reanudar» tras el pergamino n
 ### Rendimiento (NFR-250, NFR-251, SC-252)
 
 Un paso cuesta un `paso_desde_cero`: una búsqueda de costo mínimo desde el destino sobre las salas **exploradas** (a lo
-sumo las de la cripta, 50 en las publicadas) más armar el `GrafoMapaConocido` (constructor O(1); la primera `entradas` arma el índice inverso del esqueleto en
-O(S + E) y, como el grafo se arma en cada paso, **cada paso paga ese costo**, I3-8) y consultarlo en vivo (`salidas`
+sumo las de la cripta, hasta 300 en el paquete de la Parte II, cripta-06) más armar el `GrafoMapaConocido` (constructor O(1); la primera `entradas` arma el índice inverso del esqueleto en
+O(S + E) y, como el grafo se arma una vez por viaje y se guarda entre pasos, **solo el primer paso paga ese costo**, I3-8) y consultarlo en vivo (`salidas`
 O(4), `entradas` O(grado)). No
 depende de cuánto dure el viaje ni de la longitud de `partida.log`.
 
@@ -620,7 +620,7 @@ Ninguno bloquea; la spec no se modifica.
   misma vecina (H-4, fuera de las criptas publicadas) se toma la de menor número de dirección con ese costo **y recordada abierta** (`mapa.estado_cara`).
 - **I3-2** (consulta del estado de una sala): `ArmadorEstado` necesita `mapa.es_explorada(sala)`, O(1), para la opción A
   del H-2; Derek lo agrega al contrato (pregunta D-2).
-- **I3-3** (daño) — **decidido**: P1 sí tiene una curación que puede caer dentro de un paso `mover`, la Regeneración (`Logic/Efectos.py:71-85`); la poción solo actúa en `usar` y «ir a» solo usa `mover`. Todo daño pasa por `ActorBase.Recibir_Dannio`. La señal es un **contador entero nuevo** `danio_recibido` en esa función (una línea, sube cuando `Cant > 0`, fuera del historial y de `PartidaGuardada`), que Service compara antes y después de cada paso. Justificación: §3.4, «el viaje se detiene cuando recibe daño». Es un cambio a la primera entrega (Principio III), anotado en su tabla, **con revisión del integrante 1**. La señal conservadora con Regeneración y el conteo de mensajes quedan como alternativas descartadas.
+- **I3-3** (daño) — **decidido**: P1 sí tiene una curación que puede caer dentro de un paso `mover`, la Regeneración (`Logic/Efectos.py:71-85`); la poción solo actúa en `usar` y «ir a» solo usa `mover`. Todo daño pasa por `ActorBase.Recibir_Dannio`. La señal es un **contador entero nuevo** `danio_recibido` en esa función (una línea, sube cuando `Cant > 0`, fuera del historial y de `PartidaGuardada`), que Service compara antes y después de cada paso. Justificación: §3.4, «el viaje se detiene cuando recibe daño». Es un cambio a la primera entrega (Principio III), anotado en su tabla y **aprobado por el integrante 1** (T110A). La señal conservadora con Regeneración y el conteo de mensajes quedan como alternativas descartadas.
 - **I3-4** (sala de partida con enemigos) — **decidido**: «ir a» desde una sala con enemigos vivos permite el primer
   paso; el viaje solo se detiene al **entrar** a una sala con enemigos, activos o dormidos (FR-258 b, §3.4).
 - **I3-5** (momento del comentario) — **decidido**: se escribe justo después del primer paso aceptado, para cumplir
@@ -633,20 +633,23 @@ Ninguno bloquea; la spec no se modifica.
 - **I3-7** (motivos internos) — **decidido**: `INTERRUMPIDO`, `TERMINADA` y `PASO_RECHAZADO` no están en FR-258 ni
   FR-260 y **no son mensajes nuevos de la spec**: son motivos internos del servicio. La interfaz puede no mostrar nada
   para `INTERRUMPIDO`. Si el jugador muere o gana durante el paso, `TERMINADA` acompaña a `DANO` o a `LLEGO`.
-- **I3-8** (identidad del grafo): se arma un `GrafoMapaConocido` por paso y no se guarda entre pasos, porque el
-  pergamino, `restaurar` y cargar una partida cambian el mapa. **Costo**: el constructor es O(1), pero la **primera
-  llamada a `entradas` arma el índice inverso del esqueleto en O(S + E)** (S salas, E salidas), igual que
-  `GrafoEsqueleto` (`Logic/GrafoEsqueleto.py`, `_armar_inversa`). Como el grafo es nuevo en cada paso, **cada paso paga
-  ese O(S + E)**, además de la búsqueda. Con 50 salas es poco; por eso `BenchViaje` mide el paso completo, grafo
-  incluido (NFR-250). Si no cupiera en 5 ms, la salida es guardar el índice y reconstruirlo solo cuando cambie el
-  esqueleto, no volver a un grafo compartido que el pergamino pueda dejar viejo.
+- **I3-8** (identidad del grafo): `ServicioIrA` arma un `GrafoMapaConocido` **una vez por viaje** y lo guarda entre
+  pasos, junto con el mapa del que salió (un caché de un valor; el viaje sigue viviendo en el `ViajeDTO`). `iniciar` lo
+  descarta y `dar_paso` lo vuelve a armar si `contexto.motor.mapa` es otro objeto, que es lo que pasa al cargar una
+  partida. El pergamino y `restaurar` cambian el mapa, pero el grafo lo lee en vivo, así que reutilizarlo entre pasos no
+  cambia la decisión (T111; `DECISIONES.md`, «Viaje automático», punto 4). **Costo**: el constructor es O(1), pero la
+  **primera llamada a `entradas` arma el índice inverso del esqueleto en O(S + E)** (S salas, E salidas), igual que
+  `GrafoEsqueleto` (`Logic/GrafoEsqueleto.py`, `_armar_inversa`). Solo el **primer paso** del viaje paga ese O(S + E);
+  los siguientes pagan la búsqueda. Con 300 salas, armar el grafo (V1, cuadrícula de referencia) cuesta 0,199 ms de
+  mediana (`specs/002-niebla-ir-a/bench-viaje-2026-11-17.txt`). `BenchViaje` mide el paso completo, grafo incluido,
+  como peor caso (NFR-250).
 - **D-4** (referencias al motor y al mapa) — **decidido**: `PartidaGuardada.cargar` arma un `Motor` nuevo y su mapa es
   un **objeto nuevo**. Por eso «ir a» toma `contexto.motor` (y de ahí el mapa) en cada llamada a `dar_paso` y no guarda
   ninguna referencia entre pasos. `ReconstructorEstado` (004) ya se comporta así: lee `contexto.motor` solo en su
   constructor (`Service/ReconstructorEstado.py:72`, el reloj y si la partida terminó), no guarda el motor ni el mapa, y
   `ServicioLineaTiempo` crea un reconstructor nuevo en cada consulta (`Service/ServicioLineaTiempo.py:67` y `:73`); su
   motor aparte se arma con `PartidaGuardada.cargar` en cada consulta (`ReconstructorEstado._cargar`). Las pruebas que
-  lean el mapa entre acciones lo leen siempre desde `contexto.motor`. **El mapa se lee solo como `motor.mapa`**: `ServicioLineaTiempo` hoy lo lee del motor aparte como `mapa_conocido` con `getattr` (`Service/ServicioLineaTiempo.py:68` y `:74`), así que el resumen de `historia` sale sin mapa. Es un **cambio pendiente** que se hace con T023 de la 004, cuando exista `a_dto()` (ver «Cambios a código de la primera entrega»).
+  lean el mapa entre acciones lo leen siempre desde `contexto.motor`. **El mapa se lee solo como `motor.mapa`**: `ServicioLineaTiempo` lo lee del motor aparte como `motor.mapa.a_dto()` (`Service/ServicioLineaTiempo.py:68` y `:74`), hecho con T118 (ver «Cambios a código de la primera entrega»).
 - **I3-9** (H-3): sin tildes ni espacios internos; anotarlo en `DECISIONES.md` (sección del integrante 3).
 
 ### Preguntas
@@ -661,8 +664,8 @@ Ninguno bloquea; la spec no se modifica.
   referencias; no importa si `restaurar` actualiza el mismo objeto o lo reemplaza; ver I3-8).
 - ~~**D-5**~~ (cerrada en T121: `BenchViaje.medir` va después de `BenchMapaConocido.medir` en
   `Service/ServicioBench.py`; quien subió segundo hizo el `merge`, como en la 003).
-- ~~**D-6**~~ (cerrada: `SIN_EXPLORAR = -1` vive en `DTO/EstadoJuegoDTO.py`, mío; no hace falta tu visto bueno. Lo único
-  que sigue pendiente de ti es `mapa.es_explorada(sala)` de D-2).
+- ~~**D-6**~~ (cerrada: `SIN_EXPLORAR = -1` vive en `DTO/EstadoJuegoDTO.py`, mío; no hace falta tu visto bueno. `mapa.es_explorada(sala)`,
+  que dependía de D-2, ya está: D-2 se cerró en T005).
 
 **Para Marco (integrante 1)**
 
@@ -671,7 +674,7 @@ Ninguno bloquea; la spec no se modifica.
   otro valor; lee `entradas(x)` y `salidas(u)` del grafo en cada llamada. El desempate es el de menor id de vecina entre
   **todas** las rutas de costo mínimo (`paso_hacia_origen`, `:78-95`; FR-253). Mi servicio la llama con
   `origen = destino` del viaje y `u = sala actual`. Requisito de contrato para `GrafoMapaConocido` en «Componentes».
-- ~~**M-2**~~ (resuelta por lectura del código y confirmada por Marco): la señal de daño es un contador entero `danio_recibido` en `ActorBase.Recibir_Dannio` (sube cuando `Cant > 0`; no va al historial ni a `PartidaGuardada`; los enemigos también lo tienen porque comparten `ActorBase`). La revisión del cambio de código queda en T110A. Detalle en «Cambios a código de la primera entrega».
+- ~~**M-2**~~ (resuelta por lectura del código y confirmada por Marco): la señal de daño es un contador entero `danio_recibido` en `ActorBase.Recibir_Dannio` (sube cuando `Cant > 0`; no va al historial ni a `PartidaGuardada`; los enemigos también lo tienen porque comparten `ActorBase`). El cambio de código está revisado y aprobado por el integrante 1 (T110A). Detalle en «Cambios a código de la primera entrega».
 - ~~**M-3**~~ (confirmada leyendo el código): `Mazmorra.enemigos_vivos(id_sala)` recorre solo los enemigos de esa sala y filtra por `Vivo()`, así que después de `mover_jugador` incluye a los dormidos recién activados (`Logic/motorJuego.py:150`). El plan la llama con la sala de llegada (`jugador.Sala_Actual` después del paso).
 
 ### Riesgos de esta sección
@@ -684,7 +687,7 @@ Ninguno bloquea; la spec no se modifica.
 | R-I3-4 | **El pergamino deja un viaje activo** en el Controlador | `acciones_esperadas` en el `ViajeDTO`: el servicio para aunque el Controlador no descarte el viaje; prueba del controlador que descarta el viaje ante otra orden |
 | R-I3-5 | **Un viaje que abre puertas o usa llaves** | `ServicioIrA` solo construye acciones `mover`; prueba H6-4 con llave en el inventario |
 | R-I3-6 | **Se revela información al rechazar** | Un solo código y un solo mensaje para destino no explorado o inexistente; la prueba H6-1 compara los tres textos |
-| R-I3-7 | **El daño no se detecta** si la vida del jugador baja y sube en el mismo paso (una Regeneración la vuelve a subir): comparar `jugador.vida` antes y después no ve el daño compensado (FR-258 c) | Contador entero `danio_recibido` en `ActorBase.Recibir_Dannio` (una línea; cambio a la primera entrega con revisión del integrante 1). Pruebas: H7-5 con veneno, el daño compensado por una Regeneración que detiene el viaje, y el viaje con Regeneración y sin daño que sigue |
+| R-I3-7 | **El daño no se detecta** si la vida del jugador baja y sube en el mismo paso (una Regeneración la vuelve a subir): comparar `jugador.vida` antes y después no ve el daño compensado (FR-258 c) | Contador entero `danio_recibido` en `ActorBase.Recibir_Dannio` (una línea; cambio a la primera entrega aprobado por el integrante 1, T110A). Pruebas: H7-5 con veneno, el daño compensado por una Regeneración que detiene el viaje, y el viaje con Regeneración y sin daño que sigue |
 
 ### Mapa de requisitos a componentes
 
