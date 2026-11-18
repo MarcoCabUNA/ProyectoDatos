@@ -102,12 +102,6 @@ def trapecio(marco: pygame.Rect, direccion: int) -> list[tuple[int, int]]:
     return [(izq, arriba), (izq, abajo), (der, abajo - u), (der, arriba + u)]
 
 
-def etiquetas_de_costo(estado: EstadoJuegoDTO) -> list[tuple[int, str]]:
-    # (dirección, costo en texto) de cada salida de la sala, también las cerradas; sin salida, o sin costo, no hay etiqueta
-    return [(d, str(salida.costo)) for d, salida in enumerate(estado.sala.salidas)
-            if salida is not None and salida.costo is not None]
-
-
 def posicion_de_costo(marco: pygame.Rect, direccion: int) -> tuple[tuple[int, int], str]:
     # (punto, ancla) de la etiqueta de una salida: en la franja entre su puerta y el suelo (la del sur, justo bajo el suelo), donde no pisa nadie
     d = c.COSTO_DISTANCIA
@@ -118,6 +112,18 @@ def posicion_de_costo(marco: pygame.Rect, direccion: int) -> tuple[tuple[int, in
     if direccion == E:
         return (marco.left - d, marco.centery), "midright"
     return (marco.right + d, marco.centery), "midleft"
+
+
+def etiquetas_de_costo(estado: EstadoJuegoDTO, marcos: list[pygame.Rect], fuente) -> list[tuple[int, str, pygame.Rect]]:
+    # (dirección, texto, rectángulo) del costo de cada salida de la sala, también las cerradas; sin salida, o sin costo, no hay etiqueta
+    etiquetas = []
+    for direccion, salida in enumerate(estado.sala.salidas):
+        if salida is None or salida.costo is None:
+            continue
+        texto = str(salida.costo)
+        punto, ancla = posicion_de_costo(marcos[direccion], direccion)
+        etiquetas.append((direccion, texto, fuente.render(texto, True, c.ORO).get_rect(**{ancla: punto})))
+    return etiquetas
 
 
 def lleva_marcador(comportamiento: str | None) -> bool:
@@ -346,7 +352,7 @@ class EscenaJuego:
 
     def _costos(self, superficie, estado, fondo) -> None:
         marcos = marcos_de(fondo)
-        for direccion, texto in etiquetas_de_costo(estado):
+        for direccion, texto, _ in etiquetas_de_costo(estado, marcos, self._fuentes.pie):
             punto, ancla = posicion_de_costo(marcos[direccion], direccion)
             c.texto_sombreado(superficie, self._fuentes.pie, texto, c.ORO, punto, ancla)
 
