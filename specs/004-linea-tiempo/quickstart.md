@@ -98,12 +98,12 @@ paso entre salas cuesta lo que dice su puerta (con el paquete de la Parte II ya 
 vida y estadísticas salen del personaje y pueden variar.
 
 ```powershell
-uv run python main.py --offline --forzar
+uv run python main.py --offline
 ```
 
-`--forzar` es necesario porque el paquete local no trae `llaves.json` (003, FR-311). En el menú: `Enter` (Comenzar
-juego), flecha abajo y `Enter` (Catacumbas menores), un nombre y `Enter`. El panel rojo de resolubilidad se oculta con
-tu primera acción.
+No hace falta `--forzar`: el paquete de la Parte II ya trae `llaves.json` y la cripta es resoluble (003, FR-311). En el menú:
+`Enter` (Comenzar juego), flecha abajo y `Enter` (Catacumbas menores), un nombre y `Enter`. Verás el panel «Verificación de
+resolubilidad» con «… RESOLUBLE» (no es rojo ni dice «Advertencia»); se oculta con tu primera acción.
 
 | Paso | Qué hacer | Qué se espera | Requisitos |
 |---|---|---|---|
@@ -124,13 +124,13 @@ tu primera acción.
 | 14 | Con el panel de `historia #3` abierto, anota sus líneas, ciérralo, `Ctrl + S`, pulsa `Z` y `Ctrl + L` | Avisos «Partida guardada (N bytes).» y «Partida cargada.». Repite `historia #3` y `historia 200`: las mismas líneas que antes de guardar | H4-1, H4-2 |
 | 15 | Sal al menú (`Esc`, «Salir al menú») y en PowerShell: `uv run python main.py --offline --replay logs/partida_NNN.log --hasta 310` (NNN: el número del log más reciente) | Se imprime «Estado en t=310», «Sala: Sala 4 (#4)» y las demás líneas con el mismo contenido que `historia 310` en la ventana (con «(ninguno)» y «(vacío)» entre paréntesis), y al final «Mapa conocido: 4 salas exploradas» y el código de salida es 0 (`$LASTEXITCODE`). No se abre ninguna ventana | H2-1 |
 | 16 | Repite con `--hasta 99999`, `--hasta abc` y sin `--replay` (`uv run python main.py --offline --hasta 300`) | «El instante 99999 es posterior al reloj actual: debe estar entre 0 y R» con código 1 (la partida no terminó); «Error en las opciones: argument --hasta: debe ser un número entero mayor o igual a 0 (se recibió 'abc')» y «Error en las opciones: --hasta solo se puede usar junto con --replay», ambos con código 2 | H2-3, H2-2 |
-| 17 | `uv run python main.py --offline --forzar --checkpoint-cada 1`, repite los pasos 1 y 2 (`historia #4`) y luego haz lo mismo con `--checkpoint-cada 50` | El mismo panel de `historia #4` con cualquier K | H5-1 |
+| 17 | `uv run python main.py --offline --checkpoint-cada 1`, repite los pasos 1 y 2 (`historia #4`) y luego haz lo mismo con `--checkpoint-cada 50` | El mismo panel de `historia #4` con cualquier K | H5-1 |
 | 18 | `uv run python main.py --offline --checkpoint-cada 0` (y con `-2` y `abc`) | «Error en las opciones: argument --checkpoint-cada: debe ser mayor o igual a 1 (se recibió '0')» (para `-2` y `abc`: «debe ser un número entero mayor o igual a 1 (se recibió …)»), código 2 y no se abre la ventana | H5-3 |
 
 Lo que no se puede ver a mano en esta cripta tiene su prueba automática: la partida **terminada** antes de t (H2-2,
 `test_h2_2_apendiceB_caso5_fr412_t_posterior_al_final`), el archivo de guardado de la primera parte (H4-3) y los
 números de enemigos tras revertir una sala nueva (hallazgo H-1, paso 3 de la sección 3). Los pasos 1 a 14 se ensayaron
-con el controlador y la vista reales sin ventana (cripta-02, `--forzar`) y los pasos 15 a 18 con `main.py`; lo que sí hay que mirar a
+con el controlador y la vista reales sin ventana (cripta-02, sin `--forzar`) y los pasos 15 a 18 con `main.py`; lo que sí hay que mirar a
 mano es cómo se ve el panel y que el juego se siente igual con las consultas.
 
 ## Criterio de salida
