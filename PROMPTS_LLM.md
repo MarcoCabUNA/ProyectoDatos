@@ -3848,8 +3848,6 @@ Prompts principales, textuales:
 
 -----------------------------------------------------------------------------------------------------------------------
 
-
-
 **Fecha:** Martes 17 de noviembre 2026
 
 **Herramienta:** Claude Code
@@ -4142,3 +4140,22 @@ Actualizá README.md con lo que exige el enunciado de la Parte II (§2.1 y §7.2
 Al final mostrame el diff de README.md y decime de dónde sacaste la versión y cada nombre de la tabla.
 
 **Uso de la respuesta:** se usó la respuesta para agregar al README.md la sección «Desarrollo con spec-kit», la subsección «Pruebas de aceptación» y las entradas nuevas de «Documentación».
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026 (tarde y noche)
+
+**Herramienta:** Claude
+
+Le pedí a Claude que revisara los merges finales, las ventanas de push y las salidas de las pruebas, y que redactara los mensajes para Marco y Kristel. Prompts principales, textuales:
+- «tambien te paso el .zip de marco para que veas si es todo correcto o no» y «ok, te paso el .zip que me pediste despues del push».
+- «ok mientras corre la suite en el paso 5, kris me mando esto, aun no le mando el mensaja?»
+- «asi el push?», con la captura de la ventana de push.
+- «ok entonces de nuestra parte estamos listos?»
+- «Okis, te acuerdas del plan que me habías hecho el domingo diciéndome que estábamos ajustados? Adelantamos bastante no? Que nos falta de ese plan?»
+- «ok yo lo puedo hacer si, mira lo que me dijo kris», con el mensaje de Kristel sobre su rama.
+- «ok mira el paso 1.2» y «mira el 1.4», con la captura del Log y el zip después del merge.
+- «mira el paso 2 de los comandos», con la salida de la suite, del replay y de `--verificar`.
+- «mira, y ya le mande el mensaje a marcoo», con la captura de cripta-06 en el juego.
+- «ok claude code esta trabajando en el paso 3. mientras tanto si quieres si le podemos decir eso a kris + lo que me habias dicho, te paso la salida y el zip».
+
+**Uso de la respuesta:** comprobar que el merge de `origin/Marco` solo traía sus tres archivos; detectar que un commit de la rama del integrante 3 reemplazaba `PROMPTS_LLM.md` por una copia vieja (se perdían entradas sin conflicto, porque `merge=union` no protege los borrados) y armar el archivo corregido antes del merge; revisar el merge final de `origin/kris` (fast-forward), la suite (1100 pruebas y 32 scripts), el replay de ejemplo, `--verificar` de cripta-02 (código 0) y cripta-05 (código 3) y la escena de cripta-06 (costos de salida y cazador marcado, T041); ver que al README le faltaban la versión de spec-kit, el agente y las pruebas de aceptación (§2.1 y §7.2) y escribir el prompt de Claude Code para agregarlos.
