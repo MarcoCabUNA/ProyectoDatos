@@ -201,6 +201,23 @@ se aisló qué parte. Queda para revisarla con el equipo; esta feature no cambia
 
 Mediciones: `python -m Service.ServicioBench` (`Logic/BenchRutas.py`), tabla completa en [bench-2026-11-13.txt](specs/001-terreno-cazador/bench-2026-11-13.txt) y, con el mapa conocido conectado, en [bench-2026-11-15.txt](specs/001-terreno-cazador/bench-2026-11-15.txt). Máquina: AMD Ryzen 5 3600X, 32 GB, Windows 11 Pro, Python 3.12.10. Semilla `SEMILLA = 2026`: los conteos son reproducibles; los tiempos son medianas y dependen de la máquina.
 
+**Fichas con un dato inválido (cambia, T052, T055 y T057, FR-122).**
+
+- *Antes* (P1, `Data/GestorContenido.resolver_pendientes`): un error de formato salía como el mismo `ErrorRed` que
+  un fallo de red, y la precarga los trataba igual. El lote se integraba al esqueleto y quedaba cargado **antes**
+  de resolver su catálogo, así que, si el catálogo fallaba, las salas del lote seguían como cargadas.
+- *Después*: el dato inválido sale como `ErrorDatos` (`Data/ValidacionDatos.py`), subclase de `ErrorRed`, así
+  que los `except ErrorRed` de P1 lo siguen atrapando sin cambios; quien necesita distinguirlo pregunta
+  `isinstance(error, ErrorDatos)`. `ResolvedorCatalogo` no guarda la ficha inválida (ni en memoria ni en disco) y
+  recuerda su error: no la vuelve a pedir (T052: `rango`; T055: `duracion` de un objeto; T057: un enemigo con una
+  ficha de su `suelta` rechazada, también si viene de la caché en disco). `resolver_pendientes` resuelve el
+  catálogo antes de integrar el lote y solo la sala que menciona la ficha rechazada (por sus enemigos o, desde
+  T055, sus objetos del suelo) queda `RECHAZADA`, con el error guardado por sala: «contenido no disponible».
+  `asegurar_sala` relanza ese error sin hacer otra solicitud. Las demás salas del lote se cargan normalmente y
+  la precarga no se interrumpe.
+- *Commits*: `c01dc93` (T052), `9eea7fa` (T055) y `38861c6` (T057), del integrante 2. Pruebas en
+  `tests/TestValidacionDatos.py`.
+
 **Contenido de una sala con una caché vieja en disco (cambia, T058, FR-122).**
 
 - *Antes* (P1, `Data/GestorContenido.asegurar_sala`, con lo de T052): la sala se entregaba como cargada si ninguna
