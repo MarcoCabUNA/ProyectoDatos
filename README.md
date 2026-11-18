@@ -282,6 +282,27 @@ Ninguna de estas carpetas se sube al repositorio (están en `.gitignore`). Se cr
 | `logs/partida_NNN.log` | Bitácora de cada partida para `--replay` (`partida_001.log`, `partida_002.log`, ...). |
 | `saves/bench_tmp/` | Archivos temporales de `--bench`; se borran al terminar. |
 
+## Desarrollo con spec-kit
+
+La segunda parte se desarrolló con spec-kit (especificación, plan y tareas por capacidad).
+
+- **Versión de spec-kit:** 1.1.0 (campo `speckit_version` de `.specify/init-options.json`). Para instalar esa misma
+  versión:
+
+  ```
+  uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@v1.1.0
+  ```
+
+- **Agente:** Claude Code (integración `claude` de `.specify/integration.json`).
+- **Constitución:** [`.specify/memory/constitution.md`](.specify/memory/constitution.md).
+
+| Capacidad | Carpeta en `specs/` | Requisitos | Integrante responsable |
+|---|---|---|---|
+| Terreno con costo por salida y enemigo cazador | [`001-terreno-cazador`](specs/001-terreno-cazador/) | FR-1xx | 1 |
+| Niebla de guerra, mapa conocido y viaje automático «ir a» | [`002-niebla-ir-a`](specs/002-niebla-ir-a/) | FR-2xx | 2 (mapa conocido y antorcha); 3 («ir a», FR-250 a FR-264, historias 6 y 7, y la vista del mapa) |
+| Verificación de resolubilidad | [`003-resolubilidad`](specs/003-resolubilidad/) | FR-3xx | 2 (la vista del reporte, del integrante 3) |
+| Línea de tiempo de la partida | [`004-linea-tiempo`](specs/004-linea-tiempo/) | FR-4xx | 3 |
+
 ## Pruebas
 
 Para correr todas de una vez (no abre ventanas; termina con código 0 si todo pasa):
@@ -316,7 +337,29 @@ Hay dos tipos de pruebas, y el script corre los dos:
 Las pruebas de la Vista necesitan `pygame-ce`. Los scripts `tests/capturar_*.py` no son pruebas: guardan capturas de
 pantalla en `capturas/` para revisarlas a ojo.
 
+### Pruebas de aceptación
+
+Cada spec tiene su `quickstart.md` con los pasos de aceptación:
+[001](specs/001-terreno-cazador/quickstart.md), [002](specs/002-niebla-ir-a/quickstart.md),
+[003](specs/003-resolubilidad/quickstart.md) y [004](specs/004-linea-tiempo/quickstart.md).
+
+Cada prueba cita en su nombre el requisito (`FR-xxx`) y el escenario que ejercita, y la tabla de trazabilidad de cada
+`spec.md` dice qué prueba cubre cada escenario.
+
+Las pruebas automáticas se corren con el mismo `tests/correr_pruebas.py` de arriba. Los modos sin ventana se comprueban
+así (en Linux / macOS, `.venv/bin/python ...`):
+
+| Qué comprueba | Comando (Windows) |
+|---|---|
+| Replay completo de la partida de muestra. | `.venv\Scripts\python.exe main.py --replay ejemplos/partida_ejemplo.log --offline` |
+| Estado en el instante `T` (códigos 0, 1 y 2 en «Modo `--replay`»). | `.venv\Scripts\python.exe main.py --replay ejemplos/partida_ejemplo.log --hasta 300 --offline` |
+| Resolubilidad de una cripta: código 0 si es resoluble, 3 si no lo es, 1 si la verificación no concluyó (ver «Modo `--verificar` y `--forzar`»). | `.venv\Scripts\python.exe main.py --verificar cripta-02 --offline` |
+| Mediciones de rendimiento. | `.venv\Scripts\python.exe main.py --bench` |
+
 ## Documentación
 
 - `PROMPTS_LLM.md`: bitácora de uso de modelos de lenguaje.
 - `docs/Documento_Decisiones.pdf`: Documento de Decisiones de Diseño (§8).
+- `DECISIONES.md`: Documento de Decisiones de la Parte II.
+- `specs/`: especificación, plan, tareas y quickstart de cada capacidad (ver «Desarrollo con spec-kit»).
+- `.specify/memory/constitution.md`: constitución del proyecto.

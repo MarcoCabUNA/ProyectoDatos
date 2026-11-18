@@ -4119,3 +4119,26 @@ Corre python verificar_prompts.py PROMPTS_LLM.md y dime el número y la primera 
 Opción (C2). Quita las entradas #193 («Dos cosas, cada una en su commit.») y #195 («Actualiza specs/004-linea-tiempo/…») que NO tienen encabezado, y deja #208 y #209, que sí lo tienen. No toques ninguna otra entrada ni el CRLF/UTF-8. Antes de quitar, comprueba que el texto de #193 y #208 (y de #195 y #209) es el mismo salvo el encabezado. Corre python verificar_prompts.py PROMPTS_LLM.md: debe dar sin fecha: 1 (la #179), repetidas: 0 y 0 marcadores de conflicto. Commitea PROMPTS_LLM.md por nombre con: "docs: quita entradas repetidas sin encabezado de la bitácora". No hagas push. Muéstrame el verificador, git status y git log --oneline -3.
 
 **Uso de la respuesta:** se usó la respuesta para quitar las entradas repetidas sin encabezado de la bitácora y dejar la versión completa de cada una. 
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Actualizá README.md con lo que exige el enunciado de la Parte II (§2.1 y §7.2). Sin commit. No cambies ninguna otra sección ni otro archivo, salvo PROMPTS_LLM.md (punto 4).
+
+1. Nueva sección «## Desarrollo con spec-kit», justo antes de «## Pruebas»:
+   - versión de spec-kit: leela de .specify/init-options.json (campo speckit_version) y escribila tal cual, con el comando de instalación con esa versión fija (uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@v<versión>);
+   - agente: Claude Code (integración "claude" de .specify/integration.json);
+   - constitución: .specify/memory/constitution.md;
+   - una tabla con las 4 capacidades: carpeta en specs/ (001-terreno-cazador, 002-niebla-ir-a, 003-resolubilidad, 004-linea-tiempo), prefijo de requisitos (FR-1xx a FR-4xx) e integrante responsable (1: 001; 2: 002 y 003, con la vista de «ir a», mapa e historia del integrante 3; 3: 004). Revisá el encabezado de cada spec.md para confirmar los nombres y no inventes nada que no esté ahí.
+2. Dentro de «## Pruebas», una subsección «### Pruebas de aceptación»:
+   - cada spec tiene su quickstart.md (enlazá los 4) con los pasos de aceptación;
+   - las pruebas citan en el nombre el requisito (FR-xxx) y el escenario que ejercitan, y la tabla de trazabilidad de cada spec.md dice qué prueba cubre cada escenario;
+   - cómo correrlas: el mismo tests/correr_pruebas.py de arriba, más los comandos sin ventana (--replay ejemplos/partida_ejemplo.log --offline, --replay … --hasta T, --verificar <id> --offline con sus códigos de salida 0/3/1, y --bench). Tomá los comandos y códigos de las secciones del README que ya existen; no inventes opciones.
+3. En «## Documentación» agregá: DECISIONES.md (Documento de Decisiones de la Parte II), specs/ y .specify/memory/constitution.md. Dejá lo que ya está.
+4. Registrá este prompt en PROMPTS_LLM.md, al final, con el formato de las entradas anteriores (Fecha, Herramienta: Claude Code, prompt textual, Uso de la respuesta).
+
+Al final mostrame el diff de README.md y decime de dónde sacaste la versión y cada nombre de la tabla.
+
+**Uso de la respuesta:** se usó la respuesta para agregar al README.md la sección «Desarrollo con spec-kit», la subsección «Pruebas de aceptación» y las entradas nuevas de «Documentación».
