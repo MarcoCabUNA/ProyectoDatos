@@ -1164,3 +1164,22 @@ un viaje.
 ### Reporte de resolubilidad en la interfaz (003, T055)
 
 El reporte llega a la vista como líneas de texto (`PantallaDTO.reporte_resolubilidad`, con el formato de `TextoResolubilidad.lineas_reporte`, FR-315) y un indicador de advertencia. `ControladorPygame` lo toma de `backend.resolubilidad()` justo después de iniciar: en una partida nueva se muestra en un panel hasta la primera acción que gasta tiempo (una acción rechazada no lo oculta), como advertencia si no es «resoluble» (`--forzar`, FR-312); si la partida no inicia (FR-311) el reporte completo se ve en la pantalla del nombre; al cargar o en `--replay` no hay reporte (FR-301). El aviso del menú no se toca: el mensaje de `ErrorPartidaNoIniciada` es corto y cabe en sus 2 líneas, pero no trae el ciclo, por eso el reporte va en un panel aparte. La fuente del juego no tiene la flecha «→» y la vista la dibuja como «->». Si un reporte no cabe en el panel (12 líneas en el menú, un ciclo con sus dependientes ocupa 12), se corta con «... y N líneas más» y se remite a `--verificar`, que escribe todo.
+
+### La escena muestra el costo de cada salida y el comportamiento del enemigo (001, T041, integrante 3)
+
+Cambia código de la primera entrega, así que va con su justificación (Principio III): `View/EscenaJuego.py` (y cuatro constantes de
+`View/Componentes.py`: `COMPORTAMIENTO_CAZADOR`, `MARCADOR_CAZADOR`, `MARCADOR_SEPARACION`, `COSTO_DISTANCIA`). Fila en la tabla de cambios a P1
+de `specs/001-terreno-cazador/plan.md`. Lo exigen FR-116 (el costo junto a cada salida, también las cerradas) y FR-117 (el comportamiento en
+texto junto al nombre del enemigo y un marcador solo para el cazador); sin tocar la escena no hay dónde dibujarlos.
+
+| | Antes | Después |
+|---|---|---|
+| Salidas | la escena dibujaba puertas y nada más | además, junto a cada puerta con salida, su costo (`SalidaDTO.costo`, ya igualado por Lógica; 100 si ninguna cara lo declara), también en las cerradas |
+| Ficha del enemigo | solo el nombre | «Nombre (comportamiento)»; el cazador, un rombo rojo dibujado con `pygame.draw.polygon` a la izquierda del texto |
+| Reparto y medidas | `repartir_escena` y `c.SUELO`, `PASILLOS`, `HUD_PANELES` | iguales: no se movió ninguno |
+| Código | — | funciones puras `etiquetas_de_costo(estado, marcos, fuente)` (dirección, texto y `Rect`), `posicion_de_costo`, `lleva_marcador` y `texto_de_ficha`; método `_costos` y dos líneas en `dibujar` y `_ficha_de_actor` |
+
+- *El marcador sale del comportamiento* (`comportamiento == "cazador"`), nunca del id (`ent_sabueso_oseo`) ni del nombre (Principio VI).
+- *Limitación del ancho de la ficha.* El texto se recorta dentro del ancho que ya reservaba el reparto; si no cabe, se recorta el nombre y se
+  conserva el comportamiento (con 12 enemigos solo queda «(comportamiento)»). Ensanchar `ancho_ficha` movería el reparto, y no se hizo.
+- *Pruebas:* `tests/test_vista_terreno.py` (Vista real, `SDL_VIDEODRIVER=dummy`), con la lista de etiquetas probada por texto y `Rect`, no por píxeles.
