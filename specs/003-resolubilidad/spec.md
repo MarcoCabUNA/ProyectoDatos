@@ -4,7 +4,7 @@
 
 **Creada**: 2026-11-11
 
-**Estado**: Borrador
+**Estado**: Implementada
 
 **Fuente**: Cripta - Parte II §3.5, §4.2, §4.3, §5.4, §6.1, §6.3, §7.3, Apéndice A y Apéndice B «Resolubilidad»; Primer Proyecto (P1) §2.12 (victoria) y §5.1 (presupuesto de red)
 
@@ -700,7 +700,10 @@ comprobar si la partida inicia y si se muestra el reporte.
 | 3 | Existen varios órdenes válidos de obtención de llaves: dos ejecuciones producen el mismo orden | H1-5 | FR-305, FR-306 | `test_h1_5_apendiceB_caso3_fr305_fr306_mismo_orden_en_dos_ejecuciones` (`tests/test_resolubilidad_logica.py`) |
 | 4 | Cripta no resoluble sin `--forzar`: la partida no inicia y se muestra el reporte | H4-1 | FR-311 | `test_h4_1_apendiceB_caso4_fr311_no_resoluble_no_inicia` (`tests/test_resolubilidad_servicio.py`) |
 
-Cada prueba citará el identificador del requisito que verifica (Principio X).
+Los archivos de prueba que se citan sirven para ubicar cada prueba; no son módulos del juego (el Principio IX
+se refiere al código del producto).
+
+Cada prueba cita el identificador del requisito que verifica (Principio X).
 
 ### Cobertura de requisitos funcionales
 
