@@ -35,11 +35,11 @@ negativo o que no sea entero (FR-122). Lógica no repite esa validación.
 |---|---|---|---|
 | `comportamiento` (nuevo) | `str \| None = None` | El comportamiento del enemigo, o `None` para el jugador. Con él, la vista distingue a los cazadores. | FR-117 |
 
-### `ArmadorEstado` · `Service/ArmadorEstado.py` · integrante 3 · **Por acordar con el integrante 3**
+### `ArmadorEstado` · `Service/ArmadorEstado.py` · integrante 3 · **Hecho (T038)**
 
-Copia el `SalidaDTO` del esqueleto y hoy solo reemplaza `cerrada` con el estado vivo. Como el
-esqueleto trae el costo **declarado**, también debe reemplazar `costo` con `SalidaViva.costo`, el
-costo igualado (FR-101, FR-116).
+Copia el `SalidaDTO` del esqueleto y reemplaza `cerrada` con el estado vivo. Como el esqueleto trae
+el costo **declarado**, también copia el costo igualado de la salida (`SalidaViva.costo`) en `costo`
+(FR-101, FR-116; T038).
 
 ## Lógica
 

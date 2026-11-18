@@ -1,7 +1,7 @@
 # Contrato de datos de la feature 001
 
 > **Confirmado con el integrante 2 el 11 de noviembre, tal como está.** `ActorDTO` ya está hecho
-> (T039). Pendiente de confirmar con el integrante 3 la parte de `ArmadorEstado`.
+> (T039). La parte de `ArmadorEstado` también está hecha (T038, integrante 3).
 > Este plan **no** incluye código de la capa Data. La validación es del integrante 2.
 
 ## Entrada desde el API o el paquete (Apéndice A)

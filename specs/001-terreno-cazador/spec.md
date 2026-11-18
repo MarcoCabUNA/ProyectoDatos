@@ -4,7 +4,7 @@
 
 **Creada**: 2026-11-09
 
-**Estado**: Borrador
+**Estado**: Implementada
 
 **Fuente**: Cripta - Parte II §3.1, §3.2, §4.1, §5.1, §5.2, §6.1, §7 y Apéndice B «Terreno y cazador»; Primer Proyecto (P1) §2.3, §2.4, §2.6 y §2.8
 
@@ -398,15 +398,15 @@ que muestra la interfaz.
     elige uno de los dos (escenario H2-18).
   - *(Pedido del integrante 2)* Dos campos que programan eventos en la agenda tampoco admiten valores
     menores que 1, porque la feature 004 supone que ningún efecto se programa con retraso 0 (004,
-    «Suposiciones»): el `cierre_automatico` de una salida (`SalidaDTO`), si viene, y la `duracion` de la
-    ficha de un objeto (`ObjetoDTO`), si la trae, DEBEN ser enteros ≥ 1; un `bool` no cuenta como entero.
-    Un `cierre_automatico` inválido es un error del esqueleto: se trata como un costo inválido y la partida
-    NO DEBE iniciar, ni siquiera con `--forzar` (003 FR-323; escenario H2-20). Una `duracion` inválida
-    rechaza la ficha igual que un `rango` inválido de cazador: el error indica la ficha y el campo, la
-    ficha no se vuelve a pedir y la sala que contiene ese objeto queda como contenido no disponible (si es
-    la sala inicial, la partida no inicia) (escenario H2-21). La `duracion` de un efecto de ficha
-    (`EfectoFichaDTO`) queda fuera de esta regla: convertir una duración ≤ 0 en `None` es comportamiento
-    de la primera parte y no programa eventos con retraso 0.
+    «Suposiciones»): el cierre automático de una salida, si viene, y la duración de un objeto, si la trae,
+    DEBEN ser enteros ≥ 1; un valor verdadero/falso no cuenta como entero.
+    Un cierre automático inválido es un error del esqueleto: se trata como un costo inválido y la partida
+    NO DEBE iniciar, ni siquiera con `--forzar` (003 FR-323; escenario H2-20). Una duración de objeto
+    inválida rechaza la ficha igual que un `rango` inválido de cazador: el error indica la ficha y el
+    campo, la ficha no se vuelve a pedir y la sala que contiene ese objeto queda como contenido no
+    disponible (si es la sala inicial, la partida no inicia) (escenario H2-21). La duración de un efecto
+    de una ficha queda fuera de esta regla: una duración ≤ 0 en el efecto de una ficha se trata como si
+    no tuviera duración, como en la primera parte, y no programa eventos con retraso 0.
   - *(Pedido del integrante 2)* Si alguna ficha del botín (`suelta`) de un enemigo quedó rechazada (por
     ejemplo, un objeto con `duracion` inválida), la ficha de ese enemigo DEBE contar como inválida, con el
     mismo efecto que un `rango` inválido de cazador: el error indica la ficha del enemigo, el campo

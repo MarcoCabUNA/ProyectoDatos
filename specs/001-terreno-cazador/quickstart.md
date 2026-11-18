@@ -44,8 +44,7 @@ python -m unittest tests.test_terreno_cazador.TestDatosInvalidos -v
 
 Esperado: con una ficha de cazador sin `rango` en una sala que no es la inicial, intentar entrar a esa
 sala se rechaza con un mensaje que nombra la ficha y el campo, el reloj no avanza, ese movimiento no
-queda en `partida.log` y la partida sigue. Mientras T052 (integrante 2) y T053 (integrante 3) no
-estén hechas, la prueba aparece como omitida (`skip`).
+queda en `partida.log` y la partida sigue.
 
 ## 3. Equivalencia con un cálculo desde cero (FR-114, SC-102)
 
@@ -71,10 +70,10 @@ python -m Service.ServicioBench
 Esperado: en la tabla aparecen los subsistemas `rutas del cazador`, `invalidación de rutas`,
 `ciclo de eventos` con cazadores y `agenda de eventos` con costos variables.
 
-- **NFR-101, SC-104**: en la cuadrícula de 1 000 salas con 30 cazadores, la nota del ciclo dice
+- **NFR-101, SC-104**: en la cuadrícula de 1 024 (32×32) salas con 30 cazadores, la nota del ciclo dice
   «cumple» (< 20 ms).
 - **SC-105**: con `rango` 200, la decisión de un cazador tarda como mucho el doble al pasar de 100 a
-  1 000 salas, y otra vez como mucho el doble al pasar de 1 000 a 10 000.
+  1 024 (32×32) salas, y otra vez como mucho el doble al pasar de 1 024 a 10 000.
 
 ## 6. Modos sin vista (FR-118)
 
@@ -101,8 +100,7 @@ python main.py --offline
 ```
 
 Elegir la `cripta-06` en el menú, entrar a una sala con salidas de costos distintos y ver el costo
-de cada salida y al cazador marcado. La interfaz es del integrante 3 (tareas T038, T039 y T041). Si
-todavía no está, esta parte queda pendiente.
+de cada salida y al cazador marcado. La interfaz es del integrante 3 (tareas T038, T039 y T041).
 
 La misma cripta, sin vista, la recorre la prueba con datos reales (T059):
 `tests/test_paquete_real_cazador.py` despierta al espectro de la sala 123 y al sabueso de la sala 41,

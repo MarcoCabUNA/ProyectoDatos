@@ -159,8 +159,9 @@ Las decisiones de la primera entrega que esta feature toca se volvieron a medir 
   `RepartidorAvisosPuertas([rutas, mapa])` que el `Motor` asigna (002 FR-207), y `Logic/BenchRutas.py` arma el
   mismo repartidor en las dos mediciones que reemplazan las rutas (`medir_ciclo_cazadores`, `medir_historial`).
   En 3 corridas del `--bench` completo, con 30 cazadores el peor ciclo es de 5,5 a 17,6 ms: **NFR-101 y SC-104 se
-  siguen cumpliendo**. Con 100 cazadores y el jugador moviéndose (fuera de NFR-101) dio 19,6 / **20,0** / **22,4** ms.
-  Medido aparte, alternando el código de antes del merge (sin mapa) y el de ahora, el peor ciclo es de 7,2 a 9,4 ms
+  siguen cumpliendo**, pero con poco margen: el peor (17,6 ms, corrida 3, con el jugador esperando) queda a 2,4 ms
+  del límite de 20 ms. Con 100 cazadores y el jugador moviéndose (fuera de NFR-101) dio 19,6 / **20,0** / **22,4** ms.
+  Medido aparte, con la misma función del bench (`medir_ciclo_cazadores(cazadores=(30, 100))`, sola) y alternando el código de antes del merge (sin mapa) y el de ahora, el peor ciclo es de 7,2 a 9,4 ms
   en los dos y las medianas son iguales: el mapa no encarece el ciclo, y el pico depende de lo que corre antes en
   el mismo proceso, como la fila de 500 enemigos de abajo. Tabla en
   [bench-2026-11-15.txt](specs/001-terreno-cazador/bench-2026-11-15.txt).
@@ -200,6 +201,23 @@ que corre antes en el mismo proceso, cuyo código (Servicios y Datos) también c
 se aisló qué parte. Queda para revisarla con el equipo; esta feature no cambia nada por eso.
 
 Mediciones: `python -m Service.ServicioBench` (`Logic/BenchRutas.py`), tabla completa en [bench-2026-11-13.txt](specs/001-terreno-cazador/bench-2026-11-13.txt) y, con el mapa conocido conectado, en [bench-2026-11-15.txt](specs/001-terreno-cazador/bench-2026-11-15.txt). Máquina: AMD Ryzen 5 3600X, 32 GB, Windows 11 Pro, Python 3.12.10. Semilla `SEMILLA = 2026`: los conteos son reproducibles; los tiempos son medianas y dependen de la máquina.
+
+**Fichas con un dato inválido (cambia, T052, T055 y T057, FR-122).**
+
+- *Antes* (P1, `Data/GestorContenido.resolver_pendientes`): un error de formato salía como el mismo `ErrorRed` que
+  un fallo de red, y la precarga los trataba igual. El lote se integraba al esqueleto y quedaba cargado **antes**
+  de resolver su catálogo, así que, si el catálogo fallaba, las salas del lote seguían como cargadas.
+- *Después*: el dato inválido sale como `ErrorDatos` (`Data/ValidacionDatos.py`), subclase de `ErrorRed`, así
+  que los `except ErrorRed` de P1 lo siguen atrapando sin cambios; quien necesita distinguirlo pregunta
+  `isinstance(error, ErrorDatos)`. `ResolvedorCatalogo` no guarda la ficha inválida (ni en memoria ni en disco) y
+  recuerda su error: no la vuelve a pedir (T052: `rango`; T055: `duracion` de un objeto; T057: un enemigo con una
+  ficha de su `suelta` rechazada, también si viene de la caché en disco). `resolver_pendientes` resuelve el
+  catálogo antes de integrar el lote y solo la sala que menciona la ficha rechazada (por sus enemigos o, desde
+  T055, sus objetos del suelo) queda `RECHAZADA`, con el error guardado por sala: «contenido no disponible».
+  `asegurar_sala` relanza ese error sin hacer otra solicitud. Las demás salas del lote se cargan normalmente y
+  la precarga no se interrumpe.
+- *Commits*: `c01dc93` (T052), `9eea7fa` (T055) y `38861c6` (T057), del integrante 2. Pruebas en
+  `tests/TestValidacionDatos.py`.
 
 **Contenido de una sala con una caché vieja en disco (cambia, T058, FR-122).**
 

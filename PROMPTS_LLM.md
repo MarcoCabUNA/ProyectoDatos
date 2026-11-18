@@ -4360,6 +4360,41 @@ DECISIONES.md, sección §5.5 de la 004 (integrante 3, que me dio permiso para c
 Al final: corré .venv\Scripts\python.exe tests\correr_pruebas.py, mostrame el diff de DECISIONES.md, el guion que usaste (en el mensaje, no en un archivo) y los números medidos, y confirmá que git status solo muestra DECISIONES.md y PROMPTS_LLM.md (además de ExplorarApi.py, bench.txt y exploracion/, que no se tocan).
 
 **Uso de la respuesta:** se corrigieron las tres frases de §5.5 de la 004 en DECISIONES.md (punto 9, «Memoria (M3)» y el antiguo «Pendiente de la sección»). Medición aparte con un guion no versionado (partida sintética de M3, K = 20, `ServicioGuardado.guardar` y `os.path.getsize`): archivo versión 2 de 24 145 bytes con 100 acciones, 180 250 con 1 000 y 874 050 con 5 000 (3 367 sin la línea), contra 901 877 de M3 con 5 000; no cambia K = 20.
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+SOLO LECTURA (no modifiques nada, no ejecutes pruebas). Rama local Marco (ya integra derek y kris). Hacé el análisis de /speckit.analyze para la feature 001 (carpeta specs/001-terreno-cazador/): si el comando /speckit.analyze está disponible y es de solo lectura, seguí sus instrucciones (.specify/ o .claude/commands/); si no, hacé lo mismo a mano. Compará spec.md, plan.md y tasks.md entre sí y contra .specify/memory/constitution.md (v1.2.0), y contra el código y tests/: (A) Cobertura: cada FR/NFR/SC tiene al menos una tarea y una prueba que lo cite (la tabla de trazabilidad coincide con nombres de prueba reales en tests/); (B) tareas sin marcar [ ] o marcadas sin código/prueba que las respalde; (C) inconsistencias de terminología o datos entre spec, plan, tasks, quickstart, README y DECISIONES.md (cifras, nombres de archivos/funciones que ya no existen, frases desactualizadas por el paquete de la Parte II o por cambios posteriores); (D) violaciones de la constitución: spec que nombra estructuras/clases/módulos (IX), cambios a P1 sin fila en la tabla del plan o sin antes/después en DECISIONES.md (III), afirmaciones de rendimiento sin evidencia de --bench (VIII), estructuras prohibidas en código de la feature (II), modos sin vista (V); (E) ambigüedades o requisitos sin criterio medible. Salida en el formato de /speckit.analyze: tabla de hallazgos (ID, categoría, severidad CRITICAL/HIGH/MEDIUM/LOW, ubicación archivo:línea, resumen, recomendación), tabla de cobertura de requisitos (requisito → tareas → pruebas), métricas (total de requisitos, % con tarea, % con prueba, tareas sin marcar, críticos) y al final las acciones sugeridas antes de entregar mañana. No registres nada en PROMPTS_LLM.md.
+
+**Uso de la respuesta:** consulta `1a1ecc56e43`, respuesta en `.claude-bridge/outbox/1a1ecc56e43.txt`. Análisis de la 001: 21 hallazgos (2 CRITICAL, 1 HIGH, 5 MEDIUM, 13 LOW); cada requisito tiene tarea y prueba. Se usó para el pedido siguiente (D1, D2, D3, C1 a C3, C5 a C7, C10 y E1).
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+SOLO LECTURA (no modifiques nada, no ejecutes pruebas). Rama local Marco (ya integra derek y kris). Hacé el análisis de /speckit.analyze para la feature 002 (carpeta specs/002-niebla-ir-a/): si el comando /speckit.analyze está disponible y es de solo lectura, seguí sus instrucciones (.specify/ o .claude/commands/); si no, hacé lo mismo a mano. Compará spec.md, plan.md y tasks.md entre sí y contra .specify/memory/constitution.md (v1.2.0), y contra el código y tests/: (A) Cobertura: cada FR/NFR/SC tiene al menos una tarea y una prueba que lo cite (la tabla de trazabilidad coincide con nombres de prueba reales en tests/); (B) tareas sin marcar [ ] o marcadas sin código/prueba que las respalde; (C) inconsistencias de terminología o datos entre spec, plan, tasks, quickstart, README y DECISIONES.md (cifras, nombres de archivos/funciones que ya no existen, frases desactualizadas por el paquete de la Parte II o por cambios posteriores); (D) violaciones de la constitución: spec que nombra estructuras/clases/módulos (IX), cambios a P1 sin fila en la tabla del plan o sin antes/después en DECISIONES.md (III), afirmaciones de rendimiento sin evidencia de --bench (VIII), estructuras prohibidas en código de la feature (II), modos sin vista (V); (E) ambigüedades o requisitos sin criterio medible. Salida en el formato de /speckit.analyze: tabla de hallazgos (ID, categoría, severidad CRITICAL/HIGH/MEDIUM/LOW, ubicación archivo:línea, resumen, recomendación), tabla de cobertura de requisitos (requisito → tareas → pruebas), métricas (total de requisitos, % con tarea, % con prueba, tareas sin marcar, críticos) y al final las acciones sugeridas antes de entregar mañana. No registres nada en PROMPTS_LLM.md.
+
+**Uso de la respuesta:** consulta `1a1ecc56e50`, respuesta en `.claude-bridge/outbox/1a1ecc56e50.txt`. Análisis de la 002: 2 CRITICAL, 1 HIGH, 9 MEDIUM y 11 LOW.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+SOLO LECTURA (no modifiques nada, no ejecutes pruebas). Rama local Marco (ya integra derek y kris). Hacé el análisis de /speckit.analyze para la feature 003 (carpeta specs/003-resolubilidad/): si el comando /speckit.analyze está disponible y es de solo lectura, seguí sus instrucciones (.specify/ o .claude/commands/); si no, hacé lo mismo a mano. Compará spec.md, plan.md y tasks.md entre sí y contra .specify/memory/constitution.md (v1.2.0), y contra el código y tests/: (A) Cobertura: cada FR/NFR/SC tiene al menos una tarea y una prueba que lo cite (la tabla de trazabilidad coincide con nombres de prueba reales en tests/); (B) tareas sin marcar [ ] o marcadas sin código/prueba que las respalde; (C) inconsistencias de terminología o datos entre spec, plan, tasks, quickstart, README y DECISIONES.md (cifras, nombres de archivos/funciones que ya no existen, frases desactualizadas por el paquete de la Parte II o por cambios posteriores); (D) violaciones de la constitución: spec que nombra estructuras/clases/módulos (IX), cambios a P1 sin fila en la tabla del plan o sin antes/después en DECISIONES.md (III), afirmaciones de rendimiento sin evidencia de --bench (VIII), estructuras prohibidas en código de la feature (II), modos sin vista (V); (E) ambigüedades o requisitos sin criterio medible. Salida en el formato de /speckit.analyze: tabla de hallazgos (ID, categoría, severidad CRITICAL/HIGH/MEDIUM/LOW, ubicación archivo:línea, resumen, recomendación), tabla de cobertura de requisitos (requisito → tareas → pruebas), métricas (total de requisitos, % con tarea, % con prueba, tareas sin marcar, críticos) y al final las acciones sugeridas antes de entregar mañana. No registres nada en PROMPTS_LLM.md.
+
+**Uso de la respuesta:** consulta `1a1ecc56e5b`, respuesta en `.claude-bridge/outbox/1a1ecc56e5b.txt`. Análisis de la 003: 0 CRITICAL, 1 HIGH, 4 MEDIUM, 10 LOW.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+SOLO LECTURA (no modifiques nada, no ejecutes pruebas). Rama local Marco (ya integra derek y kris). Hacé el análisis de /speckit.analyze para la feature 004 (carpeta specs/004-*/): si el comando /speckit.analyze está disponible y es de solo lectura, seguí sus instrucciones (.specify/ o .claude/commands/); si no, hacé lo mismo a mano. Compará spec.md, plan.md y tasks.md entre sí y contra .specify/memory/constitution.md (v1.2.0), y contra el código y tests/: (A) Cobertura: cada FR/NFR/SC tiene al menos una tarea y una prueba que lo cite (la tabla de trazabilidad coincide con nombres de prueba reales en tests/); (B) tareas sin marcar [ ] o marcadas sin código/prueba que las respalde; (C) inconsistencias de terminología o datos entre spec, plan, tasks, quickstart, README y DECISIONES.md (cifras, nombres de archivos/funciones que ya no existen, frases desactualizadas por el paquete de la Parte II o por cambios posteriores); (D) violaciones de la constitución: spec que nombra estructuras/clases/módulos (IX), cambios a P1 sin fila en la tabla del plan o sin antes/después en DECISIONES.md (III), afirmaciones de rendimiento sin evidencia de --bench (VIII), estructuras prohibidas en código de la feature (II), modos sin vista (V); (E) ambigüedades o requisitos sin criterio medible. Salida en el formato de /speckit.analyze: tabla de hallazgos (ID, categoría, severidad CRITICAL/HIGH/MEDIUM/LOW, ubicación archivo:línea, resumen, recomendación), tabla de cobertura de requisitos (requisito → tareas → pruebas), métricas (total de requisitos, % con tarea, % con prueba, tareas sin marcar, críticos) y al final las acciones sugeridas antes de entregar mañana. No registres nada en PROMPTS_LLM.md.
+
+**Uso de la respuesta:** consulta `1a1ecc56e66`, respuesta en `.claude-bridge/outbox/1a1ecc56e66.txt`. Análisis de la 004: 2 CRITICAL, 3 HIGH, 7 MEDIUM y 6 LOW.
 
 -----------------------------------------------------------------------------------------------------------------------
 
@@ -4394,5 +4429,81 @@ GRUPO C, el resto (DECISIONES.md, plan, research, tasks, contracts, quickstart y
 Al final: .venv\Scripts\python.exe tests\correr_pruebas.py, la lista de archivos de cada grupo (A, B y C), lo que NO cambiaste y por qué, y git status (fuera quedan ExplorarApi.py, bench.txt y exploracion/).
 
 **Uso de la respuesta:** se aplicaron las correcciones del análisis de Marco en la spec de la 002 (A45 como regla del juego, caso borde de la partida terminada igual a A44, estado «Implementada»), en la spec de la 003 (estado «Implementada», verbos en presente, nota del Principio IX bajo el Apéndice B) y en DECISIONES.md, plan, research, tasks, contrato de llaves, quickstart y bench de la 002 y la 003. El antes/después de §5.4 se comprobó corriendo `ServicioResolubilidad.iniciar_partida_nueva("cripta-01", …)` con el paquete del repositorio: sin `--forzar` no inicia («no concluyó» por falta de `llaves.json`); con `--forzar` inicia. No se agregó H3-9 a la fila de FR-312 (I9): su prueba, `test_h3_9_fr314_forzar_no_cambia_verificar`, y el escenario citan solo FR-314. `tests/TestServicioBench.py` no cambió por el paquete (su cambio de la 003 es `d47c0ef`, T062). §5.3 no decía «hasta 50 salas» (la única mención está en §5.5, del integrante 3), y la frase «Con 50 salas es poco» del plan de la 002 está en la parte de «ir a»: no se tocaron. Suite: 1102 pruebas unittest OK y 32 de 32 scripts.
+
+-----------------------------------------------------------------------------------------------------------------------
+Correcciones del análisis de spec-kit para la 001, en este orden (Principio IX: la spec va sola primero).
+Suite en verde con uv run antes de cada commit, PROMPTS_LLM.md (incluí las consultas del puente 1a1ecc56e43,
+1a1ecc56e50, 1a1ecc56e5b y 1a1ecc56e66), no push.
+
+Commit 1, spec(001): en specs/001-terreno-cazador/spec.md:401-408 (FR-122), quitá SalidaDTO, ObjetoDTO,
+EfectoFichaDTO y "bool" y escribilo con términos del juego («el cierre automático de una salida», «la
+duración de un objeto», «la duración de un efecto de una ficha», «un valor verdadero/falso no cuenta como
+entero»). Misma regla, sin cambios de contenido. Cambiá también spec.md:7 a «Estado: Implementada».
+
+Commit 2, plan + DECISIONES (Principio III):
+- plan.md, tabla de cambios a P1 (~142-164): agregá filas para Data/GestorEsqueleto.py (FR-122: costo
+  inválido, costos distintos entre caras, cierre_automatico; commits c01dc93, 9eea7fa) y
+  Data/ResolvedorCatalogo.py (FR-122: rango, duracion, suelta; c01dc93, 38861c6), sacando de git diff contra
+  P1 qué cambió en cada uno. Corregí la fila que nombra Data/FuenteDatos.py: si ese archivo no se tocó,
+  reemplazala por Data/ValidacionDatos.py (nuevo) y Data/GestorContenido.py (T058).
+- DECISIONES.md, mi sección (~204-221): antes/después de T052/T055/T057: antes, un error de formato se
+  trataba como ErrorRed y el lote quedaba cargado; después, ErrorDatos (subclase de ErrorRed) con el rechazo
+  recordado por sala, y solo esa sala queda «contenido no disponible».
+
+Commit 3, docs(001):
+- C1: ArmadorEstado figura «por acordar/pendiente» en plan.md:102,159,257, data-model.md:38 y
+  contracts/contrato-datos.md:4 → «hecho (T038)».
+- C2: plan.md:52, «de 6 a 50 salas» → criptas del paquete de hasta 300 salas (cripta-06).
+- C3: tabla de pruebas y árbol de tests/ del plan con lo que de verdad hay (H1-9, H2-14/15/17-22, H3-7/8,
+  test_vista_terreno.py, test_cache_vieja.py, test_paquete_real_cazador.py).
+- C5: checklists/requirements.md: marcar 20, 29 y 37 con nota; la IX (34) queda marcada porque D2 ya se corrigió.
+- C6 y C7: quickstart.md, quitar «mientras T052/T053 no estén hechas…» (47-48) y «si todavía no está…» (104-105).
+- C10: «1 000 salas» → «1 024 (32×32)» en T043 y quickstart §5.
+Si algo no calza con lo que encontrás, no lo inventes: decímelo.
+Al final: los tres commits y la suite.
+
+**Uso de la respuesta:** tres commits en `Marco`, sin push. (1) `c71d5b0` spec(001): FR-122 sin `SalidaDTO`, `ObjetoDTO`, `EfectoFichaDTO` ni `bool`, en términos del juego, y «Estado: Implementada». (2) `2d0930d`: en la tabla de cambios a P1 del plan, filas nuevas de `Data/GestorEsqueleto.py` (`_validar_costos`, `_direccion_de_vuelta`; `c01dc93`, `9eea7fa`) y `Data/ResolvedorCatalogo.py` (`_rechazadas`, `rechazo()`, validación en `ficha()` y `_descargar`, `_cerrar_espera`; `c01dc93`, `38861c6`), sacadas de `git diff 83d15c5 HEAD`. `Data/FuenteDatos.py` no lo tocó la 001 (solo `06f2fd1`, de la 003), así que esa fila pasa a `Data/ValidacionDatos.py` (nuevo) y `Data/GestorContenido.py` con lo de T052 y T055 (T058 ya tenía su propia fila). DECISIONES.md: antes/después de T052, T055 y T057. (3) este commit, docs(001): C1 (ArmadorEstado «hecho (T038)» en plan, data-model y contrato), C2 (escala con la cripta-06 de 300 salas), C3 (tabla de pruebas y árbol de `tests/` con H1-9, H2-14/15/17-22, H3-7/8, `test_vista_terreno.py`, `test_cache_vieja.py`, `test_paquete_real_cazador.py`, y también `test_fr122_forzar.py` y `TestValidacionDatos.py`), C5 (casillas 20, 29 y 37 marcadas con nota), C6 y C7 (quickstart), C10 (1 024 (32×32) en T043 y quickstart §5). Suite con `uv run` antes de cada commit: 1102 pruebas unittest OK y 32 de 32 scripts.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Seguimiento de la 001, un commit por paso, suite en verde con uv run, PROMPTS_LLM.md, no push:
+
+Commit A, spec(001), solo spec.md: en FR-122 cambiá «convertir una duración ≤ 0 en None» por términos del juego
+(por ejemplo «una duración ≤ 0 en el efecto de una ficha se trata como si no tuviera duración»). Misma regla.
+Revisá que en spec.md no quede ningún otro nombre de Python o del código (None, True/False, dict, nombres de
+clases o módulos). Si hay, decímelo antes de cambiarlo.
+
+Commit B, docs(001):
+- data-model.md:40-42: el texto de ArmadorEstado, a tiempo presente («copia el costo igualado de la salida»,
+  T038), sin «debe».
+- T045 (tasks.md:189): nota «1 000 salas se mide con una cuadrícula de 1 024 (32×32)».
+- C4: en tasks.md, nota «hecho» en T008, T018/T019 y T048 con las pruebas que no tenían tarea (H1-9, H2-14,
+  H2-15, H2-17 a H2-19, H3-7, H3-8).
+- C8: texto de T031 según el código (caras[0].destino, caras[-1].destino; equivalente por R3).
+- C9: en T041, el archivo real es tests/test_vista_terreno.py.
+- C11: el grafo de dependencias de tasks.md incluye T059; la lista de pruebas incluye T056 y H2-22.
+- C12: plan.md:61, «Data fuera de este plan, salvo T058 (acordado con el integrante 2)».
+- C13: checklists/requirements.md:50 cita bench-2026-11-15.txt.
+- E3: DECISIONES §5.6, el margen (peor 17,6 ms frente a 20 ms) y que la medición aparte usó la misma función
+  del bench.
+- C14 (solo leer): ¿hay en paquete/cripta-02..06 dos salidas de una sala hacia la misma sala? Si hay,
+  corregí plan.md:82-83; si no, dejalo.
+Respondé en español. Al final: los commits y la suite.
+
+**Uso de la respuesta:** dos commits en `Marco`, sin push. (A) `55b611c` spec(001): en FR-122, «convertir una duración ≤ 0 en `None`» pasa a «una duración ≤ 0 en el efecto de una ficha se trata como si no tuviera duración». En spec.md no quedan nombres de Python ni de clases o módulos; sí quedan, sin cambiar, los nombres de campos y valores del formato de datos del Apéndice A (`rango`, `suelta`, `duracion`, `cierre_automatico`, `costo`, `comportamiento`, `true`, `"10"`, `"250"`) y los nombres de las pruebas en la tabla de trazabilidad (Principio X). (B) este commit, docs(001): data-model (ArmadorEstado en presente, T038), T045 (1 024 (32×32)), C4 (notas en T008, T018, T019 y T048), C8 (T031 con `caras[0].destino, caras[-1].destino`), C9 (T041 con `tests/test_vista_terreno.py`), C11 (T059 en el grafo; T056 y H2-22 en la lista de pruebas de `test_terreno_cazador.py`), C12 (plan.md:61), C13 (checklist con `bench-2026-11-15.txt`), E3 (DECISIONES §5.6: margen de 2,4 ms y la medición aparte con `medir_ciclo_cazadores`). C14: en `paquete/cripta-01` a `cripta-06` ninguna sala tiene dos salidas hacia la misma sala (6, 20, 40, 50, 24 y 300 salas revisadas), así que plan.md:82-83 no cambia. Suite con `uv run` antes de cada commit: 1102 pruebas unittest OK y 32 de 32 scripts.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+haz push a todo
+
+**Uso de la respuesta:** push de `Marco` a `origin/Marco` con los 5 commits de las correcciones del análisis de la 001 (`c71d5b0`, `2d0930d`, `c021747`, `55b611c`, `44093e4`) y este registro.
 
 -----------------------------------------------------------------------------------------------------------------------
