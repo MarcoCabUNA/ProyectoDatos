@@ -47,7 +47,7 @@
   - «Feature meets measurable outcomes»: `--bench` respalda SC-104 y SC-105 (T042 a T045).
 - Fase 7 (integrante 1, 2026-11-13): se marcó «X»: los 7 casos tienen su prueba sin `skip` y la tabla del Apéndice B nombra cada una (T047). Siguen sin marcar:
   - «All acceptance scenarios are defined»: H3-7 sigue con `skip` hasta que exista `--verificar` (spec 003) y faltan las pruebas de interfaz de H4 (T041, integrante 3). H2-9, H2-17 a H2-19 y H3-8 ya corren sin `skip`.
-  - «Feature meets measurable outcomes»: `--bench` ya respalda SC-104 (peor ciclo de 5,4 a 7,9 ms con 30 cazadores en 1 024 salas) y SC-105 (con `rango` 200, 1,68 y 1,09 veces al multiplicar por 10 el tamaño), ver `bench-2026-11-13.txt`; falta SC-106, que depende de T041.
+  - «Feature meets measurable outcomes»: `--bench` ya respalda SC-104 (peor ciclo de 5,4 a 7,9 ms con 30 cazadores en 1 024 salas) y SC-105 (con `rango` 200, 1,68 y 1,09 veces al multiplicar por 10 el tamaño), ver `bench-2026-11-13.txt`. Con el mapa conocido de la 002 conectado, `bench-2026-11-15.txt` da con 30 cazadores un peor ciclo de 5,5 a 17,6 ms en 3 corridas: sigue cumpliendo, con menos margen; falta SC-106, que depende de T041.
   - «V»: FR-118 ya tiene pruebas en `--replay` (T048) y en `--bench` (H3-8); faltan `--replay … --hasta` (spec 004) y `--verificar` (spec 003).
 - Cierre (2026-11-17): se marcaron las tres casillas que faltaban.
   - «All acceptance scenarios are defined»: H3-7 corre sin `skip` (`test_h3_7_fr118_fr122_verificar_no_depende_de_costos_ni_cazadores`, con `--verificar` de la 003) y las pruebas de interfaz de H4 están en `tests/test_vista_terreno.py` (T041).

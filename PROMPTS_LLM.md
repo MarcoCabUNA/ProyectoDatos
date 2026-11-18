@@ -4387,3 +4387,35 @@ Al final: los tres commits y la suite.
 **Uso de la respuesta:** tres commits en `Marco`, sin push. (1) `c71d5b0` spec(001): FR-122 sin `SalidaDTO`, `ObjetoDTO`, `EfectoFichaDTO` ni `bool`, en términos del juego, y «Estado: Implementada». (2) `2d0930d`: en la tabla de cambios a P1 del plan, filas nuevas de `Data/GestorEsqueleto.py` (`_validar_costos`, `_direccion_de_vuelta`; `c01dc93`, `9eea7fa`) y `Data/ResolvedorCatalogo.py` (`_rechazadas`, `rechazo()`, validación en `ficha()` y `_descargar`, `_cerrar_espera`; `c01dc93`, `38861c6`), sacadas de `git diff 83d15c5 HEAD`. `Data/FuenteDatos.py` no lo tocó la 001 (solo `06f2fd1`, de la 003), así que esa fila pasa a `Data/ValidacionDatos.py` (nuevo) y `Data/GestorContenido.py` con lo de T052 y T055 (T058 ya tenía su propia fila). DECISIONES.md: antes/después de T052, T055 y T057. (3) este commit, docs(001): C1 (ArmadorEstado «hecho (T038)» en plan, data-model y contrato), C2 (escala con la cripta-06 de 300 salas), C3 (tabla de pruebas y árbol de `tests/` con H1-9, H2-14/15/17-22, H3-7/8, `test_vista_terreno.py`, `test_cache_vieja.py`, `test_paquete_real_cazador.py`, y también `test_fr122_forzar.py` y `TestValidacionDatos.py`), C5 (casillas 20, 29 y 37 marcadas con nota), C6 y C7 (quickstart), C10 (1 024 (32×32) en T043 y quickstart §5). Suite con `uv run` antes de cada commit: 1102 pruebas unittest OK y 32 de 32 scripts.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Seguimiento de la 001, un commit por paso, suite en verde con uv run, PROMPTS_LLM.md, no push:
+
+Commit A, spec(001), solo spec.md: en FR-122 cambiá «convertir una duración ≤ 0 en None» por términos del juego
+(por ejemplo «una duración ≤ 0 en el efecto de una ficha se trata como si no tuviera duración»). Misma regla.
+Revisá que en spec.md no quede ningún otro nombre de Python o del código (None, True/False, dict, nombres de
+clases o módulos). Si hay, decímelo antes de cambiarlo.
+
+Commit B, docs(001):
+- data-model.md:40-42: el texto de ArmadorEstado, a tiempo presente («copia el costo igualado de la salida»,
+  T038), sin «debe».
+- T045 (tasks.md:189): nota «1 000 salas se mide con una cuadrícula de 1 024 (32×32)».
+- C4: en tasks.md, nota «hecho» en T008, T018/T019 y T048 con las pruebas que no tenían tarea (H1-9, H2-14,
+  H2-15, H2-17 a H2-19, H3-7, H3-8).
+- C8: texto de T031 según el código (caras[0].destino, caras[-1].destino; equivalente por R3).
+- C9: en T041, el archivo real es tests/test_vista_terreno.py.
+- C11: el grafo de dependencias de tasks.md incluye T059; la lista de pruebas incluye T056 y H2-22.
+- C12: plan.md:61, «Data fuera de este plan, salvo T058 (acordado con el integrante 2)».
+- C13: checklists/requirements.md:50 cita bench-2026-11-15.txt.
+- E3: DECISIONES §5.6, el margen (peor 17,6 ms frente a 20 ms) y que la medición aparte usó la misma función
+  del bench.
+- C14 (solo leer): ¿hay en paquete/cripta-02..06 dos salidas de una sala hacia la misma sala? Si hay,
+  corregí plan.md:82-83; si no, dejalo.
+Respondé en español. Al final: los commits y la suite.
+
+**Uso de la respuesta:** dos commits en `Marco`, sin push. (A) `55b611c` spec(001): en FR-122, «convertir una duración ≤ 0 en `None`» pasa a «una duración ≤ 0 en el efecto de una ficha se trata como si no tuviera duración». En spec.md no quedan nombres de Python ni de clases o módulos; sí quedan, sin cambiar, los nombres de campos y valores del formato de datos del Apéndice A (`rango`, `suelta`, `duracion`, `cierre_automatico`, `costo`, `comportamiento`, `true`, `"10"`, `"250"`) y los nombres de las pruebas en la tabla de trazabilidad (Principio X). (B) este commit, docs(001): data-model (ArmadorEstado en presente, T038), T045 (1 024 (32×32)), C4 (notas en T008, T018, T019 y T048), C8 (T031 con `caras[0].destino, caras[-1].destino`), C9 (T041 con `tests/test_vista_terreno.py`), C11 (T059 en el grafo; T056 y H2-22 en la lista de pruebas de `test_terreno_cazador.py`), C12 (plan.md:61), C13 (checklist con `bench-2026-11-15.txt`), E3 (DECISIONES §5.6: margen de 2,4 ms y la medición aparte con `medir_ciclo_cazadores`). C14: en `paquete/cripta-01` a `cripta-06` ninguna sala tiene dos salidas hacia la misma sala (6, 20, 40, 50, 24 y 300 salas revisadas), así que plan.md:82-83 no cambia. Suite con `uv run` antes de cada commit: 1102 pruebas unittest OK y 32 de 32 scripts.
+
+-----------------------------------------------------------------------------------------------------------------------

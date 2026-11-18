@@ -58,7 +58,7 @@ el bench. Decenas de cazadores activos (pruebas del enunciado), hasta 100 en el 
 
 | Principio | Cómo lo cumple este plan | Antes | Después |
 |---|---|---|---|
-| I. MVC en n capas | Búsqueda, cazador y caché en Lógica. Montículo en Estructuras (sin dependencias). Campos nuevos en DTO. Validación de FR-122 en Data (integrante 2, fuera de este plan); Service solo muestra el error (integrante 3). La vista recibe todo por DTO. Lógica no importa Data ni Servicios. | ✅ | ✅ |
+| I. MVC en n capas | Búsqueda, cazador y caché en Lógica. Montículo en Estructuras (sin dependencias). Campos nuevos en DTO. Validación de FR-122 en Data (integrante 2): Data fuera de este plan, salvo T058 (acordado con el integrante 2); Service solo muestra el error (integrante 3). La vista recibe todo por DTO. Lógica no importa Data ni Servicios. | ✅ | ✅ |
 | II. Bibliotecas y estructuras | Montículo propio y arrays como almacenamiento contiguo. Sin `heapq`, `dict`, `set` ni `copy`. Revisión de estructuras existentes: R0 de [research.md](research.md). | ✅ | ✅ |
 | III. KISS, YAGNI, Abierto/Cerrado | Comportamiento nuevo como clase nueva. Cada cambio a P1 está en la tabla de abajo con su FR. El código nuevo lleva type hints y docstring. No hay refactor de P1. | ✅ | ✅ |
 | IV. Determinismo | La búsqueda y el desempate no usan azar. `Errante.decidir_paso` repite la misma llamada a `randint`, así que la secuencia de azar de P1 no cambia. Sin `costo`, los replays de P1 dan la misma partida. | ✅ | ✅ |

@@ -159,8 +159,9 @@ Las decisiones de la primera entrega que esta feature toca se volvieron a medir 
   `RepartidorAvisosPuertas([rutas, mapa])` que el `Motor` asigna (002 FR-207), y `Logic/BenchRutas.py` arma el
   mismo repartidor en las dos mediciones que reemplazan las rutas (`medir_ciclo_cazadores`, `medir_historial`).
   En 3 corridas del `--bench` completo, con 30 cazadores el peor ciclo es de 5,5 a 17,6 ms: **NFR-101 y SC-104 se
-  siguen cumpliendo**. Con 100 cazadores y el jugador moviéndose (fuera de NFR-101) dio 19,6 / **20,0** / **22,4** ms.
-  Medido aparte, alternando el código de antes del merge (sin mapa) y el de ahora, el peor ciclo es de 7,2 a 9,4 ms
+  siguen cumpliendo**, pero con poco margen: el peor (17,6 ms, corrida 3, con el jugador esperando) queda a 2,4 ms
+  del límite de 20 ms. Con 100 cazadores y el jugador moviéndose (fuera de NFR-101) dio 19,6 / **20,0** / **22,4** ms.
+  Medido aparte, con la misma función del bench (`medir_ciclo_cazadores(cazadores=(30, 100))`, sola) y alternando el código de antes del merge (sin mapa) y el de ahora, el peor ciclo es de 7,2 a 9,4 ms
   en los dos y las medianas son iguales: el mapa no encarece el ciclo, y el pico depende de lo que corre antes en
   el mismo proceso, como la fila de 500 enemigos de abajo. Tabla en
   [bench-2026-11-15.txt](specs/001-terreno-cazador/bench-2026-11-15.txt).
