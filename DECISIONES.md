@@ -1177,11 +1177,13 @@ texto junto al nombre del enemigo y un marcador solo para el cazador); sin tocar
 | | Antes | Después |
 |---|---|---|
 | Salidas | la escena dibujaba puertas y nada más | además, junto a cada puerta con salida, su costo (`SalidaDTO.costo`, ya igualado por Lógica; 100 si ninguna cara lo declara), también en las cerradas |
-| Ficha del enemigo | solo el nombre | «Nombre (comportamiento)»; el cazador, un rombo rojo dibujado con `pygame.draw.polygon` a la izquierda del texto |
+| Ficha del enemigo | `_ficha_de_actor` dibujaba solo el nombre | «Nombre (comportamiento)»; el cazador, un rombo rojo dibujado con `pygame.draw.polygon` a la izquierda del texto, ambos centrados juntos. Esa lógica vive en el método nuevo `_nombre_de_ficha` y en la función pura `rombo_del_marcador`, no en `_ficha_de_actor` |
 | Reparto y medidas | `repartir_escena` y `c.SUELO`, `PASILLOS`, `HUD_PANELES` | iguales: no se movió ninguno |
-| Código | — | funciones puras `etiquetas_de_costo(estado, marcos, fuente)` (dirección, texto y `Rect`), `posicion_de_costo`, `lleva_marcador` y `texto_de_ficha`; método `_costos` y dos líneas en `dibujar` y `_ficha_de_actor` |
+| Código de P1 que cambia | — | `dibujar`: +1 línea (`self._costos(...)`). `_ficha_de_actor`: la llamada original a `texto_sombreado` del nombre se cambia por `self._nombre_de_ficha(...)` (−2 +1 líneas) |
+| Código nuevo | — | `etiquetas_de_costo(estado, marcos, fuente)` (dirección, texto y `Rect`; el `Rect` es el del texto sin sombra, lo pintado ocupa `rect.inflate(2, 2)`), `posicion_de_costo`, `lleva_marcador`, `texto_de_ficha`, `rombo_del_marcador`, y los métodos `_costos` (dibuja en el `Rect` de `etiquetas_de_costo`) y `_nombre_de_ficha` |
 
 - *El marcador sale del comportamiento* (`comportamiento == "cazador"`), nunca del id (`ent_sabueso_oseo`) ni del nombre (Principio VI).
 - *Limitación del ancho de la ficha.* El texto se recorta dentro del ancho que ya reservaba el reparto; si no cabe, se recorta el nombre y se
   conserva el comportamiento (con 12 enemigos solo queda «(comportamiento)»). Ensanchar `ancho_ficha` movería el reparto, y no se hizo.
+- *Limitación conocida (sin cambio de código).* `fondo_final` solo trae pintada la puerta norte (`MARCOS_OSCURECIBLES[2] = False` en `View/Componentes.py`), así que el costo de una salida S, E u O abierta en la sala de salida puede quedar sin puerta visible a su lado. El costo se dibuja igual junto al marco de esa dirección (FR-116).
 - *Pruebas:* `tests/test_vista_terreno.py` (Vista real, `SDL_VIDEODRIVER=dummy`), con la lista de etiquetas probada por texto y `Rect`, no por píxeles.
