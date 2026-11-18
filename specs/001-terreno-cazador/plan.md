@@ -165,7 +165,7 @@ el después en `DECISIONES.md`.
 
 No se tocan: `ColaEventos`, `HistorialRetroceso`, `cambiar_velocidad`, `Rastreador.decidir`,
 `Errante.decidir`, `Mazmorra._igualar_caras`, `partida.log` (`BitacoraReplayIO`), `ServicioReplay`,
-`main.py`. De la Vista solo cambia lo de `View/EscenaJuego.py` (T041). De la capa Data solo cambia lo de T052 (y T055, T057 y T058).
+`main.py`. De la Vista solo cambia lo de `View/EscenaJuego.py` y 4 constantes nuevas en `View/Componentes.py` (`COMPORTAMIENTO_CAZADOR`, `MARCADOR_CAZADOR`, `MARCADOR_SEPARACION` y `COSTO_DISTANCIA`) (T041). De la capa Data solo cambia lo de T052 (y T055, T057 y T058).
 
 ## Decisiones de diseño (resumen de [research.md](research.md))
 
