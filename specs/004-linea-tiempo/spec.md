@@ -4,13 +4,13 @@
 
 **Creada**: 2026-11-10
 
-**Estado**: Borrador
+**Estado**: Implementada
 
 **Fuente**: Cripta - Parte II §3.6, §7.3 y Apéndice B «Línea de tiempo»; Primer Proyecto (P1) §2.11 (pergamino de retroceso) y §4.10 (versión del archivo de partida)
 
 **Constitución**: v1.2.0 · Requisitos con prefijo FR-4xx (Principio IX)
 
-**Fuera de alcance**: el comando «ir a» y el mapa conocido son de la feature `002-niebla-ir-a`; esta spec solo exige que el resumen incluya el mapa conocido cuando exista. La verificación de resolubilidad es de la feature `003-resolubilidad`.
+**Fuera de alcance**: el comando «ir a» y el mapa conocido son de la feature `002-niebla-ir-a`; esta spec solo exige que el resumen incluya el mapa conocido de esa feature. La verificación de resolubilidad es de la feature `003-resolubilidad`.
 
 **Entrada**: Descripción del usuario: "Línea de tiempo de Cripta II. Consultar, sin modificar la partida, el estado en cualquier instante pasado desde el inicio, de forma independiente del pergamino de retroceso (limitado a 5 acciones). Comandos «historia <t>» e «historia #k»; modo sin interacción «--replay partida.log --hasta <t>»; las acciones revertidas con un pergamino dejan de existir en la línea; «--checkpoint-cada K»; guardar y cargar conserva la línea completa; un archivo de la primera parte se reporta incompatible o se migra explícitamente. Requisitos FR-401 en adelante. No nombrar estructuras de datos, clases ni módulos."
 
@@ -81,8 +81,10 @@ resumen coincide con lo vivido y que la partida sigue exactamente igual después
    describe el estado justo antes de que el jugador tomara su cuarta acción: su sala, vida, estadísticas,
    inventario, efectos activos, los enemigos de esa sala con su vida y el mapa conocido en ese momento, con el
    reloj en el instante de la decisión de esa cuarta acción. *(FR-404, FR-405)*
-5. **Dado** que el jugador realizó 6 acciones, **cuando** escribe `historia #9` o `historia #0`, **entonces**
-   la consulta se rechaza indicando el rango válido de acciones, sin cambiar la partida. *(FR-409)*
+5. **Dado** que el jugador realizó 6 acciones, **cuando** escribe `historia #9`, **entonces** la consulta se
+   rechaza indicando el rango válido de acciones (1 a 6); **cuando** escribe `historia #0`, **entonces** se
+   rechaza como argumento mal formado con el aviso de uso, que indica que k es un entero ≥ 1 (basta con ese
+   aviso). En los dos casos la partida no cambia. *(FR-409)*
 6. **Dada** una partida donde el jugador lleva 20 acciones y el pergamino solo permite revertir las últimas 5,
    **cuando** consulta `historia #2`, **entonces** obtiene el resumen de esa acción aunque ya no sea
    revertible. *(FR-401, FR-414)*
@@ -236,8 +238,8 @@ que ninguna consulta exige procesar más de K acciones.
 - **Consultas encadenadas**: consultar muchas veces seguidas no cambia nada de la partida (FR-407).
 - **Consulta tras un viaje de «ir a»** (spec 002): el viaje es una secuencia de acciones ordinarias; la
   línea las cuenta como acciones del jugador.
-- **Argumentos inválidos**: `historia`, `historia abc`, `historia -3` y `historia #x` se rechazan con un mensaje
-  de uso, sin cambiar la partida (FR-409).
+- **Argumentos inválidos**: `historia`, `historia abc`, `historia -3`, `historia #x` e `historia #0` se rechazan
+  con un mensaje de uso, sin cambiar la partida (FR-409, escenario H1-5).
 
 ---
 
@@ -265,7 +267,7 @@ que ninguna consulta exige procesar más de K acciones.
   del jugador, con k entre 1 y el número de acciones del jugador realizadas.
 - **FR-405**: Cada resumen DEBE mostrar como mínimo: el reloj, la sala del jugador, su vida y estadísticas, su
   inventario, sus efectos activos, los enemigos de esa sala con su vida, y el mapa conocido en ese momento
-  (cuando la feature 002 esté disponible). El reloj que muestra es el instante pedido; para `historia #k`,
+  (feature 002). El reloj que muestra es el instante pedido; para `historia #k`,
   el instante de la decisión k. Si la partida terminó antes de ese instante, es el reloj del final de la
   partida.
 - **FR-406**: El cursor del inventario y los mensajes del juego NO forman parte del estado consultable y NO
@@ -290,13 +292,16 @@ que ninguna consulta exige procesar más de K acciones.
   instante t e imprimir el resumen. Si `--hasta` se indica sin valor o con un valor que no es un entero ≥ 0,
   DEBE informar el error de uso. `--replay partida.log` sin `--hasta` DEBE reproducir la partida completa,
   como en la primera parte. `--hasta` sin `--replay` DEBE rechazarse como error de uso. Si el archivo no
-  existe o no se puede leer, DEBE informar el error con contexto y terminar sin caerse. Códigos de salida,
-  como en el resto del programa: 0 éxito, 1 error de operación (archivo inexistente o ilegible), 2 argumentos
+  existe o no se puede leer, DEBE informar el error con contexto y terminar sin caerse. Si la partida del
+  archivo no terminó y t es mayor que su último reloj, DEBE informar el rango válido (0 hasta ese reloj) sin
+  mostrar resumen. Códigos de salida, como en el resto del programa: 0 éxito, 1 error de operación (archivo
+  inexistente o ilegible, o t mayor que el último reloj de una partida que no terminó), 2 argumentos
   inválidos.
 - **FR-411**: El resumen de `--replay … --hasta` DEBE ser el mismo que mostraría `historia <t>` en esa
   partida, y el modo DEBE ejecutarse sin instanciar la interfaz gráfica (Principio V).
-- **FR-412**: Si t es posterior al final de la partida, `--replay … --hasta` DEBE mostrar el resumen del
-  estado final e indicar de forma explícita que la partida terminó antes de t.
+- **FR-412**: Si la partida del archivo terminó (el jugador murió o ganó) y t es posterior a ese final,
+  `--replay … --hasta` DEBE mostrar el resumen del estado final e indicar de forma explícita que la partida
+  terminó antes de t. Si la partida no terminó, no hay un final que mostrar y se aplica FR-410.
 
 **Interacción con el pergamino de retroceso**
 
@@ -313,8 +318,9 @@ que ninguna consulta exige procesar más de K acciones.
 - **FR-415**: El programa DEBE aceptar `--checkpoint-cada K` con K un entero ≥ 1. Un valor inválido DEBE
   rechazarse con un mensaje y no iniciar el programa con ese valor. Si no se indica, DEBE usarse el valor por
   defecto que el plan justifique con mediciones (§3.6, Principio VIII); esta spec no lo fija.
-- **FR-416**: El programa NO DEBE guardar copias completas del estado con una frecuencia mayor a una cada K
-  acciones del jugador, y NINGUNA consulta DEBE requerir aplicar o deshacer cambios de más de K acciones del
+- **FR-416**: Entre dos copias completas consecutivas del estado DEBE haber a lo sumo K acciones del
+  jugador; un retroceso con el pergamino puede agregar una copia a menos de K acciones de la anterior.
+  NINGUNA consulta DEBE requerir aplicar o deshacer cambios de más de K acciones del
   jugador.
 - **FR-418**: El resultado de una consulta NO DEBE depender del valor de K.
 
@@ -347,7 +353,8 @@ que ninguna consulta exige procesar más de K acciones.
 - **Instante**: valor del reloj virtual (entero ≥ 0).
 - **Acción número k**: la k-ésima acción del jugador en la historia vigente.
 - **Resumen**: vista de solo lectura del estado en un instante (FR-405).
-- **Punto de control**: copia completa del estado, guardada como máximo una cada K acciones del jugador.
+- **Punto de control**: copia completa del estado. Entre dos puntos consecutivos hay a lo sumo K acciones del
+  jugador; un retroceso con el pergamino puede agregar un punto a menos de K acciones del anterior.
 - **Partida registrada (`partida.log`)**: registro de las acciones de la partida con el que se reproduce sin
   interacción.
 
@@ -371,10 +378,10 @@ Escenarios adicionales (no provienen del Apéndice B):
 | 7 | `historia <t>` con decisión del jugador en t: estado justo antes de la decisión, igual a `historia #k` | H1-9 | FR-402 | `test_h1_9_fr402_decision_del_jugador_en_t` (`tests/test_linea_tiempo_motor.py`), `test_h1_9_fr402_historia_t_igual_a_historia_k` (`tests/test_linea_tiempo_consultas.py`) |
 | 8 | El resumen no muestra el cursor del inventario ni los mensajes | H1-10 | FR-406 | `test_h1_10_fr406_sin_cursor_ni_mensajes` (`tests/test_armador_resumen.py`) |
 | 9 | La interfaz ofrece `historia <t>` e `historia #k` y muestra el resumen | H1-11 | FR-423 | `test_h1_11_fr423_historia_t` (`tests/test_controles_historia.py`), `test_h1_11_fr423_historia_k` (`tests/test_controles_historia.py`) |
-| 13 | Partida terminada en t: el estado es el del momento en que terminó; los demás eventos de t no cuentan | H1-12 | FR-402, FR-405 | `test_h1_12_fr402_fr405_partida_terminada_en_t` (`tests/test_linea_tiempo_motor.py`) |
 | 10 | `--hasta` inválido o sin `--replay`: error de uso (código 2) | H2-3 | FR-410 | `test_h2_3_fr410_hasta_no_entero_o_negativo_es_error_de_uso` (`tests/test_banderas_linea_tiempo.py`, `tests/test_lector_hasta.py`), `test_h2_3_fr410_hasta_sin_replay_es_error_de_uso` (`tests/test_banderas_linea_tiempo.py`, `tests/test_lector_hasta.py`), `test_h2_3_fr410_codigo_2_hasta_invalido` (`tests/test_main_hasta.py`), `test_h2_3_fr410_codigo_2_hasta_sin_replay` (`tests/test_main_hasta.py`) |
 | 11 | Archivo inexistente o ilegible: error con contexto, código 1 | H2-4 | FR-410 | `test_h2_4_fr410_codigo_1_archivo_inexistente` (`tests/test_main_hasta.py`), `test_h2_4_fr410_codigo_1_archivo_ilegible` (`tests/test_main_hasta.py`) |
 | 12 | `--replay` sin `--hasta` reproduce la partida completa | H2-6 | FR-410 | `test_h2_6_fr410_sin_hasta_reproduce_todo` (`tests/test_servicio_replay_hasta.py`), `test_h2_6_fr410_replay_sin_hasta_es_la_partida_completa` (`tests/test_banderas_linea_tiempo.py`, `tests/test_lector_hasta.py`) |
+| 13 | Partida terminada en t: el estado es el del momento en que terminó; los demás eventos de t no cuentan | H1-12 | FR-402, FR-405 | `test_h1_12_fr402_fr405_partida_terminada_en_t` (`tests/test_linea_tiempo_motor.py`) |
 | 14 | Un pergamino recogido en una acción revertida se conserva y el consumido no aparece | H3-5 | FR-413, FR-419, FR-424 | `test_h3_5_fr413_fr419_fr424_pergamino_recogido_en_la_accion_revertida` (`tests/test_linea_tiempo_pergamino.py`) |
 | 15 | Un pergamino soltado en una acción revertida queda fuera de la reversión (inventario y suelo) y, al recogerlo, el resumen coincide con la partida viva | H3-6 | FR-413, FR-419, FR-424 | `test_h3_6_fr413_fr419_fr424_pergamino_soltado_en_la_accion_revertida` (`tests/test_linea_tiempo_pergamino.py`) |
 
@@ -407,20 +414,18 @@ Cada prueba citará el identificador del requisito que verifica (Principio X).
 - Los eventos con igual tiempo se ordenan de forma determinista (Principio IV), de modo que el estado en un
   instante está bien definido (FR-402).
 - Ningún efecto se programa con retraso 0, así que al ejecutar los eventos de un instante t no aparecen eventos
-  nuevos en ese mismo t. Lo respalda FR-122 de `specs/001-terreno-cazador`: `SalidaDTO.cierre_automatico` y
-  `ObjetoDTO.duracion` se validan en Data como enteros >= 1 (escenarios H2-20 y H2-21 y, para los objetos que
-  suelta un enemigo, H2-22).
+  nuevos en ese mismo t: el cierre automático de una puerta y la duración de un objeto son enteros ≥ 1
+  (FR-122 de `specs/001-terreno-cazador`; escenarios H2-20 y H2-21 y, para los objetos que suelta un enemigo,
+  H2-22).
 - El pergamino de retroceso (P1 §2.11) y su límite de 5 acciones no cambian.
 - `partida.log` ya existe como registro de las acciones de la partida; esta feature solo exige que permita
   reproducirla hasta un instante.
-- El mapa conocido es el de la feature 002; mientras no exista, el resumen omite esa sección.
+- El mapa conocido es el de la feature 002; si un resumen no trae mapa conocido, omite esa sección.
 - El valor por defecto de K se define en `plan.md` con mediciones, no aquí.
 - Al cargar una partida guardada se conserva el valor de K con el que se guardó su línea de tiempo, aunque se
   indique otro `--checkpoint-cada`.
-- Se asume que cada paso de «ir a» es una acción ordinaria del jugador; se confirmará en la spec 002.
-- `--replay` sin `--hasta` es **headless**: reproduce el log e imprime cada acción en la consola, sin ventana ni línea de
-  comandos, y no alimenta la línea de tiempo (`ServicioReplay` usa `ServicioAccionJugador` directo). Por eso `historia` no
-  es alcanzable ahí. Solo `--replay --hasta T` (que sí arma una línea de tiempo y la deja consultable) y la partida normal
-  responden `historia`. Si algún día el replay completo se vuelve interactivo, deberá pasar por `ServicioLineaTiempo.ejecutar`.
+- Cada paso de «ir a» es una acción ordinaria del jugador; lo establece la spec 002 (FR-263).
+- La reproducción completa (`--replay partida.log` sin `--hasta`) no permite consultar `historia`; solo la
+  permiten `--replay … --hasta T` y la partida normal.
 - Leer un pergamino no cuenta como acción del jugador (P1 §2.11): no recibe número de acción, y por eso las
   acciones revertidas dejan de existir en la línea (FR-413).
