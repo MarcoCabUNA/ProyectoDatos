@@ -4,6 +4,8 @@ Ayudantes de prueba de la feature 001 (terreno con costo por salida y cazador). 
 - Criptas pequeñas con costos declarados en uno, en los dos o en ningún lado de cada salida (FR-101).
 - Una cuadrícula de n x n salas con costos al azar, iguales en los dos lados (para pruebas de equivalencia).
 - Fichas de cazador, errante y rastreador, y un motor listo para usar.
+- sala_del_escenario_h4_1: la sala que ArmadorEstado le entrega a la Vista en el escenario H4-1 (la usan la prueba de datos y la de
+  la Vista).
 - FuenteConFichaInvalida: una fuente de prueba cuya sala trae un cazador con la ficha sin `rango` (FR-122, T054).
 - FuenteConObjetoInvalido y FuenteConBotinInvalido: un objeto con `duracion` inválida en el suelo de una sala
   (H2-21) o en la `suelta` de un enemigo de una sala (H2-22) (FR-122).
@@ -16,6 +18,7 @@ import os
 import random
 import sys
 from dataclasses import replace
+from types import SimpleNamespace
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if RAIZ not in sys.path:
@@ -30,6 +33,7 @@ from Logic.Enemigo import Enemigo  # noqa: E402
 from Logic.jugador import Jugador  # noqa: E402
 from Logic.Mazmorra import Mazmorra  # noqa: E402
 from Logic.motorJuego import Motor  # noqa: E402
+from Service.ArmadorEstado import ArmadorEstado  # noqa: E402
 
 from tests.Utilidades import FuenteCuadricula, salas_cuadricula  # noqa: E402
 
@@ -147,6 +151,25 @@ def poner_enemigo(motor: Motor, sala: int, ficha: FichaEnemigoDTO, instancia: st
     motor.mazmorra.sala(sala).enemigos.append(enemigo)
     motor.activar_enemigos([enemigo])
     return enemigo
+
+
+def esqueleto_del_escenario_h4_1() -> list[SalaDTO]:
+    """Las salas del escenario H4-1: en la sala 1, N de costo 100, S de 250, E sin costo declarado y O cerrada cuyo
+    único costo declarado (300) es el del lado de la sala 5."""
+    return salidas_con_costos(5, [salida(1, N, 2, 100), salida(1, S, 3, 250), salida(1, E, 4),
+                                  (1, O, 5, None, 300, True)])
+
+
+def sala_del_escenario_h4_1() -> SalaDTO:
+    """La sala 1 del escenario H4-1 tal como ArmadorEstado se la entrega a la Vista: costos ya igualados (100, 250, 100
+    y 300 en N, S, E y O; la O cerrada). Se llama a _sala_con_estado_actual porque armar_estado pide un contexto de
+    partida completo (motor, inventario, resolvedor...) que no aporta nada a lo que se comprueba."""
+    esqueleto = esqueleto_del_escenario_h4_1()
+    mazmorra = Mazmorra(sala_salida=5, llave_salida=LLAVE_FINAL)
+    mazmorra.cargar_esqueleto(esqueleto)
+    contexto = SimpleNamespace(esqueleto=SimpleNamespace(obtener_sala=lambda i: esqueleto[i - 1]), mazmorra=mazmorra,
+                               motor=SimpleNamespace(mapa=SimpleNamespace(es_explorada=lambda sala: True)))
+    return ArmadorEstado()._sala_con_estado_actual(contexto, 1)
 
 
 ID_CAZADOR_SIN_RANGO = "ent_cazador_sin_rango"
