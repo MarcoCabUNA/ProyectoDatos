@@ -41,7 +41,23 @@ def contenido_real() -> list:
 
 
 def catalogo_real() -> list:
-    return leer_paquete("catalogo.json")["entidades"]
+    """Las fichas de catalogo.json que usa ID_CRIPTA, en el orden del paquete: los tipos de sus enemigos y
+    trampas, sus objetos, la llave de salida y lo que sueltan sus enemigos. catalogo.json es compartido por
+    todas las criptas del paquete, y estas pruebas cuentan solo las fichas de ID_CRIPTA."""
+    todas = leer_paquete("catalogo.json")["entidades"]
+    usados = [general_real()["llave_salida"]]
+    for sala in contenido_real():
+        usados += [e["tipo"] for e in sala["enemigos"]] + [t["tipo"] for t in sala["trampas"]] + sala["objetos"]
+    agregado = True
+    while agregado:                                   # lo que sueltan los enemigos usados, hasta que no cambie
+        agregado = False
+        for f in todas:
+            if f["id"] in usados:
+                for id_suelta in f.get("suelta") or []:
+                    if id_suelta not in usados:
+                        usados.append(id_suelta)
+                        agregado = True
+    return [f for f in todas if f["id"] in usados]
 
 
 def ficha_real(id_ficha: str) -> dict:
@@ -66,7 +82,7 @@ class ApiFalsa:
     """
 
     def __init__(self, criptas=None, generales=None, paginas=None, contenidos=None,
-                 catalogo=None, version_catalogo=None, falla_en=None):
+                 catalogo=None, version_catalogo=None, falla_en=None, llaves=None):
         self.criptas = criptas if criptas is not None else leer_paquete("criptas.json")
         self.generales = generales if generales is not None else {ID_CRIPTA: general_real()}
         self.paginas = paginas if paginas is not None else {ID_CRIPTA: [pagina_real()]}
@@ -75,6 +91,8 @@ class ApiFalsa:
         self.version_catalogo = (version_catalogo if version_catalogo is not None
                                  else leer_paquete("catalogo_version.json")["version"])
         self.falla_en = falla_en
+        # Feature 003: respuesta de GET /criptas/{id}/llaves por cripta; sin dato, una lista vacía (válida, FR-321).
+        self.llaves = llaves if llaves is not None else {}
         self.solicitudes_realizadas = 0
         self.presupuesto = None
         self.pedidos = []
@@ -110,6 +128,8 @@ class ApiFalsa:
             assert 1 <= len(ids) <= 10, "el API acepta de 1 a 10 salas"
             elegidos = [c for c in self.contenidos[id_cripta] if c["sala"] in ids]
             return {"contenido": elegidos[::-1]}
+        if partes[2] == "llaves":
+            return self.llaves.get(id_cripta, {"llaves": []})
         raise AssertionError(f"ruta inesperada: {ruta}")
 
     def rutas(self):

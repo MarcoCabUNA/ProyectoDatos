@@ -4,12 +4,14 @@ Cripta: punto de entrada. Solo cablea: lee las opciones y elige el modo.
     python main.py                       el juego (ventana de pygame)
     python main.py --offline             el juego con el paquete guardado en disco
     python main.py --replay ARCHIVO      reproduce una partida desde su log, sin ventana
+    python main.py --replay ARCHIVO --hasta T   lo mismo, hasta el instante T, e imprime el resumen (feature 004)
     python main.py --bench               corre las mediciones de rendimiento, sin ventana
+    python main.py --verificar CRIPTA    dice si la cripta es resoluble, sin ventana (feature 003)
     python main.py --ayuda               muestra las opciones
 
 pygame se importa SOLO en el modo interactivo, dentro de jugar(): así --replay y --bench funcionan sin pygame instalado
 (arquitectura §6). Código de salida: 0 bien, 1 si falló la operación o no se pudo abrir la interfaz, 2 si las opciones
-son inválidas.
+son inválidas, 3 si --verificar encuentra la cripta no resoluble.
 """
 import sys
 
@@ -29,11 +31,34 @@ def main(argumentos: list[str] | None = None) -> int:
     if config.ayuda:
         print(TEXTO_AYUDA)
         return 0
+    if config.verificar is not None:
+        return verificar(config)
     if config.bench:
         return medir(config)
     if config.replay is not None:
+        if config.hasta is not None:
+            return reproducir_hasta(config)
         return reproducir(config)
     return jugar(config)
+
+
+def verificar(config: ConfiguracionDTO) -> int:
+    """--verificar CRIPTA (feature 003, FR-314): escribe el reporte en la salida estándar, sin vista ni partida.
+    Código: 0 resoluble, 3 no resoluble, 1 no concluyó (el 2 sigue siendo solo de opciones inválidas)."""
+    from DTO.ReporteResolubilidadDTO import NO_RESOLUBLE, RESOLUBLE
+    from UIController.TextoResolubilidad import lineas_reporte
+    if hasattr(sys.stdout, "reconfigure"):    # «→» con la salida redirigida en Windows (cp1252); StringIO no lo tiene
+        sys.stdout.reconfigure(encoding="utf-8")
+    try:
+        reporte = ControladorBackend(config).verificar(config.verificar)
+    except ErrorOperacion as error:
+        print(error)
+        return 1
+    for linea in lineas_reporte(reporte):
+        print(linea)
+    if reporte.veredicto == RESOLUBLE:
+        return 0
+    return 3 if reporte.veredicto == NO_RESOLUBLE else 1
 
 
 def medir(config: ConfiguracionDTO) -> int:
@@ -65,6 +90,32 @@ def reproducir(config: ConfiguracionDTO) -> int:
     print(f"Resultado: {final.resultado if final.terminado else 'la partida no terminó'} (reloj {final.reloj})")
     if resultado.ultima_linea_descartada:
         print("Aviso: la última línea del log estaba a medio escribir y se ignoró.")
+    return 0
+
+
+def reproducir_hasta(config: ConfiguracionDTO) -> int:
+    """--replay ARCHIVO --hasta T (feature 004, FR-410 a FR-412): imprime el resumen del instante T, sin ventana."""
+    try:
+        resumen = ControladorBackend(config).reproducir_hasta(config.replay, config.hasta)
+    except ErrorOperacion as error:
+        print(error)
+        return 1
+    print(f"Estado en t={resumen.reloj}")
+    print(f"Sala: {resumen.sala_nombre} (#{resumen.sala_id})")
+    jugador = resumen.jugador
+    print(f"Jugador: vida {jugador.vida}/{jugador.vida_max}, ataque {jugador.ataque}, defensa {jugador.defensa}, "
+          f"velocidad {jugador.velocidad}")
+    print(f"Inventario: {', '.join(resumen.inventario) if resumen.inventario else '(vacío)'}")
+    print(f"Arma: {resumen.arma_equipada or '(ninguna)'}  Armadura: {resumen.armadura_equipada or '(ninguna)'}")
+    efectos = [f"{efecto.tipo} ({efecto.restante})" for efecto in resumen.efectos]
+    print(f"Efectos: {', '.join(efectos) if efectos else '(ninguno)'}")
+    enemigos = [f"{enemigo.nombre} {enemigo.vida}/{enemigo.vida_max}" for enemigo in resumen.enemigos]
+    print(f"Enemigos en la sala: {', '.join(enemigos) if enemigos else '(ninguno)'}")
+    if resumen.mapa_conocido is not None:                    # FR-223: el mapa de ese instante (una línea)
+        n = len(resumen.mapa_conocido.salas)
+        print(f"Mapa conocido: {n} sala explorada" if n == 1 else f"Mapa conocido: {n} salas exploradas")
+    if resumen.terminada_antes:
+        print(f"La partida terminó antes de t={resumen.instante_pedido}: este es el estado final (reloj {resumen.reloj}).")
     return 0
 
 

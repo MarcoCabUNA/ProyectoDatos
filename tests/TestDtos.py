@@ -63,6 +63,29 @@ class PruebasSalida(unittest.TestCase):
         self.assertEqual(s.llave, "itm_llave_bronce")
         self.assertEqual(s.a_diccionario(), salida_este)
 
+    def test_fr101_lee_y_escribe_el_costo_declarado(self):
+        """FR-101 (spec 001, T001): el costo declarado se lee, se conserva y se vuelve a escribir."""
+        salida = {"sala": 7, "costo": 250, "cerrada": True, "llave": "itm_llave_bronce",
+                  "cierre_automatico": 500}
+        s = SalidaDTO.desde_diccionario(salida)
+        self.assertEqual(s.costo, 250)
+        self.assertEqual(s.a_diccionario(), salida)                    # ida y vuelta igual
+        self.assertEqual(SalidaDTO.desde_diccionario(s.a_diccionario()), s)
+
+    def test_fr101_sin_costo_queda_none_y_el_formato_no_cambia(self):
+        """FR-101 (T001): sin 'costo' (o en null) el DTO guarda None y escribe lo mismo que en la Parte 1."""
+        for salida in ({"sala": 3}, {"sala": 3, "costo": None}):
+            with self.subTest(salida=salida):
+                s = SalidaDTO.desde_diccionario(salida)
+                self.assertIsNone(s.costo)
+                self.assertEqual(s.a_diccionario(), {"sala": 3})
+
+    def test_t001_constructores_posicionales_de_la_parte_1_siguen_funcionando(self):
+        """T001: 'costo' es el último campo, así que SalidaDTO(1, True, "llave") no cambia de sentido."""
+        s = SalidaDTO(1, True, "itm_llave_bronce")
+        self.assertEqual((s.sala_destino, s.cerrada, s.llave, s.cierre_automatico, s.costo),
+                         (1, True, "itm_llave_bronce", None, None))
+
 
 class PruebasSala(unittest.TestCase):
 

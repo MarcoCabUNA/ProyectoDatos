@@ -178,7 +178,7 @@ def probar_el_modo_alterna_y_cada_partida_nueva_usa_la_configuracion_vigente():
         return crear_backend(carpeta, config)
 
     try:
-        c = ControladorPygame(VistaFalsa(), ConfiguracionDTO(offline=True, cache_size=40), fabrica)
+        c = ControladorPygame(VistaFalsa(), ConfiguracionDTO(offline=True, cache_size=40, forzar=True), fabrica)
         c.procesar_evento(tecla(ABAJO))
         assert c.pantalla().opciones[1] == "Modo: Offline"
         c.procesar_evento(tecla(ENTER))
@@ -583,6 +583,9 @@ class _BackendDeVictoria:
     def reporte(self):
         return ReporteDatosDTO(solicitudes_realizadas=4, presupuesto=9, aciertos_cache=10, fallos_cache=2)
 
+    def resolubilidad(self):
+        return None
+
     def tabla_puntajes(self, criterio):
         return []
 
@@ -608,6 +611,9 @@ class _BackendDeDosCriptas:
     def iniciar(self, id_cripta, nombre):
         _BackendDeDosCriptas.elegidas.append(id_cripta)
         return _estado_de_prueba()
+
+    def resolubilidad(self):
+        return None
 
 
 def probar_se_inicia_la_cripta_que_se_eligio_con_el_teclado_o_con_el_raton():

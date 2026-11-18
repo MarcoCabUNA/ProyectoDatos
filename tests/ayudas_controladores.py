@@ -21,7 +21,7 @@ from Service.ServicioPartida import ServicioPartida  # noqa: E402
 from Service.ServicioPuntajes import ServicioPuntajes  # noqa: E402
 from UIController.ControladorBackend import ControladorBackend  # noqa: E402
 
-CONFIG_OFFLINE = ConfiguracionDTO(offline=True)
+CONFIG_OFFLINE = ConfiguracionDTO(offline=True, forzar=True)
 
 
 def crear_partida(carpeta: str, config: ConfiguracionDTO = CONFIG_OFFLINE, paquete: str | None = None,

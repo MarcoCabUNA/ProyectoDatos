@@ -10,6 +10,7 @@ Funciones puras (se prueban sin ventana):
     casillas_del_inventario(cantidad)   el rectángulo de cada casilla de la ventana
     ventana_del_inventario(...)         desde qué casilla real se muestra la ventana de 15 que sigue al cursor
     criterio_a_texto(criterio)          "Orden: real / peso / valor / nombre"
+    lineas_del_resumen(resumen)         las líneas de texto del panel de `historia` (feature 004; solo formatea el DTO)
 
 Zonas de clic que registra: ELEMENTO_INVENTARIO (solo casillas ocupadas, índice en inventario.objetos) y ELEMENTO_BOTON 0
 (Esperar). Todas las medidas están en View/Componentes.py (sección HUD).
@@ -21,6 +22,8 @@ import pygame
 from DTO.ElementoDTO import ELEMENTO_BOTON, ELEMENTO_INVENTARIO, ElementoDTO
 from DTO.PantallaDTO import PantallaDTO
 from View import Componentes as c
+from View import ReporteResolubilidad
+from View.MapaJuego import PanelMapa
 
 TEXTURA_CASILLA = "inventario"           # ui/inventario.png: la textura de las casillas
 SIN_CRITERIO = "real"
@@ -71,6 +74,26 @@ def indices_equipados(inventario) -> list[int]:
                     marcados.append(i)
                 break
     return marcados
+
+
+def lineas_del_resumen(resumen) -> list[str]:
+    """Las líneas del panel de `historia` a partir del ResumenHistoriaDTO: no calcula nada, solo escribe lo que trae el DTO.
+    No lleva mensajes del juego (FR-406) ni cursor del inventario."""
+    jugador = resumen.jugador
+    efectos = [f"{efecto.tipo.capitalize()} ({efecto.restante})" for efecto in resumen.efectos]
+    enemigos = [f"{enemigo.nombre} {enemigo.vida}/{enemigo.vida_max}" for enemigo in resumen.enemigos]
+    lineas = [
+        f"Sala: {resumen.sala_nombre} (#{resumen.sala_id})",
+        f"Vida {jugador.vida}/{jugador.vida_max}  Ataque {jugador.ataque}  Defensa {jugador.defensa}  "
+        f"Velocidad {jugador.velocidad}",
+        f"Inventario: {', '.join(resumen.inventario) if resumen.inventario else '(vacío)'}",
+        f"Arma: {resumen.arma_equipada or 'ninguna'}  Armadura: {resumen.armadura_equipada or 'ninguna'}",
+        f"Efectos: {', '.join(efectos) if efectos else 'ninguno'}",
+        f"Enemigos: {', '.join(enemigos) if enemigos else 'ninguno'}",
+    ]
+    if resumen.terminada_antes:
+        lineas.append(f"La partida terminó antes de t={resumen.instante_pedido}: este es el estado final.")
+    return lineas
 
 
 def criterio_a_texto(criterio: str | None) -> str:
@@ -124,6 +147,8 @@ class HudJuego:
         self._colores_de_velo: list[tuple] = []      # un velo por color, creado la primera vez que hace falta
         self._velos: list[pygame.Surface] = []
         self._inicio = 0                             # la primera casilla real de la ventana del inventario
+        self._panel_mapa = PanelMapa(fuentes)
+        self._panel_mapa_historia = PanelMapa(fuentes)       # aparte, para que cada uno conserve su disposición
 
     def dibujar(self, superficie: pygame.Surface, pantalla: PantallaDTO) -> None:
         estado = pantalla.estado
@@ -138,6 +163,18 @@ class HudJuego:
         self._esperar(superficie, pantalla)
         self._aviso(superficie, pantalla.aviso)
         self._ayuda(superficie, pantalla.ayuda)
+        if pantalla.resumen is not None:
+            self._historia(superficie, pantalla.resumen)
+            if pantalla.resumen.mapa_conocido is not None:     # el mapa de ese instante, en el panel central (FR-223)
+                self._panel_mapa_historia.dibujar(superficie, pantalla.resumen.mapa_conocido, pantalla.resumen.sala_id,
+                                                  cierre="Historia: el mapa de ese instante")
+        if pantalla.reporte_resolubilidad is not None:
+            ReporteResolubilidad.dibujar(superficie, self._fuentes, pantalla, c.HUD_REPORTE_JUEGO,
+                                         "Se oculta con tu primera acción")
+        if pantalla.mapa is not None:
+            self._panel_mapa.dibujar(superficie, pantalla.mapa, estado.sala.id)
+        if pantalla.linea_comandos is not None:
+            self._linea_de_comandos(superficie, pantalla.linea_comandos)
 
     def _velo(self, color: tuple) -> pygame.Surface:
         for i in range(len(self._colores_de_velo)):
@@ -249,6 +286,36 @@ class HudJuego:
             c.texto_en(superficie, fuente, c.recortar_a_ancho(fuente, linea, ancho), c.ORO if i == 0 else c.TEXTO,
                        (marco.x + c.HUD_RELLENO + 2, y), "topleft")
             y += alto
+
+    # ------------------------------------------------------------------ historia (feature 004)
+    def _historia(self, superficie, resumen) -> None:
+        """El panel de solo lectura con el resumen de `historia`. Lo que no cabe se corta con «...»."""
+        marco = c.HUD_HISTORIA
+        c.panel(superficie, marco)
+        c.texto_en(superficie, self._fuentes.chico, f"Historia: reloj {resumen.reloj}", c.ORO,
+                   (marco.x + c.HUD_RELLENO + 2, marco.y + 6), "topleft")
+        fuente = self._fuentes.ayuda_juego
+        ancho = marco.width - 2 * c.HUD_RELLENO
+        lineas = []
+        for texto in lineas_del_resumen(resumen):
+            lineas.extend(c.ajustar_lineas(fuente, texto, ancho))
+        cabe = (marco.height - c.HUD_HISTORIA_ARRIBA - c.HUD_RELLENO) // c.HUD_AYUDA_INTERLINEA
+        if len(lineas) > cabe:
+            lineas = lineas[:cabe]
+            lineas[-1] = c.recortar_a_ancho(fuente, lineas[-1] + " ...", ancho)
+        for i, linea in enumerate(lineas):
+            c.texto_en(superficie, fuente, c.recortar_a_ancho(fuente, linea, ancho), c.TEXTO,
+                       (marco.x + c.HUD_RELLENO, marco.y + c.HUD_HISTORIA_ARRIBA + i * c.HUD_AYUDA_INTERLINEA), "topleft")
+
+    def _linea_de_comandos(self, superficie, texto: str) -> None:
+        """La línea de comandos abierta: lo escrito, con un guion bajo de cursor, y la tecla que acepta y la que cierra."""
+        marco = c.HUD_LINEA
+        c.panel(superficie, marco, c.PANEL, c.ORO, 2)
+        pista = c.texto_en(superficie, self._fuentes.chico, "Enter: aceptar   Esc: cerrar", c.TEXTO_SUAVE,
+                           (marco.right - c.HUD_RELLENO - 2, marco.centery), "midright")
+        ancho = pista.left - marco.x - 2 * c.HUD_RELLENO
+        escrito = c.recortar_a_ancho(self._fuentes.texto, f"> {texto}_", ancho)
+        c.texto_en(superficie, self._fuentes.texto, escrito, c.TEXTO, (marco.x + c.HUD_RELLENO + 2, marco.centery), "midleft")
 
     # ------------------------------------------------------------------ botón, aviso y ayuda
     def _esperar(self, superficie, pantalla) -> None:

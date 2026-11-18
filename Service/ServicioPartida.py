@@ -19,11 +19,16 @@ la misma fuente se usa antes y durante la partida.
 Orden de arranque (§2.4): el contenido de la sala inicial se carga ANTES de aceptar la primera acción;
 motor.iniciar() activa a sus enemigos en el instante 0.
 
+Línea de tiempo (feature 004): al iniciar se crea la LineaTiempo con config.checkpoint_cada, se instalan los grabadores
+sobre el contenido y el resolvedor ANTES de cargar la sala inicial (así queda su registro de carga) y, al terminar la
+primera avanzar_hasta_jugador, se toma el punto de control 0.
+
 Bitácora de replay: se crea con el encabezado (id y versión de la cripta, versión del catálogo y semilla) y
 se anexa cada acción. Con registrar_bitacora=False (al REPRODUCIR un log) no se escribe ninguna.
 """
 import random
 
+from Data.AlmacenLlaves import AlmacenLlaves
 from Data.BitacoraReplayIO import BitacoraReplayIO
 from Data.FuenteOffline import FuenteOffline
 from Data.FuenteRed import FuenteRed
@@ -38,11 +43,14 @@ from DTO.ReplayDTO import EncabezadoReplayDTO
 from DTO.ReporteDatosDTO import ReporteDatosDTO
 from Estructuras.BufferCircular import BufferCircular
 from Logic.Inventario import Inventario
+from Logic.LineaTiempo import LineaTiempo
 from Logic.Mazmorra import Mazmorra
 from Logic.jugador import Jugador
 from Logic.motorJuego import Motor
 from Service.ArmadorEstado import ArmadorEstado
 from Service.ContextoPartida import ContextoPartida
+from Service.GrabadoresLinea import ContenidoGrabador, ResolvedorGrabador
+from Service.ServicioLineaTiempo import ServicioLineaTiempo
 from Service.SincronizadorUsos import SincronizadorUsos
 
 MENSAJES_EN_PANTALLA = 20       # §4.8: la interfaz muestra los últimos 20 mensajes
@@ -51,10 +59,11 @@ MENSAJES_EN_PANTALLA = 20       # §4.8: la interfaz muestra los últimos 20 men
 class ServicioPartida:
 
     def __init__(self, config: ConfiguracionDTO, fuente=None, carpeta_cache: str | None = None,
-                 carpeta_logs: str = "logs"):
+                 carpeta_logs: str = "logs", almacen_llaves: AlmacenLlaves | None = None):
         """
         fuente, carpeta_cache: las pruebas los inyectan (otra fuente, una caché en una carpeta temporal).
         En el programa real se dejan en None: la fuente sale de config.offline y la caché usa su carpeta por defecto.
+        almacen_llaves (feature 003): el almacén de llaves de las pruebas que inyectan la fuente; si no, lo elige fuente().
         """
         self._config = config
         self._fuente = fuente
@@ -62,11 +71,18 @@ class ServicioPartida:
         self._carpeta_logs = carpeta_logs
         self._armador = ArmadorEstado()
         self._sincronizador = SincronizadorUsos()
+        self._almacen_llaves = almacen_llaves
 
     def fuente(self):
-        """La fuente de datos de esta ejecución (se crea la primera vez que se necesita)."""
+        """La fuente de datos de esta ejecución (se crea la primera vez que se necesita).
+        El mismo if elige el almacén de llaves (feature 003, FR-317, FR-318): offline sin almacén; red con AlmacenLlaves."""
         if self._fuente is None:
-            self._fuente = FuenteOffline() if self._config.offline else FuenteRed()
+            if self._config.offline:
+                self._fuente = FuenteOffline()
+                self._almacen_llaves = None
+            else:
+                self._fuente = FuenteRed()
+                self._almacen_llaves = AlmacenLlaves()
         return self._fuente
 
     def listar_criptas(self) -> list:
@@ -91,8 +107,9 @@ class ServicioPartida:
         return BitacoraReplayIO.ruta_libre(self._carpeta_logs)
 
     def iniciar_partida(self, id_cripta: str, nombre_jugador: str, semilla: int | None = None,
-                        registrar_bitacora: bool = True) -> ContextoPartida:
-        cripta, resolvedor, esqueleto, contenido = self.abrir_datos(id_cripta)
+                        registrar_bitacora: bool = True, datos=None) -> ContextoPartida:
+        # datos (feature 003): lo que ya devolvió abrir_datos, para no pedir dos veces los datos generales y el esqueleto
+        cripta, resolvedor, esqueleto, contenido = self.abrir_datos(id_cripta) if datos is None else datos
         if semilla is None:
             semilla = self._semilla_nueva()
         mazmorra = Mazmorra(cripta.sala_salida, cripta.llave_salida)
@@ -101,6 +118,9 @@ class ServicioPartida:
         inventario = Inventario(cripta.inventario_max)               # la capacidad la define la cripta
         mensajes = BufferCircular(MENSAJES_EN_PANTALLA)
         motor = Motor(semilla, jugador, mazmorra, mensajes.agregar, inventario)
+        linea = LineaTiempo(self._config.checkpoint_cada)
+        contenido = ContenidoGrabador(contenido, linea, jugador)     # antes de cargar la sala inicial (ordinal 0)
+        resolvedor = ResolvedorGrabador(resolvedor, linea)
 
         mazmorra.cargar_contenido(contenido.asegurar_sala(cripta.sala_inicial), resolvedor.ficha)
         motor.iniciar()
@@ -110,7 +130,8 @@ class ServicioPartida:
         contexto = ContextoPartida(cripta=cripta, nombre_jugador=nombre_jugador, semilla=semilla,
                                    fuente=self.fuente(), resolvedor=resolvedor, esqueleto=esqueleto,
                                    contenido=contenido, mazmorra=mazmorra, jugador=jugador,
-                                   inventario=inventario, motor=motor, mensajes=mensajes)
+                                   inventario=inventario, motor=motor, mensajes=mensajes, linea=linea)
+        ServicioLineaTiempo.tomar_punto(contexto)                    # el punto de control 0
         self._sincronizador.sincronizar(contexto)
         if registrar_bitacora:
             bitacora = BitacoraReplayIO(self.nueva_ruta_de_log())
@@ -144,3 +165,10 @@ class ServicioPartida:
     def _semilla_nueva() -> int:
         """La semilla se elige AQUÍ, fuera del modelo, y se guarda en la bitácora para poder reproducir."""
         return random.SystemRandom().randrange(1, 2 ** 31)
+
+    # ---- feature 003 (resolubilidad) ----
+
+    def almacen_llaves(self) -> AlmacenLlaves | None:
+        """El almacén de la ubicación de las llaves de esta ejecución: el que eligió fuente() (None con --offline)."""
+        self.fuente()
+        return self._almacen_llaves

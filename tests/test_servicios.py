@@ -19,6 +19,7 @@ from Data.BitacoraReplayIO import BitacoraReplayIO
 from Data.ClienteHttp import ErrorRed
 from Data.FuenteOffline import FuenteOffline
 from Data.FuenteRed import FuenteRed
+from Data.ValidacionDatos import ErrorDatos
 from DTO.AccionDTO import AccionDTO
 from DTO.ConfiguracionDTO import ConfiguracionDTO
 from DTO.ObjetoDTO import ObjetoDTO
@@ -124,15 +125,16 @@ def probar_el_estado_trae_la_sala_inicial_y_la_de_salida(carpeta):
     partida, acciones, ctx = _crear(carpeta)
     estado = partida.estado(ctx)
     assert estado.sala_inicial == estado.sala.id == general["sala_inicial"]
-    assert estado.sala_salida == general["sala_salida"] != estado.sala_inicial
+    assert general["sala_salida"] != estado.sala_inicial
+    assert estado.sala_salida is None                                # la salida no está explorada: no se revela (H-2, FR-217)
     estado = acciones.ejecutar(ctx, AccionDTO("mover", direccion=NORTE))
     assert estado.sala.id != general["sala_inicial"]                 # se movió de verdad...
-    assert (estado.sala_inicial, estado.sala_salida) == (general["sala_inicial"], general["sala_salida"])
+    assert (estado.sala_inicial, estado.sala_salida) == (general["sala_inicial"], None)
     ruta = os.path.join(carpeta, "saves", "partida.sav")
     ServicioGuardado(partida).guardar(ctx, ruta)
     nueva, _, _ = _crear(os.path.join(carpeta, "b"))
     estado2 = nueva.estado(ServicioGuardado(nueva).cargar(ruta, "Ana"))
-    assert (estado2.sala_inicial, estado2.sala_salida) == (general["sala_inicial"], general["sala_salida"])
+    assert (estado2.sala_inicial, estado2.sala_salida) == (general["sala_inicial"], None)
 
 
 def probar_la_bitacora_nace_con_su_encabezado(carpeta):
@@ -308,6 +310,19 @@ def probar_si_falla_la_red_el_juego_queda_intacto(carpeta):
     estado = acciones.ejecutar(ctx, AccionDTO("mover", direccion=NORTE))
     assert estado.resultado.startswith("Sin conexión") and estado.sala.id == antes.sala.id
     assert estado.reloj == antes.reloj and ctx.bitacora.acciones_escritas() == 0
+
+
+def probar_si_llegan_datos_invalidos_se_muestra_su_error_fr122_h2_9(carpeta):
+    partida, acciones, ctx = _crear(carpeta)
+    antes = partida.estado(ctx)
+
+    def datos_invalidos(*_):
+        raise ErrorDatos("ficha 'x'", "campo 'ataque' fuera de rango", id_ficha="x")
+    ctx.contenido.asegurar_sala = datos_invalidos
+    estado = acciones.ejecutar(ctx, AccionDTO("mover", direccion=NORTE))
+    assert "campo 'ataque' fuera de rango" in estado.resultado and "Sin conexión" not in estado.resultado
+    assert estado.sala.id == antes.sala.id and estado.reloj == antes.reloj
+    assert ctx.bitacora.acciones_escritas() == 0
 
 
 def probar_marcas_de_uso(carpeta):

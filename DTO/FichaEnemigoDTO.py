@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 
 from DTO.EfectoFichaDTO import campos_extra, leer_efectos
 
-_CAMPOS = ["id", "clase", "nombre", "vida_max", "ataque", "defensa", "velocidad", "comportamiento", "suelta"]
+_CAMPOS = ["id", "clase", "nombre", "vida_max", "ataque", "defensa", "velocidad", "comportamiento", "suelta", "rango"]
 
 
 @dataclass(frozen=True)
@@ -20,6 +20,9 @@ class  FichaEnemigoDTO:
     # Campos del JSON que no son de esta clase; se vuelven a escribir en a_diccionario para que la caché en disco
     # no pierda nada que el API agregue (y efectos se pueda volver a leer de ellos).
     extras: tuple = field(default=(), hash=False)
+    # Parte II §3.2 (FR-106): costo máximo de la ruta que persigue un cazador. None si la ficha no lo trae;
+    # va último para no romper los constructores posicionales. Data rechaza un cazador sin rango (FR-122).
+    rango: int | None = None
 
     @classmethod
     def desde_diccionario(cls, d):
@@ -34,6 +37,7 @@ class  FichaEnemigoDTO:
             list(d.get("suelta") or []),
             leer_efectos(d),
             campos_extra(d, _CAMPOS),
+            d.get("rango"),
         )
 
     def a_diccionario(self):
@@ -48,6 +52,8 @@ class  FichaEnemigoDTO:
             "comportamiento": self.comportamiento,
             "suelta": list(self.suelta),
         }
+        if self.rango is not None:              # sin rango -> mismo diccionario que en la Parte 1
+            d["rango"] = self.rango
         for clave, valor in self.extras:
             d[clave] = valor
         return d

@@ -311,4 +311,4301 @@ Kristel ya trajo lo de Marco y avanzó con la Vista y el Controlador. Revisa su 
 **Uso de la respuesta:** se evaluó pasar la precarga (§4.2) a un hilo en segundo plano: un solo hilo para toda la red, la `Cola` propia en vez de `ThreadPoolExecutor` (§7) y la incorporación con un desfase fijo de una acción para mantener el determinismo. El equipo decidió dejarla síncrona porque funciona, y defenderla con mediciones en el Documento de Decisiones. En el commit `9a7f177` se agregaron al paquete offline cripta-02 a cripta-04, se ajustaron 3 pruebas que daban por hecho una sola cripta y se creó `tests/correr_pruebas.py`, que corre las 350 pruebas de `unittest` y los 27 scripts `probar_*`. El trabajo de la sesión se dividió en los commits `5d43898`, `e4a4c3f`, `4740816` y `9a7f177`, y se comprobó que cada uno pasa las pruebas por sí solo.
 
 -----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Domingo 8 de noviembre 2026
 
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5), comando de spec-kit `/speckit-constitution`
+
+/speckit-constitution Escribe la constitución, en español, del proyecto Cripta II (Estructuras de Datos II, UNA, II ciclo 2026): un juego de exploración por eventos en Python, con reloj virtual, que obtiene criptas de un servicio web o de un paquete local (--offline). Esta es la segunda entrega y continúa el código funcional de la primera. Usa estos principios casi textualmente, con redacción MUST/MUST NOT. No agregues principios, tecnologías ni capas que no estén aquí.
+
+I. Arquitectura MVC en n-capas, estricta
+- El proyecto MUST seguir MVC con arquitectura en n-capas. No se admite ningún otro estilo de organización.
+- Las capas son: Data (red y disco), Logic (reglas del juego y estructuras de datos), Service (casos de uso), UIController + View (interfaz) y DTO (transversal). Security (validación de acceso y de versión/integridad) acompaña a la interfaz y a los datos. Se mantienen los nombres de carpetas que ya existen en el repositorio.
+- El flujo de llamadas es UIController -> Service -> Logic -> Data. Cada capa MUST llamar solo a la capa inmediatamente adyacente. La interfaz MUST NOT llamar a Data, y Data MUST NOT conocer reglas del juego.
+- El paquete Estructuras es un paquete de apoyo sin dependencias hacia ninguna otra capa; cualquier capa puede importarlo.
+- Logic (el modelo) MUST NOT conocer HTTP, archivos ni la interfaz concreta. El acceso a red y a disco se hace detrás de una interfaz común (FuenteDatos) para que --offline sustituya la fuente sin if dispersos.
+- Los DTO son clases simples de datos, sin reglas de negocio, y son el único formato en que fluye información entre capas.
+- Cada capa valida lo suyo: Data solo conexión y formato; Logic reglas de negocio; Service no valida; la interfaz valida la estructura de lo que el usuario ingresa.
+
+II. Lenguaje, bibliotecas y estructuras de datos
+- El proyecto MUST escribirse únicamente en Python 3.11 o superior.
+- Siguen vigentes todas las restricciones del enunciado de la primera parte (Primer Proyecto, §7) y se suman las de Cripta - Parte II (§6.2). La única excepción es cuando Cripta - Parte II mencione expresamente un cambio a alguna de ellas.
+- Restricciones de la primera parte: las estructuras de datos de los problemas evaluados MUST implementarse a mano y MUST NOT sustituirse por equivalentes de bibliotecas; dict MUST NOT usarse como índice, caché, tabla de búsqueda o estructura propia (los dict que entrega respuesta.json() solo se leen); list MAY usarse solo como almacenamiento contiguo de bajo nivel; list.sort() y sorted() MUST NOT usarse en los ordenamientos evaluados (se usa el Ordenador del equipo).
+- Restricciones que suma la segunda parte: MUST NOT usarse heapq, bisect, collections (deque, OrderedDict, defaultdict, Counter), networkx ni ninguna biblioteca de grafos o de búsqueda de rutas; set queda prohibido en las mismas condiciones que dict.
+- Bibliotecas permitidas: requests (con tiempo de espera explícito) y pygame-ce, que ya están establecidas en el proyecto; json, struct, uuid y random.Random; y las de la biblioteca estándar os, pathlib, argparse, time, subprocess y unittest, ya consultadas con el profesor para la primera entrega. Agregar cualquier otra dependencia MUST requerir acuerdo de los tres integrantes y quedar registrada en requirements.txt y pyproject.toml.
+- Se MUST mantener las bibliotecas y las estructuras de datos que ya están implementadas en el proyecto. Antes de comenzar cualquier implementación, el grupo MUST revisar las limitaciones de cada estructura ya implementada contra lo que solicita Cripta - Parte II, y dejar el resultado de esa revisión en el plan.md correspondiente.
+- spec-kit y el agente de programación son solo herramientas de proceso: MUST NOT introducir dependencias ni estructuras prohibidas. Las dependencias que proponga un plan generado se revisan antes de aceptarlo.
+
+III. Simplicidad: KISS, YAGNI, responsabilidad única y Abierto/Cerrado
+- KISS: se elige la solución más simple que cumpla la especificación. El código lo deben poder leer y defender los tres integrantes, incluso los que son principiantes en Python.
+- YAGNI: MUST NOT implementarse clases, capas, parámetros ni opciones que ningún requisito numerado pida.
+- Responsabilidad única: cada clase y cada módulo hace una sola cosa; las funciones son cortas; los nombres son claros, con type hints y un docstring breve.
+- Abierto/Cerrado: el código de la primera entrega que ya funciona está cerrado a modificación y abierto a extensión. Las capacidades nuevas MUST agregarse con clases o módulos nuevos, o extendiendo lo existente, sin reescribir implementaciones funcionales. Solo se modifica código existente cuando es indispensable para cumplir un requisito de la segunda parte o para corregir un defecto; en ese caso el cambio MUST justificarse en plan.md y, si cambia una decisión de la primera parte, mostrarse el antes y el después en DECISIONES.md.
+
+IV. Determinismo
+- Misma cripta, misma semilla y mismas acciones MUST producir la misma partida.
+- El tiempo real de red MUST NOT avanzar el reloj virtual. Las respuestas pendientes o concurrentes se incorporan en un orden determinista.
+
+V. Modos sin interfaz
+- --replay y --bench MUST ejecutarse sin instanciar la vista. Si el modelo necesita una ventana o el teclado para funcionar, la separación de capas está mal.
+
+VI. Sin datos de una cripta concreta en el código
+- MUST NOT escribirse en el código números de salas, ids de entidades, páginas, presupuestos ni estadísticas de una cripta específica. El programa debe funcionar con una cripta que el grupo no haya visto.
+
+VII. Red y presupuesto de solicitudes
+- El programa MUST respetar presupuesto_solicitudes. Un reintento cuenta dentro del presupuesto.
+- El X-Cripta-Client-Id se genera una sola vez por ejecución y se envía en todas las solicitudes.
+- Un HTTP 429 o un error de red MUST manejarse con un mensaje con contexto, sin que el programa se caiga.
+
+VIII. Rendimiento con evidencia
+- Toda afirmación de rendimiento MUST respaldarse con mediciones propias de --bench. Las mediciones de la primera parte se repiten con la carga nueva.
+- Cada decisión de estructura de datos se documenta en DECISIONES.md con: problema, alternativas consideradas, decisión, complejidad, evidencia empírica y límites conocidos, enlazando a la spec y al plan de donde proviene e indicando si la decisión final coincide con la del plan.md original. Las criptas sintéticas de --bench son deterministas por semilla.
+
+IX. Especificación antes del código
+- Una especificación MUST confirmarse (commit) antes que cualquier código que la implemente. Si la especificación estaba mal, se corrige primero la especificación y luego el código, en commits separados.
+- spec.md contiene reglas del juego, historias de usuario, escenarios de aceptación y requisitos numerados, y MUST NOT nombrar estructuras de datos, clases ni módulos. plan.md contiene las estructuras elegidas, alternativas, complejidad y mediciones previstas. tasks.md contiene tareas pequeñas y verificables, cada una con el requisito que atiende.
+- Specs: 001-terreno-cazador, 002-niebla-ir-a, 003-resolubilidad y 004-linea-tiempo. Los requisitos usan el prefijo FR-1xx, FR-2xx, FR-3xx y FR-4xx respectivamente, para que los identificadores no choquen.
+
+X. Trazabilidad y pruebas
+- Cada requisito tiene un identificador estable. Cada escenario de aceptación MUST tener al menos una prueba automatizada (con las herramientas que ya usa el repo: unittest y tests/correr_pruebas.py) o un partida.log de reproducción, y la prueba cita el identificador del requisito.
+
+XI. Bitácora de uso de LLM
+- Cada prompt enviado a un LLM, incluidos los comandos de spec-kit con texto propio, MUST registrarse en PROMPTS_LLM.md con fecha, herramienta, prompt textual y para qué se usó la respuesta. No se incluyen credenciales ni datos personales.
+- El código generado con ayuda de un LLM es responsabilidad del grupo, y cada integrante MUST poder explicarlo y modificarlo.
+
+Gobernanza: esta constitución solo se cambia con acuerdo de los tres integrantes, en un commit propio. Si un plan o una tarea contradice la constitución, el plan o la tarea se corrige.
+
+**Uso de la respuesta:** se generó `.specify/memory/constitution.md` (versión 1.0.0, ratificada el 2026-11-08) a partir de la plantilla de spec-kit, con los principios I a XI y la gobernanza casi textuales. Se quitaron las dos secciones genéricas de la plantilla que no tenían contenido. Quedan pendientes algunos ajustes de la constitución que se revisarán con el equipo.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Domingo 8 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+estos son los ajustes que el equipo vio luego de hacer la version 1.0.1 que es la actual asi que nesesitaremos analizar algunas partes del flujo del codigo y añadir algunas partes que se dejaron por fuera, estas serian las recomendaciones:
+
+Ajustes recomendados
+Falta dataclasses en las bibliotecas permitidas. Todos los DTOs usan @dataclass, y la regla dice que cualquier otra dependencia requiere acuerdo. Pasa lo mismo con typing, si la usan para los type hints. Y si piensan hacer los puntos de control de la línea de tiempo con copy.deepcopy, también hay que agregar copy, o decidir desde ya que la copia se hace a mano.
+El flujo de capas puede contradecir el código actual. El principio I dice que cada capa solo llama a la adyacente (UIController → Service → Logic → Data). Pero en la primera parte, cuando el motor devuelve "pendiente", quien pide el contenido a la capa de Datos es Servicios, no Lógica, porque Lógica no conoce la red. Revisen cómo está hoy el repo y ajusten la frase. Si no, /speckit.analyze va a marcar como violación algo que ya funciona.
+El principio V debería incluir --verificar y --replay … --hasta. El §3.5 y el §3.6 exigen que esas dos banderas también corran sin instanciar la vista.
+El principio X podría pedir el Apéndice B explícitamente. El §2.5 exige que cada caso del Apéndice B aparezca como escenario de aceptación en alguna spec. Con una línea en la constitución, el agente lo va a revisar en cada fase.
+
+y luego de eso esta esta recomendacion: Un detalle a tener en cuenta: el principio III pide type hints y docstrings, y el código de Lógica de la primera parte no los tiene. Como el mismo principio dice que no se reescribe lo que ya funciona, lo razonable es aplicarlo solo al código nuevo. Conviene que eso quede claro para que nadie lo tome como una tarea de refactor.
+
+Seguimiento: "sigamos con lo que recomiendas en los puntos 2 al 4 y dime que seria mas conveniente para el codigo nuevo en relacion a copy y deepcopy"
+
+**Uso de la respuesta:** se revisaron las importaciones del repo. Service importa de Data en 8 archivos, Logic no importa de Data y solo 38 de 207 funciones de Logic tienen type hints. Con eso se pasó la constitución a la versión 1.1.0: flujo UIController -> Service -> (Logic y Data) en el principio I, type hints y docstrings solo para el código nuevo en el III, `--replay … --hasta` y `--verificar` en el V y Apéndice B en el X. Quedan pendientes la lista de bibliotecas permitidas y la decisión sobre `copy`.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Domingo 8 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+**Uso de la respuesta:** la constitución pasó a la versión 1.2.0. En el principio II se agregaron a las bibliotecas permitidas `dataclasses`, `typing`, `abc`, `urllib.parse`, `shutil`, `sys` y `math`, que ya usaba la primera entrega. `tempfile`, `contextlib`, `io`, `re`, `types` y `copy` quedan permitidos solo en `tests/`. `copy` no se usa en el código del juego, así que las copias de estado (como los puntos de control de la línea de tiempo) se hacen a mano.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5, spec-kit)
+
+/speckit.specify Feature 001-terreno-cazador. Terreno con costo por salida y un nuevo enemigo "cazador".
+Cada salida puede declarar un costo entero >= 1 (100 si no lo declara), igual en ambos sentidos.
+Moverse por una salida cuesta su costo para todos los actores, con intervalo = max(1, costo*100 // velocidad);
+atacar, esperar y demás acciones no cambian. Errantes y rastreadores conservan su comportamiento.
+El cazador tiene un "rango" en unidades de costo. En su turno: si comparte sala con el jugador, ataca;
+si no, calcula el costo mínimo d hasta la sala del jugador usando solo salidas abiertas en ese instante;
+si no hay ruta o d > rango, espera (costo 100); si hay, avanza un paso cuyo costo es el de la salida.
+Desempate: entre las vecinas v con costo(u,v) + dist(v,jugador) = d, va a la de menor id.
+Conoce el esqueleto completo y el estado actual de las puertas, no lo afecta la niebla, no abre puertas.
+Su decisión debe ser idéntica a calcularla desde cero en ese instante, aunque se reutilicen cálculos.
+Incluir como escenarios de aceptación los 7 casos del Apéndice B "Terreno y cazador", con una tabla de trazabilidad.
+Requisitos FR-101 en adelante. No nombrar estructuras de datos, clases ni módulos.
+
+**Uso de la respuesta:** se generó `specs/001-terreno-cazador/spec.md` (FR-101 a FR-118, NFR-101 a NFR-103, SC-101 a SC-106) con los 7 casos del Apéndice B como escenarios con ejemplos numéricos y su tabla de trazabilidad, más `checklists/requirements.md`. Los puntos que el enunciado no fija quedaron como supuestos para `/speckit.clarify`.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5, spec-kit)
+
+/speckit.clarify Convertir cada punto de "Supuestos" en una clarificación confirmada: registrar
+pregunta y respuesta en "Clarificaciones" (Sesión de hoy), actualizar o crear el FR que corresponda
+y quitarlo de "Supuestos". Preguntarme uno por uno antes de confirmarlo:
+1) Dos salidas hacia la misma vecina: el cazador usa la más barata. ¿Qué hace el errante en ese caso?
+2) Otros enemigos no bloquean el paso del cazador.
+3) Un cazador que entra a la sala del jugador no ataca en ese mismo turno.
+4) Una ficha de cazador sin rango es un error de datos, no recibe valor por defecto.
+5) Con d == rango el cazador se mueve (la regla dice "si d > rango, espera").
+6) FR-115: confirmar que la decisión del cazador no consume el generador aleatorio.
+Al terminar, la sección "Supuestos" debe quedar vacía o eliminada. No nombrar estructuras de datos,
+clases ni módulos.
+
+**Uso de la respuesta:** se confirmaron las 6 preguntas con la opción recomendada y quedaron en «Clarificaciones», Sesión 2026-11-09, de `specs/001-terreno-cazador/spec.md`. Se crearon FR-119 (salida más barata hacia la misma vecina), FR-120 (otros actores no bloquean), FR-121 (no ataca en el turno en que llega), FR-122 (`rango` o costo inválido: error de datos, la partida no inicia) y FR-123 (activación según P1 §2.4). Se ajustaron FR-104, FR-106, FR-108, FR-110 y FR-118. Se eliminó la sección «Supuestos».
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+Corregir FR-115 y su clarificación (pregunta 6): la decisión del cazador de moverse o esperar
+(búsqueda de ruta y desempate) no usa el generador aleatorio de la partida. Cuando el cazador
+ataca, el daño se calcula con la fórmula de combate de la primera parte (P1 §2.6), que sí usa
+el generador, igual que cualquier enemigo. No cambiar ningún otro requisito.
+
+**Uso de la respuesta:** se corrigieron FR-115 y la clarificación de la pregunta 6 en `specs/001-terreno-cazador/spec.md`. Moverse o esperar no usa el azar, y el daño del ataque usa la fórmula de P1 §2.6 con el generador de la partida.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+Reescribir SC-103 así: "Misma cripta, misma semilla y mismas acciones producen la misma partida,
+con o sin cazadores. Las decisiones de moverse o esperar de los cazadores no consumen el generador
+aleatorio: en una partida donde ningún cazador ataca, agregar cazadores no cambia lo que eligen
+los errantes." No cambiar ningún otro requisito.
+
+**Uso de la respuesta:** se reescribió SC-103 en `specs/001-terreno-cazador/spec.md` con el texto indicado, para que no contradiga FR-115.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5, spec-kit)
+
+/speckit.plan Seguir la constitución v1.2.0. Python 3.11, sin dependencias nuevas; solo las bibliotecas
+permitidas por el Principio II. Prohibido dict, set, heapq, bisect, collections, copy (fuera de tests),
+sorted()/list.sort() en ordenamientos evaluados y cualquier biblioteca de grafos o rutas.
+Arquitectura: Logic no llama a Data ni a Service; los DTO son el único formato entre capas;
+el paquete Estructuras no depende de ninguna capa.
+Antes de diseñar, revisar las limitaciones de las estructuras existentes contra esta feature:
+Logic/ColaEventos.py (montículo binario; registra en HistorialRetroceso si tiene uno),
+Logic/Comportamientos.py (decidir() devuelve una sala destino, no una salida),
+Logic/Mazmorra.py (salidas_abiertas() devuelve destinos sin costo),
+Logic/motorJuego.py (el movimiento hoy cuesta 100 fijo).
+Abierto/Cerrado: el cazador entra como clase nueva en COMPORTAMIENTOS; cada cambio a código de la
+primera entrega debe justificarse con su requisito en una tabla.
+Decisiones a evaluar con alternativas y complejidad: 1) cola de prioridad; 2) un cálculo por cazador
+frente a uno compartido desde el jugador (el costo es simétrico); 3) cortar la búsqueda en el rango;
+4) qué eventos invalidan una ruta y si conviene reutilizar o recalcular siempre; 5) la búsqueda debe
+poder usarse sobre el mapa conocido del jugador para "ir a".
+Toda caché que sea estado del juego se registra en HistorialRetroceso.
+Código nuevo con type hints y docstring breve. Pruebas con unittest en tests/.
+Incluir las mediciones planificadas para --bench según el §6.3.
+Contrato de datos aún no confirmado con el integrante 2: proponer SalidaDTO.costo (int, 100 si
+falta) y FichaEnemigoDTO.rango (int, sin valor por defecto), con la validación de FR-122 en la
+capa Data. Marcarlo en el plan como "Propuesto — pendiente de confirmar con integrante 2" y no
+planificar código de la capa Data, que le corresponde a él.
+
+Seguimiento (durante la misma ejecución): "en FichaEnemigoDTO (int, sin default). Si una ficha de cazador no trae rango válido, o una salida trae un costo menor que 1 o no entero, es error de datos: se informa con contexto y la partida no inicia (FR-122). Esa validación va en Data, ¿te parece? FichaEnemigoDTO es mío, así que rango lo agrego yo; costo en SalidaDTO sería tuyo."
+
+**Uso de la respuesta:** se generaron `plan.md`, `research.md`, `data-model.md`, `quickstart.md` y `contracts/` (contrato de datos y búsqueda compartida) en `specs/001-terreno-cazador/`. Decisiones: montículo propio en Estructuras, búsqueda compartida desde el jugador, reanudable y cortada en el rango, invalidación por cambio de sala del jugador o por puertas que tocan salas ya cerradas, y descarte registrado en el historial. `FichaEnemigoDTO.rango` queda como `int | None = None` porque el dataclass lo exige; Data rechaza al cazador sin rango válido. Quedó el hallazgo H-1 (salida que usa el rastreador con dos salidas hacia la misma sala), que se corrige en la spec.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+Agregar a la spec, en su propio commit: cuando dos salidas abiertas llevan a la misma vecina,
+el rastreador, igual que el cazador, se mueve por la más barata y paga su costo. El errante sigue
+sorteando entre salidas como en P1. Registrarlo en Clarificaciones y en el FR correspondiente. yo hago el commit no lo hagas tu ok?
+
+**Uso de la respuesta:** se corrigió el hallazgo H-1 del plan en `specs/001-terreno-cazador/spec.md`: nueva pregunta en «Clarificaciones», Sesión 2026-11-09, y FR-104 ampliado (el rastreador usa la salida más barata hacia la vecina; el errante sortea entre salidas). Se ajustó el caso borde que ya trataba ese punto, para que no contradiga FR-104. El commit lo hace el integrante.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+listo, ya hice el commit; marca H-1 como resuelto en plan.md
+
+**Uso de la respuesta:** en `specs/001-terreno-cazador/plan.md` se marcó H-1 como resuelto (commit `58f7310`, FR-104 y pregunta 7 de «Clarificaciones»), y el Principio IX de la tabla de la constitución pasó de ⚠️ a ✅.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5, spec-kit)
+
+/speckit.tasks
+
+**Uso de la respuesta:** se generó `specs/001-terreno-cazador/tasks.md` con 46 tareas en 7 fases (preparación, base, una fase por historia H1 a H4, y bench y cierre), pruebas antes del código y cada prueba con su FR. Las tareas de `SalidaDTO.costo` (integrante 2) y `ActorDTO.comportamiento` (integrante 3) quedan como coordinación, no como código del integrante 1. El cazador se implementa primero calculando desde cero (H2) y después con la búsqueda compartida (H3).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5, spec-kit)
+
+/speckit.analyze
+
+**Uso de la respuesta:** informe de solo lectura sobre `spec.md`, `plan.md` y `tasks.md` de la feature 001: 1 hallazgo crítico (C1, ubicación de `DECISIONES.md`), 4 altos (H1 costo declarado en un solo lado de la salida, H2 FR-122 sin tareas, H3 pruebas de interfaz de H4, H4 repetir la medición de la agenda), 6 medios y 6 bajos. Cobertura de requisitos: 30 de 32. Las correcciones se aplicaron en el prompt siguiente.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+Sí, prepará los cambios con estas decisiones:
+H1: si solo un lado de la salida declara costo, ambos lados lo usan; si ninguno, 100; si declaran
+valores distintos, es error de datos (FR-122). La igualación va junto a _igualar_caras, extendiendo
+sin reescribir. Si eso queda en Data, marcalo como coordinación con el integrante 2.
+M3: cripta sintética de 1 000 salas en grilla y 30 cazadores. SC-105: al multiplicar por 10 el
+tamaño de la cripta, la decisión de un cazador con rango pequeño no tarda más del doble.
+C1: DECISIONES.md en la raíz del repo.
+Aplicá también H2, H3, H4, M1, M2, M4, M5, M6 y los LOW L1, L2, L3, L5 y L6.
+Separá los cambios en dos commits:
+1) "spec(001): costo en ambos lados de la salida y criterios medibles" (H1, M3, L3) solo con spec.md.
+2) "plan(001): correcciones tras analyze" con plan, tasks, data-model, quickstart, contratos,
+checklist y PROMPTS_LLM.md.
+
+**Uso de la respuesta:** commit 1 (`spec.md`): FR-101 y FR-122 con el costo en uno o dos lados, escenario H1-8, dos clarificaciones nuevas, NFR-101, SC-104 y SC-105 medibles, y FR-119 a FR-123 reordenados. Commit 2: `SalidaDTO.costo` pasa a `int | None` (costo declarado) y Lógica iguala los dos lados con `_igualar_costos()` junto a `_igualar_caras()`; `ArmadorEstado` debe copiar el costo igualado (coordinación con el integrante 3); tareas nuevas para FR-122 (integrante 2), pruebas de interfaz de H4 (integrante 3), la agenda con costos, el cierre automático en el mismo instante y los modos sin vista; `DECISIONES.md` en la raíz; «sala resuelta» en lugar de «sala cerrada» en la búsqueda; tareas renumeradas (T001 a T051). También se ajustó `research.md` (vocabulario, R5, R6 y R7).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+En spec.md, definir "rango pequeño" como rango = 200 (dos salidas de costo por defecto) en SC-105
+y en NFR-102 si también lo menciona. Registrarlo en Clarificaciones (sesión de hoy) como pregunta y
+respuesta. Revisar que plan.md y la tarea del bench usen ese mismo valor; si coinciden, no tocarlos.
+No hacer commit todavía: mostrame el cambio.
+
+**Uso de la respuesta:** en `specs/001-terreno-cazador/spec.md` se definió `rango` pequeño = 200 en NFR-102 y SC-105 y se agregó la pregunta a «Clarificaciones». `plan.md` y las tareas T043 y T045 ya usaban `rango` 200, así que no se tocaron.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5, spec-kit)
+
+/speckit.analyze
+
+**Uso de la respuesta:** segunda pasada de análisis (solo lectura) sobre `spec.md`, `plan.md` y `tasks.md` de la feature 001: sin hallazgos críticos ni altos; 3 medios (M1 hash de commit que ya no existe en `plan.md`, M2 de dónde sale el costo del grafo de búsqueda, M3 ayudante de cuadrícula con costos para T028) y 2 bajos. Cobertura de requisitos: 32 de 32.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+Sí, prepará M1, M2 y M3; no L1.
+M1: en plan.md, citar los commits por su mensaje en lugar del hash.
+M2: en contracts/busqueda-rutas.md, agregar la regla de que el mapa usa el costo ya igualado por
+Lógica, nunca SalidaDTO.costo directo.
+M3: agregar cuadricula_con_costos(n, azar) a T003 (mismo costo en ambos lados, desde un
+random.Random) y que T028 la use.
+Un solo commit: "plan(001): correcciones de la segunda pasada de analyze", incluyendo PROMPTS_LLM.md.
+Mostrame los cambios antes del commit.
+
+
+**Uso de la respuesta:** `plan.md` cita los commits de H-1 y H-2 por su mensaje; `contracts/busqueda-rutas.md` exige el costo ya igualado por Lógica en todo grafo, incluido el del mapa conocido; T003 agrega `cuadricula_con_costos(n, azar)` y T028 la usa.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5, spec-kit)
+
+/speckit.analyze
+
+**Uso de la respuesta:** tercera pasada de análisis (solo lectura) sobre `spec.md`, `plan.md` y `tasks.md` de la feature 001: sin hallazgos críticos ni altos; 1 medio (M1: T043 reutilizaba `_cuadricula`, que arma salidas sin costo) y 3 bajos (L1 y L2 ya aceptados, L3 reutilizar `cuadricula_con_costos` en T048). Cobertura de requisitos: 32 de 32.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 9 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+Aplicá M1 como recomendás: en T043, helper privado _cuadricula_con_costos(lado, azar) en
+Logic/BenchRutas.py que toma el resultado de _cuadricula(lado) y asigna el costo con
+dataclasses.replace, igual en ambos lados, sin modificar _cuadricula. Aplicá también L3 en T048.
+Un commit: "tasks(001): costos en las grillas del bench", incluyendo PROMPTS_LLM.md.
+
+**Uso de la respuesta:** en `specs/001-terreno-cazador/tasks.md`, T043 arma las cuadrículas del bench con `_cuadricula_con_costos(lado, azar)` (nuevo, privado, en `Logic/BenchRutas.py`, sobre `_cuadricula` sin modificarlo) y T048 arma su cuadrícula con `cuadricula_con_costos` de T003.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 10 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+En specs/001-terreno-cazador/tasks.md, ampliá T043 (medir_agenda_con_costos, §5.6) para que el
+bench de la agenda de eventos también mida: (a) muchos eventos con el mismo tiempo y (b) muchas
+cancelaciones, que son el límite conocido del montículo con invalidación perezosa. Mantené los FR
+que ya cita. Agregá la medición correspondiente a la tabla de mediciones de plan.md si no está.
+Mostrame el cambio y hacé un commit: "tasks(001): T043 mide mismo tiempo y cancelaciones",
+incluyendo PROMPTS_LLM.md con este prompt.
+
+**Uso de la respuesta:** en `specs/001-terreno-cazador/tasks.md`, T043 (`medir_agenda_con_costos`) mide además muchos eventos con el mismo tiempo (un solo tiempo y 10 tiempos) y muchas cancelaciones (50 % y 90 %), con 100 / 1 000 / 10 000 eventos; se mantienen sus referencias (R6, Principio VIII). En `plan.md` se agregaron las dos filas correspondientes a la tabla de mediciones de `--bench`.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 10 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5, spec-kit)
+
+/speckit.implement Implementar solo T040 y quitar el skip de T037.
+T040: en Enemigo, sobrescribir a_dto() para que devuelva
+dataclasses.replace(super().a_dto(), comportamiento=self.ficha.comportamiento), sin modificar
+ActorBase.a_dto() (Principio III, extender sin reescribir). El Jugador sigue con comportamiento None.
+Código nuevo con type hints y docstring breve.
+T037: quitar el skip y verificar que la prueba pasa y cita su FR.
+Corré tests/correr_pruebas.py. Un commit: "feat(001): T040 comportamiento en ActorDTO de enemigos [FR-117]",
+incluyendo PROMPTS_LLM.md. No tocar ninguna otra tarea.
+
+Respuesta a la pregunta de Claude (la prueba de T037 no existía): Opción 1, pero sin el caso del cazador:
+Enemigo todavía no puede construirse con comportamiento "cazador" porque esa clase aún no existe. Escribí
+T037 en tests/test_dto_terreno.py con errante → "errante", guardián o rastreador → su valor, y jugador →
+None, citando FR-117. Agregá en tasks.md, en la tarea que crea la clase Cazador, una nota: "agregar el caso
+cazador → 'cazador' a la prueba de T037".
+
+**Uso de la respuesta:** `Logic/Enemigo.py` redefine `a_dto()` con `dataclasses.replace(super().a_dto(), comportamiento=self.ficha.comportamiento)`, sin tocar `ActorBase.a_dto()`. Se creó `tests/test_dto_terreno.py` con `test_h4_2_fr117_actor_dto_trae_el_comportamiento` (errante, guardián y rastreador traen su comportamiento; el jugador, `None`), sin skip. En `tasks.md` se marcaron T037 y T040 y se agregó en T024 la nota de sumar el caso del cazador a esa prueba.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 10 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Opus 5.5)
+
+En tasks.md, actualizá el texto de T037 para que describa la prueba tal como quedó: errante,
+guardián y rastreador traen su comportamiento y el jugador trae None, sin skip. El caso del
+cazador queda en la nota de T024. Commit: "tasks(001): actualizar descripción de T037",
+incluyendo PROMPTS_LLM.md.
+
+**Uso de la respuesta:** en `specs/001-terreno-cazador/tasks.md`, T037 describe la prueba como quedó: errante, guardián y rastreador traen su comportamiento y el jugador `None`, sin `skip`; el caso del cazador remite a la nota de T024.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 10 y miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude
+
+Le pedí a Claude revisar las ramas de Marco y Kristel junto con la constitución v1.2.0 y la spec 001, confirmar el contrato de datos (specs/001-terreno-cazador/contracts/contrato-datos.md) y hacer la tarea T001: agregar costo a SalidaDTO como último campo, de tipo int | None con None por defecto, leerlo en desde_diccionario y escribirlo en a_diccionario solo si no es None, con pruebas que citen FR-101.
+
+**Uso de la respuesta:** se usó en `DTO/SalaDTO.py` y `tests/TestDtos.py` (T001, FR-101). Revisé el cambio y corrí las pruebas: 355 OK y 31/31.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 10 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Sonnet 5.5)
+
+/speckit-specify Línea de tiempo de Cripta II. Usa exactamente el directorio specs/004-linea-tiempo y numera los requisitos con el prefijo FR-4xx (FR-401, FR-402, ...).
+
+Antes de escribir, lee .specify/memory/constitution.md (sobre todo los principios IX y X) y, del enunciado de la Parte II (Proyecto II parte.pdf): §3.6, §7.3 y el Apéndice B (sección «Línea de tiempo»). Escribe SOLO el QUÉ: reglas, historias de usuario, escenarios de aceptación y requisitos numerados. No nombres estructuras de datos, clases, módulos ni algoritmos; eso va en el plan.
+
+Capacidad: consultar, sin modificar la partida, el estado de la partida en cualquier instante pasado, desde el inicio. Es independiente del pergamino de retroceso, que sigue limitado a 5 acciones.
+
+Reglas:
+- Estado en el instante t: el estado tras ejecutar todos los eventos con tiempo menor o igual que t. Si a t le corresponde una decisión del jugador, es el estado justo antes de tomarla. Estas dos frases pueden dar estados distintos cuando hay eventos con el mismo tiempo; deja UNA sola marca [NEEDS CLARIFICATION] sobre eso y no la resuelvas.
+- Comandos en partida: «historia <t>» e «historia #k» (estado justo antes de la acción número k del jugador). Muestran como mínimo: reloj, sala del jugador, vida y estadísticas, inventario, efectos activos, enemigos de esa sala con su vida y el mapa conocido en ese momento. La consulta no consume tiempo virtual, no se registra como acción y no altera el estado del juego ni el historial de retroceso.
+- Consultar un instante posterior al reloj actual se rechaza.
+- Sin interacción: «--replay partida.log --hasta <t>» reproduce hasta t e imprime el mismo resumen, sin interfaz gráfica.
+- Las acciones revertidas con un pergamino dejan de existir en la línea de tiempo.
+- Se puede configurar con «--checkpoint-cada K» cada cuántas acciones del jugador se guarda una copia completa. Una consulta no puede requerir aplicar o deshacer cambios de más de K acciones del jugador. El valor por defecto de K se justificará en el plan con mediciones (no lo fijes aquí).
+- Guardar y cargar la partida conserva la línea de tiempo completa. Un archivo de partida de la primera parte se reporta como incompatible (o se migra de forma explícita); nunca se carga en silencio.
+
+Historias de usuario (con prioridad): consultar un instante en partida; consultar sin interacción con --hasta; mantener la línea correcta al usar el pergamino; conservar la línea al guardar y cargar.
+
+Escenarios de aceptación: incluye estos seis casos del Apéndice B, cada uno en formato Dado/Cuando/Entonces y con su requisito FR-4xx:
+1. historia <t> con t mayor que el reloj actual: se rechaza.
+2. historia después de usar un pergamino: no muestra las acciones revertidas.
+3. Varios eventos ocurren en el mismo instante t: historia <t> muestra el estado después de todos ellos (sujeto a la aclaración pendiente).
+4. historia no consume tiempo virtual, no se registra en partida.log y no modifica el historial de retroceso.
+5. --replay partida.log --hasta t con t posterior al final de la partida: muestra el estado final e indica que la partida terminó antes.
+6. Se carga un archivo de partida de la primera parte: se reporta la incompatibilidad de formato o se migra explícitamente; nunca se carga en silencio.
+
+Suposiciones y fuera de alcance: el cursor del inventario y los mensajes del juego no forman parte del estado consultable; «ir a» y el mapa conocido son de la spec 002 (el resumen incluye el mapa conocido cuando exista); la verificación de resolubilidad es de la spec 003.
+
+No escribas código ni crees archivos fuera de specs/004-linea-tiempo.
+
+**Uso de la respuesta:** se usó en `specs/004-linea-tiempo/spec.md` con los requisitos FR-401 a FR-423 y los 6 casos del Apéndice B como escenarios de aceptación
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 10 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code, modelo Claude Sonnet 5.5)
+
+Edita SOLO specs/004-linea-tiempo/spec.md (y checklists/requirements.md si algo de lo que menciona cambia). No toques la marca [NEEDS CLARIFICATION] de FR-402, no resuelvas esa aclaración y no escribas código. No nombres estructuras, clases ni módulos.
+
+1. SC-405: reemplázalo por: «Una consulta `historia` se contesta en menos de 50 ms en una partida de al menos 5 000 acciones del jugador, con el valor de K por defecto, medido con --bench (§6.3 de la Parte II).»
+2. Agrega NFR-402: la memoria total de la línea de tiempo crece con la cantidad de cambios ocurridos más una copia completa cada K acciones del jugador, y no con el producto de las acciones por el tamaño del estado (§5.5).
+3. Agrega NFR-403: al usar un pergamino, la línea de tiempo se recorta sin recorrer toda la historia (§5.5).
+4. Amplía NFR-401: las mediciones cubren al menos tres valores de K y la alternativa sin puntos de control, y justifican el valor por defecto (§5.5 y §6.3).
+5. Historia 3, escenario 1: corrígelo para que sea coherente con FR-404, FR-409 y FR-413. Tras revertir la acción 5 solo existen 4 acciones: `historia #5` se rechaza por rango, y consultar el instante actual muestra al jugador en la sala 7, no en la 9. Mantén la referencia al Apéndice B caso 2 y agrega FR-409 a los requisitos del escenario.
+6. Elimina FR-422 y el escenario 4 de la Historia 4. Amplía FR-421 para cubrir también «un archivo de una versión distinta a la actual». Actualiza todas las referencias y la tabla de trazabilidad.
+7. En Suposiciones agrega: «Se asume que cada paso de «ir a» es una acción ordinaria del jugador; se confirmará en la spec 002.»
+8. Al final verifica que no queden referencias a FR-422 y que ninguna cifra de rendimiento contradiga la tabla de §6.3 del enunciado. Dime qué cambiaste.
+
+**Uso de la respuesta:** se usó en `specs/004-linea-tiempo/spec.md`para corregir la spec 004: cifra de rendimiento según §6.3, escenario de pergamino incoherente, requisitos de memoria y recorte (NFR-402/403) y se eliminó FR-422
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude
+
+Le pedí a Claude revisar la spec 004 de Kristel (revisión cruzada: el integrante 2 revisa la del 3) contra el enunciado de la Parte II (§3.6, §5.5, §6.1 y Apéndice B «Línea de tiempo») y la constitución (principios IX y X), y redactar las observaciones. También le pedí preparar el prompt de /speckit-specify de mi spec 003 y revisar el resultado contra el enunciado, la constitución y el código de la primera parte (SalidaDTO, Mazmorra._igualar_caras y los códigos de salida de main.py) antes de cada paso.
+
+**Uso de la respuesta:** se usó para las observaciones de la revisión cruzada de `specs/004-linea-tiempo/spec.md` y para definir el prompt, las correcciones y las respuestas de clarify de `specs/003-resolubilidad/spec.md`.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-specify SPECIFY_FEATURE_DIRECTORY=specs/003-resolubilidad
+
+Verificación de resolubilidad de Cripta II. Usa exactamente el directorio specs/003-resolubilidad. Numera los requisitos funcionales FR-301, FR-302, …; los de rendimiento NFR-301, …; y los criterios de éxito SC-301, …. No empieces en 001.
+
+Antes de escribir, lee .specify/memory/constitution.md (sobre todo los principios IX y X) y, del enunciado de la Parte II (Proyecto II parte.pdf): §3.5, §4.2, §4.3, §5.4, §6.1 y el Apéndice B (sección «Resolubilidad»). Escribe SOLO el QUÉ: reglas, historias de usuario, escenarios de aceptación y requisitos numerados. No nombres estructuras de datos, clases, módulos ni algoritmos; eso va en el plan.
+
+Reglas (§3.5):
+- Antes de iniciar una partida, el programa determina si la cripta puede ganarse usando el esqueleto y la ubicación de las llaves.
+- Supuestos de la verificación: el jugador puede atravesar cualquier salida abierta y cualquier salida cerrada cuya llave ya obtuvo; las llaves no se consumen; todo enemigo puede ser derrotado; una llave que suelta un enemigo se considera obtenible en la sala donde ese enemigo inicia; las trampas y los cierres automáticos no bloquean, porque una puerta puede volver a abrirse con la misma llave. El costo de las salidas no afecta la verificación.
+- Resoluble: partiendo de la sala inicial y bajo esos supuestos, el jugador puede obtener llave_salida y llegar a sala_salida a través de una puerta que la requiere.
+- Si es resoluble, el resultado es un orden de obtención de llaves en el que cada llave aparece después de todas las llaves necesarias para alcanzarla. Si hay varios órdenes válidos, el resultado es determinista: la misma cripta produce siempre el mismo orden.
+- Si no es resoluble, el reporte incluye: las llaves que no pueden obtenerse; las puertas de la frontera bloqueada (las puertas cerradas adyacentes a la región alcanzable) con la llave que requiere cada una; dónde se encuentra cada una de esas llaves; y, si una llave está ubicada detrás de puertas que solo ella abre, directamente o mediante una cadena de llaves, el ciclo concreto. La detección del ciclo es determinista.
+- Si la cripta no es resoluble, la partida no inicia y se muestra el reporte, salvo que se use --forzar.
+- --verificar <cripta> ejecuta únicamente la verificación y muestra el reporte, sin instanciar la vista. Funciona también con --offline.
+
+Datos (§4.2, §4.3):
+- La ubicación de cada llave trae su id, la sala y, opcionalmente, la instancia de enemigo que la suelta; en ese caso la sala es donde ese enemigo inicia.
+- La consulta de ubicación de llaves cuenta dentro de presupuesto_solicitudes. Su respuesta es válida mientras coincida la versión de la cripta y puede persistirse con el resto de los datos de la cripta. En --offline se lee del paquete local.
+- Lo persistido por la primera parte se invalida con la validación de versión que ya existe, no borrando archivos a mano.
+
+Rendimiento (§5.4, §6.1):
+- La verificación tarda menos de 200 ms con la cripta publicada más grande.
+- El costo total crece aproximadamente de forma lineal con salas, salidas y llaves: obtener una llave no puede implicar repetir el recorrido completo de la cripta.
+- El reporte de una cripta no resoluble (frontera y dependencias entre llaves) sale del mismo recorrido, no de recorridos adicionales por cada llave.
+- --bench compara contra la alternativa de repetir el recorrido por cada llave, en criptas sintéticas deterministas por semilla con muchas llaves encadenadas.
+
+Historias de usuario (con prioridad): saber antes de jugar si la cripta es resoluble y en qué orden obtener las llaves; entender por qué una cripta no es resoluble; verificar una cripta sin jugar con --verificar; jugar de todas formas con --forzar.
+
+Escenarios de aceptación: incluye estos cuatro casos del Apéndice B, cada uno en formato Dado/Cuando/Entonces y con su FR-3xx, y una tabla «Trazabilidad del Apéndice B «Resolubilidad»» como la de la spec 001:
+1. llave_salida está detrás de la única puerta que ella misma abre: no resoluble; el reporte señala el ciclo.
+2. Una llave está en el campo suelta de un enemigo errante: la verificación la ubica en la sala inicial del enemigo.
+3. Existen varios órdenes válidos de obtención de llaves: dos ejecuciones producen el mismo orden.
+4. Cripta no resoluble sin --forzar: la partida no inicia y se muestra el reporte.
+Agrega además escenarios para: una cripta sin puertas cerradas; un ciclo formado por una cadena de dos llaves; --forzar con una cripta no resoluble; --verificar con una cripta resoluble y con una no resoluble. Cada requisito funcional debe tener al menos un escenario.
+
+Si algo no está definido en el enunciado (por ejemplo, una ubicación de llave con una sala o un enemigo que no existen, o llave_salida ausente de la lista de llaves), márcalo con [NEEDS CLARIFICATION] en lugar de inventarlo.
+
+Fuera de alcance: cómo se dibuja el reporte en la interfaz gráfica (integrante 3); el costo de las salidas y el cazador (spec 001); el mapa conocido y «ir a» (spec 002); la línea de tiempo (spec 004).
+
+No escribas código ni crees archivos fuera de specs/003-resolubilidad.
+
+**Uso de la respuesta:** se usó para crear `specs/003-resolubilidad/spec.md` y `specs/003-resolubilidad/checklists/requirements.md` (FR-301 a FR-322, NFR-301 a NFR-304, SC-301 a SC-308). Dejó 3 marcadores [NEEDS CLARIFICATION] (FR-305, FR-321 y FR-322). Claude Code borró `.specify/feature.json` por la última instrucción del prompt; lo volví a crear a mano (es local y está en el .gitignore).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Respuestas y correcciones para specs/003-resolubilidad/spec.md. Edita SOLO ese archivo y checklists/requirements.md. No escribas código ni nombres estructuras, clases, módulos ni algoritmos. Registra las tres respuestas en una sección «Clarificaciones» → «Sesión 2026-11-11», con el formato «P: … → R: …», como en las specs 001 y 004, y quita los tres [NEEDS CLARIFICATION].
+
+1. FR-305 (P1 → A): el orden incluye todas las llaves obtenibles de la cripta, no solo las necesarias para ganar. Ajusta el caso borde «Una llave obtenible pero innecesaria para ganar».
+
+2. FR-321 (P2):
+   - Una llave que requiere alguna puerta (incluida llave_salida) y que no aparece en la lista de ubicaciones es no obtenible: aparece en el reporte con la indicación «sin ubicación». No es un error de datos, porque el servicio publica criptas no resolubles (§4.3).
+   - Una ubicación cuya sala no existe en el esqueleto es un error de datos: se informa con contexto (qué llave y qué sala), la verificación no concluye y tiene el mismo efecto que FR-320 (la partida no inicia salvo con --forzar). El programa no se cae.
+   - La instancia de enemigo de una ubicación no se valida en la verificación, porque comprobarla exigiría descargar el contenido de salas (FR-301); se usa la sala que trae la ubicación.
+   Ajusta el escenario H2-6 para que cubra los tres casos por separado.
+
+3. FR-322 (P3 → A): si ninguna puerta hacia sala_salida requiere llave_salida, la cripta no es resoluble. Motivo: en la primera parte (P1 §2.12) la victoria exige entrar a sala_salida después de abrir con la llave correspondiente la puerta que da acceso a ella, así que esa cripta no se puede ganar. El reporte DEBE indicar ese motivo de forma explícita. Ajusta H1-2 (cripta sin ninguna puerta cerrada → no resoluble, con ese motivo) y el caso borde correspondiente.
+
+4. Puertas de dos caras: agrega a FR-302 que una puerta es una sola para las dos salas que une: si solo una de sus caras declara que está cerrada o qué llave requiere, eso vale para las dos, igual que en la primera parte. Corrige el supuesto «Una salida cerrada que no declara llave…» para que diga «que no declara llave en ninguna de sus caras». Agrega en la Historia 1 un escenario donde la llave de una puerta está declarada solo en una cara.
+
+5. FR-308: define la frontera bloqueada como las salidas cerradas que van desde una sala de la región alcanzable hacia una sala fuera de ella. Una salida sin vuelta que solo va de afuera hacia adentro no es frontera. Ajusta también la entidad «Frontera bloqueada».
+
+6. FR-310: en lugar de «señalar al menos uno», exige que cada llave no obtenible que forma parte de un ciclo aparezca en al menos un ciclo señalado, sin repetir ciclos y en un orden determinista. Las llaves que solo dependen de un ciclo (H2-4) se listan junto con el ciclo del que dependen.
+
+7. En Supuestos, cambia «se trata como una cripta no resoluble para efectos de iniciar la partida» por «el programa informa que la verificación no concluyó (no que la cripta sea no resoluble); para iniciar la partida, solo --forzar permite jugar (FR-320)».
+
+8. Actualiza la tabla de cobertura y el checklist. Al final dime qué cambiaste y confirma que no queda ningún [NEEDS CLARIFICATION] ni ningún FR-0xx.
+
+**Uso de la respuesta:** se usó en `specs/003-resolubilidad/spec.md` para responder las 3 aclaraciones (FR-305, FR-321, FR-322), agregar los escenarios H1-10, H2-7 y H2-8, y corregir FR-302 (dos caras), FR-308 (frontera), FR-309, FR-310 (ciclos) y los supuestos.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-clarify
+
+Respuestas a las 4 preguntas:
+1. Si las dos caras de una misma puerta se contradicen (llaves distintas, o una cerrada y la otra abierta), ¿qué hace la verificación? → «A, solo llaves distintas»
+2. Si la lista de ubicaciones trae la misma llave más de una vez, con salas distintas, ¿cómo se trata? → «A, una vez en orden»
+3. ¿--verificar devuelve un código de salida distinto según el resultado? → «0 resoluble, 3 no, 1 error»
+4. ¿La verificación se ejecuta también al cargar una partida guardada o con --replay? → «A»
+
+**Uso de la respuesta:** se usó en `specs/003-resolubilidad/spec.md`: 4 aclaraciones nuevas en «Sesión 2026-11-11», los escenarios H1-11, H1-12, H2-9 y H4-4, y cambios en FR-301, FR-302, FR-305, FR-309, FR-314, FR-316 y SC-308.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Ajuste final en specs/003-resolubilidad/spec.md (edita SOLO ese archivo y su checklist; sin código ni nombres de clases):
+
+1. Mi respuesta a la pregunta de las dos caras fue «A, solo llaves distintas», y quedó registrada con más alcance. Corrige la aclaración, FR-302 y el caso borde «Las dos caras de una puerta se contradicen»: solo es error de datos cuando las dos caras declaran llaves distintas. El caso «una cara cerrada y la otra explícitamente abierta» no existe en los datos: como en la primera parte, «cerrada» ausente, null o false significan lo mismo (la cara no declara cierre). Quítalo de esos tres lugares.
+
+2. En FR-302, reemplaza la regla de una sola cara por la de la primera parte: si una cara declara la llave que requiere y la otra no declara ninguna llave, la llave, el estado cerrado y el cierre automático de la primera valen para las dos. Si ninguna de las dos caras declara llave, cada cara se rige por lo que declara: una cara cerrada sin llave no puede atravesarse en ese sentido. Ajusta igual el caso borde «Una puerta declara cierre o llave solo en una de sus caras» y el supuesto «Una salida cerrada que no declara llave…». El escenario H1-10 no cambia.
+
+3. En la aclaración de los códigos de salida y en FR-314, agrega que el código 2 sigue reservado para los argumentos inválidos, como en la primera parte, así que --verificar no lo usa para ningún veredicto.
+
+4. Actualiza la tabla de cobertura si cambia algo y dime exactamente qué líneas modificaste. Confirma que no queda ningún [NEEDS CLARIFICATION] ni ningún FR-0xx.
+
+**Uso de la respuesta:** se usó en `specs/003-resolubilidad/spec.md` para limitar el error de datos de las dos caras a llaves distintas, alinear la regla de una sola cara de FR-302 con la de la primera parte (`_igualar_caras`) y reservar el código de salida 2 para argumentos inválidos (FR-314).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+En specs/001-terreno-cazador/contracts/contrato-datos.md quitá la marca "Propuesto — pendiente de confirmar con integrante 2": Dereck lo confirmó tal como está el 11 nov. Anotalo en el plan si lo menciona. Commit: "plan(001): contrato de datos confirmado con integrante 2", con PROMPTS_LLM.md.
+
+**Uso de la respuesta:** se usó en `specs/001-terreno-cazador/contracts/contrato-datos.md` y `specs/001-terreno-cazador/plan.md` para marcar el contrato de datos como confirmado con el integrante 2 el 11 de noviembre; la parte de `ActorDTO` y `ArmadorEstado` sigue pendiente con el integrante 3.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+En spec.md, ampliá FR-122: los costos inválidos o distintos entre las dos caras se detectan con el
+esqueleto, antes de iniciar, y la partida no inicia. Una ficha de cazador con rango ausente o
+inválido puede llegar durante la partida con la precarga: si llega antes de iniciar, la partida no
+inicia; si llega durante la partida, la partida se detiene con un error de datos que indica la ficha
+y el campo, sin que el programa se caiga. Registralo en Clarificaciones (pregunta de Dereck, 11 nov).
+Agregá el escenario de aceptación correspondiente. Commit solo de spec.md:
+"spec(001): FR-122 para fichas inválidas que llegan durante la partida".
+
+**Uso de la respuesta:** commit `f0640c4`. Se amplió FR-122 en `specs/001-terreno-cazador/spec.md` (detección de costos con el esqueleto y fichas de la precarga), se agregó la sesión 2026-11-11 de Clarificaciones con la pregunta de Dereck, el escenario H2-9 y se ajustó el caso borde «Datos inválidos».
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-analyze
+
+**Uso de la respuesta:** análisis de solo lectura de `spec.md`, `plan.md` y `tasks.md` de la feature 001. Encontró que H2-9 no tenía prueba (Principio X), que nadie se encargaba de detener la partida ante una ficha inválida de la precarga (hoy `precargar_alrededor` atrapa `ErrorRed` y sigue), que T002, T050, el contrato y el plan seguían diciendo «la partida no inicia» en todos los casos, dos ambigüedades (qué significa «se detiene» y en qué momento) y marcas de estado desactualizadas (T001, T039, «Propuesto»).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit.clarify Resolver A1 y A2 de FR-122 con esta regla:
+Si una ficha de cazador con rango ausente o inválido llega con la precarga, Data la rechaza como
+error de formato (distinto del error de red) y esa sala queda sin contenido cargado. La partida se
+detiene en el momento determinista en que el jugador intenta entrar a esa sala: el movimiento no se
+ejecuta, no consume tiempo, no se registra en partida.log, y la partida termina con un error de
+datos que indica la ficha y el campo, sin puntaje y sin que el programa se caiga. --replay termina
+en ese mismo punto con un código de salida distinto de 0; --verificar no se ve afectado.
+Mientras el jugador no entre a esa sala, la partida sigue: el cazador no se activa (FR-123).
+Actualizá FR-122, H2-9 y el caso borde. Agregá "(ampliada en la sesión 2026-11-11)" a la respuesta
+de la pregunta 4 de la sesión 11-09 (I5).
+Commit solo de spec.md: "spec(001): FR-122 determinista para fichas inválidas de la precarga".
+Mostrame el cambio antes del commit.
+
+Respuesta a la pregunta de Claude (el movimiento fallido no se registra, así que --replay no llegaría al error): «Marca de cierre en el log».
+
+**Uso de la respuesta:** commit `f60ec7a`. En `specs/001-terreno-cazador/spec.md` se agregó la aclaración del momento determinista y de `--replay` / `--verificar`, y se actualizaron FR-122, H2-9 y el caso borde. Para que `--replay` llegue al error sin registrar el movimiento como acción, `partida.log` termina con una marca de cierre con el movimiento intentado.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Aplicá los hallazgos del último analyze, sin tocar spec.md:
+- I1: separar en T002, T050, contrato-datos.md (Validación) y plan.md los dos efectos de FR-122:
+  esqueleto → la partida no inicia; ficha de la precarga → se detiene al intentar entrar a esa sala.
+- C1: agregar la tarea de prueba test_h2_9_fr122_ficha_invalida_detiene_al_entrar, a mi cargo, usando
+  una fuente de prueba que devuelva un error de formato para esa sala.
+- E1: agregar tareas de coordinación: integrante 2 (Data distingue error de formato de error de red)
+  e integrante 3 (Service termina la partida ante ese error). Anotarlo en la tabla de dependencias.
+- I2: agregar H2-9 a la tabla de pruebas del plan.
+- I3: quitar "Propuesto" en data-model.md y research.md.
+- I4: marcar T001 y T039; actualizar la fila de ActorDTO (solo queda T038 pendiente).
+- I6: agregar "campo (rango)" al contexto mínimo del mensaje. I7: quitar la fecha límite vieja.
+- E2: en T014, indicar que equipar, recoger, soltar y abrir quedan cubiertos por las pruebas de P1.
+Commit: "plan(001): FR-122 en plan, contrato y tareas tras analyze", incluyendo PROMPTS_LLM.md.
+
+**Uso de la respuesta:** se usó en `tasks.md` (T002, T014 y T050 corregidas; T001 y T039 marcadas; tareas nuevas T052 y T053 de coordinación con los integrantes 2 y 3, y T054 con la prueba de H2-9), `plan.md` (dos efectos de FR-122, tabla de pruebas con H2-9, dependencias y estado de `ActorDTO`), `contracts/contrato-datos.md` (efectos de FR-122, campo `rango` en el mensaje y sin la fecha límite vieja), `data-model.md` y `research.md` (contrato confirmado).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-analyze
+
+**Uso de la respuesta:** segunda pasada de análisis de la feature 001. Los hallazgos anteriores quedaron resueltos; encontró que T052 y T053 modificaban código de P1 (Data y Service) sin justificarlo en la tabla de cambios del plan (Principio III), que cambiaban decisiones de P1 sin antes y después en `DECISIONES.md`, y que T052 no definía qué pasa con las otras salas del lote ni cómo se recuerda el rechazo. Llevó a simplificar FR-122.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit.clarify Simplificar FR-122 para fichas de la precarga (Principio III, KISS): si una ficha de
+cazador con rango ausente o inválido llega con la precarga, Data la rechaza con un error de datos que
+indica la ficha y el campo, y no la vuelve a pedir. Esa sala queda como contenido no disponible: si
+el jugador intenta entrar, el movimiento se rechaza con ese mensaje, sin consumir tiempo ni
+registrarse en partida.log, y la partida sigue. Esto reemplaza la regla de detener la partida y la
+marca de cierre en el log. Los costos inválidos del esqueleto siguen impidiendo iniciar.
+Actualizá FR-122, H2-9, el caso borde y Clarificaciones (motivo: evitar cambiar el formato del log y
+el replay de P1). Commit solo de spec.md: "spec(001): FR-122 simplificado para fichas de la precarga".
+Mostrame el cambio antes del commit.
+
+Respuesta a la pregunta de Claude sobre la ficha que llega antes de iniciar: Limitalo: "si la ficha inválida es de un cazador de la sala inicial, la partida no inicia; para
+cualquier otra sala, esa sala queda como contenido no disponible", llegue antes o durante la partida.
+Después hacé el commit solo de spec.md: "spec(001): FR-122 simplificado para fichas de la precarga".
+
+**Uso de la respuesta:** commit `31f8719`. En `specs/001-terreno-cazador/spec.md` se reemplazó la regla de detener la partida y la marca de cierre por la de «contenido no disponible»: entrar a esa sala se rechaza con el error de datos y la partida sigue; solo una ficha inválida de la sala inicial impide iniciar. Se actualizaron FR-122, H2-9, el caso borde y Clarificaciones (las dos respuestas anteriores quedaron marcadas como reemplazadas).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Alinear plan, contrato y tareas con el FR-122 simplificado: quitar la marca de cierre y todo cambio
+a partida.log, ServicioReplay y main.py. Reducir T052 a "Data rechaza la ficha con error de datos
+con contexto (ficha, campo), distinguible del error de red, recuerda el rechazo por sala sin gastar
+otra solicitud, y solo esa sala queda sin contenido". Reducir T053 a "Service muestra ese error de
+datos al rechazar el movimiento, en lugar del mensaje de red". Ajustar T054 a "intentar entrar a esa
+sala se rechaza con el mensaje y la partida sigue". En la tabla de cambios a código P1, una fila
+para Data (T052, integrante 2) y una para Service (T053, integrante 3), ambas con FR-122.
+Ajustar quickstart.md. Commit: "plan(001): FR-122 simplificado en plan, contrato y tareas",
+con PROMPTS_LLM.md.
+
+**Uso de la respuesta:** se usó en `tasks.md` (T002, T050, T052, T053 y T054 con la regla simplificada; la prueba pasa a llamarse `test_h2_9_fr122_ficha_invalida_rechaza_entrar`), `plan.md` (efectos de FR-122, filas de Data y Service en la tabla de cambios a P1, «No se tocan» con `partida.log`, `ServicioReplay` y `main.py`, dependencias), `contracts/contrato-datos.md` (efectos de FR-122) y `quickstart.md` (paso de datos inválidos).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit.implement Implementar T003 y la fase 2 (hasta su punto de control), en el orden de tasks.md.
+Saltar T002, que es del integrante 2. Pruebas antes del código cuando la tarea lo indique.
+Un commit por tarea: "feat(001): T0xx descripción [FR-…]", incluyendo PROMPTS_LLM.md en el primero.
+Después de cada tarea, correr tests/correr_pruebas.py; si algo queda en rojo, detenerse y mostrarme
+el error. En el punto de control de la fase 2, detenerse y mostrarme un resumen. No hacer push.
+
+**Uso de la respuesta:** se implementaron T003 (`tests/ayudas_terreno.py`) y la fase 2 de `specs/001-terreno-cazador/tasks.md`: la prueba `tests/test_mazmorra_costos.py` (T004) y el costo por salida en `Logic/Mazmorra.py` (T005 a T007), un commit por tarea.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit.implement Implementar la fase 3 (Historia 1, T008 a T014), en el orden de tasks.md.
+Pruebas antes del código. El rojo esperado de TDD está bien; detenete solo si falla una prueba que
+ya existía antes de esta fase. Un commit por tarea: "feat(001): T0xx descripción [FR-…]".
+Cada cambio a código de la primera entrega debe coincidir con su fila en la tabla de cambios a P1
+del plan; si necesitás tocar algo que no está en esa tabla, detenete y avisame antes.
+Al terminar la fase, correr tests/correr_pruebas.py y mostrarme un resumen. No hacer push.
+
+**Uso de la respuesta:** commits `554cbf7` a `8bb7c08`. Pruebas de los escenarios H1-1 a H1-8 y de errante, rastreador y guardián con costos (T008, T009) en `tests/test_terreno_cazador.py`; `mover_jugador` paga el costo de la salida (T010); `Comportamiento.decidir_paso` y `Errante.decidir_paso` con el mismo sorteo de P1 (T011, T012); `turno_enemigo` programa con el costo de la salida (T013); verificación sin regresiones de P1 (T014).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit.implement Fase 4 de specs/001-terreno-cazador/tasks.md (T015–T026 y T054).
+
+Orden dentro de la fase, si las dependencias de tasks.md lo permiten:
+1. Primero T021 (FichaEnemigoDTO.rango: int | None = None, último campo).
+2. Después la cola de prioridad y la búsqueda de ruta según contracts/busqueda-rutas.md
+   (recibe el grafo como parámetro, solo salidas abiertas, costo ya igualado,
+   desempate por menor id).
+3. Al final la clase Cazador en COMPORTAMIENTOS, y agregá el caso del cazador
+   a test_h4_2_fr117_actor_dto_trae_el_comportamiento (nota de T024).
+4. T054 queda con skipTest hasta que exista T052 (integrante 2); dejá el motivo en el skip.
+
+Reglas:
+- Constitución v1.2.0: sin dict, set, heapq, bisect, collections ni copy en código del juego;
+  sin sorted()/list.sort() en ordenamientos evaluados. Type hints y docstring breve.
+- No toques código de la primera entrega fuera de lo que justifica la tabla
+  "Cambios a código de la primera entrega" de plan.md. Si hace falta algo más, pará y avisame.
+- Un commit por tarea o grupo pequeño, con el ID y los FR en el mensaje.
+- tests/correr_pruebas.py en verde antes de cada commit; las 383 pruebas actuales no se modifican.
+- No hagas push.
+- Al terminar: lista de commits, total de pruebas y cualquier desvío del plan.
+
+**Uso de la respuesta:** commits `6e147e8` a `f000aa2`. `FichaEnemigoDTO.rango` como último campo (T016, T021); `Estructuras/MonticuloMinimo.py` (T015, T020); `Logic/GrafoEsqueleto.py` y `Logic/BusquedaCostoMinimo.py` con `paso_desde_cero` (T017, T022, T023); la clase `Cazador`, `self.grafo` en `Motor.__init__` y el caso del cazador en `test_h4_2` (T018, T019, T024, T025); la prueba de H2-9 con `skipTest` hasta T052 y T053 (T054); verificación (T026). Quedaron 431 pruebas en verde y 1 omitida.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-analyze
+
+**Uso de la respuesta:** tercera pasada de análisis de la feature 001, después de implementar las fases 1 a 4. Encontró que faltaban estas tres entradas en `PROMPTS_LLM.md` (Principio XI), que T021 no coincide con la posición real de `rango`, que la tabla de cambios a P1 no menciona dos importaciones nuevas, y detalles sin documentar de la búsqueda (`_asegurar_tamano`, casos que devuelven `None` o lanzan `ValueError`, uso de `Mazmorra._existe`).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Miércoles 11 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+que recomeindas para corregirlos
+
+Respuesta tras la propuesta de Claude: Sí, aplicalo así en un solo commit, con U3 como lo propusiste (sin existe_sala() público).
+Agregá la entrada en PROMPTS_LLM.md. Corré tests/correr_pruebas.py antes del commit. No hagas push.
+
+**Uso de la respuesta:** se corrigieron los hallazgos menores del tercer `/speckit-analyze` sin tocar código: T021 dice que `rango` es el último campo (I1); `data-model.md` y una nota en T032 explican que los arrays de la búsqueda solo crecen (U1); la tabla de cambios a P1 del plan menciona las importaciones nuevas (I2); la tabla de pruebas incluye `GrafoEsqueleto` (I3); el contrato y `data-model.md` documentan los casos que devuelven `None` o lanzan `ValueError` (U2); T022 justifica el uso de `mazmorra._existe()` (U3).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude
+
+Le pedí a Claude revisar las ramas de Marco y Kristel (pruebas, cambios y si las podía jalar), el Estado_001 de Marco y el plan y el contrato de la línea de tiempo de Kristel, y redactar las respuestas para cada uno. También le pedí preparar el prompt de /speckit-specify de mi parte de la spec 002 (mapa conocido y antorcha) y revisar el resultado contra el enunciado (§3.3, §5.3, §6.1 y Apéndice B), la constitución y el código de la primera parte (puertas de dos caras en Mazmorra) antes de cada paso.
+
+**Uso de la respuesta:** se usó para jalar las ramas de Marco y Kristel a derek, para los mensajes de coordinación (contrato de datos, T052, contrato de la línea de tiempo y reparto de FR-2xx) y para definir el prompt, las correcciones y la respuesta de clarify de `specs/002-niebla-ir-a/spec.md`.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-specify SPECIFY_FEATURE_DIRECTORY=specs/002-niebla-ir-a
+
+Niebla de guerra y mapa conocido de Cripta II (parte del integrante 2). Usa exactamente el directorio specs/002-niebla-ir-a. Puedes crear o actualizar .specify/feature.json (es local y está en el .gitignore); fuera de eso, no crees archivos fuera de specs/002-niebla-ir-a ni escribas código.
+
+Numeración: esta spec la comparten dos integrantes. Esta parte (mapa conocido y antorcha) usa FR-201 a FR-249, NFR-201 a NFR-249 y SC-201 a SC-249. El rango FR-250 a FR-299 (y NFR/SC 250 a 299) queda reservado para «ir a», que escribe el integrante 3 en otro commit: deja una sección «Viaje automático «ir a» (§3.4) — FR-250 a FR-299: pendiente, la escribe el integrante 3» sin inventar requisitos. No empieces en 001.
+
+Antes de escribir, lee .specify/memory/constitution.md (sobre todo los principios IX y X), specs/004-linea-tiempo/spec.md (FR-405 y FR-420, que usan el mapa conocido) y, del enunciado de la Parte II (Proyecto II parte.pdf): §3.3, §5.3, §6.1, §6.3 y el Apéndice B (sección «Niebla de guerra e «ir a»»). Escribe SOLO el QUÉ: reglas, historias de usuario, escenarios de aceptación y requisitos numerados. No nombres estructuras de datos, clases, módulos ni algoritmos.
+
+Reglas (§3.3):
+- Para el jugador, cada sala está en uno de tres estados. Explorada: el jugador entró a ella al menos una vez; la sala inicial está explorada desde el instante 0; el jugador conoce su nombre, sus salidas, el costo de cada salida y el estado de sus puertas según la última observación. Avistada: no está explorada, pero es destino de una salida de una sala explorada; el jugador solo sabe que existe una sala detrás de esa salida. Desconocida: ninguna de las anteriores; el jugador no sabe nada.
+- Memoria de puertas: el jugador observa una puerta cuando está en cualquiera de las dos salas que conecta. El mapa recuerda el estado de cada puerta tal como estaba en su última observación, aunque haya cambiado después (por ejemplo, una puerta con cierre automático puede figurar abierta en el mapa y estar cerrada en realidad). Al volver a observarla, el mapa se actualiza.
+- Antorcha (P1 §2.7): mientras esté encendida, al entrar a una sala también quedan exploradas todas sus vecinas, a través de cualquier salida, abierta o cerrada. Explorar una vecina de esta forma revela su nombre y sus salidas, no su contenido, y no activa sus enemigos ni sus trampas.
+- Separación entre mapa y conocimiento: el programa sigue descargando el esqueleto completo, y la precarga y el cazador pueden usarlo (es infraestructura). Todo lo que la vista muestra y todo lo que usa «ir a» se deriva exclusivamente del conocimiento del jugador.
+- El conocimiento del jugador es estado del juego: se guarda en el archivo de partida (al cargar, el mapa es idéntico al guardado), se revierte con el pergamino de retroceso (incluidas las salas exploradas por la antorcha y las puertas observadas en la acción revertida) y forma parte de la línea de tiempo (el resumen de historia de la spec 004 muestra el mapa conocido de ese instante).
+- La interfaz ofrece un comando para ver el mapa conocido: salas exploradas (con sus salidas, costos y el estado recordado de sus puertas) y salas avistadas. Nunca muestra salas desconocidas ni información que el jugador no conoce.
+- La misma partida (misma cripta, semilla y acciones) produce el mismo mapa conocido, también con --replay.
+
+Rendimiento (§5.3, §6.1, §6.3):
+- Consultar si una sala está explorada, avistada o desconocida, y consultar el estado recordado de una puerta, son operaciones frecuentes (en cada vista, en cada paso de «ir a» y en cada actualización por antorcha): su costo no debe depender del tamaño del mapa conocido ni de la cripta.
+- Explorar nuevas salas cuesta proporcionalmente a las salas reveladas, no al tamaño del mapa conocido.
+- Registrar e invertir un cambio del mapa (para el pergamino y la línea de tiempo) cuesta proporcionalmente a lo que cambió.
+- --bench mide las consultas al mapa conocido y la exploración con antorcha, en criptas sintéticas deterministas por semilla de al menos tres tamaños (Principio VIII).
+
+Historias de usuario (con prioridad): el jugador solo ve lo que ha explorado; recuerda las puertas como las vio por última vez; la antorcha explora las vecinas; el mapa se guarda, se revierte y se consulta en la línea de tiempo; el jugador consulta su mapa con un comando.
+
+Escenarios de aceptación: incluye, en formato Dado/Cuando/Entonces y con su FR-2xx, estos casos del Apéndice B:
+1. Con la antorcha encendida, entrar a una sala explora sus vecinas sin activar sus enemigos ni sus trampas.
+2. Un pergamino revierte una entrada con la antorcha encendida: las salas exploradas por la antorcha vuelven a su estado anterior.
+3. El mapa recuerda abierta una puerta que en realidad está cerrada: al observarla, el mapa se actualiza (la parte de «la ruta se recalcula y el viaje se detiene» es de «ir a», FR-25x).
+Agrega además escenarios para: la sala inicial explorada en el instante 0 y sus vecinas avistadas; una puerta con cierre automático que figura abierta en el mapa y está cerrada en realidad; la antorcha apagada no explora vecinas; la antorcha explora a través de una salida cerrada; guardar y cargar conserva el mapa; el pergamino revierte la observación de una puerta; el comando de ver el mapa no muestra salas desconocidas; --replay produce el mismo mapa. Cada requisito funcional debe tener al menos un escenario.
+
+Incluye una tabla «Trazabilidad del Apéndice B «Niebla de guerra e «ir a»»» con los 6 casos: los 2 de la antorcha y el pergamino (con sus escenarios), el de la puerta recordada abierta (la parte del mapa aquí; la de la ruta, «pendiente FR-25x, integrante 3») y los otros 3 («ir a» a una sala no explorada, «ir a» que entra a una sala con enemigos dormidos, un pergamino durante un viaje) marcados «pendiente FR-25x, integrante 3».
+
+Si algo no está definido en el enunciado, márcalo con [NEEDS CLARIFICATION] en lugar de inventarlo. En particular: (a) al explorar una vecina con la antorcha, ¿el jugador conoce el estado de las puertas de esa vecina, si nunca estuvo en ella?; (b) encender la antorcha estando ya en una sala, ¿explora las vecinas de esa sala o solo al entrar a la siguiente?; (c) una sala que solo es destino de una salida sin vuelta, ¿queda avistada?
+
+Fuera de alcance: «ir a» (FR-250 a FR-299, integrante 3); cómo se dibuja el mapa en la interfaz (integrante 3); el costo de las salidas y el cazador (spec 001); la línea de tiempo en sí (spec 004).
+
+**Uso de la respuesta:** se usó para crear `specs/002-niebla-ir-a/spec.md` y `specs/002-niebla-ir-a/checklists/requirements.md` con mi parte (FR-201 a FR-224, NFR-201 a NFR-205, SC-201 a SC-206) y la sección de «ir a» reservada para el integrante 3. Dejó 3 marcadores [NEEDS CLARIFICATION] (FR-204, FR-212 y FR-215).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Respuestas y correcciones para specs/002-niebla-ir-a/spec.md. Edita SOLO ese archivo y su checklist; sin código ni nombres de estructuras, clases o módulos. Registra las respuestas en una sección «Clarificaciones» → «Sesión 2026-11-12», con el formato «P: … → R: …», como en las specs 001, 003 y 004, y quita los tres [NEEDS CLARIFICATION]. Todo lo que escribas en la spec, en español.
+
+1. FR-212 (Q1 → A): las puertas de una vecina explorada con la antorcha que el jugador nunca observó figuran «sin observar» (estado desconocido) hasta que esté en una sala que tenga una cara de esa puerta; la puerta de la salida por la que es vecina sí se observa, porque el jugador está en la otra sala (FR-207). Una puerta «sin observar» no es una puerta recordada abierta (dato que usará «ir a», FR-25x). Ajusta FR-205 (el estado de cada puerta según la última observación, o «sin observar» si nunca se observó), FR-219 (el comando muestra las puertas sin observar como tales) y el escenario H3-6.
+
+2. FR-215 (Q2 → A): la antorcha solo tiene efecto al entrar a una sala (§3.3: «al entrar a una sala»); encenderla estando ya en una sala no cambia el mapa conocido. Ajusta H3-7.
+
+3. FR-204 (Q3 → C): X sigue desconocida. En la primera parte, una puerta con vuelta tiene una cara en cada una de las dos salas que conecta y es la misma puerta; una salida sin vuelta solo existe como salida de la sala de la que sale. Regla: el jugador observa las puertas que tienen una cara en la sala donde está; así, una puerta con vuelta se observa desde cualquiera de sus dos salas (§3.3) y una salida sin vuelta solo desde la sala de la que sale. Si se observara desde la otra sala, el jugador sabría que existe una sala desconocida (contradice FR-206). Ajusta FR-204, FR-207, el escenario H2-4 (la puerta de la salida sin vuelta de A hacia F se observa desde A, no desde F) y el caso borde «Puerta en una salida sin vuelta».
+
+4. En «Convenciones de los ejemplos», cambia «Puede tener puerta o no» por: «Toda salida tiene una puerta, abierta o cerrada (P1); en una salida con vuelta, las dos caras son la misma puerta».
+
+5. FR-220: confírmalo como requisito y regístralo en Clarificaciones (P: ¿ver el mapa conocido consume tiempo o cuenta como acción? → R: No; es una consulta, como historia en la feature 004: no consume tiempo, no es acción, no se registra en partida.log y no modifica el historial de retroceso). Quita esa suposición de «Suposiciones».
+
+6. SC-206: la cripta de referencia todavía no está publicada (§6.1). Cámbialo a «medido con --bench en una cripta sintética determinista con decenas de enemigos activos y la antorcha encendida». NFR-205 se mantiene.
+
+7. Actualiza la tabla de cobertura, las tablas de trazabilidad y el checklist. Al final dime exactamente qué cambiaste y confirma que no queda ningún [NEEDS CLARIFICATION], que no hay ningún FR-0xx y que todos los FR, del FR-201 al FR-224, tienen al menos un escenario.
+
+**Uso de la respuesta:** se usó en `specs/002-niebla-ir-a/spec.md` para responder las 3 aclaraciones (puertas «sin observar» de una vecina explorada con la antorcha, la antorcha solo al entrar y la regla de las caras para las salidas sin vuelta), confirmar FR-220 y corregir las convenciones y SC-206.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-clarify
+
+Respuesta a la única pregunta:
+1. Si dos salidas de salas exploradas llevan a la misma sala avistada, ¿sabe el jugador que es la misma sala? → «A» (no: cada salida hacia una sala avistada se muestra por separado, sin identificador, hasta que se explora).
+
+**Uso de la respuesta:** se usó en `specs/002-niebla-ir-a/spec.md`: una aclaración nueva en «Sesión 2026-11-12», cambios en FR-204 y FR-219, el escenario nuevo H5-5 y un caso borde.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Revisión cruzada de la spec 001 hecha por la integrante 3. Aplicá las correcciones en dos commits:
+
+Commit 1, spec(001): correcciones tras revisión cruzada
+- Escenarios nuevos para FR-119, FR-120, FR-121, FR-123, FR-122 (costo inválido o distinto entre caras;
+  ficha inválida en la sala inicial), FR-118 (--verificar y --bench), FR-104 (rastreador y guardián),
+  FR-108 (puertas con llave y cierre automático), FR-103 (todas las acciones que no son mover) y FR-115.
+  Cada uno en la tabla de trazabilidad.
+- FR-117 observable: junto al nombre de cada enemigo se muestra su comportamiento en texto, y el cazador
+  lleva un marcador visual propio. FR-116: el costo se muestra junto a cada salida, también si está cerrada.
+- Fuera de alcance: FR-118 depende de la spec 004 (--replay --hasta) y de la 003 (--verificar); la 002
+  reutiliza la búsqueda de rutas.
+- Quitar las respuestas "Reemplazada" de Clarificaciones.
+- FR-114: mencionar que el pergamino de retroceso puede deshacer movimientos o puertas.
+- Marcar como "decisión del grupo": igualar el costo de las dos caras, rango pequeño 200, SC-105,
+  1000 salas y 30 cazadores, y la regla del rastreador con salidas repetidas.
+- FR-108: escribir qué pasa si una puerta se cierra en el mismo instante que el turno del cazador,
+  según el orden que el motor YA aplica (revisá el código; no inventes la regla).
+- Formato: línea 194 "escenario 2.1" pasa a H2-1; caso 6 cita FR-102; frase cortada en "Datos inválidos";
+  orden FR-116..FR-123; citar P1 §2.6 en Fuente; desmarcar el checklist hasta que esté cubierto.
+
+Commit 2, test(001): pruebas de los escenarios nuevos
+- Para cada escenario nuevo: si ya existe una prueba que lo cubre, solo agregá el ID del escenario al
+  docstring. Escribí pruebas nuevas solo para las que falten.
+- FR-118 --verificar/--bench: dejalas con skipTest y el motivo (spec 003 / fase 7).
+- También T036 (test_h4_1_fr116...) sin skip, porque T038 ya está integrada; marcá T038 en tasks.md.
+
+Antes de cada commit, suite en verde. Entrada en PROMPTS_LLM.md. No hagas push.
+Al final: tabla escenario → prueba y la lista de lo que quedó con skip.
+
+Respuesta a la pregunta de Claude (T038 no estaba en la rama Marco, solo en origin/kris y origin/derek):
+Cherry-pick solo 888d763.
+
+**Uso de la respuesta:** se trajo T038 con un cherry-pick de `888d763` (commit de Kris, `89efa22` en Marco). Commit `fa52f5a` (spec): escenarios H1-9 a H1-11, H2-10 a H2-19, H3-7 y H3-8 con su tabla de trazabilidad; FR-116 y FR-117 observables; regla de FR-108 tomada del motor (dos eventos con el mismo tiempo se atienden en el orden en que se programaron, por la secuencia de `ColaEventos`); fuera de alcance, decisiones del grupo, FR-114 con el pergamino y correcciones de formato; checklist desmarcado donde falta cobertura. Commit de pruebas: docstrings con el escenario en las pruebas que ya cubrían H1-10, H1-11, H2-10 a H2-14 y H2-16; pruebas nuevas para H1-9, H2-14 (ataque), H2-15 y T036; H2-17 a H2-19 con `skip` hasta T002, y H3-7 y H3-8 con `skip` hasta la spec 003 y la fase 7.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Revisión cruzada, SOLO LECTURA (no modifiques nada, no hagas commit): specs 002 y 003 del integrante 2,
+en origin/derek (git fetch; leelas con git show origin/derek:specs/<carpeta>/spec.md).
+Revisá contra la constitución v1.2.0 y el enunciado: Principio IX; Principio X (FR sin escenario y
+Apéndice B); requisitos no verificables; clarificaciones contradictorias o reemplazadas; fuera de alcance
+y dependencias con 001, 004 y entre 002 y 003; coherencia con la 001 (grafo de busqueda-rutas.md y
+FR-122); cifras que son decisión del grupo; formato. Salida por spec con prioridad ALTA/MEDIA/BAJA,
+archivo y línea, y una propuesta concreta por punto.
+
+Corregí H3-7 de la 001 según tu propuesta, en dos commits:
+1. spec(001): H3-7 alineado con 003 FR-302: --verificar no depende de costos ni cazadores;
+   los errores de FR-122 hacen que no concluya (código 1). Actualizá la trazabilidad.
+2. test(001): renombrá test_h3_7_fr118_verificar_aplica_las_mismas_reglas según el nuevo escenario
+   (sigue con skip mientras no exista la 003).
+Suite en verde con uv run, entrada en PROMPTS_LLM.md, no hagas push.
+
+**Uso de la respuesta:** la revisión de las specs 002 y 003 (sin cambios en esas specs) encontró, entre otros puntos, que H3-7 de la 001 contradecía 003 FR-302. Commit `99bb5ff` (spec): H3-7, FR-118 y «Fuera de alcance» dicen que `--verificar` no depende de los costos ni de los cazadores y que los errores de FR-122 hacen que no concluya, con código 1; la trazabilidad de H3-7 cita FR-118 y FR-122. Commit de pruebas: la prueba pasa a llamarse `test_h3_7_fr118_fr122_verificar_no_depende_de_costos_ni_cazadores` y sigue con `skip` hasta que exista la 003.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude
+
+Le pedí a Claude que me guiara con T002 y T052 de specs/001-terreno-cazador/tasks.md (FR-122 en Data, según contracts/contrato-datos.md): validar con el esqueleto completo los costos de las salidas (entero >= 1, sin aceptar bool, y los dos lados con el mismo costo si los dos lo declaran); rechazar la ficha de un cazador con rango ausente, null, no entero o negativo con un error de datos que se distinga del error de red; recordar el rechazo por sala sin gastar otra solicitud; y que solo esa sala quede sin contenido. Con pruebas que citen FR-122 y los casos de T050, sin tocar archivos de Marco ni de Kristel. Después le pedí analizar la rama de Marco (escenarios H2-17 a H2-19 con skip y su revisión de las specs 002 y 003) y decirme qué hacer primero.
+
+**Uso de la respuesta:** se usó en `Data/ValidacionDatos.py` (nuevo: `ErrorDatos`, subclase de `ErrorRed`, y las reglas de FR-122), `Data/GestorEsqueleto.py` (`_validar_costos`: la partida no inicia), `Data/ResolvedorCatalogo.py` (una ficha inválida no se guarda ni se vuelve a pedir; `rechazo(id)`), `Data/GestorContenido.py` (estado `RECHAZADA` por sala: `asegurar_sala` vuelve a lanzar el mismo error sin otra solicitud y las demás salas del lote se cargan) y `tests/TestValidacionDatos.py` (20 pruebas). Revisé el cambio y corrí las pruebas: 460 OK (skipped=6) y 31/31 con la rama de Marco ya jalada; el replay de ejemplo sigue terminando en victoria con reloj 3625. También se usó para jalar la rama de Marco a derek (con PROMPTS_LLM.md resuelto a mano), para proponerle el cuerpo de las pruebas H2-17 a H2-19 y para las respuestas a su revisión.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+Lee .specify/memory/constitution.md y, en specs/001-terreno-cazador/tasks.md, T052 y T053. Implementa SOLO T053. En Service/ServicioAccionJugador.py, método ejecutar: agrega from Data.ValidacionDatos import ErrorDatos y, ANTES del except ErrorRed, agrega except ErrorDatos as error: que devuelva self._armador.armar_estado(contexto, str(error)) (ErrorDatos es subclase de ErrorRed, por eso va antes). El mensaje es el del propio error, sin el prefijo «Sin conexión con el servicio:». No cambies nada más de ese archivo. Justificación (Principio III): cambio indispensable para FR-122, escenario H2-9. Agrega una prueba corta en tests/test_servicios.py, siguiendo el estilo del archivo: con un contenido de prueba cuyo asegurar_sala lanza ErrorDatos, mover hacia esa sala devuelve un estado cuyo mensaje contiene el texto del error y no dice «Sin conexión», el jugador sigue en su sala, el reloj no avanza y la acción no queda en partida.log. Cita FR-122 y H2-9. NO toques tests/test_terreno_cazador.py ni quites el skip de T054 (la escribe el integrante 1), y no modifiques tasks.md. Corre python tests/correr_pruebas.py y reporta. Un solo commit: «feat(service): ServicioAccionJugador muestra el error de datos (T053, FR-122)».
+
+**Uso de la respuesta:** ServicioAccionJugador muestra el error de datos (T053, FR-122) con su prueba.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+Edita SOLO specs/004-linea-tiempo/spec.md y su checklist si aplica. Sin estructuras, clases ni módulos.
+
+1. P1 §2.11 dice que la reversión del pergamino no deshace los pergaminos recogidos o soltados durante el intervalo revertido. Agrégalo como requisito FR-424: «Los pergaminos de retroceso recogidos o soltados dentro de acciones revertidas conservan ese cambio: la línea de tiempo refleja la cantidad de pergaminos igual que la partida viva (P1 §2.11).» Agrega el escenario H3-5 (el jugador recoge un pergamino en la acción 4 y usa otro pergamino para revertirla; al consultar el instante actual, el inventario conserva el pergamino recogido y no tiene el consumido), con su fila de trazabilidad, citando FR-413, FR-419 y FR-424.
+2. Si en FR-419 o Suposiciones hay alguna nota que trate ese caso como excepción o límite, elimínala.
+3. Anota que FR-417 se integró en NFR-402 y que FR-422 se eliminó.
+4. Verifica que no queden referencias rotas y dime qué cambiaste.
+
+**Uso de la respuesta:** Se agregó FR-424 y el escenario H3-5 (pergaminos recogidos o soltados en acciones revertidas, P1 §2.11).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+Edita SOLO specs/004-linea-tiempo/plan.md, research.md, data-model.md, contracts/contrato-linea-tiempo.md y tasks.md. No escribas código ni cambies spec.md. Plan y modelo:
+
+1. H-2 ya no es una decisión pendiente: es regla de P1 §2.11 (FR-424). El marcador de pergamino se generaliza: posición + quitados (ids de pergaminos que salen del inventario) + agregados (pergaminos que quedan en el inventario aunque la acción que los trajo se revirtió). El descuento del pergamino usado es un «quitado». Actualiza data-model.md, el contrato (MarcadorPergaminoDTO, con su validación al leer) y R-.. de research.md.
+2. D1: la validación de rango (t entero ≥ 0 y no posterior al reloj; 1 ≤ k ≤ acciones del jugador) es regla de negocio: va en Logic/LineaTiempo, con métodos que lanzan ValueError con el motivo y el rango válido. ServicioLineaTiempo solo propaga (la constitución dice que Service no valida).
+3. I1: en «Cambios a código de la primera entrega», el dueño de ConfiguracionDTO.py y LectorArgumentos.py es «Integrante 3 (con visto bueno del integrante 2)».
+4. C2: agrega la fila de Service/BenchInventario.py (T061): cambio indispensable para exponer el bench nuevo sin tocar ServicioBench (del integrante 2); NFR-401.
+5. Nota: la 004 no toca Service/ServicioAccionJugador.py; el único cambio es T053 de la feature 001 (un except ErrorDatos, FR-122), que no afecta a la línea. Logic/PartidaGuardada.py y DTO/PartidaGuardadaDTO.py los extiende Derek para el mapa conocido (spec 002, FR-223); la 004 solo agrega linea.
+6. Los grabadores (resolvedor y contenido envueltos) delegan TODO lo que no es ficha() o asegurar_sala() al objeto original, incluidos rechazo() y resolver_contenido() (los usa GestorContenido, FR-122); un ErrorDatos propaga sin registrar nada.
+7. El mapa conocido (spec 002) será un campo de PartidaGuardadaDTO que actualiza el motor, así los puntos de control y la re-simulación lo reproducen. La línea no lo invierte: NFR-203 de la 002 habla de invertirlo; aclara en el plan que la 004 reconstruye hacia adelante. Tareas:
+8. I2: agrega T069 en la Fase 2, justo después de T010: crear CHECKPOINT_POR_DEFECTO = 20 y el campo checkpoint_cada en DTO/ConfiguracionDTO.py, con su prueba. T018 depende de T069; T050 queda con la bandera y el cableado.
+9. I3: T021 aplica los registros de carga básicos; T032 solo agrega la regla del prefijo por ordinal.
+10. H-2: T033 se escribe SIN skip (H3-5, FR-413, FR-424, FR-419). T034 pasa a ser tarea de implementación del marcador con quitados/agregados; ajusta T028, T030 y T031. Quita las menciones de «decisión pendiente» o de límite conocido en DECISIONES.
+11. D1: T007 y T008 incluyen la validación de rango en LineaTiempo; T025 solo propaga el error.
+12. C3: agrega «(FR-xxx)» a las tareas de 004 que no lo tienen (T001, T014, T018, T019, T021, T023, T028, T044, T053, T054, T056...). Ojo: el T053 de la 004 es de la interfaz, distinto del T053 de la 001.
+13. P1: T066 se hace en un commit spec(004) aparte.
+14. T004: la spec 002 ya existe; ajusta T004 a «coordinar con FR-223: el mapa conocido es campo de PartidaGuardadaDTO y se copia con PartidaGuardada.guardar, sin copy». Muestra los cambios.
+
+**Uso de la respuesta:** Se ajustaron el plan, el modelo y las tareas de la 004 tras el analyze (validación en Lógica, T069, dueños de archivos).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+Edita SOLO specs/002-niebla-ir-a/spec.md, en la sección reservada para «ir a» (FR-250 a FR-299, NFR-250 a NFR-299, SC-250 a SC-299). No modifiques los FR-201 a FR-249 de Derek. Lee antes la constitución, la spec completa, y de Proyecto II parte.pdf §3.4, §6.1, §7.3 y el Apéndice B «Niebla de guerra e ir a». Solo el QUÉ: sin estructuras, clases, módulos ni algoritmos. Reglas (§3.4): «ir a <sala>» lleva al jugador a una sala explorada mediante movimientos ordinarios. La ruta usa solo salas exploradas y solo salidas que el mapa recuerda abiertas (una puerta «sin observar» no cuenta como recordada abierta); minimiza la suma de costos y desempata igual que el cazador (primer paso hacia la vecina de menor id). Cada paso es una acción completa del jugador que consume tiempo según §3.1, y entre pasos ocurren los eventos del reloj. La ruta se recalcula antes de cada paso con el conocimiento vigente. El viaje se detiene si llega al destino, entra a una sala con enemigos (activos o dormidos), recibe daño o deja de haber ruta conocida; la interfaz muestra el motivo. No abre puertas aunque el jugador tenga la llave. Un destino no explorado se rechaza sin consumir tiempo. En partida.log cada paso es un movimiento y la orden se registra además como comentario. El pergamino revierte solo el último paso y el viaje no continúa. Cada paso cuenta como acción del jugador en la línea de tiempo (spec 004). Rendimiento: el cálculo de un paso tarda menos de 5 ms con el mapa conocido completo (§6.1). Escenarios: los casos del Apéndice B de «ir a»: (1) destino no explorado, (2) puerta recordada abierta que en realidad está cerrada: la ruta se recalcula y, si no queda ruta, el viaje se detiene sin consumir tiempo adicional (la parte de que el mapa se actualiza ya es de la historia 1 de Derek), (3) enemigos dormidos: se activan según P1 §2.4 y el viaje se detiene, (4) pergamino durante un viaje. Usa historias H5 y H6. Cada escenario con su FR en la tabla de trazabilidad. Reemplaza únicamente los marcadores «pendiente FR-25x» por los FR concretos. Verifica que no queden referencias rotas y dime qué cambiaste.
+
+**Uso de la respuesta:** Se escribieron FR-250 a FR-264 y las historias 6 y 7 de «ir a» en la spec 002, con los casos del Apéndice B.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Jueves 12 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+/speckit-analyze Enfócate en: (1) que cada FR y NFR tenga al menos una tarea; (2) que cada escenario de aceptación y cada caso del Apéndice B tenga una prueba que cite su FR; (3) que ninguna tarea ni el plan contradiga la constitución; (4) que ninguna tarea modifique código de otros integrantes sin marcarlo como «Coordinar»; (5) inconsistencias entre spec, plan y tasks.
+
+**Uso de la respuesta:** Segundo informe, sin hallazgos críticos; dejó ajustes de texto y la mejora del diseño del pergamino.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Correcciones a specs/003-resolubilidad/spec.md tras la revisión cruzada de Marco (integrante 1). Editá SOLO specs/003-resolubilidad/spec.md y su checklists/requirements.md; sin código y sin nombrar estructuras de datos, clases ni módulos. Todo en español. Antes de editar, leé .specify/memory/constitution.md (principios IX y X), specs/001-terreno-cazador/spec.md (FR-101, FR-122, el escenario H3-7 y «Fuera de alcance») y, solo para entender la regla de las caras de la primera parte, Logic/Mazmorra.py (_igualar_caras y abrir_puerta).
+
+1. Llaves distintas en las dos caras de una puerta (FR-302, escenario H2-9, casos borde y Clarificaciones):
+   - Ya NO es un error de datos. Regla nueva, igual que en la primera parte: si las dos caras declaran llave, cada cara se rige por lo que declara (su llave, su estado cerrado y su cierre automático); para atravesar la puerta desde una sala hace falta la llave que declara la cara de esa sala. Una cara cerrada sin llave sigue sin poder atravesarse en ese sentido.
+   - Por qué (escribilo en la aclaración): en la primera parte, una cara que declara su propia llave no se iguala con la otra, así que el juego ya permite esa puerta, y el enunciado no dice que sea inválida. Los costos distintos entre caras sí son error (001 FR-122) porque §3.1 dice que el costo es el mismo en ambos sentidos; para las llaves no existe esa regla.
+   - Clarificaciones: quitá la pregunta de la Sesión 2026-11-11 sobre llaves distintas y agregá una sección «Sesión 2026-11-12» con la pregunta y la respuesta nuevas, indicando que surge de la revisión cruzada del integrante 1. No dejes respuestas marcadas como «Reemplazada» (es la convención de la spec 001).
+   - Reescribí el escenario H2-9 para la regla nueva con la puerta 2–6: la cara de la sala 2 requiere A y la de la sala 6 requiere B; con la sala 2 alcanzable, A obtenible y B no, la sala 6 es alcanzable entrando por la cara de la sala 2, la verificación concluye y no se informa ningún error de datos. Si en cambio A no es obtenible, la puerta 2–6 aparece en la frontera bloqueada con la llave A (la de la cara de la sala alcanzable).
+   - Actualizá el caso borde «Las dos caras de una puerta declaran llaves distintas» y cualquier otra mención (requisitos, supuestos, tablas).
+
+2. Errores de datos del esqueleto definidos en 001 FR-122 (un costo no entero o menor que 1, o costos distintos entre las dos caras de una salida). Agregá un requisito nuevo, FR-323: con un esqueleto que tenga uno de esos errores, la verificación NO DEBE concluir; --verificar DEBE terminar con el código de salida 1 (FR-314), mostrar el error con contexto y no caerse; y la partida NO DEBE iniciar, ni siquiera con --forzar, porque la feature 001 exige que con esos datos la partida no inicie y el juego supone datos válidos (a diferencia de FR-320, donde --forzar sí permite jugar). El costo sigue sin afectar el veredicto (FR-302). Agregá un escenario en la Historia 3 (--verificar con una salida de costo 0 → código 1 y ningún veredicto) y otro en la Historia 4 (iniciar con --forzar una cripta cuya salida declara costos distintos en sus dos caras → la partida no inicia). Agregá el caso borde y una aclaración en «Sesión 2026-11-12». Citá 001 FR-122 e indicá que concuerda con el escenario H3-7 de la 001.
+
+3. Actualizá la tabla «Cobertura de requisitos funcionales», la trazabilidad y el checklist. No cambies la numeración de los FR que ya existen ni la tabla del Apéndice B.
+
+Al final decime exactamente qué cambiaste y confirmá: que no queda ninguna mención de las llaves distintas como error de datos; que FR-323 tiene al menos un escenario; que todos los FR del FR-301 al FR-323 tienen escenario; y que no hay ningún [NEEDS CLARIFICATION]. No hagas commit.
+
+**Uso de la respuesta:** se usó en `specs/003-resolubilidad/spec.md` y `specs/003-resolubilidad/checklists/requirements.md`, a partir de la revisión cruzada del integrante 1. Las llaves distintas en las dos caras de una puerta dejan de ser error de datos (cada cara se rige por lo que declara, como `Mazmorra._igualar_caras` de la primera parte): FR-302, FR-308, escenario H2-9 reescrito y aclaración en la Sesión 2026-11-12. Nuevo FR-323: un error de datos de 001 FR-122 en el esqueleto hace que la verificación no concluya (`--verificar` con código 1) y la partida no inicia ni con `--forzar` (escenarios H3-8 y H4-5); se ajustaron FR-312, FR-314, casos borde, supuestos, la tabla de cobertura y el checklist. Revisé con Claude el cambio contra el enunciado y el código de la primera parte antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Correcciones a specs/002-niebla-ir-a/spec.md, solo en la parte del integrante 2 (mapa conocido y antorcha: FR-201 a FR-249, NFR-201 a NFR-249, SC-201 a SC-249, historias 1 a 5), tras la revisión cruzada del integrante 1 y lo acordado con el integrante 3. NO modifiques la sección «Viaje automático «ir a»» (FR-250 a FR-299), ni las historias 6 y 7, ni sus filas de las tablas: son del integrante 3. Editá SOLO specs/002-niebla-ir-a/spec.md y su checklists/requirements.md; sin código y sin nombrar estructuras de datos, clases, métodos ni módulos. Todo en español. Antes de editar, leé .specify/memory/constitution.md (principios IX y X), specs/001-terreno-cazador/spec.md (FR-101), specs/003-resolubilidad/spec.md (FR-313) y specs/004-linea-tiempo/spec.md (cómo se reconstruye un instante), y la sección «ir a» de esta misma spec (FR-252 y FR-253).
+
+1. FR-225 (nuevo): el mapa conocido DEBE ofrecer a «ir a» exactamente lo que necesitan FR-252 y FR-253: para cada sala explorada, sus salidas hacia otras salas exploradas cuya puerta el mapa recuerda abierta (una puerta «sin observar» no cuenta, FR-212; una salida hacia una sala avistada o desconocida tampoco), cada una con su costo igualado según 001 FR-101; y cada sala identificada por su identificador real, para que el desempate por menor identificador de FR-253 dé el mismo resultado que la búsqueda del cazador aplicada a ese mismo conjunto de salas y salidas. No nombres operaciones ni estructuras: eso va en el plan. Agregá un escenario en la Historia 1 o la 2 que lo pruebe: salas exploradas A, B y C, con la puerta A–B recordada abierta y costo declarado 150 solo en la cara de B, la puerta A–C «sin observar» y una salida de A hacia una sala avistada D; el mapa ofrece A→B con costo 150 y no ofrece A→C ni A→D.
+
+2. FR-205 y FR-219: el costo de cada salida que se conoce y se muestra DEBE ser el costo igualado según 001 FR-101 (el mismo en los dos sentidos aunque solo una cara lo declare, y 100 si ninguna lo declara), no el declarado por una sola cara. Ajustá los escenarios que muestran costos si hace falta.
+
+3. FR-217: agregá una excepción explícita. El reporte de resolubilidad (spec 003, FR-313) DEBE mostrarse completo al iniciar la partida, como exige §7.3, aunque mencione salas, puertas o ubicaciones de llaves que el jugador no conoce; no es parte del mapa conocido, NO DEBE modificarlo (no explora ni avista ninguna sala ni cambia el estado recordado de ninguna puerta) y «ir a» no lo usa. Motivo: §3.3 dice que la vista solo muestra el conocimiento del jugador, pero §7.3 exige ver el reporte al iniciar, y el reporte de §3.5 nombra salas y llaves; el choque solo aparece cuando la cripta no es resoluble y se inicia con --forzar. Acordado con el integrante 3, dueña de la interfaz. Agregá un escenario en la Historia 5: con una cripta no resoluble iniciada con --forzar, el reporte nombra salas desconocidas y, después de mostrarlo, el mapa conocido sigue teniendo solo la sala inicial explorada y sus vecinas avistadas.
+
+4. NFR-203: las inversas son solo para el pergamino. Registrar un cambio del mapa conocido e invertirlo con el pergamino DEBE costar proporcionalmente a lo que cambió, no al tamaño del mapa conocido (§5.3). Para la línea de tiempo (feature 004), el mapa conocido NO necesita inversas: se reconstruye hacia adelante, porque forma parte del estado de la partida que se copia en cada punto de control y que la re-simulación reproduce (FR-221, FR-223, FR-224); esa copia cuesta proporcionalmente al tamaño del mapa conocido y se hace una vez por punto de control. Acordado con el integrante 3. Revisá que FR-222 y FR-223 sigan siendo coherentes con esto.
+
+5. Agregá una sección «Sesión 2026-11-13» en Clarificaciones con una pregunta y respuesta por cada uno de los puntos 1 a 4, indicando de dónde salen (revisión cruzada del integrante 1 o acuerdo con el integrante 3). No marques nada como «Reemplazada».
+
+6. Actualizá la tabla de trazabilidad y cobertura (solo tus filas y las filas nuevas), los casos borde si corresponde y el checklist. No cambies la numeración de los FR que ya existen ni la tabla del Apéndice B.
+
+Al final decime exactamente qué cambiaste y confirmá: que no tocaste nada de FR-250 a FR-299 ni de las historias 6 y 7; que FR-225 tiene al menos un escenario; que todos los FR del FR-201 al FR-225 tienen escenario; y que no hay ningún [NEEDS CLARIFICATION]. No hagas commit.
+
+Seguimiento en la misma conversación:
+
+Ajustes finales de texto en specs/002-niebla-ir-a/spec.md y specs/002-niebla-ir-a/checklists/requirements.md, sin cambiar ningún requisito ni escenario:
+1. En el encabezado, «Estado» ya no debe decir que la parte de «ir a» está pendiente: la escribió el integrante 3 (FR-250 a FR-264, historias 6 y 7).
+2. En «Reparto de la numeración», cambiá «que escribe el integrante 3 en otro commit» por «que escribió el integrante 3 en su propio commit».
+3. En «Fuera de alcance», quitá «el comando «ir a» (FR-250 a FR-299, integrante 3);» porque ahora es parte de esta spec. Lo demás de esa línea queda igual.
+4. En el checklist, cambiá la línea «La sección «ir a» (FR-250 a FR-299) queda pendiente a propósito: la escribe el integrante 3.» por una que diga que la sección «ir a» la escribió el integrante 3 en su propio commit.
+5. Sí, reacomodá la línea larga de FR-219 al mismo ancho que las demás, sin cambiar el texto.
+No toques nada más y mostrame exactamente qué líneas cambiaste. No hagas commit.
+
+Seguimiento en la misma conversación (puntos MEDIA y BAJA de la revisión cruzada del integrante 1):
+
+Segunda tanda de correcciones en specs/002-niebla-ir-a/spec.md y su checklist, con los puntos MEDIA y BAJA de la revisión cruzada del integrante 1 (los de prioridad ALTA ya están hechos). Mismas reglas: solo la parte del integrante 2; no toques FR-250 a FR-299, ni las historias 6 y 7, ni sus filas de las tablas; sin nombrar estructuras de datos, clases ni módulos; no renumeres FR ni escenarios existentes (los escenarios nuevos van al final de cada historia). Antes leé, solo para entender la primera parte, Logic/Mazmorra.py (_igualar_caras y abrir_puerta) y Logic/EventoPorg.py (__lt__), y specs/001-terreno-cazador/spec.md (FR-108, NFR-101 y SC-104).
+
+1. Caras con estados distintos (punto 4 de la 003 en la revisión). En la primera parte, las dos caras de una puerta pueden tener estados reales distintos: si ninguna declara llave y solo una está cerrada, o si las dos declaran llaves distintas, cada cara se rige por lo suyo (la 003 ya lo dice en FR-302). Hoy la 002 dice que las dos caras «son la misma puerta» con un solo estado. Corregilo así: en Convenciones, la puerta de una salida con vuelta tiene dos caras que normalmente tienen el mismo estado, pero pueden diferir según la primera parte; el estado recordado se guarda por cara; al observar una puerta (FR-207) el mapa registra el estado real de cada una de sus caras; y una salida cuenta como recordada abierta solo si se recuerda abierta la cara de la sala de la que sale (esto es lo que usa FR-225). Ajustá FR-207, FR-208, FR-225 y la entidad «Estado recordado de una puerta». Agregá un escenario al final de la Historia 2: la puerta A–B con la cara de A cerrada sin llave y la cara de B abierta; al observarla, el mapa recuerda A→B cerrada y B→A abierta, y a «ir a» solo se le ofrece B→A. Agregá la pregunta y la respuesta en la «Sesión 2026-11-13» que ya existe, indicando que surge de la revisión del integrante 1 y que es la regla de la primera parte.
+
+2. Punto 4: marcá «(decisión del grupo)» en la aclaración y en FR-207 sobre la observación de las salidas sin vuelta solo desde la sala de la que salen, citando que evita contradecir FR-206.
+
+3. Punto 5: agregá SC-207: «Con `--bench`, registrar e invertir con el pergamino la misma cantidad de cambios del mapa conocido varía menos de un factor 2 entre un mapa conocido pequeño y uno al menos 10 veces mayor *(decisión del grupo)*.»
+
+4. Punto 6: reescribí SC-202 para que sea comprobable: en cada acción de una partida de prueba de al menos 200 acciones *(decisión del grupo)*, con y sin antorcha, lo que la interfaz recibe para dibujar el mapa (vista, comando de ver el mapa y resumen de `historia`) no contiene el identificador, el nombre, las salidas ni el contenido de ninguna sala desconocida, ni más que la existencia de las avistadas; se comprueba automáticamente. Mantené la excepción del reporte de resolubilidad (FR-217).
+
+5. Punto 7: SC-206 debe usar la misma cripta de referencia que la 001 (NFR-101 y SC-104: una cripta sintética de 1 000 salas en cuadrícula con 30 cazadores activos), con la antorcha encendida *(decisión del grupo)*.
+
+6. Punto 8: reemplazá el caso borde «La antorcha se apaga en el mismo instante en que el jugador entra» por la regla concreta: los eventos con el mismo tiempo se atienden en el orden en que se programaron (la misma regla de 001 FR-108); si el fin de la antorcha se programó antes que la acción del jugador, la entrada ocurre con la antorcha apagada y no explora las vecinas; si se programó después, las explora. Agregalo también como escenario al final de la Historia 3.
+
+7. Punto 9: agregá un escenario para la parte del cazador de FR-218: un cazador que se mueve por salas desconocidas no cambia el estado de ninguna sala para el jugador ni el estado recordado de ninguna puerta.
+
+8. Punto 10: en «Fuera de alcance», agregá que la verificación de resolubilidad (003-resolubilidad) usa el esqueleto completo y no el mapa conocido, y que su reporte se muestra según la excepción de FR-217.
+
+9. Punto 11: marcá «(decisión del grupo)» en SC-203 y SC-204 (factor 2 y al menos 10 veces mayor), en NFR-204 (al menos tres tamaños) y en la aclaración sobre la sala avistada sin identificador.
+
+10. Punto 12: en NFR-205, la cita queda «P1 §5.2 y §6.1 de la Parte II».
+
+11. Punto 13: en «Fuente» agregá §3.4, §3.5, §3.6 y §7.3 de la Parte II, P1 §5.2 y la feature 001 (FR-101, FR-108 y FR-122).
+
+12. Punto 14: reacomodá las líneas cortadas de FR-204 y FR-214 al mismo ancho que las demás, sin cambiar el texto.
+
+13. Punto 15: en la tabla del Apéndice B el «#» 2 está repetido: cambialo por «2a» y «2b» (solo la etiqueta; no cambies el contenido de ninguna fila). La segunda tabla ya dice que sus escenarios no provienen del Apéndice B: dejala como está.
+
+14. Punto 17: en H1-6, unificá la cita en «(FR-203, FR-222)».
+
+Actualizá la tabla de trazabilidad (filas nuevas al final) y el checklist con una nota de esta tanda. Al final decime exactamente qué cambiaste y confirmá: que no tocaste FR-250 a FR-299, las historias 6 y 7 ni sus filas (salvo la etiqueta «2a/2b»); que todos los FR del FR-201 al FR-225 siguen teniendo escenario; y que no hay ningún [NEEDS CLARIFICATION]. No hagas commit.
+
+**Uso de la respuesta:** se usó en `specs/002-niebla-ir-a/spec.md` y `specs/002-niebla-ir-a/checklists/requirements.md` (solo la parte del integrante 2), a partir de la revisión cruzada del integrante 1 y de lo acordado con el integrante 3: nuevo FR-225 (lo que el mapa conocido ofrece a «ir a»: salidas entre salas exploradas con la cara recordada abierta, costo igualado e identificador real); FR-205 y FR-219 con el costo igualado de 001 FR-101; excepción explícita en FR-217 para el reporte de resolubilidad de 003 FR-313 y SC-202 reescrito; NFR-203 con inversas solo para el pergamino y FR-223 con la reconstrucción hacia adelante; estado recordado por cara (regla de caras de la primera parte); SC-207 nuevo; SC-206 con la cripta de referencia de la 001; la regla de eventos simultáneos para la antorcha; escenario del cazador para FR-218; decisiones del grupo marcadas; encabezado, fuente y formato al día. No se tocó la sección «ir a» del integrante 3. Revisé con Claude el cambio antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Segunda tanda de correcciones a specs/003-resolubilidad/spec.md y su checklist, con los puntos MEDIA y BAJA de la revisión cruzada del integrante 1. Los puntos ALTA ya están hechos; su punto 1 ALTA (tratar las llaves distintas como error) quedó descartado: cada cara se rige por su llave, como en la primera parte. Editá SOLO esos dos archivos; sin código y sin nombrar estructuras de datos, clases ni módulos; no renumeres FR ni escenarios existentes (los escenarios nuevos van al final de cada historia). Antes leé specs/002-niebla-ir-a/spec.md (FR-217 y su excepción) y specs/001-terreno-cazador/spec.md (FR-122 y NFR-101).
+ 
+1. Punto 2 (lo que falta): agregá en los supuestos que los errores de `rango` de 001 FR-122 no afectan la verificación, porque la verificación no descarga el contenido de las salas (FR-301); un cazador inválido en la sala inicial impide iniciar la partida por 001 FR-122, no por la verificación.
+
+2. Punto 3: en FR-313, decí que mostrar el reporte completo al iniciar es la excepción de 002 FR-217: el reporte no forma parte del mapa conocido ni lo modifica.
+
+3. Punto 4: agregá un escenario al final de la Historia 2 para una puerta cuyas caras tienen estados distintos sin llave: la puerta 3–7 con la cara de la sala 3 cerrada sin llave y la cara de la sala 7 abierta, la sala 3 alcanzable y la 7 sin otro acceso; la sala 7 no es alcanzable. Y si la sala 7 fuera alcanzable por otro camino, desde ella sí se llega a la 3 (FR-302).
+
+4. Punto 5: un escenario para cada uno: FR-308, una salida sin vuelta que va de una sala de afuera hacia la región alcanzable no aparece en la frontera bloqueada; FR-310, dos ciclos independientes aparecen los dos, cada uno con sus llaves dependientes, en un orden determinista; FR-314, `--verificar` junto con `--forzar` da el mismo resultado y el mismo código de salida que sin `--forzar`.
+
+5. Punto 6: reescribí SC-305: «En todas las criptas no resolubles de prueba, el reporte contiene, para cada llave no obtenible, su id y todas sus ubicaciones o «sin ubicación»; para cada puerta de la frontera, sus dos salas y su llave; y, si hay ciclo, la secuencia completa hasta volver a la primera llave. Se comprueba automáticamente.»
+
+6. Punto 7: en SC-307, cambiá «crece de forma claramente mayor» por un umbral concreto: el tiempo de la alternativa de repetir el recorrido por cada llave crece al menos el doble de lo que crece el de la verificación *(decisión del grupo)*. Actualizá el supuesto que explica SC-307.
+
+7. Punto 8: en NFR-301 y SC-306, «la cripta publicada más grande» pasa a «la cripta publicada más grande o, mientras no esté publicada, una cripta sintética determinista de 1 000 salas en cuadrícula con 100 llaves encadenadas *(decisión del grupo)*».
+
+8. Punto 9: FR-313 debe ser observable: el resultado se muestra antes de la primera acción del jugador.
+
+9. Punto 10: en H4-1, cambiá «ni se crea estado de partida» por «no se crea `partida.log` ni archivo de guardado y el reloj no avanza».
+
+10. Punto 11: en FR-310, «junto con el ciclo» pasa a «inmediatamente después del ciclo, indicando la llave del ciclo de la que dependen».
+
+11. Punto 12: marcá «(decisión del grupo)» en: los códigos de salida 0, 3 y 1 (aclaración y FR-314), el orden con todas las llaves obtenibles (FR-305), que «sin ubicación» no es error de datos (FR-321), las copias múltiples de una llave (FR-316), SC-303, SC-307 y NFR-304.
+
+12. Punto 13: en «Fuera de alcance», agregá que la verificación tampoco corre con `--replay … --hasta` de la feature 004 (FR-301).
+
+13. Punto 14: en H2-1, aclará que en ese escenario `sala_salida` es la 5 y la puerta 4–5 es la puerta de salida (así coincide con el caso del Apéndice B: «llave_salida está detrás de la única puerta que ella misma abre»), y no la puerta 8–9 de las Convenciones.
+
+14. Punto 16: cambiá el encabezado «Supuestos» por «Suposiciones», como en las specs 002 y 004.
+
+Actualizá la tabla de cobertura y el checklist. Al final decime exactamente qué cambiaste y confirmá: que todos los FR del FR-301 al FR-323 siguen teniendo escenario; y que no hay ningún [NEEDS CLARIFICATION]. No hagas commit.
+
+Seguimiento en la misma conversación:
+
+Dos ajustes más en specs/003-resolubilidad/spec.md (y en el checklist si corresponde), sin renumerar nada:
+1. En H4-5, cambiá «no se consume tiempo virtual ni se crea estado de partida» por la misma redacción de H4-1: «no se crea `partida.log` ni archivo de guardado y el reloj no avanza».
+2. FR-308: una salida cerrada sin llave que va de una sala de la región alcanzable hacia una sala fuera de ella también es parte de la frontera bloqueada, y en el reporte DEBE indicarse «sin llave: no se puede abrir» en lugar de una llave. Agregalo a FR-308 y completá H2-10: en el primer caso, la frontera bloqueada lista la puerta 3–7 con esa indicación. Actualizá el caso borde que corresponda y la tabla de cobertura (FR-308 suma H2-10).
+Decime exactamente qué líneas cambiaste. No hagas commit.
+
+Seguimiento en la misma conversación:
+
+Sí, en SC-305 cambiá «para cada puerta de la frontera, sus dos salas y su llave» por «para cada puerta de la frontera, sus dos salas y su llave o «sin llave: no se puede abrir»». No toques nada más y decime la línea que cambiaste. No hagas commit.
+
+**Uso de la respuesta:** se usó en `specs/003-resolubilidad/spec.md` y `specs/003-resolubilidad/checklists/requirements.md`, con los puntos MEDIA y BAJA de la revisión cruzada del integrante 1: suposición sobre los errores de `rango` de 001 FR-122; FR-313 observable y como excepción de 002 FR-217; escenarios nuevos H2-10 (caras con estados distintos sin llave), H2-11 (salida sin vuelta hacia adentro), H2-12 (dos ciclos independientes) y H3-9 (`--verificar` con `--forzar`); FR-308 y SC-305 con las puertas cerradas sin llave en la frontera («sin llave: no se puede abrir»); FR-310 más preciso; SC-305 y SC-307 medibles; cripta sintética de referencia en NFR-301 y SC-306; H4-1 y H4-5 observables; H2-1 con `sala_salida` 5 como en el Apéndice B; marcas «(decisión del grupo)»; «Suposiciones». El punto 1 ALTA (llaves distintas como error) quedó descartado. Revisé con Claude el cambio antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Correcciones de la segunda revisión del integrante 1 en specs/003-resolubilidad/spec.md y specs/002-niebla-ir-a/spec.md (y sus checklists). Mismas reglas de siempre: sin código y sin nombrar clases ni módulos; no renumeres FR ni escenarios; los escenarios nuevos van al final de su historia; en la 002 no toques el contenido de FR-250 a FR-299 ni de las historias 6 y 7. Antes leé, solo para entender la primera parte, Logic/Mazmorra.py (abrir_puerta, _igualar_caras y CierrePuerta) y Logic/motorJuego.py (dónde se declara la victoria), y §3.5 de «Proyecto II parte.pdf».
+
+Spec 003:
+1. FR-304: mantené la definición de §3.5, que es literal del enunciado, y precisá que la puerta por la que se llega a sala_salida debe estar cerrada y que llave_salida la pide la cara de la sala desde la que se entra a sala_salida (en la primera parte, la llave que vale al abrir es la de la cara desde la que se abre). Ajustá FR-322 de la misma forma.
+2. Agregá una «Sesión 2026-11-13» en Clarificaciones (revisión del integrante 1): el motor de la primera parte declara la victoria al entrar a sala_salida después de abrir cualquier puerta que pida llave_salida, aunque esa puerta no lleve a sala_salida; en cambio §3.5 y P1 §2.12 exigen llegar a sala_salida a través de una puerta que la requiere. La verificación sigue el enunciado (FR-304). La diferencia solo aparece en una cripta donde sala_salida se alcanza sin pasar por una puerta que pida llave_salida: ahí la verificación dice «no resoluble», con el motivo de FR-322, aunque el motor permitiría ganar. Queda como coordinación con el integrante 1 (alinear el motor con P1 §2.12 es decisión suya). Agregá el caso borde.
+3. FR-302, cierres automáticos: en la primera parte, abrir una puerta abre sus dos caras, y el cierre automático que se programa es el de la cara desde la que se abrió, y cierra las dos caras. Corregí FR-302 y la aclaración de la Sesión 2026-11-12 donde dice que cada cara se rige por «su cierre automático»: cada cara se rige por su llave y su estado cerrado; el cierre automático es el de la cara que se abre y afecta a las dos.
+4. El supuesto de §3.5 «los cierres automáticos no bloquean, porque una puerta puede volver a abrirse con la misma llave» se mantiene porque es del enunciado. Agregá un caso borde marcado *(decisión del grupo)*: con llaves distintas por cara, después de un cierre automático volver por esa puerta puede exigir la llave de la otra cara; la verificación igual aplica el supuesto de §3.5 y no lo considera un bloqueo.
+5. FR-321: agregá al escenario H2-7 que, con --verificar, el código de salida es 1.
+6. FR-313: quitá «DEBE quedar disponible para que la interfaz lo muestre» y dejá que el resultado DEBE mostrarse antes de la primera acción del jugador. Agregá qué pasa sin vista: el único modo sin vista que verifica es --verificar, que escribe el resultado en la salida estándar (FR-314); --replay y --bench no verifican (FR-301).
+
+Spec 002:
+7. En Convenciones («Puerta») y en la aclaración de la Sesión 2026-11-13 sobre las caras: las caras también pueden diferir si las dos declaran llave (la misma o distintas) con distinto estado cerrado, porque la primera parte no iguala dos caras que declaran llave. Dejalo así: «si ninguna declara llave y solo una está cerrada, o si las dos declaran llave (la misma o distintas) con distinto estado», alineado con 003 FR-302.
+8. FR-225: reacomodá la línea cortada («desconocida. Cada sala»), sin cambiar el texto.
+9. La segunda tabla de trazabilidad (escenarios adicionales) usa números que parecen casos del Apéndice B: cambiá su columna «#» por «Adicional» y numerá sus filas A1, A2… en el mismo orden. Incluye las filas del integrante 3: solo cambia la etiqueta, no el contenido.
+10. En el caso borde del reporte de resolubilidad con --forzar, la referencia «(003, escenario de --forzar)» pasa a «(003 H4-4)».
+
+Actualizá las tablas de cobertura y los checklists. Al final decime exactamente qué cambiaste en cada spec y confirmá: que no renumeraste FR ni escenarios; que no tocaste el contenido de FR-250 a FR-299 ni de las historias 6 y 7; y que no hay ningún [NEEDS CLARIFICATION]. No hagas commit.
+
+Seguimiento en la misma conversación:
+
+Ajuste en la aclaración de la Sesión 2026-11-13 de specs/003-resolubilidad/spec.md sobre el motor de la primera parte (y en su caso borde): el integrante 1 decidió mantener el motor como está, porque cambiarlo sería tocar la primera parte sin un FR que lo pida, y la diferencia va hacia el lado seguro: la verificación puede rechazar una cripta que el motor dejaría ganar (para eso está --forzar), pero nunca aprueba una que el motor no deje ganar. Queda registrado en DECISIONES.md como diferencia conocida entre la verificación y el motor. Reemplazá la frase de que alinear el motor es decisión del integrante 1 por esto. No toques nada más y decime qué líneas cambiaste. No hagas commit.
+
+**Uso de la respuesta:** se usó en `specs/003-resolubilidad/spec.md`, `specs/002-niebla-ir-a/spec.md` y sus checklists, con la segunda revisión cruzada del integrante 1. En la 003: FR-304 y FR-322 precisan que la puerta hacia `sala_salida` está cerrada y que `llave_salida` la pide la cara de la sala desde la que se entra; aclaración y caso borde sobre la diferencia con el motor de la primera parte (el integrante 1 decidió mantenerlo; va hacia el lado seguro); FR-302 corregido (el cierre automático es el de la cara que se abre y cierra las dos) y caso borde del supuesto de §3.5 con llaves distintas por cara; código 1 en H2-7; FR-313 observable y sin vista; FR-301 y FR-314 ajustados. En la 002: las caras también difieren con la misma llave y distinto estado; FR-225 reacomodado; tabla de escenarios adicionales con etiquetas A1 a A43; referencia «003 H4-4». No se tocó la sección «ir a» del integrante 3 salvo las etiquetas. Revisé con Claude el cambio antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-plan Plan de la feature 003-resolubilidad (integrante 2). Antes de planificar, leé: .specify/memory/constitution.md; specs/003-resolubilidad/spec.md completa; «Proyecto II parte.pdf» §3.5, §4.2, §4.3, §5.4, §6.1, §6.3 y §7.3; el plan y los contracts de specs/001-terreno-cazador y de specs/004-linea-tiempo, solo como modelo de formato; y el código real que vas a usar o tocar: Data/FuenteDatos.py, FuenteJson.py, FuenteRed.py, FuenteOffline.py, DescargadorPaquete.py, GestorEsqueleto.py, ValidacionDatos.py, AlmacenCatalogo.py y ClienteHttp.py; DTO/SalaDTO.py y DTO/CriptaDTO.py; Service/ServicioPartida.py, ServicioReplay.py y ServicioGuardado.py (para ver dónde NO se verifica); UIController/LectorArgumentos.py, DTO/ConfiguracionDTO.py y main.py (códigos de salida 0, 1 y 2); Estructuras/ (lo que ya existe); y la carpeta paquete/ (qué trae hoy cada cripta).
+
+El plan tiene que tomar y justificar estas decisiones (en research.md, cada una con la alternativa descartada y su complejidad):
+
+1. Contrato de datos de las llaves (entrega atrasada, era para el 9/11): el DTO de una ubicación de llave (id, sala, enemigo opcional, §4.2) y cómo se entrega la lista; el método nuevo de FuenteDatos para GET /criptas/{id}/llaves (cuenta en el presupuesto, FR-317); la validación de formato en FuenteJson; FuenteOffline leyendo las llaves del paquete y DescargadorPaquete descargándolas (FR-318), revisando si el paquete también tiene que traer costos y cazadores; la persistencia de la respuesta por versión de cripta con la validación de versión que ya existe (FR-317, FR-319); y la validación de FR-321 (sala inexistente) en Data con el esqueleto, usando ErrorDatos de Data/ValidacionDatos.py. Los errores de FR-323 ya los lanza GestorEsqueleto al cargar el esqueleto (T002 de la 001).
+
+2. El DTO del reporte de resolubilidad para el integrante 3 (vence hoy, 13/11): sus campos exactos, para que la interfaz lo muestre sin calcular nada: veredicto (resoluble, no resoluble o no concluyó), orden de llaves, llaves no obtenibles con sus ubicaciones o «sin ubicación», frontera bloqueada (dos salas y la llave o «sin llave: no se puede abrir»), ciclos y sus llaves dependientes, el motivo de FR-322 y el mensaje si no concluyó. Solo transporta datos; campos nuevos al final con valor por defecto. Escribilo en specs/003-resolubilidad/contracts/contrato-reporte-resolubilidad.md, y el contrato de las llaves en specs/003-resolubilidad/contracts/contrato-llaves.md.
+
+3. Dónde vive cada parte según la arquitectura de la constitución: el recorrido y el armado del reporte en Logic (no importa Data; recibe DTOs del esqueleto y de las ubicaciones); Data entrega y valida los datos; Service orquesta la verificación antes de crear partida.log solo al iniciar una partida nueva (cargar una partida y --replay no verifican, FR-301); UIController y main.py: --verificar <cripta> y --forzar, con los códigos 0, 3 y 1 (el 2 sigue siendo de argumentos). Coordinación con el integrante 3: ella agrega primero --hasta y --checkpoint-cada en ConfiguracionDTO y LectorArgumentos; los campos verificar y forzar van después de los suyos, y --verificar en el mismo grupo excluyente que --replay y --bench.
+
+4. El recorrido incremental (§5.4, NFR-302, NFR-303): cómo guardar la frontera bloqueada agrupada por llave sin dict ni set (por ejemplo, listas por llave en un array con un índice propio de llave), de modo que al obtener una llave se reabran solo las puertas que la esperaban; cada cara por separado (FR-302); el costo no afecta; la cola del recorrido es la de Estructuras/. Con la complejidad temporal y espacial.
+
+5. El orden determinista (FR-305, FR-306): la regla concreta de orden y desempate, y cómo ordenar sin sorted ni list.sort (con el Ordenador del equipo, si hace falta).
+
+6. Los ciclos (FR-310): cómo detectar de forma determinista los ciclos de dependencia entre llaves no obtenibles (llave → puerta que la encierra → llave que pide esa puerta), sin repetir ciclos, y cómo ubicar las llaves dependientes inmediatamente después de su ciclo.
+
+7. --bench (NFR-304, SC-306, SC-307): dónde va la medición y cómo se conecta con Service/ServicioBench.py; criptas sintéticas deterministas por semilla con llaves encadenadas en al menos tres tamaños, incluida la de 1 000 salas en cuadrícula con 100 llaves; la alternativa de repetir el recorrido por cada llave.
+
+8. Historial y línea de tiempo: la verificación no cambia el estado del juego, así que no registra nada en el historial de retroceso ni en la línea de tiempo. Dejalo escrito (es el riesgo principal del plan de trabajo).
+
+9. Pruebas: qué archivos de prueba en tests/ y que cada prueba cite su FR (Principio X).
+
+Restricciones: constitución v1.2.0 (sin dict ni set como índice o caché; sin heapq, bisect, collections, queue ni bibliotecas de grafos; sin sorted ni list.sort en lo evaluado; copy solo en tests). No escribas código: solo plan.md, research.md, data-model.md, contracts/ y quickstart.md dentro de specs/003-resolubilidad/. No modifiques archivos de otras features ni de otros integrantes; si algo de su código tiene que cambiar, listalo en el plan como coordinación. Si el script de setup modifica algún archivo fuera de specs/003-resolubilidad (por ejemplo, un archivo de contexto del agente), decime cuál. Todo en español. Al final resumí las decisiones, qué hay que coordinar con los integrantes 1 y 3, y si quedó algún NEEDS CLARIFICATION. No hagas commit.
+
+Seguimiento en la misma conversación (después del commit 45e959e de la spec):
+
+La spec de la 003 cambió después de generar el plan (segunda revisión del integrante 1): FR-302 (el cierre automático es el de la cara desde la que se abre y cierra las dos caras; cada cara se rige por su llave y su estado cerrado), FR-304 y FR-322 (la puerta hacia sala_salida debe estar cerrada y llave_salida la pide la cara de la sala desde la que se entra; una puerta que pide llave_salida pero no lleva a sala_salida no cuenta), FR-313 (se muestra antes de la primera acción; sin vista solo verifica --verificar, que escribe en la salida estándar), FR-301 (--bench no verifica como paso previo a una partida) y FR-314, más la aclaración de la Sesión 2026-11-13: el integrante 1 decidió mantener el motor de la primera parte como está y registrar la diferencia en DECISIONES.md. Leé de nuevo specs/003-resolubilidad/spec.md y alineá plan.md, research.md, data-model.md, quickstart.md y los dos contratos con esos cambios. En particular: cómo decide el recorrido si se llegó a sala_salida por una cara que pide llave_salida, el texto del motivo de FR-322, el hallazgo H-1 (ya no es solo informativo: quedó decidido y lo registra el integrante 1 en DECISIONES.md) y cualquier mención del cierre automático por cara. No toques la spec ni ningún archivo fuera de specs/003-resolubilidad. Al final decime exactamente qué cambiaste en cada archivo. No hagas commit.
+
+**Uso de la respuesta:** se usó para crear `specs/003-resolubilidad/plan.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/contrato-llaves.md` (UbicacionLlaveDTO, `FuenteDatos.obtener_llaves`, `AlmacenLlaves`, `GestorLlaves`, validación de FR-321 y `llaves.json` en el paquete) y `contracts/contrato-reporte-resolubilidad.md` (ReporteResolubilidadDTO para el integrante 3). Decisiones: recorrido incremental por oleadas con la frontera agrupada por llave en arreglos (sin `dict`), índice propio de llaves con el `Ordenador`, caras combinadas con la regla de `Mazmorra`, puerta de salida por la cara desde la que se entra, ciclos en O(K), `--bench` en `Service/BenchResolubilidad.py` y ningún registro en el historial ni en la línea de tiempo. El seguimiento alineó el plan con la segunda revisión de la spec. Revisé con Claude el plan antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+1. git fetch. Mostrame git log --oneline Marco..origin/derek y después hacé git merge origin/derek
+   (commit de merge normal). Si hay conflictos en archivos de la feature 001, pará y mostrámelos.
+2. test(001): H2-17, H2-18 y H2-19 sin skip, usando la propuesta del integrante 2
+   (te paso el archivo Propuesta_pruebas_FR-122_para_Marco.md). Borrá PENDIENTE_T002.
+   Agregá "Co-Authored-By: Derek" en el commit.
+3. test(001): T054 (H2-9) con el cuerpo completo y sin skip, con la fuente FuenteConFichaInvalida
+   de la misma propuesta (la fuente devuelve la ficha sin rango, no lanza el error).
+   Cubrí los 5 puntos de T054 en tasks.md, incluido que el segundo intento no hace una solicitud nueva
+   (len(fuente.lotes) y len(fuente.catalogos)) y que el mensaje ya no empieza con "Sin conexión".
+4. tasks(001): marcá T002, T052 y T053 (y T038 si sigue sin marcar) en tasks.md.
+Suite en verde con uv run antes de cada commit; entrada en PROMPTS_LLM.md; no hagas push.
+Al final: total de pruebas, qué sigue con skip y por qué.
+
+**Uso de la respuesta:** el merge de `origin/derek` (con T002 y T052 de Derek y T053 de Kris) entró como fast-forward, sin conflictos. Commit `7c9dfc4` (test): H2-17, H2-18 y H2-19 con el cuerpo de la propuesta de Derek (`_no_inicia` y los helpers de `tests/TestValidacionDatos.py`), sin `PENDIENTE_T002`. Commit `0c1259b` (test): `FuenteConFichaInvalida` en `tests/ayudas_terreno.py` y T054 (`test_h2_9_fr122_ficha_invalida_rechaza_entrar`) con los 5 puntos, incluido el segundo intento sin solicitudes nuevas y el mensaje sin «Sin conexión». Commit tasks(001): T002, T052 y T053 marcadas (T038 ya lo estaba). Suite: 460 OK (skipped=2) y 31/31 scripts; quedan con `skip` H3-7 (spec 003) y H3-8 (fase 7).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+1. git commit --amend en 0c1259b (es el último commit de T054? si no, usá un rebase sin -i no es posible:
+   en ese caso dejalo como está y avisame) para agregar "Co-Authored-By: Derek García Herra <...>".
+2. tasks(001): marcá T054. T050 todavía no (espera la confirmación del integrante 2).
+3. docs: en el README, cómo correr la suite: uv run python tests/correr_pruebas.py, y en Windows
+   (Git Bash o PowerShell) con PYTHONIOENCODING=utf-8. En su propio commit.
+Suite en verde con uv run; no hagas push.
+
+Después: agregá la entrada en PROMPTS_LLM.md en un commit aparte, cubriendo el amend que no se hizo,
+T054 en tasks.md y el README.
+
+**Uso de la respuesta:** el amend no se hizo: `0c1259b` ya no era el último commit (después venía `2a85717`), así que el commit de T054 quedó sin el co-autor de Derek, aunque `FuenteConFichaInvalida` sale de su propuesta. Commit `35862c8` (tasks): T054 marcada en `specs/001-terreno-cazador/tasks.md`; T050 sigue sin marcar hasta que confirme el integrante 2. Commit `2706b39` (docs): la sección «Pruebas» del `README.md` usa `uv run python tests/correr_pruebas.py` y explica que en Windows hace falta `PYTHONIOENCODING=utf-8` (Git Bash y PowerShell, las dos probadas), porque sin eso el script se cae al imprimir un carácter que la consola no puede mostrar. Suite: 460 OK (skipped=2) y 31/31 scripts antes de cada commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+tasks(001): marcá T050 (revisión de las pruebas de FR-122 confirmada por el integrante 2 el 13 nov:
+cubre costo 0/"250"/true, caras 100 vs 250, rango ausente/null/-1/true, no inicia en esqueleto y sala
+inicial, y otra sala con T052/T054). Puede ir en el mismo commit que la entrada de PROMPTS_LLM.md.
+Suite en verde con uv run; no hagas push.
+
+**Uso de la respuesta:** antes de marcar se comprobó que los casos de T050 están en `tests/TestValidacionDatos.py` (costo 0, "250" y true; caras con 100 y 250; rango ausente, null, -1 y true) y en `tests/test_terreno_cazador.py` (H2-17 a H2-19: no inicia con un error en el esqueleto ni en la sala inicial; H2-9 / T054: otra sala). T050 marcada en `specs/001-terreno-cazador/tasks.md`, en el mismo commit que esta entrada. Suite: 460 OK (skipped=2) y 31/31 scripts.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Revisión de seguimiento, SOLO LECTURA (no modifiques nada, no hagas commit). git fetch.
+Specs 002 y 003 en origin/derek, comparadas con la revisión anterior (commit ede62b8):
+git diff ede62b8 origin/derek -- specs/002-niebla-ir-a specs/003-resolubilidad
+
+1. Para cada punto de tu revisión anterior (ALTA, MEDIA, BAJA): ¿quedó resuelto, parcial o pendiente?
+   Una tabla corta.
+2. FR-225 de la 002: confirmá que dice "por cara" (la salida u→v se ofrece si la cara del lado de u
+   se recuerda abierta), costo igualado y todas las salas contadas.
+3. FR-308 nuevo de la 003 (puertas cerradas sin llave en la frontera): revisá en el código de P1
+   (Logic/Mazmorra.py, motorJuego.py, _igualar_caras) y en el enunciado si una cara cerrada sin llave
+   se puede abrir o no. Decime si FR-308 es correcto o si declararía no resolubles criptas que sí lo son.
+4. Cualquier contradicción nueva con la 001 o entre la 002 y la 003 que hayan introducido los cambios.
+Registralo en PROMPTS_LLM.md (puede ir en el próximo commit).
+Salida: solo lo que falta o está mal, con archivo y línea.
+
+**Uso de la respuesta:** revisión de solo lectura de `e1a216c` (002) y `a4782fe` (003) contra la revisión anterior. En la 002 quedaron resueltos los tres puntos ALTA y casi todos los demás; FR-225 cumple «por cara» y el costo igualado, pero no dice que todas las salas cuentan (eso va en el contrato `busqueda-rutas.md` de la 001, que todavía dice «puerta recordada abierta»). En la 003 se resolvieron las caras con llaves distintas y FR-323, pero siguen pendientes casi todos los puntos MEDIA y BAJA (SC-305, SC-307, NFR-301, FR-313, H4-1, FR-310, marcas de «decisión del grupo»). En P1 una cara cerrada sin llave nunca se abre (`motorJuego.abrir_puerta` devuelve `nada_que_abrir` y `_igualar_caras` solo le copia llave si la otra cara declara una), así que FR-302/FR-308 no declaran no resoluble una cripta resoluble; falta decir cómo se lista esa puerta en la frontera. Contradicción nueva: con llaves distintas por cara y cierre automático, el supuesto «una puerta puede volver a abrirse con la misma llave» (FR-302) deja de valer.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+OK con 4b. Corregí specs/001-terreno-cazador/contracts/busqueda-rutas.md: "con la cara de la sala de
+origen recordada abierta; ids del esqueleto completo (cantidad_salas() de la cripta)". Commit plan(001)
+(el contrato es del plan), junto con la entrada pendiente de PROMPTS_LLM.md. Suite en verde, no hagas push.
+Después seguí con la fase 5.
+
+**Uso de la respuesta:** commit `7d9ed8f` (plan): la fila «Grafo del mapa conocido» del contrato `busqueda-rutas.md` dice «con la cara de la sala de origen recordada abierta; ids del esqueleto completo (`cantidad_salas()` de la cripta)», junto con la entrada de la revisión de seguimiento. Fase 5 con `/speckit.implement` (T027 a T035; los commits están en la entrada siguiente): `Logic/RutasHaciaJugador.py` (nuevo: búsqueda compartida por todos los cazadores; se rehace si cambia la sala del jugador o si se descartó; `puerta_cambio` la descarta solo si toca una sala resuelta; registra «descartar» en el historial al crearla o extenderla y en cada aviso de puerta), `Logic/Mazmorra.py` (`observador_puertas`; `abrir_puerta` y `CierrePuerta.activar` avisan con los destinos de las caras), `Logic/motorJuego.py` (`self.rutas`) y `Logic/Comportamientos.py` (`Cazador.decidir_paso` usa `motor.rutas.decidir`). Pruebas: `tests/test_rutas_equivalencia.py` (H3-1 a H3-5; 12 partidas aleatorias con puertas, cierres automáticos, muertes, velocidades y pergaminos, unas 11 000 decisiones comparadas con `paso_desde_cero`, sin diferencias; historial, con una prueba extra para abrir una puerta sin moverse y deshacer con el pergamino) y `TestDeterminismo` en `tests/test_terreno_cazador.py` (H3-6 y SC-103). Se comprobó con mutaciones que las pruebas detectan quitar el aviso de puertas o el registro en el historial. Suite: 472 OK (skipped=2) y 31/31 scripts.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Antes de commitear, respondé:
+1. ¿Qué queda registrado en HistorialRetroceso? Método, cuándo se registra y qué ve la línea de
+   tiempo de la integrante 3. El acuerdo era un aviso de "descartar caché", sin copiar nada.
+   Si hoy el descarte depende solo de un gancho del pergamino y no de un registro en el historial,
+   decímelo antes de cambiar nada.
+2. ¿observador_puertas y los avisos en abrir_puerta y CierrePuerta.activar están en la tabla
+   "Cambios a código de la primera entrega" de plan.md? Si no, agregalos con su FR en un commit plan(001)
+   antes del código.
+3. ¿_asegurar_tamano()/reiniciar se usa ahora? Si no, quitalo.
+Después commiteá agrupando por tarea (no todo en uno): suite en verde antes de cada commit,
+la entrada de PROMPTS_LLM.md en el último. No hagas push.
+
+**Uso de la respuesta:** (1) En el historial se registra solo `registrar_cambio(RutasHaciaJugador.descartar)`, que pone `valida = False` y no copia nada: al crear o extender la búsqueda en `decidir` y en cada `puerta_cambio`. El descarte no depende de un gancho del pergamino: lo hace `HistorialRetroceso.deshacer` al ejecutar esos registros. La línea de tiempo (004, research R9) re-simula con un motor aparte que tiene su propio historial vacío y no usa esos registros. (2) Las filas ya estaban en la tabla de `plan.md`; a la de `observador_puertas` le faltaba FR-114. (3) `reiniciar` sí se usa, pero el crecimiento de los arrays (`_asegurar_tamano`) nunca ocurría: `Motor` se crea siempre después de `cargar_esqueleto`. Commits: `d284475` (plan: FR-114 en la tabla; `data-model.md` y T032 sin el crecimiento), `c838ff3` (refactor: los arrays se reservan una sola vez en el constructor), `2bc38fa` (T031), `515c785` (T032), `31641c0` (T033), `1efe941` (T034), `d4b25a5` (pruebas T027 a T029) y el último con T030, T035 y estas entradas. La suite se corrió sobre lo que entraba en cada commit (lo demás guardado con `git stash`): 460 OK hasta T034, 470 con T027 a T029 y 472 al final, siempre con skipped=2 y 31/31 scripts.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+En tasks.md, en T046, agregá dos notas para DECISIONES.md:
+1. Diferencia conocida entre la verificación (003 FR-304, literal de §3.5 y P1 §2.12) y el motor de P1:
+   abrir_puerta activa salida_abierta con cualquier puerta que pida llave_salida. No se cambia el motor
+   (no hay FR que lo pida); la diferencia va hacia el lado seguro (--forzar). Acordado con el integrante 2
+   el 13 nov; la 003 lo cita.
+2. Evidencia de FR-113 para research.md (D4): 12 partidas aleatorias, ~11 000 decisiones iguales a
+   paso_desde_cero, reutilización > 90 %, y las pruebas de mutación (sin avisos de puerta fallan 6-7
+   de 12; sin descarte por pergamino, solo la prueba fija lo detecta).
+Commit tasks(001) con su entrada en PROMPTS_LLM.md. No hagas push.
+
+**Uso de la respuesta:** se agregaron las dos notas debajo de T046 en `specs/001-terreno-cazador/tasks.md`. En la segunda, Claude señaló que la evidencia es de FR-114 (decidir igual que un cálculo desde cero), no de FR-113 (no abrir puertas), y que en `research.md` la decisión es R4 (no hay D4); la nota quedó con FR-114 y R4. En la primera se aclaró que, al 13 nov, la 003 de `origin/derek` (`f9ecaec`) todavía no cita la diferencia. Suite: 472 OK (skipped=2) y 31/31 scripts.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Creá DECISIONES.md en la raíz (T046, adelantado), en un commit docs(001) aparte:
+- Encabezado: qué es el archivo y cómo se cita el "antes" (docs/Documento_Decisiones.pdf de la primera entrega).
+- Una sección por integrante y spec: "Integrante 1 — 001 terreno y cazador (§5.1, §5.2, §5.6)",
+  "Integrante 2 — 002 y 003", "Integrante 3 — 004". Las de los integrantes 2 y 3 vacías, con "(pendiente)".
+- En la sección del integrante 1, ya escrita, la entrada "Diferencia conocida entre la verificación y el
+  motor de P1": 003 FR-304 sigue §3.5 y P1 §2.12; abrir_puerta activa salida_abierta con cualquier puerta
+  que pida llave_salida; el motor no se cambia (ningún FR lo pide); la diferencia va hacia el lado seguro
+  (--forzar). Acordado con el integrante 2 el 13 nov.
+- Lo demás de §5.1, §5.2 y §5.6 queda como "(se completa en T046 con las mediciones de --bench)".
+La nota 2 (evidencia de FR-113 para D4) sí va en tasks.md, en T046, como te pedí.
+Entrada en PROMPTS_LLM.md. Suite en verde. No hagas push.
+
+**Uso de la respuesta:** se creó `DECISIONES.md` en la raíz: encabezado con lo que pide el Principio VIII y cómo se cita el «antes» (`docs/Documento_Decisiones.pdf`); sección del integrante 1 con §5.1 «La ruta más barata del cazador», §5.2 «Rutas que dejan de ser válidas» y §5.6 «Revisión de decisiones de la primera parte» (títulos del enunciado) como «(se completa en T046 con las mediciones de --bench)», y la entrada «Diferencia conocida entre la verificación y el motor de P1». En esa entrada se acotó «lado seguro» a esta regla: si la verificación dice resoluble, el motor también deja ganar; lo contrario no, y para eso está `--forzar`. Las secciones de los integrantes 2 y 3 quedaron «(pendiente)». La nota 2 ya estaba en T046 de `tasks.md` (commit `c7bd816`), escrita con FR-114 y R4. Suite: 472 OK (skipped=2) y 31/31 scripts.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+Prueba del puente (solo lectura). Lee specs/001-terreno-cazador/tasks.md y decime en 3 lineas: que tareas de la fase 5 quedan sin marcar y si existe el commit de ajustes plan(001) de las fases 1 a 4 (buscalo en PROMPTS_LLM.md, no tenes git).
+
+**Uso de la respuesta:** consulta `1a1d60173f0` (11:43), respuesta en `.claude-bridge/outbox/1a1d60173f0.txt`. Confirmó que en ese momento faltaban las 9 tareas de la fase 5 (T027 a T035). No pudo confirmar desde `PROMPTS_LLM.md` el commit `plan(001)` de ajustes de las fases 1 a 4, porque la entrada correspondiente no da título ni hash y la consulta no tenía `git`. Sirvió para probar el puente y para decidir seguir con la fase 5. No modificó nada.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+Revision de seguimiento, SOLO LECTURA (no modifiques nada). Hace git fetch.
+Specs 002 y 003 en origin/derek comparadas con la revision anterior (commit ede62b8):
+git diff ede62b8 origin/derek -- specs/002-niebla-ir-a specs/003-resolubilidad
+
+1. Para cada punto de la revision anterior (ALTA, MEDIA, BAJA): resuelto, parcial o pendiente. Tabla corta.
+2. FR-225 de la 002: confirma que dice por cara (la salida u->v se ofrece si la cara del lado de u se recuerda abierta), costo igualado y todas las salas contadas.
+3. FR-308 nuevo de la 003 (puertas cerradas sin llave en la frontera): revisa en el codigo de P1 (Logic/Mazmorra.py, Logic/motorJuego.py, _igualar_caras) y en el enunciado si una cara cerrada sin llave se puede abrir o no. Decime si FR-308 es correcto o si declararia no resolubles criptas que si lo son.
+4. Contradicciones nuevas con la 001 o entre la 002 y la 003 introducidas por los cambios.
+Salida: solo lo que falta o esta mal, con archivo y linea.
+
+**Uso de la respuesta:** consulta `1a1d6061b41` (11:51), respuesta en `.claude-bridge/outbox/1a1d6061b41.txt`. Revisó la 003 en `f9ecaec`, más nueva que la de la revisión hecha en esta sesión. Casi todos los puntos de la revisión anterior quedaron resueltos. En la 002 siguen parciales NFR-251 sin «decisión del grupo», una línea cortada en FR-225 y la numeración de la tabla de escenarios adicionales. En la 003 siguen parciales el código 1 de FR-321 sin escenario y FR-313. FR-225 dice «por cara» y costo igualado; «todas las salas» es del contrato de la 001 (ya corregido en `7d9ed8f`). FR-308 es correcto: en P1 una cara cerrada sin llave nunca se abre. Señaló que FR-304 y FR-322 pueden declarar no resoluble una cripta que P1 deja ganar, porque `abrir_puerta` activa `salida_abierta` con cualquier puerta que pida `llave_salida`. Eso llevó a la nota de T046 (`c7bd816`) y a la entrada de `DECISIONES.md` (`ded35aa`). Contradicciones nuevas: el motivo de que el cierre automático no bloquee y el «cierre automático por cara» de FR-302, la 002 corta frente a la 003 en caras con la misma llave, la referencia «003 H4-4» y el «5 ms» de NFR-250. Se le pasan al integrante 2. No modificó nada (3 acciones bloqueadas por permisos).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+Revision cruzada del PLAN de la spec 003 (integrante 2), SOLO LECTURA. Hace git fetch y lee con git show origin/derek:specs/003-resolubilidad/<archivo> (plan.md, research.md, data-model.md, contracts/, tasks.md si existe).
+Revisa contra la constitucion v1.2.0 (.specify/memory/constitution.md) y la spec 003:
+1. Principio I (capas): en que capa queda la verificacion y quien la llama. Data nunca llama a Logic, Logic nunca llama a Data ni a Service. El plan dice que combina las caras con una Mazmorra aparte para usar _igualar_caras: confirma desde que capa se construye esa Mazmorra y si eso respeta las capas.
+2. Usar _igualar_caras (metodo privado de Mazmorra) desde otro modulo: se hace por la API publica (cargar_esqueleto) o llamando al privado? Si cambia codigo de P1, debe estar en la tabla de cambios a P1 con su FR.
+3. Principio II: estructuras prohibidas (dict, set, heapq, bisect, collections, copy, sorted/list.sort en ordenamientos evaluados). Si usa un recorrido o cola, que sea propia o reutilice Estructuras/ de la 001.
+4. Regla de la salida por cara: una cara cuenta si lleva a sala_salida, esta cerrada y su llave es llave_salida. Coherencia con FR-304 y FR-322 de la spec y con Logic/Mazmorra.py (abrir_puerta, salida_abierta).
+5. Coherencia con la 001: errores de FR-122 al cargar el esqueleto antes de verificar; no usa costos ni cazadores (003 FR-302, 001 H3-7); determinismo.
+6. Mediciones de --bench planificadas para cada decision (Principio VIII) y cripta sintetica de 1000 salas y 100 llaves.
+7. Que cada FR de la spec tenga cobertura en el plan; reglas nuevas que el plan agregue y no esten en la spec (Principio IX).
+Salida: ALTA/MEDIA/BAJA con archivo y linea, y al principio que esta bien.
+
+**Uso de la respuesta:** consulta `1a1d642ea8b` (12:58), respuesta en `.claude-bridge/outbox/1a1d642ea8b.txt`. Sin hallazgos ALTA. Lo que está bien: capas (la `Mazmorra` aparte se crea en Logic), `_igualar_caras` usado por la API pública (`cargar_esqueleto`) sin tocar `Logic/Mazmorra.py`, estructuras permitidas, regla de la salida por cara coherente con FR-304, FR-322 y el motor (la diferencia ya está en `DECISIONES.md`), coherencia con 001 FR-122, mediciones B1 a B4 y cobertura de FR-301 a FR-323. MEDIA: M1, la elección de una sola puerta por llave puede dejar fuera de los ciclos señalados una llave que sí está en un ciclo (FR-310); M2, la variante no resoluble del generador del bench produce K/2 ciclos de una llave en vez de un ciclo con una cadena de dependientes; M3, un segundo `if config.offline` en `ServicioResolubilidad`. Además, 8 puntos BAJA (cita de la constitución, la alternativa ingenua en Service, mediciones de R3 y R4, reglas que no están en la spec, `ErrorPartidaNoIniciada` en dos lugares, FR-319, recursión y duración de B2). Se le pasan al integrante 2. No modificó nada (4 acciones bloqueadas por permisos).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Registrá en PROMPTS_LLM.md las tres consultas hechas por el puente (solo lectura):
+1a1d60173f0 (estado de la fase 5), 1a1d6061b41 (seguimiento de las specs 002/003) y
+1a1d642ea8b (revisión del plan de la 003). Las respuestas están en C:\Users\Eli\.claude-bridge\outbox\.
+Commit docs con la entrada; no hagas push.
+
+**Uso de la respuesta:** se agregaron las tres entradas anteriores. El texto de cada consulta se tomó del primer mensaje de su sesión (`.claude-bridge/sessions/<id>` da el id de la sesión de Claude Code) y el resumen, de su respuesta en `outbox`. Commit docs.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+Edita SOLO specs/004-linea-tiempo/spec.md y su checklist si aplica. Sin estructuras, clases ni módulos. Agrega el escenario H3-6 (FR-413, FR-419, FR-424): el jugador suelta un pergamino de retroceso en la acción 4, usa otro pergamino para revertir esa acción, y después recoge el pergamino que sigue en el suelo de la sala; cuando consulta el instante actual y los instantes posteriores, el resumen coincide con el de la partida viva (el pergamino soltado quedó fuera de la reversión, tanto en el inventario como en el suelo). Agrégalo a la tabla de trazabilidad. Verifica referencias y dime qué cambiaste.
+
+**Uso de la respuesta:** Se agregó el escenario H3-6 (pergamino soltado y vuelto a recoger tras revertir).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+Edita SOLO specs/004-linea-tiempo/plan.md, research.md, data-model.md, quickstart.md, contracts/contrato-linea-tiempo.md y tasks.md. No cambies spec.md ni escribas código.
+
+1.Cambia el diseño del pergamino (hallazgos C1 y E1 del analyze). Se elimina el marcador de pergamino (quitados/agregados). En su lugar, después de usar un pergamino, la línea quita la última acción, quita los puntos de control con más de c acciones, y toma un punto de control NUEVO en la posición c copiando el estado vivo con PartidaGuardada.guardar, reemplazando el que hubiera en c. Esa copia ya incluye inventario, suelo de las salas, azar y todo lo demás tal como quedó (en el motor, recoger y soltar un pergamino no se registran en el historial ni en el inventario ni en el suelo). Explica en research.md (R4) por qué es más simple y exacta que los marcadores, y que las consultas de instantes anteriores a c usan los puntos anteriores, que reflejan lo vivido en ese momento.
+2. Quita MarcadorPergamino y MarcadorPergaminoDTO del modelo y del contrato (también del bloque binario). La línea guardada lleva k, acciones, puntos, cargas y fichas. Mantén el campo linea y la versión 2. El contrato lo lee el integrante 2 (Derek): déjalo completo y claro.
+3. Tareas: T028 pasa a retroceder_una(estado_guardado) (quita la última acción y los puntos posteriores, y agrega o reemplaza el punto en c); T030 toma el estado con PartidaGuardada.guardar tras detectar −1 y llama a retroceder_una; T031 desaparece (el reconstructor no aplica marcadores); T034 pasa a ser «reemplazar el punto en c y verificar H3-5 y H3-6»; T010 quita el DTO de marcador. T033 incluye H3-5 y H3-6 sin skip. T007: la regla pasa a «nunca hay más de K acciones entre dos puntos consecutivos» (los puntos tras un pergamino pueden estar más cerca).
+4. E1: M6 y T060 miden el recorte más la copia del punto tras el pergamino, con historias de 100 a 5 000 acciones.
+5. Ajustes de texto: E2 (todo camino que ejecute acciones —comando manual, «ir a» de la spec 002, replay— usa ServicioLineaTiempo.ejecutar: anótalo en H-4 y en T053 de la 004); E3 (T023: si el estado trae el mapa conocido, el resumen lo copia); Q1 (quickstart §3 incluye H3-5 y H3-6); T1 (agrega FR a T037, T041, T046, T047, T050, T063 y T064 según tu tabla de cobertura); O1 (ya no aplica si T030/T034 cambian: revisa); I1 (en el plan, el dueño de motorJuego.py es «Integrante 3 (revisa Marco)»).
+6. Agrega una tarea con prueba: un escenario con un cazador comprueba que el estado reconstruido por la línea coincide con el de la partida viva (FR-419, FR-114); la búsqueda compartida del Motor aparte arranca vacía y decide igual que desde cero.
+7. DECISIONES.md ya existe (lo creó el integrante 1) con una sección «Integrante 3 — 004» vacía: T063 y T064 la completan; ajusta T063 para decir «completar» y no «crear».
+8. ConfiguracionDTO: el orden de campos es checkpoint_cada y después hasta; los de la 003 (verificar y forzar, del integrante 2) van detrás.
+9. ContextoPartida y ControladorBackend: la 004 agrega un campo y métodos al final con valor por defecto; la 003 también (resolubilidad, verificar). Anota que quien sube primero, el otro hace merge antes. --replay y --replay … --hasta no verifican la resolubilidad (FR-301 de la 003).
+10. «ir a» registra la orden como comentario «# ir a <sala>» en partida.log (formato acordado con el integrante 2). Anota que BitacoraReplayIO.leer debe ignorar esas líneas (tarea del integrante 2, spec 002) y que --replay … --hasta depende de ello. Muestra las líneas cambiadas y dime si algo de lo anterior no se pudo aplicar.
+
+**Uso de la respuesta:** Se cambió el diseño del pergamino a un punto de control nuevo tras cada uso y se ajustaron el contrato y las tareas.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+Edita SOLO tu sección de «ir a» en specs/002-niebla-ir-a/spec.md (FR-250 a FR-299). No modifiques los FR-201 a FR-249.
+
+1. FR-252 y donde corresponda: cambia «puerta recordada abierta» por «salida recordada abierta», el término de Convenciones (el mapa recuerda cada cara por separado: una salida cuenta como recordada abierta solo si se recuerda abierta la cara de la sala de la que sale; FR-208, FR-225, escenario H2-6).
+2. NFR-251: márcalo como decisión del grupo.
+3. NFR-250 y SC-252: cita que el «5 ms» sale de la tabla de §6.1 del enunciado.
+4. Actualiza la línea de Estado (línea 7) y el párrafo «Reparto de la numeración» para decir que «ir a» (FR-250 a FR-264, historias 6 y 7) ya está escrita por el integrante 3. No cambies ningún otro requisito ni escenario. Dime qué líneas cambiaste.
+
+**Uso de la respuesta:** Se ajustó la sección de «ir a» (salida recordada abierta, NFR-251, cita de §6.1) y su estado.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+/speckit-implement Ejecuta SOLO las Fases 1 y 2 de specs/004-linea-tiempo/tasks.md (ya actualizado: sin marcador de pergamino), en este orden: T001, T005, T006, T007, T008, T009, T010 y T069. T002, T003 y T004 son del integrante 2 («Coordinar»): no las implementes. Reglas: lee la constitución. Pruebas primero: escribe cada prueba, comprueba que falla y luego implementa hasta que pase. Todo código nuevo con type hints y docstring breve. Sin copy, bisect, heapq, collections, dict ni set como índice, ni sorted(). Logic no importa Data ni Service; Estructuras no importa ninguna capa. No modifiques archivos de otros integrantes ni de la primera entrega, salvo DTO/ConfiguracionDTO.py (T069: la constante CHECKPOINT_POR_DEFECTO y el campo checkpoint_cada, al final y con valor por defecto). Marca con [X] en tasks.md solo las tareas que completes. Al terminar la fase 2 corre python tests/correr_pruebas.py (en Windows, con PYTHONIOENCODING=utf-8) y reporta cuántas pasan. Haz un commit por fase: «feat(004): ayudantes de prueba» y «feat(004): búsqueda binaria, línea de tiempo en Lógica y DTOs». Para y reporta antes de la Fase 3.
+
+**Uso de la respuesta:** Se implementaron las fases 1 y 2 de la spec 004 (búsqueda binaria, línea de tiempo en Lógica y DTOs).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+/speckit-implement Ejecuta SOLO la lectura de argumentos de T037 y T050 de specs/004-linea-tiempo/tasks.md; el cableado a los servicios queda para después. No marques T037 ni T050 como completas.
+
+1. DTO/ConfiguracionDTO.py: después de checkpoint_cada (T069) agrega el campo hasta: int | None = None, al final y con valor por defecto (el integrante 2 agregará verificar y forzar detrás).
+2. UIController/LectorArgumentos.py: agrega --checkpoint-cada (entero ≥ 1) y --hasta (entero ≥ 0). --hasta solo se acepta junto con --replay; sin valor, con un valor que no es entero o negativo, o sin --replay, es un error de uso (código 2, igual que las demás banderas inválidas). --replay sin --hasta sigue reproduciendo la partida completa, como en la primera parte. Un --checkpoint-cada inválido también es error de uso (código 2).
+3. Pruebas en un archivo nuevo (por ejemplo tests/test_banderas_linea_tiempo.py), citando FR-410 y FR-415; no modifiques los archivos de prueba del integrante 2. Reglas: pruebas primero, type hints y docstring en todo lo nuevo, solo bibliotecas permitidas, sin tocar nada más. Corre python tests/correr_pruebas.py y reporta. Un solo commit: «feat(004): banderas --checkpoint-cada y --hasta (lectura de argumentos)». No hagas push: lo hago yo al revisar el reporte.
+
+**Uso de la respuesta:** Se agregaron --checkpoint-cada y --hasta (campos y lectura de argumentos) para que Derek agregue sus banderas detrás.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude (Claude Code)
+
+/speckit-implement Correcciones antes de la Fase 4. Haz solo esto, en este orden, con un commit por punto y sin tocar nada más:
+1) Logic/motorJuego.py, Motor.avanzar_hasta(t) (revisión de Marco): usa el evento que devuelve obtener_siguiente() en vez de la variable de ver_siguiente(); y, antes de devolver True, haz lo mismo que avanzar_hasta_jugador (registrar reloj y Evento_pendiente en el historial y llamar a _cerrar_intervalo()). Agrega una prueba: un evento cancelado en la raíz con tiempo <= t seguido de uno válido con tiempo > t debe devolver False sin mover el reloj. Corre la suite completa; si falla alguna prueba de reconstrucción, para y reporta. Commit «fix(004): avanzar_hasta usa el evento extraído y cierra el intervalo (T012)».
+2) tests/test_grabadores_linea.py: las pruebas que instalan los grabadores a mano quedan doblemente envueltas porque iniciar_partida ya los instala. Haz que usen un contexto sin los grabadores de iniciar_partida (o que afirmen explícitamente el envoltorio único). Commit «test(004): grabadores sin doble envoltorio (T015)».
+3) Documentación (solo specs/004-linea-tiempo, commit aparte «spec(004): ...»): (a) en spec.md Suposiciones, reemplaza la frase «Ningún efecto se programa con retraso 0 …»: SalidaDTO.cierre_automatico y ObjetoDTO.duracion todavía no se validan como mayores que 0 (Data lo validará: pendiente del integrante 2); con 0 el bucle funciona, con un valor negativo el reloj retrocedería; (b) en contrato §3 y research.md deja escrita la regla que se implementó: j es la última acción con tiempo ESTRICTAMENTE menor que t, se parte de un punto con acciones_completadas == j, no se llama a avanzar_hasta(t) si ese punto ya está en la decisión de t, y si la acción en t terminó la partida sí se aplica. No cambies ningún FR.
+Para y reporta con los commits y el total de la suite. No hagas push.
+   
+**Uso de la respuesta:** Se aplicaron las observaciones de Marco a avanzar_hasta, se arregló el doble envoltorio de los grabadores y se documentó la regla de instante estrictamente menor y la suposición sobre retrasos.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+Revision de codigo, SOLO LECTURA. Hace git fetch. Metodo nuevo Motor.avanzar_hasta(t) de la integrante 3 en origin/kris (Logic/motorJuego.py, T012) y sus pruebas tests/test_linea_tiempo_motor.py. Usa git show origin/kris:<archivo>.
+Responde con evidencia de codigo (archivo:linea):
+1. ColaEventos.ver_siguiente: descarta los eventos cancelados del tope igual que obtener_siguiente? Si devolviera un cancelado, el metodo compararia el tiempo del cancelado y despues obtener_siguiente sacaria OTRO evento distinto al que se activa (el codigo usa la variable evento de ver_siguiente, no lo que devuelve obtener_siguiente). Decime si ese caso puede pasar.
+2. Compara con avanzar_hasta_jugador (P1): el manejo del evento del jugador (Evento_pendiente = None, reloj, retorno) es igual? Alguna diferencia de comportamiento?
+3. El Motor aparte de la linea de tiempo: tiene historial None? RutasHaciaJugador._registrar_descarte y Mazmorra.observador_puertas (de origin/Marco) funcionan si el historial es None, o fallarian con un cazador?
+4. Orden de eventos con el mismo tiempo: respeta el desempate por secuencia de la cola?
+5. Las tres precisiones de FR-402: los cancelados no cuentan, si la partida termino en t el estado es el final, y no hay eventos con retraso 0.
+Salida: lo que esta bien y lo que hay que cambiar, con propuesta minima.
+
+**Uso de la respuesta:** consulta `1a1d6e7281b` (15:54), respuesta en `.claude-bridge/outbox/1a1d6e7281b.txt`. No se pudo revisar el método: a esa hora `origin/kris` (`d743186`) no tenía `avanzar_hasta` ni `tests/test_linea_tiempo_motor.py`, y T011 y T012 de la integrante 3 seguían sin marcar. Revisó el código del que va a depender: `ver_siguiente` descarta los cancelados igual que `obtener_siguiente`, así que el caso de la pregunta 1 no puede pasar (igual propone usar lo que devuelve `obtener_siguiente`); el método nuevo debe hacer lo mismo que `avanzar_hasta_jugador` al llegar el turno del jugador, incluido `_cerrar_intervalo()`; el historial del motor nunca es `None` (`RutasHaciaJugador` y el aviso de puertas lo comprueban, pero el rearme de trampas y el cierre de puertas de `Logic/Mazmorra.py` no, así que el motor aparte no debe ponerlo en `None`); el desempate por secuencia se respeta si los eventos se sacan uno por uno. Sobre FR-402 señaló que la suposición «no hay eventos con retraso 0» no se cumple del todo: `SalidaDTO.cierre_automatico` y `ObjetoDTO.duracion` no se validan como mayores que 0. Dejó una propuesta mínima de `avanzar_hasta` y una prueba más (cancelado en la raíz con tiempo ≤ `t` seguido de uno válido con tiempo > `t`). Se le pasa a la integrante 3 para comparar cuando suba el código; lo de la validación de retrasos, al integrante 2 (Data). No modificó nada (3 acciones bloqueadas por permisos).
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit.implement Fase 7 de specs/001-terreno-cazador/tasks.md (T042 a T051).
+
+Primero registrá en PROMPTS_LLM.md la consulta del puente 1a1d6e7281b (revisión de avanzar_hasta de la
+integrante 3; respuesta en C:\Users\Eli\.claude-bridge\outbox\1a1d6e7281b.txt).
+
+Bench (Logic/BenchRutas.py, corre sin vista, Principio V):
+- Las mediciones planificadas en plan.md y research.md: un cazador frente a muchos, rango pequeño (200)
+  frente a grande, búsqueda compartida frente a individual, reutilizar frente a recalcular con puertas
+  estables e inestables, cuadrícula de 1000 salas con 30 cazadores (NFR-101, SC-104), SC-105 (10× la
+  cripta no más que duplica el tiempo de decisión) y la agenda de eventos con la carga nueva (§5.6).
+- Usá _cuadricula_con_costos(lado, azar) y semillas fijas: los resultados deben ser reproducibles.
+- Quitá el skip de H3-8 cuando --bench exista.
+
+Documentación:
+- research.md: cada decisión con su medición y si cambió respecto al plan. En R4 va la evidencia de
+  FR-114 anotada en T046 (12 partidas, ~11 000 decisiones, reutilización > 90 %, pruebas de mutación).
+- DECISIONES.md: completá §5.1, §5.2 y §5.6 con el antes (Documento de Decisiones de P1) y el después,
+  con las cifras del bench. No toques la entrada de la diferencia verificación/motor ni las secciones
+  de los integrantes 2 y 3.
+- Tabla de trazabilidad del Apéndice B (T047) y el checklist de la spec: marcá solo lo que quede cubierto.
+  H3-7 sigue con skip hasta que exista la 003.
+
+Reglas: constitución v1.2.0, sin cambios a código de P1 fuera de la tabla del plan, un commit por tarea,
+suite en verde con uv run, PROMPTS_LLM.md, no hagas push.
+Al terminar: tabla de mediciones (con la máquina y la semilla), qué decisiones cambiaron y qué quedó abierto.
+
+**Uso de la respuesta:** se creó `Logic/BenchRutas.py` con siete mediciones (cola de prioridad, un cazador frente a muchos, `rango`, invalidación con puertas estables e inestables, ciclo con 10, 30 y 100 cazadores en 1 024 salas, agenda con la carga nueva incluidos sus dos límites, e historial) y `BenchLogica.medir()` las incluye (T043, T044). Las mediciones con cazadores comparan cada decisión con `paso_desde_cero`, y H3-8 corre sin `skip` (T042). Dos mediciones se corrigieron después de la primera corrida. En la de `rango`, el jugador siempre en el centro daba «NO cumple» en SC-105 por los costos alrededor del centro, no por la búsqueda; ahora se promedian 400 posiciones. La agenda con costos ponía los eventos nuevos antes que los pendientes, lo que favorecía al array; ahora la carga es como la del juego. Tabla de `--bench` en `specs/001-terreno-cazador/bench-2026-11-13.txt` (Ryzen 5 3600X, `SEMILLA = 2026`). Con 30 cazadores en 1 024 salas, el peor ciclo es de 5,4 a 7,9 ms; SC-105 da 1,68 y 1,09 veces. Ninguna decisión del plan cambió; solo dos mediciones. Se completaron `research.md` (T046), `DECISIONES.md` §5.1, §5.2 y §5.6 (T046), la tabla del Apéndice B (T047) y el checklist (solo «X»). T048 quedó parcial (`--replay`; faltan `--hasta` y `--verificar` de las specs 004 y 003). T049: sin coincidencias nuevas. Suite: 482 OK (skipped=1, H3-7) y 32/32 scripts. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Antes del push:
+1. research.md (R3 y la agenda): que muestren las dos mediciones de cada cambio de método (SC-105:
+   jugador en el centro 2,78× y promedio de 400 posiciones 1,09×; agenda: la carga anterior y la nueva),
+   con la causa y su evidencia (12 salas resueltas contra 4) y por qué la versión nueva mide mejor lo que
+   pide SC-105. Que no parezca que se ajustó la medición para que pase.
+2. La fila de P1 con 500 enemigos: medila en el último commit anterior a la feature 001 (usá un git
+   worktree aparte, sin tocar la rama). Compará con la medición actual en la misma máquina. Si la 001 la
+   empeoró, decime cuánto y por qué antes de cambiar nada. Si ya fallaba, anotalo así en DECISIONES.md.
+3. plan.md: la fila de BenchLogica.medir() con 2 líneas y el motivo del import dentro de la función.
+Commits aparte, suite en verde con uv run, PROMPTS_LLM.md, no hagas push.
+
+**Uso de la respuesta:** (1) En `research.md`, R3 y R6 muestran las dos mediciones de cada cambio de método, con la causa y la evidencia. En R3, el tiempo por sala resuelta es de 3,6 a 4,4 µs con los dos métodos, así que el 2,78× venía de las 12 salas resueltas contra 4. El método nuevo empeora la razón de 100 a 1 024 salas (de 0,76 a 1,68) por los bordes de la cuadrícula chica. En la agenda, con la carga anterior y 10 000 eventos, el array solo corría el 0,5 % de los pendientes (46) por evento; con la nueva corre el 69 % (6 926). Con las dos cargas gana el montículo. (2) La fila de 500 enemigos se midió en `83d15c5` (último commit anterior a la 001) con un `git worktree` aparte, ya borrado. Sola da lo mismo en los dos árboles (peor 11,7 a 16,2 ms antes y 12,3 a 17,0 ms ahora). En el `--bench` completo, antes dio 17,4, 20,7 y 16,5 ms y ahora 24,3, 25,0 y 24,0 ms. Con el mismo `BenchDatos` antes, el `Logic` de antes y el de ahora dan lo mismo, así que la diferencia no viene de la 001. El peor ciclo es un ciclo normal más una pasada de generación 2 del recolector de basura (10 a 20 ms); sin el recolector baja a 7 a 12 ms. Ya fallaba antes de la 001, y quedó anotado así en `DECISIONES.md` §5.6. (3) La fila de `BenchLogica.medir()` del `plan.md` ahora dice 2 líneas y explica el import circular. Suite: 482 OK (skipped=1) y 32/32 scripts. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code (spec-kit)
+
+/speckit-analyze
+
+**Uso de la respuesta:** análisis de solo lectura de `specs/001-terreno-cazador` después de la fase 7. Cubre las 54 tareas y los 32 requisitos (23 FR, 3 NFR y 6 SC), todos con al menos una tarea, y la constitución v1.2.0. Hallazgos:
+- C1 (Principio IX): la tabla del Apéndice B nombraba archivos de prueba (módulos), un error introducido en T047.
+- C2 (Principio X): H3-7 tiene su prueba con `skip` hasta que exista `--verificar` (spec 003).
+- G1: T048 cubre solo `--replay`, aunque el quickstart §6 prometía también `--hasta` y `--verificar`.
+- G2: faltan las pruebas de interfaz de H4 (T041, integrante 3).
+- I1: el plan decía «cerca y lejos»; se midieron dos escenarios de puertas inestables.
+- I2: el bench usa 1 024 salas, no 1 000.
+- I3: T044 decía «una línea».
+- I4: T043 no reflejaba los cambios de método de `medir_rango` y `medir_invalidacion`.
+- U1: varias tareas citaban FR-105, 107, 112, 113, 120 y 123 solo dentro de nombres de prueba.
+
+Sin duplicaciones ni ambigüedades. Lo que se aplicó está en la entrada siguiente.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Aplicá los hallazgos del analyze, sin cambios de código:
+1. spec(001): C1, quitá los nombres de archivo de la tabla del Apéndice B (spec.md:416-422).
+2. plan(001): I1 (los dos escenarios de puertas inestables, remitiendo a research.md R4) e
+   I2 ("1 024 salas (32 × 32), al menos 1 000").
+3. tasks(001): I3 (T044 con 2 líneas), I4 (nota en T043 que remita a research.md R3 y R4) y
+   U1 (citar FR-105, 107, 112, 113, 120 y 123 en el texto de T008, T018 y T019).
+4. docs(001): G1, en quickstart.md §6 aclarar que hoy solo se cubre --replay; --replay … --hasta y
+   --verificar llegan con las specs 004 y 003.
+C2: H3-7 se queda en la 001 con su skip (es de FR-118); no la muevas.
+Un commit por punto, suite en verde con uv run, registrá el analyze en PROMPTS_LLM.md, no hagas push.
+
+**Uso de la respuesta:** se hicieron cuatro commits, sin cambios de código:
+- `spec(001)` (C1): la tabla del Apéndice B solo nombra las funciones de prueba.
+- `plan(001)` (I1, I2): la fila de puertas inestables describe los dos escenarios y remite a `research.md` R4. Donde el plan dice 1 000 salas ahora dice «1 024 salas (32 × 32), al menos 1 000», con una nota de que las cuadrículas son cuadradas.
+- `tasks(001)` (I3, I4, U1): T044 dice 2 líneas y por qué el import va dentro de la función. T043 tiene una nota que remite a `research.md` R3 y R4. T008, T018 y T019 citan sus FR en el texto.
+- `docs(001)` (G1): el quickstart §6 dice que hoy solo se cubre `--replay`.
+
+H3-7 se queda en la 001 con su `skip` (C2). Suite: 482 OK (skipped=1) y 32/32 scripts. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Extendé FR-122 con dos validaciones nuevas (pedidas por el integrante 2, motivadas por la suposición
+de la spec 004 de que no hay eventos con retraso 0):
+1. spec(001):
+   - FR-122: SalidaDTO.cierre_automatico (si viene) y ObjetoDTO.duracion deben ser enteros >= 1, sin bool.
+     cierre_automatico inválido es error del esqueleto: la partida no inicia, tampoco con --forzar
+     (003 FR-323). duracion inválida rechaza la ficha como el rango del cazador (la sala queda como
+     contenido no disponible). Citá la suposición de la 004 como motivo.
+   - EfectoFichaDTO queda fuera: convertir duraciones <= 0 en None es comportamiento de P1 y no programa eventos.
+   - Escenarios nuevos H2-20 (cierre_automatico 0, -5, "10" o true: no inicia) y H2-21 (duracion inválida en
+     la ficha de un objeto: la sala queda sin contenido, el error nombra ficha y campo). En la trazabilidad.
+2. tasks(001): una tarea para el integrante 2 (validación en Data) y una tuya para las pruebas de H2-20 y
+   H2-21, que quedan con skipTest y el motivo hasta que esté la del integrante 2.
+3. Las pruebas con skip, en su propio commit.
+Suite en verde con uv run, PROMPTS_LLM.md, no hagas push.
+
+**Uso de la respuesta:** se hicieron tres commits:
+- `spec(001)`: FR-122 tiene un punto nuevo con las dos validaciones y cita la suposición de la 004. Un `cierre_automatico` inválido impide iniciar, también con `--forzar` (003 FR-323). Una `duracion` inválida rechaza la ficha como un `rango` inválido: la sala queda sin contenido, o la partida no inicia si es la sala inicial. `EfectoFichaDTO` queda fuera. Se agregaron los escenarios H2-20 y H2-21, el caso borde y las dos filas de la trazabilidad.
+- `tasks(001)`: T055 (integrante 2, validación en Data con `es_entero`) y T056 (integrante 1, pruebas de H2-20 y H2-21 con `skipTest` hasta T055), con sus dependencias y el grafo.
+- `test(001)`: `test_h2_20_…` y `test_h2_21_…` en `tests/test_terreno_cazador.py`, y `FuenteConObjetoInvalido` en `tests/ayudas_terreno.py`. Sin el skip, las dos fallan donde falta la validación («ErrorDatos not raised» y «mensaje None»). La parte de `--forzar` de H2-20 queda para cuando exista la spec 003.
+
+Suite: 484 OK (skipped=3: H3-7, H2-20, H2-21) y 32/32 scripts. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Sí: plan(001), agregá a contracts/contrato-datos.md, sección "Validación (FR-122)", las dos reglas nuevas
+(cierre_automatico y ObjetoDTO.duracion, entero >= 1 sin bool; esqueleto → no inicia, también con --forzar;
+ficha → rechaza la ficha, y en la sala inicial no inicia), el formato del mensaje de error (sala y dirección,
+o ficha y campo, como los demás de FR-122) y que EfectoFichaDTO queda fuera. Con su entrada en PROMPTS_LLM.md.
+No hagas push.
+
+**Uso de la respuesta:** un commit `plan(001)` en `contracts/contrato-datos.md`, sección «Validación (FR-122)»:
+- La tabla tiene dos filas nuevas: `cierre_automatico` de `SalidaDTO` y `duracion` de `ObjetoDTO`, válidos si vienen como entero ≥ 1 (un `bool` no cuenta), con su contexto mínimo. Un párrafo explica que los pidió el integrante 2 (T055, H2-20 y H2-21) por la suposición de la 004, que `null` o ausente sigue siendo válido y que `EfectoFichaDTO` queda fuera.
+- El efecto ahora distingue tres casos: esqueleto (no inicia, tampoco con `--forzar`, 003 FR-323), ficha de la sala inicial (no inicia) y ficha de otra sala (la sala queda sin contenido).
+- El mensaje usa el mismo formato que los demás de FR-122: sala y dirección, o ficha y campo, más el valor recibido.
+
+Suite: 484 OK (skipped=3) y 32/32 scripts. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude
+
+Durante el día le pedí a Claude que revisara y me guiara con la coordinación de mis specs y del plan. Prompts principales, textuales:
+- «Ok perfecto, antes de pasar entonces con el paso 1 de corregir la spec 003, mira lo que me dijo kristel, te adjunto tambien el .zip de la rama ella y el de marco (aunque creo que la rama de marco no hubo cambios pero revisa igual)», con el mensaje de Kristel sobre el mapa en `PartidaGuardadaDTO`, NFR-203, el marcador del pergamino, FR-217, T053/T054, «ir a» y las banderas.
+- «ok, antes de hacer el paso D, marco me mando lo siguiente, analiza el txt y mensaje», con la revisión cruzada completa de Marco de las specs 002 y 003 (ALTA, MEDIA y BAJA).
+- «Listo ya le mande el mensaje a kristel, te adjunto lo que me dijo claude code y el zip. pero despues de que analices eso, marco me mando esto, analiza», con la segunda revisión de Marco (FR-304 y el motor, cierre automático, caras).
+- «mira la respuesta de claude code y el .zip», después de cada prompt de Claude Code (correcciones de las specs 002 y 003, plan de la 003 y su ajuste).
+- «ok pero antes de seguir, todo lo que hemos hecho es correcto? hemos aplicado lo que nos ha dicho marco y kristel? podemos seguir con tranquilidad?»
+- «Quiero que analices todo esto y me digas si puedo jalar lo de ambos o no. Y luego que me digas el orden de como seguir de acuerdo a esto. Te paso los .zip de sus ramas.», con los mensajes de Kristel (contrato de la 004 sin marcador, banderas en 1b53bc9, T053, FR-217) y de Marco (DECISIONES.md, revisión del plan de la 003, `cierre_automatico` y `duracion`).
+- «ok antes de este paso, mira lo que me mando marco», con su confirmación de FR-122 para `cierre_automatico` y `duracion` (T055).
+
+**Uso de la respuesta:** Claude revisó las ramas de Marco y Kristel (460 OK y 31/31 con la de Kristel), comprobó contra el código de la primera parte (`Mazmorra._igualar_caras`, `abrir_puerta`, `CierrePuerta`, `EventoPorg.__lt__`, la victoria en `motorJuego`) y contra el PDF (§3.3, §3.5, §5.3, §6.1, §7.3, Apéndice B) cada punto de las revisiones, propuso las decisiones (estado recordado por cara, excepción de FR-217, NFR-203, FR-323, la cara que pide `llave_salida`, «sin llave: no se puede abrir»), redactó los prompts para Claude Code y los mensajes para el equipo, y revisó cada resultado de Claude Code en el zip antes de cada commit (que no tocara la parte de Kristel, que no renumerara, la cobertura de los FR y la constitución). En la noche, Claude simuló el merge de las dos ramas (523 OK y 32/32), indicó el orden (primero Kristel, después Marco), preparó el `PROMPTS_LLM.md` resuelto del conflicto, comprobó contra los documentos cada punto de la revisión del plan de Marco y redactó los dos prompts de corrección de la 003 que están en la entrada siguiente. Las decisiones las tomé yo y las acordé con Marco y Kristel.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Corrección de la spec y del plan de la feature 003-resolubilidad (integrante 2) según la revisión del plan que hizo el integrante 1 (Marco). Antes de editar, leé: .specify/memory/constitution.md; specs/003-resolubilidad/spec.md completa; specs/003-resolubilidad/plan.md, research.md, data-model.md, quickstart.md y contracts/ (los dos); DECISIONES.md de la raíz (la entrada de Marco «Diferencia conocida entre la verificación y el motor de P1», para que el texto coincida); y el código real que se nombra abajo: Service/ServicioPartida.py (método fuente()), Service/ErroresServicio.py, Service/ServicioGuardado.py y Service/ServicioReplay.py (cómo definen ErrorCarga y ErrorReplay), Service/ServicioBench.py, Logic/BenchLogica.py y Logic/BenchRutas.py (cómo la 001 conecta su bench), Data/AlmacenCatalogo.py, y UIController/LectorArgumentos.py y DTO/ConfiguracionDTO.py (las banderas --checkpoint-cada y --hasta del integrante 3 ya existen, commit 1b53bc9).
+
+Son dos entregas separadas, porque la spec se commitea antes que el plan (Principio IX): primero editás SOLO spec.md (parte A), después SOLO los archivos del plan (parte B). No escribas código. No hagas commit: los hago yo.
+
+PARTE A — spec.md
+
+A1. «Lado seguro» solo vale para la regla de FR-304. Hoy la spec dice «nunca aprueba una que el motor no deje ganar» en la Sesión 2026-11-13 de Clarificaciones (alrededor de la línea 111) y en el caso borde de la diferencia con el motor (alrededor de la línea 357). Eso es falso en general por el caso borde «Cierre automático en una puerta con llaves distintas por cara» (alrededor de la línea 388; Marco lo llama «punto 4a»): ahí la verificación supone que una puerta abierta sigue abierta, pero el motor la cierra en las dos caras y la cara de vuelta pide otra llave, así que la verificación puede aprobar una cripta que el motor no deja ganar. Corregí los dos lugares para que «lado seguro» quede limitado a la regla de la puerta de salida (FR-304, FR-322), y agregá a la sección «Suposiciones» ese caso como supuesto de §3.5 y decisión del grupo, diciendo explícitamente en qué dirección va la diferencia (la verificación puede decir «resoluble» y el jugador quedar encerrado) y por qué se acepta (§3.5 pide verificar con las llaves y las puertas, no simular el reloj ni los cierres). Si ese caso borde ya dice algo distinto, alinealo con esto.
+
+A2. FR-310 y los ciclos (decisión del grupo). Aclará en FR-310 que «la puerta que bloquea» a una llave es UNA sola, elegida de forma determinista: entre las puertas por las que se llega a la zona donde está la llave, la del nivel más bajo (la que se cruzaría primero, contando puertas cerradas desde la región alcanzable) y, si empatan, la de menor sala de origen y luego menor dirección (la misma regla de FR-306). Los ciclos y las llaves dependientes se forman solo con esas puertas. Escribilo en lenguaje del dominio (sin nombrar estructuras ni clases), como decisión del grupo. Agregá como caso borde y como escenario nuevo al final de la historia 2 el ejemplo de Marco: la llave A está en una zona a la que se llega por dos puertas del mismo nivel, d1 que pide B y d2 que pide A; la llave B está detrás de una puerta que pide B. Resultado esperado: se señala el ciclo {B}, y A se lista como dependiente de B (A no aparece en un ciclo propio aunque d2 la pida, porque la puerta que la bloquea es la que elige la regla). Usá números de sala y direcciones concretos para que el desempate quede claro y que d1 gane el desempate. Ajustá la frase «Cada llave no obtenible que forma parte de un ciclo DEBE aparecer en al menos un ciclo señalado» para que «forma parte de un ciclo» se entienda con esa definición.
+
+A3. FR-309 y las ubicaciones repetidas (decisión del grupo): si una llave tiene dos o más ubicaciones idénticas (misma sala y misma instancia de enemigo, o las dos sin enemigo), el reporte la indica una sola vez. Las ubicaciones distintas se siguen listando todas en orden determinista. Agregalo a FR-309, como caso borde y a un escenario que ya trate varias ubicaciones (o uno nuevo si no hay).
+
+A4. --forzar con otros modos (decisión del grupo): con --replay, con --bench o al cargar una partida guardada, --forzar no tiene efecto (esos modos no verifican, FR-301), igual que con --verificar (H3-9): el resultado y el código de salida son los mismos que sin --forzar, y no es un error de argumentos. Agregalo a FR-312 o FR-314 y a los casos borde, junto al de --verificar con --forzar.
+
+A5. Cripta inexistente (decisión del grupo): --verificar con una cripta que no existe (el API responde que no existe o el paquete local no la trae con --offline) termina con código 1 (la verificación no concluyó), con un mensaje con contexto, sin caerse. --forzar no cambia eso, porque sin esqueleto no hay partida. Agregalo a FR-314 y a los casos borde, y comprobá que no contradice FR-320.
+
+A6. Agregá en Clarificaciones una sesión nueva «Sesión 2026-11-13 (revisión del plan por el integrante 1)» con una pregunta y respuesta por cada punto de A1 a A5, en el mismo formato que las anteriores. Actualizá la tabla de trazabilidad si agregaste escenarios. No cambies ningún otro requisito.
+
+PARTE B — plan.md, research.md, data-model.md, quickstart.md y contracts/
+
+B1. «Lado seguro»: corregí plan.md (alrededor de la línea 87) y research.md (alrededor de las líneas 466 y 467) igual que en A1, y nombrá el caso del cierre automático con llaves distintas por cara como límite conocido en la otra dirección.
+
+B2. R6 (ciclos): dejá la definición operativa citando la nueva redacción de FR-310 (decisión del grupo) y explicá por qué se descartó la otra opción de Marco (preferir, entre puertas del mismo nivel, la que pide la propia llave): solo arregla los ciclos de una llave; si d2 pidiera C y C estuviera detrás de una puerta que pide A, el problema seguiría. Agregá el ejemplo de Marco a las comprobaciones con la spec.
+
+B3. R6 (dependientes): el cálculo de dependientes tiene que ser iterativo, sin recursión, porque con una cadena de 1 000 llaves la recursión llega al límite de Python (1 000 por defecto). Describí cómo (por ejemplo, seguir la arista guardando el camino en un array y asignar la llave del ciclo al volver por ese array) y mantené la complejidad O(K).
+
+B4. R7 (generador no resoluble): hoy dice que desde la mitad la llave c se ubica en la columna c+1; eso genera K/2 ciclos de una llave, no «un ciclo y una cadena larga». Cambialo para que se mueva SOLO la llave de la columna de la mitad (queda detrás de su propia puerta: un ciclo de una llave), y las llaves siguientes quedan como una cadena de dependientes de ella. Revisá que B3 mida lo que dice medir.
+
+B5. R7 (dónde vive el bench): la alternativa ingenua y las mediciones van en Logic, siguiendo el patrón de la 001 (Logic/BenchRutas.py llamado desde Logic/BenchLogica.medir(), que Service/ServicioBench.py ya usa). Mirá el código real para decidir el nombre y la conexión, y actualizá el árbol de archivos, la tabla de cambios y la trazabilidad de plan.md. Si eso obliga a tocar un archivo del integrante 1 (por ejemplo BenchLogica.py), listalo en la tabla de coordinación con el integrante 1.
+
+B6. Principio VIII: agregá a R7 mediciones de las alternativas descartadas de R3 y R4 que se puedan medir con sentido: al menos la búsqueda lineal de ids de R3 (en vez del índice ordenado y compactado) y la frontera en una sola lista de R4 (en vez de agrupada por llave), cada una con su fila Bn, sus tamaños y qué resultado se espera. Si alguna no tiene sentido medirla, justificalo en una línea. En R3 y R4 cambiá «Medición prevista» para que nombre esas filas.
+
+B7. Una sola condición para --offline (Marco, MEDIA): contracts/contrato-llaves.md (alrededor de las líneas 96 y 97) dice que ServicioResolubilidad vuelve a mirar config.offline para decidir si usa el almacén de llaves. Cambialo: el almacén de llaves se elige en el mismo if donde ServicioPartida.fuente() elige FuenteOffline o FuenteRed (offline → sin almacén; red → AlmacenLlaves), y ServicioResolubilidad lo recibe ya decidido, sin mirar config.offline. Actualizá plan.md, research.md y data-model.md donde corresponda, y la tabla de coordinación con el integrante 3, porque ServicioPartida es su archivo.
+
+B8. ErrorPartidaNoIniciada: data-model.md dice que se define en Service/ServicioResolubilidad.py y plan.md lo pone en Service/ErroresServicio.py. Unificalo con el patrón que ya existe (ErrorCarga en ServicioGuardado.py, ErrorReplay en ServicioReplay.py): se define en Service/ServicioResolubilidad.py, y ErroresServicio.py solo lo importa y lo agrega a ERRORES_ESPERADOS. Comprobá que no se forma un import circular.
+
+B9. research.md (alrededor de la línea 91): al justificar que la validación de FR-321 vive en Data, citá como precedente 001 FR-122 (la validación de costos iguales en las dos caras ya vive en Data, en GestorEsqueleto, aunque la constitución diga «Data solo conexión y formato»).
+
+B10. Tabla de trazabilidad de plan.md: FR-319 tiene que mencionar también AlmacenCatalogo (los datos que ya persistía la primera parte), además de GestorLlaves y AlmacenLlaves. En la spec no se nombran clases: este cambio va solo en el plan.
+
+B11. Reflejá en el plan las decisiones nuevas de la parte A: la deduplicación de ubicaciones idénticas (dónde se hace y su complejidad, en data-model.md y en el contrato del reporte), --forzar sin efecto con --replay, --bench y al cargar una partida (contrato del reporte, sección de banderas, y quickstart), y la cripta inexistente con código 1 (contrato y quickstart).
+
+B12. Banderas del integrante 3: ya están en su commit 1b53bc9 (checkpoint_cada con valor por defecto 20 y después hasta en ConfiguracionDTO; --checkpoint-cada y --hasta en LectorArgumentos). Actualizá la sección de coordinación de plan.md para que diga que eso ya está hecho y que verificar y forzar van detrás de hasta. No cambies nada más de esa sección.
+
+Restricciones: constitución v1.2.0. Solo editás archivos dentro de specs/003-resolubilidad/. No toques DECISIONES.md, PROMPTS_LLM.md, ni archivos de otras features o de otros integrantes; si algo de su código tiene que cambiar, va como coordinación en el plan. Todo en español. Al final: (1) la lista de archivos que cambiaste en la parte A y en la parte B por separado, (2) un resumen de cada punto A1–A6 y B1–B12 con dónde quedó, y (3) cualquier contradicción que encuentres entre la spec y el plan, o cualquier punto donde no estés seguro. No hagas commit.
+
+Segundo prompt, en el mismo chat:
+
+Revisé tus cambios: la parte A (spec.md) queda como está y ya la commiteé. En la parte B hay tres ajustes. Solo tocás research.md, plan.md, data-model.md, quickstart.md y contracts/ dentro de specs/003-resolubilidad/; spec.md no se toca.
+
+1. Conexión del bench: no modifiques Logic/BenchLogica.py (es del integrante 1 y su feature 001 ya está cerrada). Logic/BenchResolubilidad.py se queda en Logic, con la alternativa ingenua y las variantes de B5 y B6, y puede seguir reutilizando _cronometrar, _mejor_y_mediana y SEMILLA de BenchLogica (importarlos no modifica ese archivo). Lo que cambia es dónde se engancha: Service/ServicioBench.py (integrante 2) agrega BenchResolubilidad.medir a su lista por defecto, después de BenchLogica.medir, igual que ya importa BenchLogica desde Logic. Comprobá que no se forma un import circular. Actualizá R7, el árbol de archivos, la tabla de cambios (ServicioBench.py MODIFICADO por el integrante 2; BenchLogica.py sin cambios y fuera de la coordinación), la trazabilidad de NFR-301 a NFR-304 y cualquier otra mención.
+
+2. Generador con filas = 1: en R7, la prueba de que la detección es iterativa usa cripta_en_cuadricula con filas = 1 y 3 000 columnas, pero el generador pone la única entrada a sala_salida «desde la fila 1», que no existe con una sola fila. Cambiá esa prueba a filas = 2 y 3 000 columnas (6 000 salas, cadena de unas 1 500 llaves), o definí qué hace el generador con una sola fila; elegí lo más simple y dejalo escrito donde se describe el generador y en R10.
+
+3. Tiempo de --bench: con 10 000 dientes, la lista única de B6 son unos 5·10⁷ pasos (varios segundos por repetición), y B2 y la búsqueda lineal de B5 en 10 000 salas también son cuadráticas. Fijá en R7: B6 con 100, 1 000 y 3 000 dientes (el factor de crecimiento se sigue viendo entre 100 y 1 000); en el tamaño mayor, las alternativas cuadráticas (B2, la lineal de B5 y la lista única de B6) se miden con una sola repetición y una nota que lo diga. Ajustá las tablas de plan.md y research.md que nombran esos tamaños.
+
+No cambies nada más. Al final: la lista de archivos que tocaste, qué quedó en cada punto, y si encontraste otra mención de BenchLogica.py como archivo a modificar. No hagas commit.
+
+**Uso de la respuesta:** dos commits en `specs/003-resolubilidad/`. `spec(003)`: «lado seguro» solo en la regla de la puerta de salida y el cierre automático con llaves distintas por cara como suposición (dirección contraria); FR-310 con una sola puerta que bloquea a cada llave (decisión del grupo) y el escenario H2-13 con el ejemplo de Marco; FR-309 sin repetir ubicaciones idénticas (H1-12); `--forzar` sin efecto con `--replay`, `--bench` y al cargar; cripta inexistente con código 1; sesión nueva de Clarificaciones. `plan(003)`: dependientes iterativos (R6), generador no resoluble con una sola llave movida y `filas ≥ 2` (R7), bench en `Logic/BenchResolubilidad.py` enganchado en `Service/ServicioBench.py` sin tocar `BenchLogica.py`, mediciones B5 y B6 de las alternativas de R3 y R4 (B6 hasta 3 000 dientes, las cuadráticas con una repetición en el tamaño mayor), una sola condición para `--offline` en `ServicioPartida.fuente()`, `ErrorPartidaNoIniciada` definido en `ServicioResolubilidad`, precedente de 001 FR-122 y FR-319 con `AlmacenCatalogo`. Revisé el resultado contra el zip antes de cada commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-tasks Tareas de la feature 003-resolubilidad (integrante 2), a partir de specs/003-resolubilidad/spec.md, plan.md, research.md, data-model.md, quickstart.md y contracts/ (versión de los commits c2fb219 y del plan(003) siguiente, con la revisión del integrante 1). Usá como modelo de formato specs/004-linea-tiempo/tasks.md y specs/001-terreno-cazador/tasks.md: mismas secciones «Formato», «Reglas para todas las tareas (constitución v1.2.0)», «Responsable», dependencias, ejecución en paralelo y estrategia. Todo en español.
+
+1. Responsable: integrante 2. Las tareas que tocan archivos de otro integrante, según la tabla de cambios y la sección «Coordinación» del plan (del integrante 3: ServicioPartida —parámetro datos=None y el if de fuente() que elige también el almacén de llaves con almacen_llaves()—, ContextoPartida, ErroresServicio —solo importar ErrorPartidaNoIniciada y agregarlo a ERRORES_ESPERADOS—, ControladorBackend y la vista; del integrante 1: lo que el plan diga, si dice algo), van marcadas «(coordinar con el integrante 3)» o «(coordinar con el integrante 1)», con el cambio exacto que se le pide, y no las implementa el integrante 2 sin su visto bueno. Logic/BenchLogica.py NO se modifica (el bench se engancha en Service/ServicioBench.py, que es del integrante 2).
+2. Pruebas primero (Principio X): una prueba por escenario de la spec (H1-1 a H1-12, H2-1 a H2-13, H3-1 a H3-9 y H4-1 a H4-5) y por caso del Apéndice B, escrita antes del código, que falle primero y que cite su escenario y su FR en el nombre del método (por ejemplo test_h2_13_fr310_puerta_que_bloquea). Además, pruebas para lo que la spec decidió sin escenario: --forzar sin efecto con --replay, --bench y al cargar una partida (FR-312), --verificar con una cripta inexistente → código 1 (FR-314), y la cadena de más de 1 000 dependientes sin RecursionError (research R6/R7, cripta_en_cuadricula con filas = 2 y 3 000 columnas). Usá los archivos de prueba que define el plan.
+3. Orden de la ruta de desarrollo del plan: contrato de llaves (UbicacionLlaveDTO, FuenteDatos/FuenteJson/FuenteRed/FuenteOffline, AlmacenLlaves, GestorLlaves, validación de FR-321 en Data) → Logic (GrafoLlaves con las ubicaciones idénticas una sola vez, RecorridoLlaves con la fase hacia afuera según la regla de FR-310, CiclosLlaves iterativo, VerificadorResolubilidad) → ServicioResolubilidad (con ErrorPartidaNoIniciada) → --verificar (sin vista) y --forzar con los códigos 0, 3 y 1 → bench (Logic/BenchResolubilidad.py con B1 a B6 y los generadores de cuadrícula y peine, enganchado en Service/ServicioBench.py) → documentación. Cada tarea cita los FR que atiende.
+4. Banderas: --checkpoint-cada y --hasta del integrante 3 ya están en origin/derek (commit 1b53bc9). Las tareas de verificar y forzar en DTO/ConfiguracionDTO.py y UIController/LectorArgumentos.py van detrás de hasta, sin tocar las banderas de ella; --verificar en el mismo grupo excluyente que --replay y --bench. main.py: la rama --verificar sobre la versión con --hasta.
+5. Avisos a los otros integrantes como tareas explícitas: al terminar --verificar (y --verificar --offline), avisar al integrante 1 para que quite el skip de H3-7 y cierre su T048 de la 001; y avisar al integrante 3 cuando esté ServicioResolubilidad y el DTO del reporte, para que muestre el reporte antes de la primera acción (FR-313).
+6. Incluí una tarea para regenerar paquete/ con llaves.json (y los costos y rangos de la Parte II) cuando el API publique las criptas nuevas, avisando a los tres y en un commit propio (hallazgo H-3), y una tarea de verificación con --verificar --offline cuando el paquete esté regenerado.
+7. Cierre: --bench (B1 a B6 del plan, con las alternativas cuadráticas en el tamaño mayor con una sola repetición), la sección «Resolubilidad» (§5.4) de DECISIONES.md en la sección del integrante 2 (el archivo ya existe en la raíz, con secciones por integrante), incluyendo el límite conocido del cierre automático con llaves distintas por cara (la verificación puede decir «resoluble» y el jugador quedar encerrado); correr tests/correr_pruebas.py y el replay de ejemplo sin regresiones; y registrar los prompts en PROMPTS_LLM.md (Principio XI).
+
+Fuera de esta feature (no las incluyas como tareas de la 003, solo nombralas en una nota de dependencias si hace falta): T055 de specs/001-terreno-cazador/tasks.md (validación de cierre_automatico y duracion en Data) y T071 de specs/004-linea-tiempo/tasks.md (BitacoraReplayIO.leer ignora las líneas que empiezan con «#»).
+
+Solo escribí specs/003-resolubilidad/tasks.md; no escribas código ni modifiques ningún otro archivo. Al final decime cuántas tareas hay por fase, cuáles son de coordinación y si algún FR, NFR, escenario o caso del Apéndice B quedó sin tarea. No hagas commit.
+
+**Uso de la respuesta:** `specs/003-resolubilidad/tasks.md` con 69 tareas (T001 a T069) en 10 fases: preparación, contrato de llaves, historias 1 a 4, paquete de la Parte II, bench B1 a B6 y cierre. Las pruebas van primero y citan su escenario y su FR; las tareas que tocan archivos de los integrantes 1 y 3 están marcadas para coordinar; T055 de la 001 y T071 de la 004 quedan fuera de la feature. Al final hay una tabla de cobertura. Lo revisé contra la spec y el plan antes del analyze.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Viernes 13 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-analyze Análisis de consistencia de la feature 003-resolubilidad (integrante 2): specs/003-resolubilidad/spec.md (commit c2fb219), plan.md, research.md, data-model.md, quickstart.md y contracts/ (commit 7e685f4), y el tasks.md nuevo (todavía sin commit). Contra la constitución .specify/memory/constitution.md v1.2.0. Es solo lectura: no modifiques ningún archivo.
+
+Además de lo que el análisis revisa siempre (duplicados, ambigüedades, requisitos sin tareas, tareas sin requisito, contradicciones con la constitución), comprobá en particular:
+
+1. Que cada FR-301 a FR-323, NFR-301 a NFR-304, SC-301 a SC-308, escenario (H1-1 a H1-12, H2-1 a H2-13, H3-1 a H3-9, H4-1 a H4-5) y caso del Apéndice B tenga al menos una prueba y una tarea, y que el FR que cita cada prueba en su nombre sea el que la spec asigna a ese escenario en la tabla de trazabilidad.
+2. Que las pruebas vayan antes que el código que prueban en el orden de las tareas y del grafo de dependencias (Principio X), y que ninguna tarea dependa de otra posterior sin decirlo.
+3. Que las tareas marcadas «(coordinar con el integrante 3)» o «(coordinar con el integrante 1)» coincidan exactamente con la tabla de cambios y la sección «Coordinación» del plan, y que ninguna tarea sin esa marca toque un archivo de otro integrante (Logic/Mazmorra.py, Logic/BenchLogica.py, Service/ServicioPartida.py, Service/ContextoPartida.py, Service/ErroresServicio.py, UIController/ControladorBackend.py, UIController/ControladorPygame.py, View/).
+4. Que las decisiones de la revisión del integrante 1 estén iguales en spec, plan y tareas: «lado seguro» solo en la regla de la puerta de salida; el cierre automático con llaves distintas por cara como límite conocido; la regla de FR-310 (nivel, sala de origen, dirección; varias ubicaciones); dependientes sin recursión; ubicaciones idénticas una sola vez; --forzar sin efecto con --replay, --bench y al cargar; cripta inexistente con código 1; una sola condición para --offline en ServicioPartida.fuente(); ErrorPartidaNoIniciada definido en ServicioResolubilidad; el bench enganchado en ServicioBench sin tocar BenchLogica; generador con filas ≥ 2; B6 hasta 3 000 dientes y las cuadráticas con una sola repetición en el tamaño mayor.
+5. Referencias a tareas de otras features: el tasks.md nombra T055 de la 001 y T071 de la 004, y la 003 tiene su propio T055 (la vista). Señalá cualquier lugar donde la referencia pueda confundirse.
+6. T069 dice registrar los prompts «en la sección del integrante 2» de PROMPTS_LLM.md: comprobá en el archivo real si existe esa sección o si las entradas van al final en orden cronológico.
+7. Comandos de las tareas (uv run, python tests/correr_pruebas.py, python -m ...): que existan y coincidan con README.md y quickstart.md.
+
+Entregá el informe con la tabla de hallazgos (ID, categoría, severidad CRÍTICA/ALTA/MEDIA/BAJA, ubicación con archivo y línea, resumen, recomendación), la tabla de cobertura y las métricas. No propongas ni apliques ediciones: solo el informe.
+
+**Uso de la respuesta:** informe de solo lectura: 0 hallazgos críticos, 1 alto (la salida de `--verificar` con «→» en una consola cp1252 de Windows), 8 medios y 9 bajos; cobertura del 100 % de FR, NFR, SC, escenarios y casos del Apéndice B. Comprobé cada hallazgo contra los archivos y el enunciado, y los corregí con los prompts de la entrada siguiente.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Cuatro prompts en el mismo chat del analyze.
+
+Primero:
+
+Aplicá las correcciones del análisis, en dos partes separadas. Primero la parte A, que toca solo spec.md, porque la commiteo antes que las demás (Principio IX). Después la parte B, que toca tasks.md y, en tres detalles, plan.md, research.md y quickstart.md. No escribas código. No hagas commit. No renumeres ninguna tarea: si hace falta algo nuevo, va dentro de una tarea existente.
+
+PARTE A — spec.md
+
+A1 (S1). En FR-323, el paréntesis que dice qué errores de 001 FR-122 cuentan: agregá «o una salida con un cierre_automatico que no es un entero ≥ 1» (001 FR-122 lo incluye desde el commit a725e31 del integrante 1, escenario H2-20 de la 001). Revisá si otro lugar de la spec enumera esos errores (casos borde, Suposiciones, H3-8 o H4-5) y alinealo igual, sin cambiar nada más.
+
+A2 (T1). Alineá el texto de los escenarios con la tabla de cobertura de la spec: H2-6 agrega FR-308 a sus FR citados (la puerta 4–5 con C está en la frontera bloqueada), y H4-4 agrega FR-313 (al cargar y en --replay no se muestra reporte). No cambies la tabla.
+
+PARTE B — tasks.md (y tres detalles del plan)
+
+B1 (U1, ALTA). En una consola de Windows con la salida redirigida (por ejemplo, en un subprocess), print del carácter «→» lanza UnicodeEncodeError con cp1252, y --verificar no debe caerse (FR-314). T050: en la rama --verificar de main.py, antes de escribir, configurar la salida estándar en UTF-8 (sys.stdout.reconfigure(encoding="utf-8") solo si la salida tiene reconfigure, porque las pruebas que capturan la salida con StringIO o redirect_stdout no lo tienen; solo en esa rama, sin cambiar los otros modos). T046: agregar test_fr314_verificar_utf8_sin_pythonioencoding, que corre --verificar en otro proceso sin PYTHONIOENCODING, con una cripta no resoluble con ciclo (el texto tiene «→»), y lee la salida como UTF-8: código 3 y el «→» intacto. Las pruebas en otro proceso (SC-303, SC-308) leen la salida como UTF-8.
+
+B2 (I1). T069: las entradas de PROMPTS_LLM.md van al final del archivo, en orden cronológico, con el formato que ya usa el archivo (Fecha, Herramienta, el prompt textual, Uso de la respuesta y la línea de guiones). El archivo no tiene secciones por integrante. Incluí también el prompt de /speckit-tasks, el de /speckit-analyze y este.
+
+B3 (I2). En «Fuera de esta feature», T071 de la 004: copiá su redacción. BitacoraReplayIO.leer ignora, en la sección de acciones, las líneas de comentario «# ir a <sala>», sin confundirlas con el encabezado #CRIPTA-REPLAY ni con #ACCIONES.
+
+B4 (I3). Calificá cada número de tarea que pueda confundirse con otra feature: «T055 (vista)» para la propia; «T055 de la 001» y «T048 de la 001» para las del integrante 1 (en T051, T058 y la nota de dependencias); «T071 de la 004». Revisá el archivo completo, también el grafo y la tabla de cobertura.
+
+B5 (O1, O3). T029 es la prueba de recursión: se escribe antes que el generador y falla primero, y T030 la hace pasar. Corregí «T030 (generador) bloquea T029» en «Entre fases» y el grafo (T028, T029 ─► T030). Alineá además el grafo con «Entre fases»: T008 bloquea T011, no T009; la historia 2 sale de la fase 3, y el servicio de las fases 3 y 4.
+
+B6 (O2). T001 usa UbicacionLlaveDTO (ubic y FuenteConLlaves). Declarar que T001 depende de T006 y que paquete_temporal escribe el formato del contrato de llaves (no espera a T013). Reflejalo en «Entre fases» y en el grafo.
+
+B7 (S1). En T045 agregar test_fr323_fr314_cierre_automatico_invalido_codigo_1: un esqueleto con cierre_automatico 0 → --verificar termina con código 1, con el error con contexto (sala, dirección y campo) y sin veredicto. Depende de T055 de la 001 (validación en Data del integrante 2), que se hace antes que esta feature. En T036, lo mismo al iniciar: no inicia ni con --forzar. Actualizá la tabla de cobertura y la nota de «Fuera de esta feature», que hoy dice que no hace falta prueba.
+
+B8 (A1). NFR-301 y SC-306 piden medir «la cripta publicada más grande» cuando exista. En T062 y T063: si el paquete de la Parte II ya está regenerado (T057), Service/ServicioBench.py (integrante 2) agrega una fila que mide la verificación de la cripta con más salas del paquete. La cripta se elige por cantidad de salas, sin nombrar ids (Principio VI). Se lee con FuenteOffline y se mide con VerificadorResolubilidad (Service orquesta Data y Logic; BenchResolubilidad no lee Data). Si el paquete no trae llaves.json, la fila no se agrega y la nota lo dice. Mientras tanto vale la sintética de 1 000 salas. Agregá la prueba correspondiente a T059, con un paquete temporal, y actualizá la tabla de NFR y SC.
+
+B9 (T1). Agregá a los nombres de las pruebas los FR de la tabla de la spec: test_h2_6_fr307_fr308_fr309_fr321_…, test_h4_4_fr301_fr313_… y test_h2_13_fr306_fr307_fr308_fr310_puerta_que_bloquea. Actualizá la tabla de cobertura de tasks.md.
+
+B10 (T2). En T036, las dos pruebas de verificar (cripta inexistente y costo inválido) son de la historia 3: anotalo en la tarea con «(historia 3)».
+
+B11 (C1). En T064 agregar que DECISIONES.md deje escrita la interpretación del Principio I. Comprobar que la sala de una ubicación existe (FR-321) es integridad de los datos y va en Data, con el precedente de 001 FR-122.
+
+B12 (X2). En las Reglas o en T068, nombrar que en Windows correr_pruebas.py se corre con PYTHONIOENCODING=utf-8, como dice el README. En T052, aclarar que el paso 8 del quickstart §2 necesita red.
+
+B13 (D1, F1, F2, en el plan). research.md R10: H1-12 queda solo en test_resolubilidad_reporte.py. En T031, aclarar en el docstring que puerta_que_encierra[s] es «la puerta que bloquea» de FR-310. plan.md, «Escala»: mencionar que la prueba de recursión usa una cripta de 6 000 salas y unas 1 500 dependientes, por encima de la escala de las mediciones.
+
+No cambies nada más. Al final: la lista de archivos de la parte A y de la parte B por separado, qué quedó en cada punto y si encontraste algo que contradiga lo anterior. No hagas commit.
+
+Segundo:
+
+Tres cambios más, por las respuestas de los integrantes 1 y 3 del 14/11. Van en la parte B (tasks.md y plan.md); spec.md no se toca. No escribas código, no renumeres tareas y no hagas commit.
+
+E1. Confirmaciones. Marcá como hechas T002 («confirmado por el integrante 3 el 14/11: el contrato del reporte de 7e685f4 queda tal cual») y T003 («confirmado por el integrante 1 el 14/11: usar Mazmorra.cargar_esqueleto y salida sobre una instancia aparte, sin motor; avisará antes de cambiar _igualar_caras o lo que hace cargar_esqueleto al combinar caras»). Usá «- [x]», como en los tasks.md de la 001 y la 004. Quitá de las dependencias y del grafo los bloqueos que ya no aplican (T002 ya no bloquea T007).
+
+E2. Quién escribe los cambios en los archivos del integrante 3. El integrante 3 aceptó el 14/11 que el integrante 2 escriba T037 (ServicioPartida), T038 (ContextoPartida), T040 (ErroresServicio), T049 y T054 (ControladorBackend), con pruebas, sobre la versión de la rama del integrante 3. Ella los revisa antes del merge. Condiciones: ContextoPartida.resolubilidad va después de linea, los métodos nuevos de ControladorBackend van al final de la clase y quien suba segundo hace el merge. T055 (vista) sigue siendo del integrante 3. Cambiá esas cinco tareas de «Pedir…» a «Escribir… (acordado con el integrante 3 el 14/11; ella lo revisa antes del merge)», manteniendo la marca «(coordinar con el integrante 3)». Agregá al inicio de la fase 5 un paso explícito: antes de T037, hacer merge de origin/kris para trabajar sobre su versión de ServicioPartida (iniciar_partida con los grabadores y el punto 0), ContextoPartida (linea como último campo) y ControladorBackend, y correr todas las pruebas. Actualizá en el mismo sentido «Responsable», las dependencias, el grafo, la estrategia y «Commits sugeridos»: esos cambios los commitea el integrante 2 y los revisa el integrante 3. En plan.md, ajustá la tabla de cambios o la sección «Coordinación con el integrante 3» para decir quién los escribe.
+
+E3. Dependencia de la 001 en el bench. Logic/BenchResolubilidad.py reutiliza _cronometrar, _mejor_y_mediana y SEMILLA, que son privadas de Logic/BenchLogica.py (integrante 1, feature 001). El integrante 1 confirmó el 14/11 que no les cambia el nombre ni la firma sin avisar. Dejalo escrito en plan.md («Coordinación con el integrante 1» o una sección de dependencias), en research.md R7 y en T060 de tasks.md: «dependencia de la 001: si cambia, el integrante 1 avisa antes».
+
+Al final: los archivos que tocaste y qué quedó en cada punto. No hagas commit.
+
+Tercero:
+
+Decisión sobre la contradicción de B8: se queda B8 y se corrige la spec. El motivo es que el enunciado, en la tabla de §6.1, pone el límite de 200 ms de la verificación de resolubilidad sobre «la cripta publicada más grande». Si se quitara B8, ese requisito quedaría sin medir. Sigue habiendo dos partes: la A solo en spec.md y la B en los demás archivos. No escribas código, no renumeres tareas y no hagas commit.
+
+PARTE A — spec.md
+
+A3. En FR-301, cambiá la frase de --bench para que diga que --bench mide la verificación sobre criptas sintéticas deterministas (NFR-304) y, además, si el paquete local de --offline trae criptas con llaves.json, sobre la cripta del paquete con más salas, elegida por cantidad de salas, sin nombrar ids (Principio VI) y leída sin red. Debe seguir diciendo que no inicia partidas, no crea partida.log y no pasa por la verificación previa a una partida.
+
+A4. En NFR-301 y SC-306, «la cripta publicada más grande» se mide así: la cripta con más salas del paquete local, leída sin red (§6.1). «Mientras no esté publicada» pasa a ser «mientras el paquete local no traiga criptas con llaves.json»; en ese caso vale la cripta sintética de 1 000 salas con 100 llaves encadenadas (decisión del grupo).
+
+A5. Agregá en Clarificaciones una sesión «Sesión 2026-11-14 (análisis de consistencia)» con dos preguntas y respuestas:
+- qué es «la cripta publicada más grande» y cómo la mide --bench (A3 y A4, con la cita de §6.1);
+- que el paréntesis de FR-323 incluye cierre_automatico desde 001 FR-122 (a725e31).
+No cambies nada más de la spec.
+
+PARTE B — plan.md, research.md, data-model.md, quickstart.md, contracts/ y tasks.md
+
+B14. Alineá con A3 y A4 todo lo que hoy diga que --bench solo mide criptas sintéticas o que no verifica una cripta publicada: research R7 (pasa de «descartado» a «medida aparte»; la generación sintética sigue siendo la base de B1 a B6), R8, la fila de --bench del contrato del reporte, quickstart §4 y la fila de Service/ServicioBench.py en la tabla de cambios de plan.md. La medición de la cripta del paquete vive en Service/ServicioBench.py (integrante 2): Service orquesta FuenteOffline, GestorEsqueleto, GestorLlaves sin almacén y VerificadorResolubilidad, y Logic/BenchResolubilidad no lee Data. Comprobá que T059, T062 y T063 de tasks.md digan lo mismo.
+
+B15. quickstart.md §1: agregá que en Windows correr_pruebas.py se corre con PYTHONIOENCODING=utf-8, como dice el README.
+
+B16. plan.md, «Coordinación con el integrante 3», punto 1: el contrato del reporte quedó confirmado por el integrante 3 el 14/11, sin cambios (T002).
+
+Al final: los archivos de la parte A y de la parte B por separado, qué quedó en cada punto y si queda algún lugar que diga que --bench solo mide criptas sintéticas. No hagas commit.
+
+Cuarto:
+
+Última corrección, por la frase que señalaste. En la parte A, en spec.md, FR-313: cambiá «Sin vista, el único modo que verifica es `--verificar`, que escribe el resultado en la salida estándar (FR-314); `--replay` y `--bench` no verifican (FR-301).» por «Sin vista, el único modo que muestra el resultado de la verificación es `--verificar`, que lo escribe en la salida estándar (FR-314); `--replay` no verifica y `--bench` solo mide cuánto tarda la verificación, sin mostrar veredictos ni iniciar partidas (FR-301).»
+
+En la parte B, alineá con esa frase la fila V de la tabla de la constitución en plan.md (línea 79) y quickstart.md §2 (línea 57). No toques checklists/requirements.md: queda como registro del 11/11.
+
+No cambies nada más, no escribas código y no hagas commit. Al final: las líneas que cambiaste.
+
+**Uso de la respuesta:** dos commits. `spec(003)`: FR-323 incluye `cierre_automatico` (001 FR-122, `a725e31`); H2-6 cita FR-308 y H4-4 cita FR-313; FR-301, NFR-301 y SC-306 dicen que `--bench` mide, además de las criptas sintéticas, la cripta con más salas del paquete local, leída sin red (§6.1: «la cripta publicada más grande»); FR-313 aclara que `--bench` solo mide el tiempo; sesión de Clarificaciones del 14/11. `tasks(003)`: `tasks.md` corregido (salida UTF-8 en `--verificar`, PROMPTS al final, referencias a tareas de otras features calificadas, orden de T029 y T030, dependencia de T001, prueba de `cierre_automatico`, fila de la cripta del paquete en `ServicioBench`, nombres de pruebas con los FR de la tabla, T002 y T003 confirmados, T037, T038, T040, T049 y T054 escritos por el integrante 2 sobre `origin/kris` y revisados por el integrante 3) y el plan alineado (dependencia de `_cronometrar`, `_mejor_y_mediana` y `SEMILLA` de la 001, quién escribe los cambios en los archivos del integrante 3, el bench y `quickstart.md`). En el tercer prompt resolví a favor del enunciado una contradicción que mi segundo pedido había creado con FR-301. Revisé cada resultado en el zip antes de los commits.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Implementá T071 de specs/004-linea-tiempo/tasks.md (integrante 2), que viene de FR-261 y del escenario H7-8 de specs/002-niebla-ir-a/spec.md. Antes de escribir, leé: .specify/memory/constitution.md; T071, T039 y T041 en specs/004-linea-tiempo/tasks.md; FR-261 y el escenario 8 de la historia 7 de la spec 002; Data/BitacoraReplayIO.py completo; DTO/AccionDTO.py (a_linea y cómo se lee); tests/TestBitacoraReplayIO.py; y dónde se usa BitacoraReplayIO (Service/ServicioReplay.py, Service/ServicioPartida.py, Service/ServicioGuardado.py), para no romper a nadie.
+
+Qué hay que hacer (pruebas primero, Principio X):
+
+1. Pruebas en tests/TestBitacoraReplayIO.py, escritas antes del código. Primero comprobá que fallan. Cada nombre cita la tarea y el FR, por ejemplo test_t071_fr261_…:
+   a. Un log con líneas «# ir a 12» entre acciones: leer devuelve solo las acciones, en el mismo orden, como si el comentario no estuviera.
+   b. Un comentario como primera línea después de #ACCIONES y otro como última línea del archivo, con y sin salto de línea final: se ignoran, y ultima_linea_descartada se comporta igual que hoy.
+   c. Un log solo con comentarios en la sección de acciones: cero acciones, sin error.
+   d. El encabezado no cambia: #CRIPTA-REPLAY y #ACCIONES siguen siendo obligatorios y en su lugar. Un «#» antes de #ACCIONES sigue siendo un error de encabezado, como hoy.
+   e. anexar_comentario («ir a 12») escribe la línea «# ir a 12» y no cambia acciones_escritas(). Rechaza con ErrorBitacora un texto que no sea str, que esté vacío o que tenga salto de línea (\n o \r). Antes de iniciar() también lanza ErrorBitacora, igual que anexar.
+   f. anexar rechaza con ErrorBitacora una acción cuya a_linea() empiece con «#», porque al leerla se perdería como comentario. Usá un AccionDTO armado a propósito; si AccionDTO no permite producir esa línea, explicalo y no hagas esta prueba.
+   g. continuar_desde con un log que tiene comentarios: cuenta solo acciones (cantidad = acciones, no líneas), el log nuevo tiene las primeras N acciones y no copia los comentarios (son de depuración; documentalo).
+   h. Ida y vuelta: anexar, anexar_comentario y anexar, y después leer da las dos acciones.
+
+2. Código, solo en Data/BitacoraReplayIO.py:
+   - leer: en la sección de acciones (después de #ACCIONES), toda línea que empiece con «#» es un comentario y se ignora. Esto cubre «# ir a <sala>» de la 002. El encabezado no cambia.
+   - Método nuevo anexar_comentario(texto: str) -> None: escribe «# » + texto en una línea, con el mismo mecanismo de anexar (solo anexado). Valida lo de la prueba e. No cuenta como acción.
+   - anexar: la validación de la prueba f.
+   - Actualizá el docstring del módulo (el formato del archivo con un ejemplo de comentario y el uso de anexar_comentario) y los de leer y continuar_desde.
+   - Con type hints y docstring en lo nuevo. No cambies la firma de nada que ya exista. No toques archivos de otros integrantes: si algo de ellos tuviera que cambiar, avisame en vez de hacerlo. No modifiques specs/004-linea-tiempo/tasks.md (es del integrante 3: ella marca T071).
+
+3. Restricciones de la constitución v1.2.0: sin dict ni set como índice, sin collections, sin sorted ni list.sort, y sin copy fuera de tests/.
+
+4. Al final corré python tests/correr_pruebas.py y el replay de ejemplo (python main.py --replay ejemplos/partida_ejemplo.log --offline), que debe dar lo mismo que antes. Decime: los archivos que cambiaste; las pruebas nuevas, con su resultado antes (fallando) y después; el resultado de la suite; y si algún llamador de BitacoraReplayIO podría notar el cambio. No hagas commit.
+
+**Uso de la respuesta:** T071 de la 004 (FR-261 de la 002). Primero se escribieron 11 pruebas en `tests/TestBitacoraReplayIO.py`: 10 fallaban antes del código, y la que pasaba es la que comprueba que el encabezado no cambia. Después, `Data/BitacoraReplayIO.py`: `leer` ignora las líneas que empiezan con `#` en la sección de acciones; `anexar_comentario(texto)` escribe `# <texto>` sin contar como acción; `anexar` rechaza una acción cuya línea empiece con `#`; `continuar_desde` no copia los comentarios (documentado). Resultado: 536 OK (skipped=3) y 32/32 scripts; el replay de ejemplo es idéntico byte a byte. Revisé el diff antes del commit. Falta que el «ir a» del integrante 3 llame a `anexar_comentario`.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Implementá T055 de specs/001-terreno-cazador/tasks.md (integrante 2): las dos validaciones que FR-122 agregó en el commit a725e31 (escenarios H2-20 y H2-21 de la spec 001). Antes de escribir, leé: .specify/memory/constitution.md; FR-122, H2-20 y H2-21 en specs/001-terreno-cazador/spec.md; T052, T053, T055 y T056 en specs/001-terreno-cazador/tasks.md; la sección «Validación (FR-122)» de specs/001-terreno-cazador/contracts/contrato-datos.md; Data/ValidacionDatos.py; Data/GestorEsqueleto.py (_validar_costos); Data/ResolvedorCatalogo.py y Data/GestorContenido.py (cómo se rechaza hoy una ficha de cazador sin rango y cómo queda la sala); DTO/SalidaDTO.py; DTO/ObjetoDTO.py; tests/TestValidacionDatos.py; y, sin modificarlas, las pruebas test_h2_20_… y test_h2_21_… de tests/test_terreno_cazador.py y FuenteConObjetoInvalido de tests/ayudas_terreno.py (son del integrante 1).
+
+Pruebas primero (Principio X), en tests/TestValidacionDatos.py, que es del integrante 2. Comprobá que fallan antes del código. Cada nombre cita la tarea y el FR, por ejemplo test_t055_fr122_…:
+1. Esqueleto: una salida con cierre_automatico 0, -5, "10", True o 1.5 → GestorEsqueleto.cargar lanza ErrorDatos, y el mensaje nombra la sala, la dirección, el campo cierre_automatico y el valor recibido, con el mismo formato que el error de costo. Con cierre_automatico None o ausente, o 1 o 500, carga normal.
+2. Ficha de objeto: un ObjetoDTO con duracion 0, -5, "10" o True → error_de_ficha devuelve un ErrorDatos con id_ficha, el campo duracion y el valor recibido. Con duracion None o ausente, o 1, devuelve None. La ficha de un cazador sigue igual que hoy.
+3. Una ficha de objeto inválida en una sala que no es la inicial: el resolvedor la rechaza y la recuerda, esa sala queda sin contenido y las demás fichas del lote siguen, igual que el cazador sin rango (T052). En la sala inicial, la partida no inicia. Reutilizá los ayudantes de prueba que ya existen en TestValidacionDatos.py.
+4. EfectoFichaDTO no cambia: una duracion ≤ 0 dentro de un efecto se sigue convirtiendo en None, sin error.
+
+Código, solo en Data:
+- Data/ValidacionDatos.py: una función es_cierre_valido(valor) (entero ≥ 1 con es_entero; None es válido), y que error_de_ficha valide también ObjetoDTO.duracion con el mismo formato de mensaje del rango del cazador. Actualizá el docstring del módulo.
+- Data/GestorEsqueleto.py: validar cierre_automatico en el mismo punto donde se valida el costo, con el mismo tipo de error y contexto. La partida no inicia, tampoco con --forzar (003 FR-323): eso ya pasa porque el error sale de cargar().
+- No cambies firmas existentes. No toques archivos de otros integrantes: ni tests/test_terreno_cazador.py ni tests/ayudas_terreno.py (quitar el skip de H2-20 y H2-21 es T056 del integrante 1), ni DTO/EfectoFichaDTO.py, ni specs/001-terreno-cazador/tasks.md.
+- Constitución v1.2.0: sin dict ni set como índice, sin collections, sin sorted ni list.sort, y sin copy fuera de tests/.
+
+Comprobación con las pruebas del integrante 1, sin dejar cambios en su archivo: corré test_h2_20_… y test_h2_21_… como si no tuvieran el skip. Por ejemplo, con un script temporal fuera del repositorio que las cargue y reemplace skipTest, o con una copia temporal que después borrás. Tienen que pasar. Si alguna falla por algo de su prueba y no de Data, explicalo y no lo arregles.
+
+Al final corré python tests/correr_pruebas.py y el replay de ejemplo (python main.py --replay ejemplos/partida_ejemplo.log --offline), que debe dar lo mismo que antes, y comprobá que el paquete actual (paquete/) no tiene ningún cierre_automatico ni duracion de objeto inválido, porque si lo tuviera el modo --offline dejaría de iniciar. Decime: los archivos que cambiaste; las pruebas nuevas, con su resultado antes y después; el resultado de H2-20 y H2-21 sin el skip; el resultado de la suite; y lo del paquete. No hagas commit.
+
+**Uso de la respuesta:** T055 de la 001 (FR-122, H2-20 y H2-21). Primero se escribieron las pruebas nuevas en `tests/TestValidacionDatos.py`: 7 fallaban antes del código, y las 5 que pasaban son las que comprueban que lo válido sigue igual. Después el código: `Data/ValidacionDatos.py` (`es_cierre_valido` y la `duracion` de `ObjetoDTO` en `error_de_ficha`), `Data/GestorEsqueleto.py` (`cierre_automatico` en el mismo bucle que el costo) y `Data/GestorContenido.py` (`_rechazo_de` revisa también los objetos del suelo, para que la sala quede sin contenido como con el cazador). H2-20 y H2-21 del integrante 1 pasan sin el skip, probadas con un script fuera del repositorio y sin tocar su archivo. Resultado: 548 OK (skipped=3) y 32/32 scripts; el replay de ejemplo es idéntico; los 6 `cierre_automatico` y la `duracion` del paquete son válidos. Revisé el diff antes del commit. Pregunta abierta para el integrante 1: un objeto inválido que solo aparece en lo que suelta un enemigo no rechaza ninguna sala.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-plan Plan de la feature 002-niebla-ir-a, parte del integrante 2: mapa conocido, memoria de puertas y antorcha (FR-201 a FR-225, NFR-201 a NFR-205, SC-201 a SC-207). La parte de «ir a» (FR-250 a FR-264, NFR-250 y NFR-251, SC-250 a SC-253, historias 6 y 7) es del integrante 3. Este plan no la diseña: solo define el contrato que el mapa conocido le ofrece (FR-225) y deja una sección reservada para que ella agregue su plan en su propio commit, igual que hizo en la spec.
+
+Antes de planificar, leé:
+- .specify/memory/constitution.md;
+- specs/002-niebla-ir-a/spec.md completa;
+- «Proyecto II parte.pdf» (raíz del repositorio) §3.3, §3.4, §5.3, §6.1, §6.3 y §7.3;
+- el plan, research y contracts de specs/001-terreno-cazador, en especial contracts/busqueda-rutas.md: la tabla de grafos dice que el «Grafo del mapa conocido» lo implementa el integrante 2 con cantidad_salas(), entradas(x) y salidas(u), «utilizable» = entre salas exploradas con la cara de la sala de origen recordada abierta, costo igualado e ids del esqueleto completo;
+- el plan, research, data-model, contracts y tasks de specs/004-linea-tiempo: T002, T003 y T004 son del integrante 2; T004 dice que el mapa conocido es un campo de PartidaGuardadaDTO que actualiza el motor y se copia con PartidaGuardada.guardar, sin copy; FR-405 y FR-420 de la 004 usan el mapa;
+- specs/003-resolubilidad/plan.md, solo como modelo de formato;
+- el código real que vas a usar o tocar: Logic/motorJuego.py, Logic/Mazmorra.py (caras, SalidaViva, costo igualado, _igualar_caras, el aviso de cambios de puertas de 001 FR-114 / T031), Logic/HistorialRetroceso.py (registrar_cambio, registrar_atributo, cerrar_intervalo: cómo se revierte con el pergamino), Logic/Efectos.py (Antorcha), Logic/PartidaGuardada.py, DTO/PartidaGuardadaDTO.py, DTO/LineaTiempoDTO.py, Data/GuardadoBinario.py, Data/BitacoraReplayIO.py, Service/ServicioPartida.py, Service/ContextoPartida.py, Service/ArmadorEstado.py, DTO/EstadoJuegoDTO.py, Logic/BenchLogica.py, Service/ServicioBench.py y Estructuras/.
+
+El plan tiene que tomar y justificar estas decisiones. Va en research.md, cada una con la alternativa descartada y su complejidad:
+
+1. Dónde vive el mapa conocido y cómo se representa (Principio I): en Logic, como estado de la partida, separado del esqueleto (FR-218). Estado de cada sala (desconocida, avistada o explorada) y estado recordado de cada cara («sin observar», abierta o cerrada; las caras indexadas como en la 003, c = sala*4 + dirección), con consultas O(1) que no dependan del tamaño (NFR-201) y sin dict ni set. Explicá cómo se mantiene «avistada» (FR-204) y por qué una sala explorada no vuelve atrás salvo con el pergamino (FR-203).
+2. Cuándo y cómo se actualiza: al entrar a una sala (FR-203), con la antorcha encendida (FR-210 a FR-216, sin activar enemigos ni trampas y sin tiempo extra), y al observar puertas (FR-207 a FR-209): al llegar, y cuando cambia una puerta con cara en la sala actual. Para esto último, reutilizá el aviso de cambios de puertas de la Mazmorra de la 001 si sirve. Las salidas sin vuelta solo se observan desde la sala de la que salen. El costo de cada actualización tiene que ser proporcional a lo que se revela (NFR-202), y el ciclo de eventos no debe pasar de 20 ms (NFR-205). La precarga, el esqueleto y el cazador no tocan el mapa (FR-218): explicá cómo se garantiza.
+3. Pergamino (FR-222, NFR-203): cómo se registra cada cambio del mapa en el historial de retroceso que ya existe, con inversas proporcionales a lo que cambió, sin copiar el mapa entero.
+4. Línea de tiempo y guardado (FR-221, FR-223, FR-224; T004 de la 004). El mapa conocido es un campo nuevo, al final y con valor por defecto, de PartidaGuardadaDTO. PartidaGuardada.guardar y cargar lo copian sin copy, en O(tamaño del mapa) una vez por punto de control (NFR-203). Explicá cómo entra en el formato binario versión 2 de Data/GuardadoBinario.py junto con el bloque de la línea de T003 de la 004: un bloque propio, cargar_sala sin leerlo y la versión 1 rechazada. Coordiná con el campo linea de T002 de la 004: ¿qué campo va antes? Comprobá que no se forme un import circular (LineaTiempoDTO ya importa PartidaGuardadaDTO).
+5. El contrato para el integrante 3, en specs/002-niebla-ir-a/contracts/contrato-mapa-conocido.md:
+   (a) el grafo para «ir a» con la interfaz exacta de contracts/busqueda-rutas.md de la 001: cantidad_salas(), entradas(x) y salidas(u), con «utilizable» según FR-225 y FR-252 (salas exploradas, cara de origen recordada abierta, sin «sin observar», costo igualado ya calculado por Logic, ids reales) y cómo se avisa con puerta_cambio cuando una observación cambia una salida utilizable;
+   (b) un DTO de solo lectura para la vista, el comando de ver el mapa y el resumen de historia (FR-217, FR-219, FR-220): salas exploradas con nombre, salidas, costo igualado y estado recordado o «sin observar»; cada salida hacia una sala avistada por separado, sin identificador; nunca una sala desconocida (SC-202). Campos nuevos al final con valor por defecto;
+   (c) cómo se busca una sala explorada por nombre para «ir a <sala>» (FR-251: nombre que designa más de una sala explorada);
+   (d) qué NO ofrece (FR-217: el reporte de resolubilidad de la 003 no entra).
+6. Determinismo (FR-224, Principio IV): el mapa sale solo de las acciones, igual con --replay y --replay … --hasta. Los comentarios «# ir a» de partida.log (T071 de la 004, ya hecho) no lo afectan.
+7. Bench (NFR-204, SC-203, SC-204, SC-206 y SC-207): mediciones en Logic con criptas sintéticas por semilla de al menos tres tamaños (consultas de sala y de cara, exploración con antorcha, registrar e invertir cambios, ciclo de eventos con antorcha en la cripta de 1 000 salas con 30 cazadores de la 001), con la alternativa descartada medida (Principio VIII). Se engancha en Service/ServicioBench.py, que es del integrante 2, sin modificar Logic/BenchLogica.py. Puede reutilizar sus funciones de cronómetro, como la 003.
+8. Pruebas (Principio X): un archivo de pruebas por grupo, y una prueba por escenario de las historias 1 a 5 y por caso del Apéndice B de esta parte (casos 2a, 4 y 5, y los adicionales A1 a A23 y A38 a A43 que son del integrante 2), citando escenario y FR en el nombre.
+
+Coordinación (como en la 003, con una tabla de cambios por archivo y su dueño):
+- Integrante 1: Mazmorra, el motor y la búsqueda compartida, si hace falta tocarlos o engancharse. Pedí el cambio exacto, no lo hagas.
+- Integrante 3: «ir a» (usa el contrato), la vista y el comando de ver el mapa, ContextoPartida, ArmadorEstado, la línea de tiempo y el resumen de historia. T071 de la 004 ya está hecho: BitacoraReplayIO.anexar_comentario y leer ignora las líneas con «#». Ella llama a anexar_comentario desde «ir a».
+- Para cada archivo, verificá en el código o en los plan.md de las otras features de quién es antes de asignarlo. Si un archivo de P1 no tiene dueño claro, decilo en vez de suponerlo.
+
+Restricciones: constitución v1.2.0 (sin dict ni set como índice, sin heapq, bisect, collections ni networkx, sin sorted ni list.sort en el código evaluado, sin copy fuera de tests/, Logic no importa Data, capas MVC). Escribí plan.md, research.md, data-model.md, quickstart.md y contracts/contrato-mapa-conocido.md dentro de specs/002-niebla-ir-a/, todo en español, y no toques ningún otro archivo, tampoco spec.md. Si encontrás algo de la spec que no se puede cumplir o que es ambiguo, anotalo como hallazgo en el plan en vez de cambiar la spec. Al final decime: las decisiones con su complejidad, la lista de archivos de código que se tocarían con su dueño, los hallazgos, y si algo de la 004 (T002, T003, T004) o de la 001 tiene que cambiar. No hagas commit.
+
+**Uso de la respuesta:** plan de la parte del integrante 2 de la 002 en `specs/002-niebla-ir-a/`: `plan.md`, `research.md` (R1 a R8), `data-model.md`, `quickstart.md` y `contracts/contrato-mapa-conocido.md`. Decisiones: el mapa vive en Logic dentro del motor (`MapaConocido`), con un arreglo de estado por sala y otro por cara (consultas O(1)); se escribe en tres puntos (iniciar, `entrar` desde `mover_jugador` y `puerta_cambio` mediante un `RepartidorAvisosPuertas`, porque la `Mazmorra` admite un solo observador); el pergamino usa `registrar_cambio` por casilla que cambia; el campo `mapa` de `PartidaGuardadaDTO` va antes de `linea`; el binario v2 lleva un bloque del mapa y otro de la línea; `GrafoMapaConocido` tiene la interfaz exacta de `busqueda-rutas.md` de la 001; el `MapaConocidoDTO` no trae ids de salas avistadas; y `buscar_exploradas(nombre)` para «ir a». Bench B1 a B10 enganchado en `ServicioBench`. Hallazgos para coordinar: H-2 (`EstadoJuegoDTO` le pasa a la vista el id de salas avistadas), H-3 (comparación de nombres) y el dueño de `PartidaGuardada.py`. Las cuatro líneas de `motorJuego.py` se le piden al integrante 1. Revisé el plan y el contrato contra la spec, la 001 y la 004 antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-tasks Tareas de la feature 002-niebla-ir-a, parte del integrante 2 (mapa conocido, memoria de puertas y antorcha: FR-201 a FR-225, NFR-201 a NFR-205, SC-201 a SC-207). Se arman a partir de specs/002-niebla-ir-a/spec.md, plan.md, research.md, data-model.md, quickstart.md y contracts/contrato-mapa-conocido.md. Usá como modelo de formato specs/003-resolubilidad/tasks.md: las mismas secciones («Formato», «Reglas para todas las tareas (constitución v1.2.0)», «Responsable», fases, dependencias, grafo, paralelismo, estrategia, commits sugeridos y tabla de cobertura). Todo en español.
+
+1. Alcance. Las tareas de «ir a» (FR-250 a FR-264, historias 6 y 7) son del integrante 3: no las escribas. Dejá al final del archivo una sección reservada «Viaje automático «ir a» (integrante 3)» para que ella agregue las suyas en su propio commit, con una numeración que no choque con la tuya. Por ejemplo: las tuyas de T001 a T099 y las de ella desde T100. Decí el rango en el encabezado.
+2. Responsable: integrante 2. Las tareas que tocan archivos de otro integrante, según la tabla «Cambios a código existente» y la sección «Coordinación» del plan, van marcadas «(coordinar con el integrante 1)» o «(coordinar con el integrante 3)», con el cambio exacto, y no se implementan sin su visto bueno. Son, por lo menos: las cuatro líneas de Logic/motorJuego.py (integrante 1); Logic/PartidaGuardada.py (dueño a confirmar con el integrante 1; el plan propone que lo escriba el integrante 2 y lo revise él); y, del integrante 3, la confirmación del contrato, H-2 (EstadoJuegoDTO), H-3 (comparación de nombres), T023 de la 004, el texto del §2 del contrato de la 004 (cabecera v2 con los bloques del mapa y de la línea) y la vista y el comando del mapa. Agregá avisos explícitos (sin código) a cada uno cuando lo que necesitan esté listo.
+3. Pruebas primero (Principio X): una prueba por escenario de las historias 1 a 5 y por caso del Apéndice B de esta parte (casos 2a, 4 y 5, y los adicionales A1 a A23 y A38 a A43), escrita antes del código, que falle primero y cite su escenario y su FR en el nombre del método (por ejemplo test_h3_1_apendiceB_caso4_fr210_fr211_…). Usá los archivos de prueba del plan. Las pruebas que pasan por el motor, mientras no esté el cambio del integrante 1, van con skipTest y su motivo, y otra tarea dice cuándo se quita.
+4. Orden según el plan: DTO del mapa → MapaConocido (estados, caras, iniciar, entrar, antorcha, observación, puerta_cambio, pergamino) con una Mazmorra y un jugador de prueba → GrafoMapaConocido y buscar_exploradas (el contrato para el integrante 3, lo antes posible) → RepartidorAvisosPuertas y el pedido del motor → guardado: PartidaGuardadaDTO con el campo mapa antes de linea (T002 de la 004 en la misma tarea o justo después, con el import local de LineaTiempoGuardadaDTO), PartidaGuardada y GuardadoBinario versión 2 con los bloques del mapa y de la línea (T003 y T047 de la 004, que son del integrante 2: que la versión 2 se defina una sola vez) → vista (a_dto, SC-202) → bench B1 a B10 → documentación. Cada tarea cita los FR que atiende y, si viene de la 004, su número «T002 de la 004», «T003 de la 004» o «T047 de la 004».
+5. Cierre: --bench (B1 a B10) y su tabla guardada; la sección «Mapa conocido» de DECISIONES.md, en la sección del integrante 2, con el problema, las alternativas, la decisión, la complejidad, la evidencia y si coincide con el plan; la revisión de restricciones con grep, como T067 de la 003; correr tests/correr_pruebas.py (en Windows, con PYTHONIOENCODING=utf-8) y el replay de ejemplo sin regresiones; y registrar los prompts al final de PROMPTS_LLM.md, en orden cronológico (Principio XI).
+6. Calificá siempre los números de tareas de otras features («T002 de la 004», «T071 de la 004», «T048 de la 001») para que no se confundan con los de esta feature.
+
+Solo escribí specs/002-niebla-ir-a/tasks.md: no escribas código ni modifiques ningún otro archivo. Al final decime cuántas tareas hay por fase, cuáles son de coordinación y si algún FR, NFR, SC, escenario o caso del Apéndice B de esta parte quedó sin tarea. No hagas commit.
+
+Segundo prompt, en el mismo chat, por la respuesta del integrante 1:
+
+Un cambio más en las tareas, por la respuesta del integrante 1 del 14/11. Toca tasks.md y, en plan.md, la tabla «Cambios a código existente» y la sección «Coordinación». No escribas código, no renumeres tareas y no hagas commit.
+
+El integrante 1 aceptó que el integrante 2 escriba las líneas de Logic/motorJuego.py (crear el mapa y el RepartidorAvisosPuertas como observador_puertas, la llamada en iniciar y la llamada en mover_jugador) y las dos de Logic/PartidaGuardada.py (guardar y cargar el mapa), con pruebas. Él las revisa antes del merge, como el integrante 3 con las suyas en la 003. Le parece bien el repartidor. Va a anotar en su plan la lista de funciones privadas que usan la 002 y la 003 (_salida_inversa, _cronometrar, _mejor_y_mediana, SEMILLA, _cuadricula_con_costos, _motor_con_cazadores, _centro y _peor) para avisar antes de tocarlas. Su revisión cruzada del plan de la 002 llega hoy.
+
+Por eso:
+1. Las tareas de motorJuego.py y PartidaGuardada.py pasan de «pedir» a «escribir (acordado con el integrante 1 el 14/11; él lo revisa antes del merge)», sin quitar la marca «(coordinar con el integrante 1)». Ya no hace falta que las pruebas que pasan por el motor esperen con skipTest al cambio del integrante 1. Quitá esa estrategia y la tarea que quitaba los skip, y ordená las pruebas del motor antes del código del motor, como las demás.
+2. En plan.md: la columna «Dueño» de esas filas dice que lo escribe el integrante 2 y lo revisa el integrante 1. En «Coordinación con el integrante 1», los puntos 1 y 2 quedan resueltos así, y el punto 3 y el 5 dicen que el integrante 1 avisará antes de cambiar esas funciones privadas. Actualizá también el riesgo R-1.
+3. Actualizá en tasks.md, en el mismo sentido, «Responsable», las dependencias, el grafo, la estrategia y «Commits sugeridos».
+
+Al final: los archivos que tocaste y qué quedó en cada punto. No hagas commit.
+
+**Uso de la respuesta:** `specs/002-niebla-ir-a/tasks.md` de la parte del integrante 2, con 61 números de tarea (T001 a T061; las del integrante 3 empiezan en T100) en 12 fases. T002, T003 y T047 de la 004 quedaron dentro (T036, T039 y T038). Con el segundo prompt, T033 (`motorJuego.py`) y T040 (`PartidaGuardada.py`) las escribe el integrante 2 y las revisa el integrante 1; se quitaron los `skipTest` del motor y T034. Revisé las tareas contra el plan antes del analyze.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-analyze Análisis de consistencia de la parte del integrante 2 de la feature 002-niebla-ir-a: specs/002-niebla-ir-a/spec.md (FR-201 a FR-225, NFR-201 a NFR-205, SC-201 a SC-207, historias 1 a 5 y sus casos del Apéndice B), plan.md, research.md, data-model.md, quickstart.md y contracts/contrato-mapa-conocido.md (commit acd4196, más los cambios sin commit de plan.md) y el tasks.md nuevo, sin commit. Revisalo contra la constitución .specify/memory/constitution.md v1.2.0. La parte de «ir a» (FR-250 a FR-264, historias 6 y 7) es del integrante 3 y todavía no tiene tareas: no la cuentes como faltante, solo comprobá que el contrato le da lo que FR-252 y FR-253 necesitan. Es solo lectura: no modifiques ningún archivo.
+
+Además de lo que el análisis revisa siempre, comprobá en particular:
+1. Que cada FR, NFR, SC, escenario y caso del Apéndice B de la parte del integrante 2 tenga al menos una prueba y una tarea, y que el FR del nombre de cada prueba sea el que la spec le asigna a ese escenario en su tabla de trazabilidad.
+2. Que las pruebas vayan antes que el código que prueban, y que ninguna tarea dependa de otra posterior sin decirlo (Principio X).
+3. Que las tareas marcadas para coordinar coincidan con la tabla «Cambios a código existente» y la «Coordinación» del plan, y que ninguna tarea sin esa marca toque un archivo de otro integrante. Archivos del integrante 1: Logic/motorJuego.py, Logic/Mazmorra.py, Logic/BenchLogica.py y Logic/BenchRutas.py. Archivos del integrante 3: Service/ArmadorEstado.py, DTO/EstadoJuegoDTO.py, Service/ContextoPartida.py, la vista, UIController y su contrato de la 004. Logic/PartidaGuardada.py: acordado el 14/11 que lo escribe el integrante 2 y lo revisa el integrante 1.
+4. Que lo acordado el 14/11 esté igual en plan.md, research.md, data-model.md y tasks.md: el integrante 2 escribe las líneas de motorJuego.py y PartidaGuardada.py, y las revisa el integrante 1. La respuesta anterior avisó que data-model.md §8 y research.md R2 todavía dicen que es una modificación del integrante 1.
+5. Que T002, T003 y T047 de la 004 queden cubiertas exactamente como las piden specs/004-linea-tiempo/tasks.md y su contrato (campo linea último y con valor None por defecto; VERSION_FORMATO 2; la versión 1 rechazada; cargar_sala sin leer los bloques nuevos), y que la versión 2 se defina una sola vez.
+6. Que el contrato del mapa coincida con contracts/busqueda-rutas.md de la 001 (las tres operaciones, el costo igualado, los ids reales y el aviso puerta_cambio), y que el DTO de la vista no deje pasar ningún id de una sala avistada (FR-204, SC-202).
+7. Restricciones de la constitución en lo que proponen el plan y las tareas: sin dict ni set como índice, sin collections, sin sorted ni list.sort, sin copy fuera de tests/, y Logic no importa Data.
+8. Referencias a tareas de otras features, siempre calificadas, y comandos que existan (correr_pruebas.py, --bench, --replay).
+
+Entregá el informe con la tabla de hallazgos (ID, categoría, severidad CRÍTICA/ALTA/MEDIA/BAJA, ubicación con archivo y línea, resumen, recomendación), la tabla de cobertura y las métricas. No propongas ni apliques ediciones: solo el informe.
+
+**Uso de la respuesta:** informe de solo lectura: 1 hallazgo crítico (D1: el aviso `observador_rutas` no lo pide ningún requisito, YAGNI), 3 altos (I1 e I2: documentos que todavía decían que el motor lo modifica el integrante 1; C1: el §1 y el §2 del contrato de la 004), 6 medios y 11 bajos. Cobertura del 100 %. Comprobé cada hallazgo y los corregí con los prompts de la entrada siguiente.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Tres prompts en el mismo chat del analyze.
+
+Primero:
+
+Aplicá estas correcciones del análisis. Tocan tasks.md, plan.md, research.md, data-model.md, quickstart.md y contracts/contrato-mapa-conocido.md, todos dentro de specs/002-niebla-ir-a/. spec.md no se toca. No escribas código, no renumeres tareas y no hagas commit.
+
+D1 (CRÍTICA): se saca el aviso del mapa a una búsqueda guardada (observador_rutas), por YAGNI (Principio III). El contrato recomienda una búsqueda nueva por paso (paso_desde_cero), y la regla 3 de la 001 lo admite («o empieza una búsqueda nueva»). Sacalo del contrato (a), del data-model, del plan y de research. Sacá también T028(b) y su prueba en T026. Dejá escrito en research, como alternativa descartada, que si la medición de NFR-251 del integrante 3 llega a pedir reutilizar la búsqueda, se agrega en ese momento con su prueba. No lo confundas con puerta_cambio que el mapa RECIBE de la Mazmorra por el RepartidorAvisosPuertas: eso se queda, porque lo exige FR-207.
+
+I1, I2 y F3: alineá con el acuerdo del 14/11 research.md (línea ~130, R2), data-model.md (línea ~166, §8) y quickstart.md (línea ~13). El cambio de motorJuego.py y PartidaGuardada.py lo escribe el integrante 2 (T033 y T040) y lo revisa el integrante 1 antes del merge. Calificá como «de la 004» las referencias a T002, T003 y T023 en plan.md, research.md, data-model.md y quickstart.md.
+
+A3: en el contrato, «se confirma con el integrante 3 antes de tasks.md» pasa a «se confirma en T005».
+
+C1 (ALTA): T007 cubre también el §1 del contrato de la 004 (el campo mapa va antes de linea, que sigue siendo el último) y el orden de los bloques de cada punto de control en el §2 (bloque global, salas y el bloque de su mapa).
+
+U4: no hay que romper a nadie con PartidaGuardadaDTO.mapa = None. Hoy hay unas 109 construcciones o llamadas en 11 archivos de prueba de otros integrantes que arman ese DTO a mano. Cambiá la decisión: si partida.mapa es None, PartidaGuardada.cargar NO lanza ValueError. En ese caso deja el mapa inicial desde la sala actual del jugador: esa sala explorada y los destinos de sus salidas avistados, como FR-202 con la sala de inicio. Los guardados reales (versión 2) y los puntos de control siempre traen el mapa, así que None solo aparece en DTOs armados a mano. Agregá a T040 una prueba con mapa None. Actualizalo en el plan (tabla de cambios, fila de PartidaGuardada.cargar), data-model, research R4 y el riesgo correspondiente. Después decime si eso choca con alguna regla de la spec.
+
+C3: en T039, las validaciones de la línea al leer son las del §1 del contrato de la 004 (las restricciones al leer de LineaTiempoDTO): un formato inválido es ErrorGuardado. Agregá a T038 que rechazar un archivo de versión 1 deja intacta la partida actual.
+
+C2: en T043, avisarle al integrante 3 que las pruebas de T003 y T047 de la 004 están en tests/test_guardado_mapa.py. En TestGuardadoBinario.py solo cambia la aserción de la versión.
+
+U1: el ayudante mapa_de_prueba (y estados) de T001 se escribe antes de T010. Su prueba falla al importar MapaConocido, que es el fallo esperado. Ajustá T001, T010 y las dependencias.
+
+U2 y U3: dejá escrito en T023 y T041 que esas pruebas cubren escenarios cuyo código llega antes (T012, T033 y T040), así que pueden pasar desde que se escriben. Es una excepción documentada al «falla primero».
+
+U5: en T048, pedirle explícitamente al integrante 3 la prueba de que el comando de ver el mapa no se registra en partida.log ni cambia nada (FR-220, H5-4), y anotarla en la cobertura.
+
+U6: T060 no da SC-202 por cumplido hasta que su parte del EstadoJuegoDTO (H-2) pase sin skip.
+
+A1: en T031, para H3-8 dá la receta concreta mirando Logic/motorJuego.py y Logic/EventoPorg.py: cómo se programa el fin de la antorcha en el mismo instante en que el jugador entra, antes o después según el orden de secuencia. Si eso no se puede armar con certeza, hacé la prueba sobre MapaConocido.entrar(sala, antorcha) con los dos valores, y además una que pase por el motor con el orden que sí se pueda garantizar.
+
+A2: en T014, H1-5: la precarga se simula con lo que de verdad hace (cargar contenido en la Mazmorra), sin volver a cargar el esqueleto.
+
+F1 y F2: ajustá los nombres de las pruebas a la tabla de trazabilidad de la spec. H1-6 cita FR-203 sin FR-222. En H2-6 (A42), si se reparte en dos pruebas, anotá en la cobertura qué FR cubre cada una. En T031, aclará que tiene pruebas de H1, H3 y H4 aunque la etiqueta sea [US2].
+
+F4: T061 registra al final los prompts de la implementación. Los de /speckit-tasks, del agregado del integrante 1, de este /speckit-analyze y de estas correcciones van en el commit de tasks (los registro yo).
+
+F5: T058 edita spec.md (solo las filas de la parte del integrante 2 en la tabla del Apéndice B). Marcala «(avisar al integrante 3)», porque ella también edita ese archivo.
+
+No cambies nada más. Al final: la lista de archivos que tocaste, qué quedó en cada punto, si U4 choca con la spec y si queda algún hallazgo CRÍTICO o ALTO abierto. No hagas commit.
+
+Segundo, por la revisión cruzada del plan del integrante 1 y las respuestas del integrante 3:
+
+Más correcciones a la 002, por la revisión cruzada del plan que hizo el integrante 1 y las respuestas del integrante 3 (14/11). Son dos partes: primero la A, solo en spec.md, porque se commitea antes (Principio IX); después la B, en los demás archivos de specs/002-niebla-ir-a/. No escribas código, no renumeres tareas y no hagas commit.
+
+PARTE A — spec.md (solo filas y escenarios de la parte del integrante 2)
+
+A1 (H-5). Reescribí el escenario H2-5 para que no haya que reinterpretarlo: «desde A» quiere decir las salidas de A que «ir a» puede usar, con el jugador en otra sala, como lo leyó el plan. Que el texto diga dónde está el jugador y por qué la cara A–C sigue «sin observar».
+
+A2 (H-8). En FR-221, agregá que al cargar una partida el mapa conocido pasa a ser el guardado y reemplaza al de la partida en curso. Es la misma regla que el resto del estado.
+
+A3. Agregá en Clarificaciones una sesión «Sesión 2026-11-14 (revisión del plan por el integrante 1)» con dos preguntas y respuestas: A1 (por qué se reescribió H2-5) y A2 (el mapa al cargar).
+
+PARTE B — plan.md, research.md, data-model.md, quickstart.md, contrato y tasks.md
+
+B1 (U4, revisado). Lo de mapa None queda en el código del integrante 2: MapaConocido.restaurar(None) arma el mapa inicial desde la sala actual del jugador (esa sala explorada y los destinos de sus salidas avistados, como FR-202). PartidaGuardada.cargar suma una sola línea, motor.mapa.restaurar(partida.mapa), sin if y sin raise. No es un comportamiento nuevo de cargar, porque nunca rechaza una partida por el mapa. restaurar sigue lanzando ValueError si los largos no coinciden con la Mazmorra (riesgo R-8). Alineá la tabla de cambios del plan («PartidaGuardada.py · cargar»: 1 línea), data-model, research R4 y T037/T040, con sus pruebas.
+
+B2 (Principio VIII). La frase «una búsqueda nueva por paso cumple NFR-250 con holgura» (research.md, ~291-297) y el armado del índice de entradas de GrafoMapaConocido en O(S+E) no tienen medición. Agregá una fila B11 al bench: armar GrafoMapaConocido sobre el mapa completo y un paso_desde_cero sobre él, en las tres cuadrículas. La 1 024 es la que importa para NFR-250. Que la frase de research diga que se comprueba con B11, sin afirmar el resultado antes de medir. Agregá B11 a T051 a T056, a la tabla de mediciones del plan y a la cobertura.
+
+B3 (B8). El ciclo con puertas que cambian tiene que usar el aviso real, mazmorra.observador_puertas (el RepartidorAvisosPuertas del motor), y no BenchRutas._cambiar_puerta, que avisa a una estrategia pasada por parámetro: con eso el mapa no se enteraría. Ajustalo en research R7 y en T054.
+
+B4. En T057, DECISIONES.md tiene que decir que el RepartidorAvisosPuertas (frente a un solo observador o a avisar desde la Mazmorra) y el formato binario (frente a meter el mapa en el bloque global) se decidieron por diseño, sin medición, y por qué.
+
+B5. Respuestas del integrante 3 del 14/11:
+- H-3 confirmado: «ir a <sala>» compara con strip().casefold() de los dos lados. Marcá esa parte de T005 y sacá «propuesta» del contrato (c).
+- H-2 lo resuelve ella en ArmadorEstado y en la vista cuando MapaConocido esté en origin/derek (T006 queda esperando eso).
+- El texto del §1 y §2 de su contrato de la 004 lo actualiza ella hoy (T007).
+- ArmadorResumen ya acepta un mapa opcional (T008: lo conecta cuando exista a_dto).
+- Va a escribir su sección del plan de «ir a» al final de plan.md en su propio commit.
+Reflejalo en esas tareas y agregá a T030 que el aviso también le dice que MapaConocido ya está, para H-2.
+
+B6. Orden de implementación: el integrante 3 depende del guardado (sus tareas T043 a T048 de la 004) y del mapa en la rama (H-2 y «ir a»). Agregá a «Estrategia» y a «Entrega incremental» que, después de la fase 2 (DTO), se adelantan T035, T036, T038 y T039 (PartidaGuardadaDTO y GuardadoBinario versión 2, que solo necesitan el DTO), con un commit y un aviso propios (T043). Después siguen las fases 3 a 7 hasta el aviso de T030. T040 (PartidaGuardada) queda donde está, porque necesita MapaConocido. Comprobá que el grafo de dependencias lo permita y ajustalo si hace falta.
+
+No cambies nada más. Al final: los archivos de la parte A y de la parte B por separado, qué quedó en cada punto, y si queda algún hallazgo CRÍTICO o ALTO abierto. No hagas commit.
+
+Tercero:
+
+Último ajuste, sin código y sin commit. En plan.md (la línea ~65 y la sección «Hallazgos») y en research.md, actualizá el estado de tres hallazgos que ya quedaron resueltos:
+- H-3: confirmado por el integrante 3 el 14/11 (strip().casefold() de los dos lados).
+- H-5: resuelto en la spec, porque H2-5 se reescribió en la Sesión 2026-11-14.
+- H-8: resuelto en la spec, porque FR-221 dice ahora que el mapa guardado reemplaza al de la partida en curso.
+Que la línea ~65 ya no diga que quedan ambigüedades abiertas de la spec. No cambies nada más. Al final: las líneas que cambiaste.
+
+**Uso de la respuesta:** dos commits. `spec(002)`: H2-5 reescrito (el jugador está en B, por eso la cara A–C sigue «sin observar»), FR-221 dice que el mapa guardado reemplaza al de la partida en curso y hay una sesión de Clarificaciones del 14/11. `tasks(002)`: se sacó `observador_rutas`; `MapaConocido.restaurar(None)` arma el mapa inicial, así que `PartidaGuardada.cargar` suma una sola línea, sin `if` ni `raise`, y no se rompen las pruebas de los otros integrantes; los documentos dicen quién escribe `motorJuego.py` y `PartidaGuardada.py`; el bench suma B11 (armar el grafo y un `paso_desde_cero`) en vez de afirmar que alcanza; B8 usa el aviso real de `observador_puertas`; H-3 confirmado; T035, T036, T038 y T039 (guardado versión 2) se adelantan después del DTO porque el integrante 3 depende de ellos; y el resto de los hallazgos medios y bajos. Revisé el resultado en el zip antes de cada commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+1. git fetch y git merge origin/derek (trae T055). Si hay conflictos en archivos de la 001, pará y mostrámelos.
+2. test(001): T056, quitá el skip de H2-20 y H2-21 y marcá T055 y T056.
+3. spec(001): FR-122, una ficha de enemigo cuyo botín trae un objeto con duracion inválida es una ficha
+   inválida (la sala queda sin contenido; en la sala inicial no inicia), para no fallar a mitad de partida
+   cuando el enemigo muere. Escenario H2-22 y una tarea nueva para el integrante 2. Actualizá también
+   contracts/contrato-datos.md (plan(001)). Prueba de H2-22 con skip hasta su tarea.
+4. tasks(001): la nota de T046 (~línea 190) dice "lado seguro" sin limitarlo; dejala como en DECISIONES.md
+   ("en esta regla de la puerta de salida").
+5. plan(001): una nota de dependencias externas: _cronometrar, _mejor_y_mediana y SEMILLA (BenchLogica),
+   _cuadricula_con_costos, _motor_con_cazadores, _centro y _peor (BenchRutas) y Mazmorra._salida_inversa
+   son usados por las specs 002 y 003; no cambiar su nombre ni firma sin avisar al integrante 2.
+Un commit por punto, suite en verde con uv run, PROMPTS_LLM.md, no hagas push.
+
+Regla exacta (del integrante 2): si alguna ficha de 'suelta' de un enemigo quedó rechazada, la ficha del
+enemigo cuenta como inválida. No agrega solicitudes: ResolvedorCatalogo ya baja esas fichas antes de integrar la sala.
+
+**Uso de la respuesta:**
+- Merge de `origin/derek`: fast-forward hasta `acd4196`, sin conflictos (trae T055 y las specs 002 a 004).
+- `test(001)`: sin los `skipTest` de H2-20 y H2-21, que pasan con T055; T055 y T056 marcadas en `tasks.md`.
+- Punto 3 en tres commits, uno por prefijo: `spec(001)` (FR-122 con la regla de `suelta`, escenario H2-22, caso borde, trazabilidad y T057 para el integrante 2 en `tasks.md`), `plan(001)` (fila de `suelta` en `contracts/contrato-datos.md`) y `test(001)` (`test_h2_22_fr122_botin_invalido_deja_la_sala_sin_contenido` con `FuenteConBotinInvalido` en `tests/ayudas_terreno.py`, con `skipTest` hasta T057). La prueba cubre una sala no inicial (la sala queda sin contenido, el mensaje nombra la ficha del enemigo, `suelta` y la ficha rechazada) y la sala inicial (no inicia). Se comprobó que pasa con una implementación provisional en `GestorContenido._rechazo_de` (descartada, es del integrante 2) y que falla sin ella.
+- `tasks(001)`: la nota de T046 dice «En esta regla de la puerta de salida, la diferencia va hacia el lado seguro», como `DECISIONES.md`.
+- `plan(001)`: nota de dependencias externas en «Dependencias con otros integrantes» de `plan.md`.
+
+Suite: 549 OK (skipped=2: H3-7 y H2-22) y 32/32 scripts. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Revisión cruzada del PLAN de la spec 002 (mapa conocido, integrante 2), SOLO LECTURA. git fetch;
+leé con git show origin/derek:specs/002-niebla-ir-a/<archivo> (plan.md, research.md, data-model.md,
+contracts/, tasks.md). Contra la constitución v1.2.0 y la spec 002:
+1. Capas (Principio I) y estructuras prohibidas (Principio II).
+2. Cambios a mi código: las 4 líneas y 2 imports en Logic/motorJuego.py y las 2 de Logic/PartidaGuardada.py,
+   exactos en la tabla "Cambios a código existente". ¿Rompen algo de la 001 (rutas, observador_puertas,
+   historial, determinismo)?
+3. RepartidorAvisosPuertas: ¿reenvía puerta_cambio a mis rutas y al mapa sin cambiar el orden ni perder
+   avisos? ¿Qué pasa al deshacer con el pergamino?
+4. FR-225: el grafo del mapa conocido cumple contracts/busqueda-rutas.md de la 001 (por cara, costo igualado,
+   ids del esqueleto completo).
+5. Uso de funciones privadas mías (las 8 de la nota de dependencias del plan de la 001 y _salida_inversa):
+   que solo se usen, no se modifiquen.
+6. Mediciones de --bench para cada decisión (Principio VIII) y que el plan no agregue reglas que no estén
+   en la spec (Principio IX).
+Salida: ALTA/MEDIA/BAJA con archivo y línea, y al principio lo que está bien. Registralo en PROMPTS_LLM.md.
+
+**Uso de la respuesta:** revisión de solo lectura de `origin/derek` (`acd4196`); no se tocó ningún archivo de la 002. `tasks.md` de la 002 todavía no existe. Se contrastaron las anclas de la tabla con `Logic/motorJuego.py` (líneas 42-43, 58 y 124) y `Logic/PartidaGuardada.py` (29 y 87), y todas las escrituras de `cerrada` en Logic (solo `abrir_puerta` y `CierrePuerta` cambian puertas durante la partida, y las dos avisan). Bien: capas, estructuras, las 4 líneas del motor, el repartidor (orden fijo, sin pérdida, el pergamino revierte por casilla sin avisos), el grafo de FR-225 y el uso de las funciones privadas solo como lectura. Sin hallazgos ALTA. MEDIA: `PartidaGuardada.cargar` no son 2 líneas y el comportamiento con `mapa = None` se describe distinto en el plan y en el data-model; NFR-250 se da por cumplido sin medición; `observador_rutas` sin requisito que lo pida (YAGNI); H-5 reinterpreta un escenario en vez de aclararlo en la spec. BAJA: números del bench de la 001 sin el mapa, data-model de la 001 desactualizado (H-1), la variante de B8 con puerta que cambia, la prueba de SC-202 que depende del integrante 3 y las alternativas del repartidor y del formato binario sin medir. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement T027 a T035 y T070 (Fase 4, historia 3: retroceder con pergamino) de specs/004-linea-tiempo/tasks.md. Pruebas primero en cada par; luego implementa y marca [X] solo lo que completes.
+Reglas: constitución v1.2.0, MVC n-capas, solo estructuras y librerías permitidas, sin copy/deepcopy. El pergamino no es una acción y no deja marcador: después de usarlo toma un punto de control nuevo en c copiando el estado vivo con PartidaGuardada.guardar (reemplaza el que ya exista en c, quita la última acción y los puntos posteriores a c). T030: ServicioLineaTiempo.ejecutar debe registrar ese caso (hoy el pergamino deja la línea inconsistente). T033 con H3-5 y H3-6 sin skip. T070: prueba del cazador después de retroceder (decide igual que desde cero, con la búsqueda de RutasHaciaJugador de Marco; no modifiques código de Marco). Después de cada commit, suite completa con PYTHONIOENCODING=utf-8 python tests/correr_pruebas.py. No empieces la Fase 5 ni H2. Reporte final con tareas hechas, pruebas, decisiones y pendientes de Marco o Derek.
+
+**Uso de la respuesta:** Se implementa la historia de retroceder con pergamino (punto de control nuevo) y la prueba del cazador (T027 a T035 y T070).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement Correcciones de documentación en specs/004-linea-tiempo (solo documentos, un commit «spec(004): ...», sin tocar código):
+1) spec.md, Suposiciones: SalidaDTO.cierre_automatico y ObjetoDTO.duracion ya se validan en Data como enteros >= 1 (FR-122 de specs/001-terreno-cazador; escenarios H2-20 y H2-21 y, para los objetos que suelta un enemigo, H2-22). Restaura la suposición «ningún efecto se programa con retraso 0, así que al ejecutar los eventos de un instante t no aparecen eventos nuevos en ese mismo t» y cita FR-122 de la 001 como respaldo; quita la nota de «pendiente del integrante 2».
+2) tasks.md: T032 no se implementa (la regla del prefijo por ordinal no hace falta: el punto nuevo en c copia el estado vivo, y cargar salas por adelantado cambiaría contenido_cargado). Déjala sin [X] y con la nota «(no necesaria: el punto en c copia el estado vivo; verificada con FuenteConRatas en T034)». En plan.md, hallazgo H-1, escribe el mismo motivo. Los registros de carga con su ordinal (T016) se mantienen.
+3) contracts/contrato-linea-tiempo.md §1 y §2: PartidaGuardadaDTO tendrá el campo `mapa` (integrante 2, spec 002 FR-223) ANTES de `linea`, de modo que `linea` siga siendo el último campo; la cabecera v2 lleva también offset y largo del bloque del mapa; cada punto de control es un PartidaGuardadaDTO y por eso lleva su propio mapa. Anótalo como «acordado con el integrante 2; falta confirmar el orden de campos».
+4) tasks.md: marca [X] T027, T028, T029, T030, T033, T034, T035, T070 y T071 si no lo están (T071 está en origin/derek). No marques T002 ni T003 (todavía no están en el código).
+No cambies ningún FR. No hagas push. Reporta los commits.
+
+**Uso de la respuesta:** Se corrigió la documentación de la 004 (retraso de efectos respaldado por FR-122, T032 no necesaria, contrato con el campo mapa) y se marcaron las tareas hechas.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement T036 a T042 (H2: --replay … --hasta) y T049 a T051 (H5: K configurable) de specs/004-linea-tiempo/tasks.md. Antes: confirma que la rama ya incluye origin/derek (T071: BitacoraReplayIO.leer ignora las líneas que empiezan con «#») y corre la suite.
+Pruebas primero en cada par (T036, T038, T040, T049) y confirma que fallan por la causa esperada; luego implementa y marca [X] lo que completes. T037 y T050: la lectura de --hasta y --checkpoint-cada ya está hecha (commit de las banderas); completa solo el cableado que falte (ConfiguracionDTO y LectorArgumentos son del integrante 2: agrega solo al final, sin cambiar su orden). T041: ControladorBackend.reproducir_hasta(ruta, t) al final de la clase, sin tocar lo de la 003.
+Reglas: constitución v1.2.0, MVC n-capas, solo estructuras y librerías permitidas; la validación de t vive en Logic y ServicioReplayHasta solo la propaga; códigos de salida 0, 1 y 2; --hasta solo con --replay; una línea «# ir a» en el log no cambia el resultado del replay. Después de cada commit corre la suite completa con PYTHONIOENCODING=utf-8 python tests/correr_pruebas.py. No empieces H4 ni la interfaz. Reporte final con tareas hechas, pruebas, decisiones y pendientes de Marco o Derek.
+
+**Uso de la respuesta:** Se implementa --replay --hasta y el K configurable (T036 a T042 y T049 a T051) con T071 de Derek ya integrado.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Lee specs/002-niebla-ir-a/spec.md (mi sección «ir a»: FR-250 a FR-264, historias 6 y 7 y su trazabilidad en el Apéndice B), specs/002-niebla-ir-a/plan.md (la parte del integrante 2 y mi sección reservada al final), specs/002-niebla-ir-a/contracts/contrato-mapa-conocido.md y la constitución v1.2.0. Escribe SOLO mi sección del plan de «ir a» al final de plan.md, en un commit aparte «plan(002): ir a (integrante 3)». Sin tasks y sin código. Cubre: el servicio, el uso de GrafoMapaConocido con paso_desde_cero de Marco, el recálculo y la parada cuando una puerta recordada resulta estar cerrada, enemigos dormidos, pergamino durante el viaje, el comentario «# ir a» con anexar_comentario (solo si la orden da al menos un paso), el paso de cada movimiento por ServicioLineaTiempo.ejecutar, la validación en Logic, la comparación de nombres con strip().casefold() (H-3) y el análisis de H-2 (qué usa EscenaJuego de sala_destino; propón opciones sin implementar). Reporta los hallazgos y las preguntas para Derek y Marco.
+
+**Uso de la respuesta:** Se escribe mi sección del plan de «ir a» (002) y se analiza el hallazgo H-2 sin implementar.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Actualiza SOLO mi sección del plan de «ir a» en specs/002-niebla-ir-a/plan.md (commit «plan(002): decisiones de ir a (integrante 3)», sin código ni tasks), con estas decisiones:
+- I3-4: «ir a» desde una sala con enemigos vivos permite el primer paso; el viaje solo se detiene al ENTRAR a una sala con enemigos (activos o dormidos), como dice §3.4.
+- I3-5: el comentario «# ir a <sala>» se escribe justo después del primer paso aceptado (queda entre el primer y el segundo paso; el replay lo ignora).
+- I3-7: INTERRUMPIDO, TERMINADA y PASO_RECHAZADO son motivos internos, no mensajes nuevos de la spec: anótalo.
+- H-2: opción A. ArmadorEstado enmascara con una constante (SIN_EXPLORAR, valor -1, en DTO/MapaConocidoDTO.py de Derek, pendiente de su visto bueno) los sala_destino de las salas no exploradas y deja sala_salida en None hasta que se explora; la vista no cambia. ArmadorEstado usa es_explorada(sala) del mapa. La prueba de SC-202 revisa también EstadoJuegoDTO.
+- D-1: no se pide direccion_hacia; se usa Mazmorra.salida sobre las salas exploradas.
+- Detección de daño (M-2): anota como riesgo que comparar jugador.vida antes y después del paso puede fallar si hay regeneración o curación en el mismo paso; la señal fiable se decide con la respuesta de Marco.
+Reporta el commit. No hagas push.
+
+**Uso de la respuesta:** Se registran en el plan de «ir a» las decisiones I3-4, I3-5, I3-7, D-1 y la solución H-2 (opción A)
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement T052 a T057 (interfaz de la línea de tiempo: historia <t> e historia #k) de specs/004-linea-tiempo/tasks.md. Pruebas primero en cada par (T052, T055); confirma que fallan por la causa esperada, luego implementa y marca [X] lo que completes.
+Reglas: constitución v1.2.0, MVC n-capas (la vista no calcula nada, solo muestra el ResumenHistoriaDTO), solo estructuras y librerías permitidas. T053: ControladorBackend.historia_por_instante(t) e historia_por_accion(k) al final de la clase, sin tocar lo de la 003. T054: ControlesJuego.procesar_comando(texto) valida solo la ESTRUCTURA (historia <t> con entero >= 0, historia #k con entero >= 1); el rango lo valida Logic y el mensaje se muestra tal cual. Una consulta no consume tiempo, no es acción y no se registra en partida.log. T056: antes de elegir la tecla que abre la línea de comandos (Enter) y la que la cierra (Esc), revisa los controles actuales en View/ y en el controlador de pygame y dime si chocan. Las pruebas de vista usan SDL_VIDEODRIVER=dummy. No empieces H4. Después de cada commit corre la suite completa con PYTHONIOENCODING=utf-8 python tests/correr_pruebas.py. Reporte final con tareas, pruebas, decisiones y pendientes.
+
+**Uso de la respuesta:** Se implementa la interfaz de la línea de tiempo (comandos historia <t> e historia #k, T052 a T057).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement T058 a T062 (banco de pruebas de la línea de tiempo) de specs/004-linea-tiempo/tasks.md. Pruebas primero (T058), luego implementa y marca [X] lo que completes.
+Reglas: constitución v1.2.0, MVC n-capas, solo estructuras y librerías permitidas. Usa Service/Cronometro.py y ResultadoBenchDTO como Service/BenchInventario.py. T061 modifica solo la función medir() de Service/BenchInventario.py para devolver también BenchLineaTiempo.medir() (una línea), sin tocar Service/ServicioBench.py; si el plan no lista este cambio a la primera entrega con su motivo, dilo antes de hacerlo. T062: corre python -m Service.ServicioBench y guarda la tabla en specs/004-linea-tiempo/. Comprueba el criterio de §6.1: con 5 000 acciones del jugador y el K por defecto, historia tarda menos de 50 ms y ir a un paso de línea menos de 5 ms. Si K=20 no cumple, prueba al menos 3 valores de K más y también sin puntos de control, y NO cambies CHECKPOINT_POR_DEFECTO sin avisarme: dime los números y propón el valor. Después de cada commit corre la suite completa con PYTHONIOENCODING=utf-8 python tests/correr_pruebas.py. No empieces H4. Reporte final con tareas, tabla de mediciones, decisiones y pendientes.
+
+**Uso de la respuesta:** Se implementa el banco de pruebas de la línea de tiempo (T058 a T062) y se mide el valor de K por defecto
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** (Claude Code)
+
+/speckit-implement T063, T064, T065 y T067 de specs/004-linea-tiempo/tasks.md (documentación y revisión de restricciones). Solo documentos, salvo el comentario de ConfiguracionDTO.py. No toques T066, T068 ni H4.
+1) T063 y T064: completa en DECISIONES.md la sección «Integrante 3 — 004» (§5.3, §5.5 y §5.6) con las decisiones reales de la implementación: diseño A de reconstrucción hacia adelante con un Motor aparte, pergamino sin marcador con punto de control nuevo en c, regla de la consulta (j = última acción con tiempo estrictamente menor que t), T032 no necesaria, grabadores con registros de carga y ordinal, DespachoAcciones propio, validación de t y k en Logic, línea de comandos con Enter y Esc, el error de hasta_instante que se corrigió con la prueba de regresión, y las mediciones de specs/004-linea-tiempo/bench-tabla.txt (K = 20 con 0,62 ms; sin puntos 147 ms; búsqueda binaria contra recorrido lineal; costo por acción con y sin línea; costo de una copia).
+2) En DTO/ConfiguracionDTO.py cambia SOLO el comentario «PROVISIONAL» de CHECKPOINT_POR_DEFECTO: K = 20 queda confirmado por el banco de pruebas (cita bench-tabla.txt). No cambies el valor ni el orden de los campos.
+3) T065: README.md documenta historia <t>, historia #k, Enter para abrir la línea de comandos y Esc para cerrarla, --replay partida.log --hasta T con sus códigos de salida 0, 1 y 2, --checkpoint-cada N y --bench. No documentes aún «ir a», el comando del mapa ni el guardado con línea.
+4) T067: corre el grep del Principio II sobre Logic, Estructuras, DTO, Service y UIController (copy, bisect, heapq, collections, sorted(, .sort(, tracemalloc) y reporta cada coincidencia nueva de la 004 con su motivo; no cambies nada de la primera entrega.
+Dos commits: «docs(004): decisiones, README y K confirmado» y, si T067 encuentra algo tuyo que corregir, «fix(004): ...». No hagas push. Reporte con los commits y los hallazgos.
+
+**Uso de la respuesta:** Se documentan las decisiones de la 004, el README y la confirmación de K = 20 con las mediciones del banco de pruebas (T063 a T065 y T067).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** (Claude Code)
+
+Solo lectura, no cambies ni crees archivos. Lee Logic/ (motorJuego.py, jugador.py, ActorBase.py, Enemigo.py, Efectos.py, GestorEfectos.py, Mazmorra.py) y responde con archivo y línea:
+(a) M-2: ¿en qué lugares baja jugador.vida (ataques de enemigos, veneno, trampas, otros)? ¿Existe un único punto por el que pase todo daño al jugador? ¿Hay algo que SUBA jugador.vida dentro de un mismo paso del jugador (regeneración pasiva, poción, efecto)? Si comparar jugador.vida antes y después del paso puede ocultar un daño, dime un caso concreto y propón la señal más simple y fiable (por ejemplo un contador o bandera que ya exista) sin crear estructuras nuevas.
+(b) M-3: al entrar el jugador a una sala con enemigos dormidos, ¿se activan dentro del mismo paso? ¿enemigos_vivos de esa sala los incluye cuando termina el paso?
+(c) M-1: confirma en ColaEventos y BusquedaCostoMinimo/RutasHaciaJugador que paso_desde_cero no guarda estado entre llamadas con limite=None.
+Responde en una tabla corta. Al final, indica si el plan de «ir a» (specs/002-niebla-ir-a/plan.md, mi sección) necesita cambiar algo por tus respuestas.
+
+**Uso de la respuesta:** Se resuelven con el código las preguntas M-1 a M-3 del plan de «ir a» (detección de daño y enemigos dormidos).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement Feature 002-niebla-ir-a, parte del integrante 2. Primer lote, según «Estrategia» y «Entrega incremental» de specs/002-niebla-ir-a/tasks.md: solo estas tareas y en este orden.
+
+1. T001: tests/ayudas_mapa.py.
+2. Fase 2: T009 y T010 (las pruebas primero; comprobá que fallan), después T011 y T012, y T013 (la suite completa en verde).
+3. Guardado adelantado:
+   - las cuatro primeras pruebas de T035 (DTO y linea). Las de restaurar NO, esas van con T037 en otro lote;
+   - T036: PartidaGuardadaDTO con mapa antes de linea, con el import local de LineaTiempoGuardadaDTO. Es T002 de la 004;
+   - T038: las pruebas del binario, que también son las de T003 y T047 de la 004. Comprobá que fallan;
+   - T039: GuardadoBinario versión 2. Es T003 de la 004.
+   El formato v2 se implementa con el diseño de data-model.md §6 y research R4 (cabecera de 58 bytes, bloque propio del mapa y de la línea, y el orden de los bloques de cada punto de control). El integrante 3 todavía no actualizó el texto del §1 y del §2 de su contrato de la 004 (T007), pero aceptó ese diseño el 14/11. Si encontrás algo de su contrato de la 004 que contradiga el diseño, avisame en vez de elegir uno.
+
+Después de T039, PARÁ. No hagas T037, T040 ni nada de las fases 3 en adelante.
+
+Reglas:
+- Constitución v1.2.0: sin dict ni set como índice, sin heapq, bisect ni collections, sin sorted ni list.sort, sin copy fuera de tests/, y Logic no importa Data.
+- Pruebas primero, con el FR en el nombre, como dice cada tarea.
+- Solo archivos del integrante 2: tests/ayudas_mapa.py, tests/test_guardado_mapa.py, tests/test_mapa_conocido_estados.py, DTO/MapaConocidoDTO.py, Logic/MapaConocido.py, DTO/PartidaGuardadaDTO.py, Data/GuardadoBinario.py y tests/TestGuardadoBinario.py (solo la aserción de la versión). No toques archivos de otros integrantes; si alguno tuviera que cambiar, avisame.
+- Marcá con [x] en tasks.md solo las tareas que quedaron completas. T035 queda sin marcar, porque le faltan las pruebas de restaurar; anotalo en la tarea.
+- Antes de terminar corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8 en Windows) y el replay de ejemplo (python main.py --replay ejemplos/partida_ejemplo.log --offline), que debe dar lo mismo que antes. Comprobá también que guardar y cargar una partida real con ServicioGuardado sigue funcionando con la versión 2. La versión 1 ahora se rechaza: decime si eso afecta algún archivo guardado del repositorio (partidas/, ejemplos/ o tests/).
+
+Al final decime:
+- los archivos de cada grupo, separados para dos commits: (a) T001 y la fase 2, y (b) el guardado adelantado;
+- las pruebas nuevas, con su resultado antes y después;
+- el resultado de la suite y del replay;
+- cualquier diferencia con el plan.
+No hagas commit.
+
+**Uso de la respuesta:** primer lote de la 002, con las pruebas primero. Las 24 pruebas nuevas fallaban antes del código. Se hicieron T001 (`tests/ayudas_mapa.py`); la fase 2, con T009 a T013 (`DTO/MapaConocidoDTO.py` y el núcleo de `Logic/MapaConocido.py`: dos arreglos, escrituras que registran su reversión en el historial); y el guardado adelantado: T036 (`PartidaGuardadaDTO` con `mapa` antes de `linea` e import local, T002 de la 004), T038 y T039 (`GuardadoBinario` versión 2 con cabecera de 58 bytes y bloques propios del mapa y de la línea, la versión 1 rechazada sin tocar la partida actual; T003 y T047 de la 004). En `tests/TestGuardadoBinario.py` cambiaron tres aserciones de versión. T035 queda abierta hasta las pruebas de `restaurar`. Resultado: 641 OK (skipped=2) y 32/32 scripts; el replay de ejemplo es idéntico, y guardar y cargar una partida real funciona con la versión 2. Revisé el diff antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+SOLO LECTURA, con archivo:linea. Hace git fetch.
+A) Revision linea por linea de origin/kris commit 2753a53 (git show 2753a53): Motor.avanzar_hasta(t) en Logic/motorJuego.py y tests/test_linea_tiempo_motor.py. Verifica: 1) usa el evento que devuelve obtener_siguiente; 2) cuando le toca al jugador hace exactamente lo mismo que avanzar_hasta_jugador (registrar reloj y Evento_pendiente, _cerrar_intervalo, devolver True); 3) si el siguiente evento es > t se detiene sin extraerlo ni mover el reloj; 4) se detiene si terminado; 5) la prueba del cancelado en la raiz con tiempo <= t seguido de uno valido > t existe y comprueba False sin mover el reloj; 6) avanzar_hasta_jugador no cambio. Mira tambien por encima los cambios de origin/kris en ControladorBackend._ejecutar y ServicioPartida.iniciar_partida: rompen algo de la 001 o el determinismo?
+B) Preguntas de la integrante 3 para el plan de ir a:
+M-1. Logic/BusquedaCostoMinimo.py paso_desde_cero con limite=None: guarda algo entre llamadas que cambie el resultado? El desempate es por la vecina de menor id del primer paso (no entre rutas completas)?
+M-2. En P1 hay curacion o regeneracion que pueda ocurrir dentro de un mismo paso del jugador (efectos, pulsos, objetos)? Existe un contador o evento de dano recibido mas fiable que comparar la vida antes y despues?
+M-3. motor.enemigos_vivos (o equivalente) incluye a los enemigos dormidos que se activan al entrar a la sala? Cuando se agregan?
+Salida: A con lo que esta bien y lo que hay que cambiar; B con respuesta corta y evidencia.
+
+**Uso de la respuesta:** consulta `1a1dc7afa4b`, respuesta en `.claude-bridge/outbox/1a1dc7afa4b.txt`. La consulta terminó **sin respuesta**: la sección «Respuesta» quedó vacía y 7 acciones quedaron bloqueadas por permisos (`git show`/`git diff` de `origin/main`, `HEAD` y `origin/kris` con `awk` y `grep`, `git log origin/main..origin/kris`, `git ls-tree` de `origin/kris`, y extraer `origin/kris` con `git archive` para correr `tests.test_linea_tiempo_motor`). No hay revisión de `2753a53` ni respuestas a M-1, M-2 y M-3; hay que repetir la consulta con esos permisos. No modificó nada. **Nota:** se repitió como `1a1dc8137f6` (registrada más abajo), con reglas de comandos que no se bloquean.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+1. plan(001): en contracts/contrato-datos.md, sección "Validación (FR-122)", agregá:
+   "AlmacenCatalogo solo guarda fichas válidas, botín incluido; ficha() revalida al leer del disco.
+   Un enemigo con botín rechazado no se guarda ni en disco ni en memoria, y la regla vale también
+   en otra partida." (confirmado por el integrante 2, se implementa en T057).
+2. test(001): a test_h2_22 agregale un subcaso de segunda partida: la primera partida guarda en caché
+   la ficha del enemigo; en la segunda, con la misma carpeta de caché, su sala tiene que quedar
+   igual de rechazada. Sigue con skip hasta T057.
+3. docs: registrá en PROMPTS_LLM.md la consulta del puente 1a1dc7afa4b (revisión de avanzar_hasta de
+   la integrante 3, commit 2753a53, y sus preguntas M-1 a M-3 para «ir a»). La respuesta va a estar en
+   C:\Users\Eli\.claude-bridge\outbox\1a1dc7afa4b.txt cuando el puente termine; si todavía no está,
+   registrá solo el pedido y completá el resumen después.
+Suite en verde con uv run, no hagas push.
+
+**Uso de la respuesta:** (1) `plan(001)`: el párrafo va en «Validación (FR-122)» de `contracts/contrato-datos.md`, después del de la fila de `suelta`. (2) `test(001)`: `test_h2_22` tiene un subcaso «segunda partida»: dos `ServicioPartida` con la misma carpeta de caché (y logs aparte); en las dos, entrar a la sala 2 se rechaza con el mismo mensaje, sin mover al jugador ni el reloj. Sigue con `skipTest` hasta T057; sin el skip falla igual que el subcaso de la sala no inicial (ya en la partida 1), sin errores de otro tipo. (3) La consulta `1a1dc7afa4b` se registró arriba; el puente terminó sin respuesta (7 acciones bloqueadas por permisos), así que no hay resumen que completar hasta repetirla. Suite: 549 OK (skipped=2: H3-7 y H2-22). Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+SOLO LECTURA. REGLAS DE COMANDOS: un solo comando git por llamada a Bash, sin pipes, sin ;, sin &&, sin for, sin awk ni grep en Bash (para buscar usa Read/Grep sobre archivos locales). Comandos permitidos: git fetch, git show <ref>:<archivo>, git show <commit>, git diff <a> <b> -- <archivo>, git log. NO ejecutes pruebas ni codigo: si algo requiere correrlo, decilo y lo corro yo aparte.
+A) Revision de origin/kris commit 2753a53 (git show 2753a53): Motor.avanzar_hasta(t) en Logic/motorJuego.py y tests/test_linea_tiempo_motor.py. Verifica con archivo:linea: 1) usa el evento que devuelve obtener_siguiente; 2) cuando le toca al jugador hace lo mismo que avanzar_hasta_jugador (registrar reloj y Evento_pendiente, _cerrar_intervalo, devolver True); 3) si el siguiente evento es > t se detiene sin extraerlo ni mover el reloj; 4) se detiene si terminado; 5) existe la prueba del cancelado en la raiz con tiempo <= t seguido de uno valido > t y comprueba False sin mover el reloj; 6) avanzar_hasta_jugador no cambio. Mira por encima git diff origin/Marco origin/kris -- Controller/ControladorBackend.py y Service/ServicioPartida.py (ajusta las rutas si son otras): rompen algo de la 001 o el determinismo?
+B) Confirma o corrige lo que concluyo la integrante 3: M-2) todo dano al jugador pasa por ActorBase.Recibir_Dannio y dentro de un paso solo la Regeneracion (Efectos.py) puede subir la vida. M-3) mover_jugador activa los dormidos de la sala de llegada en el mismo paso y Mazmorra.enemigos_vivos los cuenta. Y M-1) paso_desde_cero con limite=None: guarda algo entre llamadas que cambie el resultado? desempate por la vecina de menor id del primer paso?
+Salida: A con lo que esta bien y lo que hay que cambiar; B con respuesta corta y evidencia.
+
+**Uso de la respuesta:** consulta `1a1dc8137f6`, respuesta en `.claude-bridge/outbox/1a1dc8137f6.txt`. Repite `1a1dc7afa4b` con reglas de comandos que no se bloquean. (A) `Motor.avanzar_hasta(t)` en `origin/kris` (`2753a53`) cumple los seis puntos: usa el evento de `obtener_siguiente` (`Logic/motorJuego.py:119`); el turno del jugador repite las líneas 96 a 102 de `avanzar_hasta_jugador` (líneas 120 a 126); devuelve `False` sin extraer ni mover el reloj si el siguiente es > `t` (117-118); se detiene con `terminado` (115); la prueba del cancelado está en `tests/test_linea_tiempo_motor.py:141-150`, y `avanzar_hasta_jugador` no cambió. A cambiar: esa prueba también pasaba antes de `2753a53` (no distingue el arreglo), y falta una que compruebe el registro en el historial y `_cerrar_intervalo` con `acciones >= 1`. Se propuso una: dos motores, `avanzar_hasta_jugador()` frente a `avanzar_hasta(t)`, y comparar `historial.cantidad()` y el estado después de `deshacer()`. Los cambios en `UIController/ControladorBackend.py` y `Service/ServicioPartida.py` no rompen la 001 ni el determinismo. Quedan dos detalles: `ServicioGuardado.cargar` no instala la línea (aunque el docstring de `GrabadoresLinea.py` dice que sí) y `ServicioReplay` no la llena. (B) M-2 confirmado con un matiz: la poción (`usar`) también sube la vida si el paso incluye la acción del jugador, y deshacer y cargar cambian la vida fuera de un paso. M-3 confirmado con una corrección: los dormidos se activan en el mismo paso, pero su primera acción es en `reloj + intervalo`, y `Mazmorra.enemigos_vivos` (`Logic/Mazmorra.py:131-136`) cuenta vivos sin mirar `activo`, así que también cuenta a los dormidos. M-1: `paso_desde_cero` no guarda estado entre llamadas (solo la caché de estructura de `GrafoEsqueleto._inversa`), y el desempate es por la vecina de menor id del primer paso, apoyado en costos ≥ 1 (`Data/ValidacionDatos.py:46-48`). Se le pasa a la integrante 3. No corrió nada ni modificó nada.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+docs: registrá en PROMPTS_LLM.md la consulta del puente 1a1dc8137f6 (revisión de 2753a53 y M-1 a M-3;
+respuesta en C:\Users\Eli\.claude-bridge\outbox\1a1dc8137f6.txt) y completá la entrada de 1a1dc7afa4b
+con una nota de que se repitió como 1a1dc8137f6 por los comandos bloqueados. No hagas push.
+
+**Uso de la respuesta:** se registró la consulta `1a1dc8137f6` y se agregó a la entrada de `1a1dc7afa4b` la nota de que se repitió como `1a1dc8137f6`. Solo cambia `PROMPTS_LLM.md`, así que no se corrió la suite. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Dos prompts en un chat nuevo.
+
+Primero:
+
+Documentación de la feature 002-niebla-ir-a, sin código y sin commit. Son dos partes que van en dos commits separados (los hago yo): la A primero, porque T005 dice que los cambios del contrato van en un commit plan(002) propio antes de las tareas; la B después. No toques spec.md, ningún archivo de código ni la sección «Viaje automático «ir a» (integrante 3)» de plan.md (es del integrante 3). No renumeres T001 a T099.
+
+PARTE A — contracts/contrato-mapa-conocido.md y data-model.md (y plan.md o research.md solo si alguna frase de la parte del integrante 2 queda contradiciendo lo nuevo)
+
+Respuestas del integrante 3 del 14/11 (D-2, D-3, D-6 y su pedido sobre el grafo). Reflejalas así:
+
+A1. MapaConocido.es_explorada(sala: int) -> bool: True solo si el estado de la sala es EXPLORADA; O(1); no cambia nada, no consume tiempo ni registra en el historial. La usa ArmadorEstado del integrante 3 para el H-2 (opción A). Agregala al contrato (en (c) o en una sección corta propia) y a la tabla de métodos de MapaConocido del data-model.
+
+A2. buscar_exploradas(nombre): un nombre vacío o de solo espacios devuelve [] (después de strip() no coincide con ninguna sala); un nombre que no es str (None, un número, bytes) lanza ValueError, porque es un error de programación del que llama. Agregalo al contrato (c) y al data-model.
+
+A3. Garantías de GrafoMapaConocido que pidió el integrante 3 (la búsqueda de la 001 crea arreglos de tamaño cantidad_salas() e indexa por id):
+- cantidad_salas() es el total de la cripta, len(Mazmorra.salas), con ids de 0 a cantidad_salas() - 1, igual que GrafoEsqueleto.
+- Coherencia: (v, c) está en salidas(u) si y solo si (u, c) está en entradas(v).
+- Una sala no explorada no tiene salidas ni entradas.
+- La posición 0 puede no ser una sala (lo dice GrafoEsqueleto.cantidad_salas): salidas(0) y entradas(0) devuelven [] sin error, porque el estado se mira antes de leer mazmorra.salas[u]. Lo mismo para cualquier hueco.
+
+A4. Costo de armar el grafo: el constructor es O(1) y el índice inverso del esqueleto (_inversa) se arma en la primera llamada a entradas, O(S + E), como en GrafoEsqueleto. Hoy el contrato (a) dice «una vez por partida (o por viaje)». El plan del integrante 3 (I3-8) lo arma en cada paso. Cambiá el texto para que admita por partida, por viaje o por paso, y diga que armarlo en cada paso suma ese O(S + E) a cada paso, que es justo lo que mide B11 (armar el grafo y un paso_desde_cero); sin afirmar el resultado antes de medir.
+
+A5. Contrato (d) dice que «ir a» no debe usar el esqueleto (Mazmorra, GrafoEsqueleto, GestorEsqueleto) para rutas (FR-252). El plan del integrante 3 (D-1, decidir_paso) traduce la vecina que eligió el grafo a una dirección leyendo Mazmorra.salida sobre las cuatro direcciones de la sala actual. Aclará en (d) que eso no es usar el esqueleto para la ruta: la ruta sale solo del grafo, la sala actual está explorada y la vecina ya la eligió el grafo (acordado con el integrante 3, D-1).
+
+A6. H-2 quedó decidido por el integrante 3 el 14/11 (opción A): ArmadorEstado pone sala_destino = SIN_EXPLORAR (-1) en las salidas hacia salas no exploradas y sala_salida = None mientras la sala de salida no esté explorada, usando es_explorada. La constante SIN_EXPLORAR se define en DTO/EstadoJuegoDTO.py (del integrante 3), NO en DTO/MapaConocidoDTO.py, que no cambia (D-6). Actualizá en el contrato la garantía de (b) que dice «Si se agrega a EstadoJuegoDTO… Decide el integrante 3» y la mención del H-2 en (d), y lo que diga lo mismo en el data-model o en la parte del integrante 2 del plan.
+
+PARTE B — tasks.md
+
+B1. T005: marcala [x] y anotá en la línea que el integrante 3 confirmó el contrato el 14/11, con es_explorada, los dos casos de buscar_exploradas y las garantías del grafo de A3, que quedaron en el contrato en el commit plan(002) de la parte A.
+
+B2. T006: actualizá la anotación con la decisión de A6 (opción A, SIN_EXPLORAR en DTO/EstadoJuegoDTO.py del integrante 3, es_explorada). Sigue sin marcar hasta que ella lo suba; la prueba de SC-202 sobre EstadoJuegoDTO (T045) sigue en skip hasta entonces.
+
+B3. T026: agregá estas pruebas a tests/test_grafo_mapa_conocido.py, con el FR en el nombre:
+- test_fr225_entradas_es_la_inversa_de_salidas: en varias criptas con el mapa a medias (salas exploradas, avistadas y desconocidas, caras abiertas, cerradas y sin observar, incluida la de H2-6), para toda sala u y toda (v, c) de salidas(u), (u, c) está en entradas(v), y al revés; las no exploradas no tienen salidas ni entradas.
+- test_fr225_posicion_cero_y_huecos_dan_listas_vacias: con la Mazmorra de tests/ayudas_mapa.py (salas 1..n, la posición 0 no es una sala), salidas(0) y entradas(0) devuelven [] sin error, y cantidad_salas() == len(Mazmorra.salas).
+- test_fr204_fr217_es_explorada_solo_para_exploradas: True para exploradas; False para avistadas, desconocidas y la posición 0; no cambia el estado ni registra nada en el historial.
+- test_fr251_buscar_exploradas_vacio_o_espacios_da_lista_vacia ("" y "   ").
+- test_fr251_buscar_exploradas_no_str_es_value_error (None, 5 y b"x").
+
+B4. T027 y T028: que T027 diga que salidas y entradas miran el estado de la sala antes de leer mazmorra.salas, y cómo se arma _inversa (A4); que T028 incluya es_explorada (O(1)) y la validación de buscar_exploradas de A2. Agregá las pruebas nuevas a la tabla de cobertura.
+
+B5. T030: el aviso también dice que es_explorada está lista, para el H-2.
+
+B6. Sección reservada del integrante 3: el integrante 3 pidió el 14/11 que el integrante 2 genere sus tareas desde T100, y las revisa ella antes de implementarlas. Cambiá la nota en cursiva de la sección para que diga eso (ya no «El integrante 2 no la edita»). Generá sus tareas a partir de SU sección del plan («Viaje automático «ir a» (integrante 3)», commits 29caa4a y 44265bc), sin agregar reglas ni decisiones que el plan no tenga:
+- Numeración consecutiva desde T100, con el mismo formato que las del integrante 2: [P] cuando se puede hacer en paralelo, [US6] o [US7], los FR entre paréntesis, pruebas antes del código que prueban y cada prueba con el escenario o caso y el FR en el nombre, según su tabla «Pruebas previstas» y la tabla de trazabilidad de la spec.
+- Componentes: DTO/ViajeDTO.py, Logic/ViajeAutomatico.py, Service/ServicioIrA.py, ir_a y dar_paso_viaje al final de ControladorBackend, la opción A del H-2 en Service/ArmadorEstado.py con SIN_EXPLORAR en DTO/EstadoJuegoDTO.py (A6; su plan todavía dice MapaConocidoDTO, eso lo corrige ella en su sección) y tests/test_estado_sin_filtrar.py, Logic/BenchViaje.py, su parte de DECISIONES.md (con los límites de H-3: sin tildes ni espacios internos, I3-9) y su registro en PROMPTS_LLM.md.
+- Agregá una tarea suya para que ServicioLineaTiempo pase motor.mapa.a_dto() a ArmadorResumen (no motor.mapa, y no el nombre mapa_conocido que lee hoy), que depende del aviso de a_dto (T049); referenciala desde T008.
+- Dependencias con las tareas del integrante 2: T030 (GrafoMapaConocido, buscar_exploradas, es_explorada y tests/ayudas_mapa.py), T033 (contexto.motor.mapa en el motor) y T049 (a_dto). Las pruebas de Logic pura pueden empezar con T030; las del servicio y el motor, con T033.
+- Marcá «(coordinar con el integrante 2)» la que toca Service/ServicioBench.py (D-5: quien suba segundo hace el merge) y cualquier otra que toque un archivo del integrante 1 o del integrante 2.
+- Donde su plan deja algo abierto (por ejemplo la señal de daño, I3-3 y M-2, o lo que dependa de las respuestas M-1 a M-3), no lo decidas: escribí la tarea como dice el plan y marcala «(confirmar con el integrante 3)».
+- Agregá al final de su sección su propia tabla de cobertura: FR-250 a FR-264, NFR-250, NFR-251, SC-250 a SC-253, H6-1 a H6-10, H7-1 a H7-9, los casos 1, 2b, 3 y 6 y A24 a A37, cada uno con su prueba y su tarea.
+- Restricciones de la constitución v1.2.0 en lo que proponen las tareas: sin dict ni set como índice, sin collections, heapq ni bisect, sin sorted ni list.sort, sin copy fuera de tests/, y Logic no importa Data ni Service.
+- En «Dependencias» y en el grafo de «Entrega incremental», solo agregá que sus tareas dependen de T030, T033 y T049.
+
+Al final decime:
+- los archivos de la parte A y de la parte B por separado;
+- las líneas que cambiaste del contrato y del data-model;
+- la lista de T100 en adelante, con su título corto;
+- si encontraste algo del plan del integrante 3 que choque con el contrato, con la spec o con la constitución (no lo arregles: decímelo);
+- cualquier elemento de la cobertura que quede sin prueba o sin tarea.
+No hagas commit.
+
+Segundo:
+
+Tres ajustes chicos en specs/002-niebla-ir-a/tasks.md, sin código y sin commit. No toques ningún otro archivo.
+
+1. T042: la guarda dice que hace skipTest si no existe Service/ArmadorResumen.py, pero ese archivo ya existe (T023 de la 004), así que la prueba fallaría en vez de saltarse hasta T118. Cambiala a: si el ResumenHistoriaDTO.mapa_conocido que devuelve historia #4 es None, self.skipTest("pendiente: T118 del integrante 3 (ServicioLineaTiempo pasa motor.mapa.a_dto())"). T050 la quita.
+
+2. T050 dice «Cuando el integrante 3 termine T023 de la 004 y H-2». Que diga «cuando el integrante 3 termine T118 y T116 (aviso en T117)». Y en T008, la última frase («La prueba H4-4 (T042) queda en skip hasta que exista T023 de la 004») tiene que decir que queda en skip hasta T118.
+
+3. En la nota en cursiva de la sección del integrante 3, la primera frase todavía dice «Esta sección la completa el integrante 3 en su propio commit», y contradice lo que sigue. Que diga que la generó el integrante 2 a pedido del integrante 3 (14/11), con el resto de la nota como está (ella las revisa y puede corregirlas en su propio commit).
+
+No cambies nada más. Al final: las líneas que cambiaste, con el texto antes y después.
+
+**Uso de la respuesta:** dos commits. `plan(002)`: el contrato del mapa queda confirmado por el integrante 3 (T005) con `es_explorada(sala)` O(1) para el H-2, los dos casos de `buscar_exploradas` (vacío o solo espacios → `[]`; no `str` → `ValueError`), las garantías del grafo (total de salas, coherencia entre `salidas` y `entradas`, sala no explorada sin listas, posición 0 y huecos → `[]`), el costo de armarlo por paso (`_inversa` en la primera llamada a `entradas`, lo mide B11), la aclaración de D-1 (traducir la vecina a una dirección con `Mazmorra.salida` no es usar el esqueleto para la ruta) y el H-2 decidido (opción A, `SIN_EXPLORAR` en `DTO/EstadoJuegoDTO.py`); data-model, una frase del plan y dos de research alineadas. `tasks(002)`: T005 marcada; T006, T008, T026 a T028, T030, T042 y T050 actualizadas (cinco pruebas nuevas en T026; la guarda de H4-4 espera a T118); y las tareas de «ir a» del integrante 3, T100 a T127, generadas desde su sección del plan a su pedido, con lo abierto marcado «confirmar con el integrante 3» y su tabla de cobertura. En T050 corregí a mano «la guarda de T023 de la 004» por «la guarda de T118». No se tocaron spec.md, el código ni la sección del integrante 3 en plan.md. Revisé el resultado en el zip antes de cada commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** (Claude Code)
+
+Actualiza SOLO mi sección del plan de «ir a» en specs/002-niebla-ir-a/plan.md (commit «plan(002): señal de daño, SIN_EXPLORAR y requisitos del grafo»; sin código ni tasks):
+1) I3-3 y R-I3-7: la señal de daño queda como «jugador.vida < vida_antes, o hay Regeneración activa antes o después del paso (motor.efectos.tiene(jugador, "regeneracion"))», evaluada en Service sin tocar Logic. Es conservadora: con Regeneración activa el viaje se detiene tras cada paso. Antes de escribirlo, revisa si el buffer de mensajes del motor registra cada daño recibido con un texto fiable que Service pueda contar; si existe, propónlo como señal exacta alternativa (sin implementarla) y dime cuál recomiendas. Agrega la prueba nueva: viaje con Regeneración activa que se detiene.
+2) D-6: SIN_EXPLORAR vive en DTO/EstadoJuegoDTO.py (no en MapaConocidoDTO); ArmadorEstado usa mapa.es_explorada(sala), que Derek agrega al contrato.
+3) Requisito de contrato (M-1): GrafoMapaConocido.cantidad_salas() devuelve el total de salas (ids de 0 a n-1) y entradas/salidas son coherentes entre sí.
+4) D-4: después de PartidaGuardada.cargar, «ir a» y el reconstructor vuelven a tomar contexto.motor (el mapa es un objeto nuevo). Revisa si ReconstructorEstado ya lo hace.
+Reporta el commit. No hagas push.
+
+**Uso de la respuesta:** Se actualiza el plan de «ir a» con la señal de daño por regeneración, la ubicación de SIN_EXPLORAR y los requisitos del grafo del mapa.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement T043 a T048 (H4: guardado con línea) de specs/004-linea-tiempo/tasks.md. Antes: confirma que la rama incluye origin/derek (T002: PartidaGuardadaDTO con mapa antes de linea; T003: VERSION_FORMATO = 2) y que la suite pasa. Marca T002 y T003 como [X] en tasks.md solo si verificas que están hechas y con sus pruebas (TestGuardadoBinario.py: ida y vuelta con línea, línea vacía y archivo de versión 1 rechazado). T047 es del integrante 2: verifica que esas pruebas existen y marca [X] solo si es así.
+Pruebas primero (T043, T045), luego implementa (T044, T046). Reglas: constitución v1.2.0, MVC n-capas, solo estructuras y librerías permitidas, sin copy. T044: LineaTiempo.a_guardada() y desde_guardada(dto) con copia manual. T046: ServicioGuardado.guardar incluye la línea; ServicioGuardado.cargar crea la línea desde el archivo y INSTALA los grabadores (hoy el docstring de GrabadoresLinea lo afirma pero ServicioGuardado.cargar no lo hace). Una partida cargada debe poder responder historia <t> e historia #k con los mismos resúmenes que antes de guardar (H4-1). Después de PartidaGuardada.cargar, toma contexto.motor otra vez (el mapa es un objeto nuevo). El mapa conocido todavía no tiene a_dto(): el resumen sigue omitiéndolo (no inventes el campo). T048: corre la suite y el quickstart §4. Arregla el docstring de GrabadoresLinea si hace falta. Commits: uno por bloque, «feat(004): ...». No empieces H2 ni «ir a». Reporte con tareas, pruebas, decisiones y pendientes de Marco o Derek.
+
+**Uso de la respuesta:** Se implementa el guardado de la línea de tiempo en el archivo de partida (T043 a T048) sobre el formato versión 2 de Derek.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Corrige SOLO mi sección del plan de «ir a» (specs/002-niebla-ir-a/plan.md) y mis tareas T100 a T127 (specs/002-niebla-ir-a/tasks.md), en un commit «plan(002): correcciones tras la revisión de Derek». Sin código. Cambios:
+1) I3-8: el constructor de GrafoMapaConocido es O(1), pero la primera llamada a entradas arma el índice inverso del esqueleto en O(S+E), igual que GrafoEsqueleto; como el grafo se arma en cada paso, cada paso paga eso. Corrige el texto.
+2) decidir_paso: además de que el destino sea la vecina y el costo coincida, exige que la cara de la sala actual se recuerde ABIERTA (mapa.estado_cara(sala, d)) para no elegir una cara recordada cerrada con menor número de dirección (H-4). Recibe el mapa y la mazmorra como argumentos explícitos (no grafo.mapa.mazmorra). Ajusta T104 y su prueba.
+3) T100: anota M-1 a M-3 como resueltas por lectura del código y confirmadas por Marco, y márcala [X]. T103: los DTO de ViajeDTO son @dataclass(frozen=True) y resolver_destino vive en Logic/ViajeAutomatico.py. T114: la señal de daño es el contador exacto (no la señal con Regeneración); reescríbela. T120: usa una cripta sintética de tamaño equivalente (SC-252) y mide un PASO COMPLETO, incluido armar el grafo.
+4) Pruebas que faltaban en «Pruebas previstas» y en T101 a T114: PASO_RECHAZADO (I3-6), TERMINADA junto con DANO o LLEGO (I3-7), el controlador descarta el viaje ante otra orden (R-I3-4), y viaje que se detiene por daño con Regeneración activa.
+5) Agrega una tarea nueva ANTES de T111 para el contador: «ActorBase.danio_recibido: entero que sube en Recibir_Dannio cuando el daño final es > 0; no va al historial ni a PartidaGuardada; con type hint y docstring; prueba que fija que Cant ya es el daño final; fila en la tabla de cambios a la primera entrega; antes/después en DECISIONES.md; revisión del integrante 1».
+6) Principio III: la frase que dice que no se modifica ServicioLineaTiempo debe decir que T118 sí lo modifica (es mi archivo).
+7) Supuesto de la 004: --replay sin --hasta es headless (sin ventana ni línea de comandos) y no alimenta la línea, así que historia no es alcanzable ahí. Anótalo en specs/004-linea-tiempo/spec.md (Suposiciones) en un commit aparte «spec(004): supuesto sobre --replay sin --hasta», y en DECISIONES.md de mi sección.
+No hagas push. Reporta los commits y cualquier cosa que no hayas podido aplicar.
+
+**Uso de la respuesta:** Se corrigen el plan y las tareas de «ir a» tras la revisión de Derek, se agrega la tarea del contador de daño y se documenta el supuesto del replay
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement Dos cosas, un commit por punto y suite completa después de cada una (PYTHONIOENCODING=utf-8 python tests/correr_pruebas.py), sin push:
+1) Mutación de Marco: revierte TEMPORALMENTE en Logic/motorJuego.py el registro de reloj y Evento_pendiente y la llamada a _cerrar_intervalo() dentro de avanzar_hasta, corre test_t12_fr402_avanzar_hasta_deja_el_mismo_historial_que_avanzar_hasta_jugador y confirma que FALLA; luego restaura el archivo exactamente (git diff debe quedar vacío). Si la prueba pasa igual, refuérzala hasta que falle con la mutación. Commit solo si cambia la prueba: «test(004): la prueba de historial de avanzar_hasta detecta la mutación (T012)».
+2) T046, prueba nueva en tests/test_linea_tiempo_guardado.py: guardar una partida con un pergamino en el inventario, cargarla, usar el pergamino y comprobar que historia <t> e historia #k siguen coincidiendo con el estado vivo (H3 sobre una partida cargada). Commit «test(004): cargar y luego retroceder con la línea (T046)».
+3) Contador de daño (la tarea nueva del plan de «ir a», antes de T111): ActorBase.danio_recibido, entero inicial 0 en __init__, que sube en Recibir_Dannio solo cuando Cant > 0. Verifica primero en el código que Cant ya es el daño final (después de defensa u otros ajustes) y dime dónde se calcula. No va al historial, no va a PartidaGuardada, no toques nada más de ActorBase. Con type hint y docstring. Pruebas primero: ataque de enemigo, veneno y trampa lo hacen subir; un daño de 0 no; una curación no lo baja; un pergamino no lo cambia el resultado de la comparación antes y después de un paso. Anota el antes/después en DECISIONES.md. Commit «feat(002): contador de daño recibido en ActorBase para ir a (primera entrega, revisión del integrante 1)». Reporta archivo y línea.
+
+**Uso de la respuesta:** Se verifica con una mutación la prueba de avanzar_hasta, se prueba cargar y retroceder con la línea y se implementa el contador de daño recibido para «ir a».
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement Feature 002-niebla-ir-a, parte del integrante 2. Segundo lote: las fases 3 a 7 de specs/002-niebla-ir-a/tasks.md, de T014 a T029, en este orden y como dice cada tarea. El primer lote (T001, la fase 2, T036, T038 y T039) ya está hecho y en origin/derek.
+
+1. Fase 3 (historia 1): T014 (las pruebas primero; comprobá que fallan), T015 y T016.
+2. Fase 4 (historia 2): T017 (comprobá que fallan), T018 y T019.
+3. Fase 5 (historia 3): T020 (comprobá que fallan), T021 y T022.
+4. Fase 6 (pergamino en Logic): T023, T024 y T025. Ojo con la excepción documentada de T023: esas pruebas cubren código que ya llegó (T012, T015 y T021) y pueden pasar desde que se escriben. Si pasan, decímelo y no cambies nada en T024. Si alguna falla, T024 corrige SOLO _poner_estado / _poner_cara.
+5. Fase 7 (contrato para el integrante 3): T026 con TODAS sus pruebas, incluidas las cinco que se agregaron hoy (coherencia de entradas y salidas, posición 0 y huecos, es_explorada, y los dos casos de buscar_exploradas); comprobá que fallan. Después T027, T028 y T029.
+
+Después de T029, PARÁ. T030 es un aviso sin código: no lo hagas, lo mando yo. No hagas T031 ni nada de las fases 8 en adelante: no toques Logic/motorJuego.py, Logic/PartidaGuardada.py ni ningún archivo del integrante 1 o del integrante 3.
+
+Reglas:
+- Constitución v1.2.0 y las «Reglas para todas las tareas» de tasks.md: sin dict ni set como índice o caché, sin collections, heapq ni bisect, sin sorted ni list.sort, sin copy fuera de tests/, y Logic no importa Data ni Service. Las direcciones siempre en orden 0 a 3.
+- Toda escritura del mapa pasa por _poner_estado / _poner_cara; ninguna operación baja un estado.
+- Mazmorra._salida_inversa es del integrante 1: solo se lee, no se modifica (está en su nota de dependencias).
+- H2-5 se lee como está escrito hoy en la spec (el jugador está en otra sala; por eso la cara A–C sigue «sin observar»).
+- Archivos permitidos: Logic/MapaConocido.py, Logic/GrafoMapaConocido.py (nuevo), tests/test_mapa_conocido_estados.py, tests/test_mapa_conocido_puertas.py, tests/test_mapa_conocido_antorcha.py, tests/test_mapa_conocido_partida.py, tests/test_grafo_mapa_conocido.py (nuevos los cuatro últimos), tests/ayudas_mapa.py (solo si hace falta un ayudante nuevo, sin cambiar los que ya existen) y specs/002-niebla-ir-a/tasks.md (solo para marcar). Si otro archivo tuviera que cambiar, avisame en vez de cambiarlo.
+- Marcá con [x] en tasks.md solo las tareas que quedaron completas, de T014 a T029.
+- Antes de terminar corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8 en Windows) y el replay de ejemplo (python main.py --replay ejemplos/partida_ejemplo.log --offline), que debe dar lo mismo que antes. Corré también el grep de restricciones de T059 sobre Logic/MapaConocido.py y Logic/GrafoMapaConocido.py.
+
+Al final decime:
+- los archivos nuevos y los modificados;
+- las pruebas nuevas de cada fase, con su resultado antes y después del código (y cuáles de T023 pasaron desde el principio);
+- el resultado de la suite, de los scripts y del replay;
+- el resultado del grep de restricciones;
+- cualquier diferencia con tasks.md, el data-model o el contrato, y cualquier cosa del contrato que no se haya podido cumplir tal cual.
+No hagas commit.
+
+**Uso de la respuesta:** segundo lote de la 002 (T014 a T029), en un commit. `Logic/MapaConocido.py`: `iniciar`, `entrar` con y sin antorcha, `puerta_cambio`, `es_explorada` y `buscar_exploradas` (con `strip().casefold()`, `[]` para un nombre vacío y `ValueError` si no es `str`); toda escritura por `_poner_estado` / `_poner_cara`. `Logic/GrafoMapaConocido.py` nuevo, con la interfaz de la 001: constructor O(1), `_inversa` en la primera llamada a `entradas`, lectura en vivo del mapa, `entradas` inversa de `salidas` y `[]` para la posición 0 y los huecos. 44 pruebas nuevas en cinco archivos; cada fase falló primero, salvo las cinco del pergamino (T023), que pasaron desde el principio por la excepción documentada, y algunas que ya cubría la observación de T015. Tres pruebas de la antorcha que pasaban sin probar nada se reforzaron. En NFR-202 se acota el total de registros (5 + 16 + 8), porque una vecina avistada y explorada en la misma entrada registra dos cambios, como manda el orden del data-model. Límite anotado para DECISIONES: con dos salidas de una sala hacia la misma vecina, `Mazmorra._salida_inversa` (del integrante 1, solo lectura) da solo la primera cara de vuelta. Suite: 753 pruebas OK (2 skip), 31 de 31 scripts; replay igual que antes; grep de restricciones limpio. Revisé el zip antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Un prompt en dos partes, en un chat nuevo (la parte 2 empieza cuando se le escribe «seguí»):
+
+/speckit-implement Feature 002-niebla-ir-a, parte del integrante 2. Tercer lote: las fases 8 y 9 de specs/002-niebla-ir-a/tasks.md. Los lotes 1 y 2 (T001, fase 2, T014 a T029, T036, T038 y T039) ya están hechos. Son dos partes, con una parada en medio, porque T033 y T040 van cada una en su commit propio y el integrante 1 las revisa antes del merge.
+
+PARTE 1 — fase 8: T031, T032 y T033, en ese orden.
+1. T031: todas sus pruebas, como dice la tarea, sin skipTest. Comprobá que las del repartidor fallan porque falta Logic/RepartidorAvisosPuertas.py y las del motor porque falta motor.mapa.
+2. T032: Logic/RepartidorAvisosPuertas.py. Las dos primeras pruebas de T031 pasan.
+3. T033: en Logic/motorJuego.py, EXACTAMENTE los cinco cambios de la tarea y nada más: los dos imports; self.mapa = MapaConocido(mazmorra, jugador, self.historial) después de self.rutas = ...; reemplazar self.mazmorra.observador_puertas = self.rutas por el RepartidorAvisosPuertas([self.rutas, self.mapa]); self.mapa.iniciar(self.jugador.Sala_Actual) en iniciar() después de self.rastro.marcar(...); y self.mapa.entrar(destino, self.efectos.tiene(self.jugador, "antorcha")) en mover_jugador() justo después de self.jugador.Sala_Actual = destino. Sin type hints, docstrings ni comentarios nuevos en ese archivo, sin reordenar ni reformatear nada. Es un archivo del integrante 1: él revisa el diff, así que tiene que ser mínimo.
+4. Después de T033: las pruebas del motor de T031 pasan, y tests/test_terreno_cazador.py, tests/test_rutas_equivalencia.py y las pruebas de la 003 y de la 004 siguen en verde. Si en tests/test_guardado_mapa.py la prueba test_t047_de_la_004_archivo_v1_deja_intacta_la_partida_actual compara estados(motor.mapa) solo cuando existe motor.mapa, comprobá que ahora sí lo compara; si no lo compara, agregalo.
+5. Corré la suite completa y el replay de ejemplo, marcá T031, T032 y T033 en tasks.md y PARÁ. Decime los archivos de esta parte, el diff exacto de Logic/motorJuego.py y el resultado de la suite y del replay. Yo hago el commit y te escribo «seguí».
+
+PARTE 2 — fase 9 (solo cuando te diga «seguí»): T035 (segundo momento), T037, T040, T041, T042 y T044.
+1. T035: las seis pruebas de a_guardado y restaurar en tests/test_guardado_mapa.py. Comprobá que fallan.
+2. T037: a_guardado y restaurar en Logic/MapaConocido.py. restaurar(None) arma el mapa inicial desde jugador.Sala_Actual con _explorar + _observar_puertas; restaurar nunca registra en el historial (ni con un DTO ni con None). Marcá T035 y T037.
+3. T040: primero sus tres pruebas en tests/test_mapa_conocido_partida.py (comprobá que fallan); después, en Logic/PartidaGuardada.py, EXACTAMENTE: el argumento mapa=motor.mapa.a_guardado() en el PartidaGuardadaDTO(...) de guardar, y la línea motor.mapa.restaurar(partida.mapa) en cargar, justo antes de motor.historial.descartar_intervalo_abierto(), sin if ni raise. Nada más en ese archivo (también es del integrante 1). Comprobá que tests/test_partida_guardada.py, tests/test_servicio_guardado.py, tests/test_controlador_backend.py, tests/TestGuardadoBinario.py y las pruebas de la 004 siguen en verde sin cambiarlas.
+4. T041 y T042, como dicen las tareas (T041 es una excepción documentada al «falla primero»; T042 con la guarda de T118).
+5. T044. Su texto dice que H4-4 figura como skip «de T023 de la 004»: corregilo en tasks.md a «de T118». Y marcá T043 [x]: el aviso se mandó el 14/11 después del lote 1.
+6. Marcá en tasks.md solo lo que quedó completo y PARÁ. No hagas nada de las fases 10 en adelante.
+
+Reglas para las dos partes:
+- Constitución v1.2.0 y las «Reglas para todas las tareas» de tasks.md: sin dict ni set como índice o caché, sin collections, heapq ni bisect, sin sorted ni list.sort, sin copy fuera de tests/, y Logic no importa Data ni Service.
+- Archivos permitidos: Logic/RepartidorAvisosPuertas.py (nuevo), Logic/motorJuego.py y Logic/PartidaGuardada.py (solo las líneas de T033 y T040), Logic/MapaConocido.py, tests/test_mapa_conocido_puertas.py, tests/test_mapa_conocido_estados.py, tests/test_mapa_conocido_antorcha.py, tests/test_mapa_conocido_partida.py, tests/test_guardado_mapa.py, tests/ayudas_mapa.py (solo ayudantes nuevos) y specs/002-niebla-ir-a/tasks.md. Podés leer tests/ayudas_terreno.py, pero no lo cambies (es del integrante 1). Si otro archivo tuviera que cambiar, avisame en vez de cambiarlo.
+- Antes de terminar cada parte corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8 en Windows) y el replay de ejemplo (python main.py --replay ejemplos/partida_ejemplo.log --offline), que debe dar lo mismo que antes, y el grep de restricciones de T059 sobre los archivos de Logic que tocaste.
+
+Al final de cada parte decime:
+- los archivos nuevos y los modificados, separados para el commit de esa parte (en la parte 2, en dos grupos: (a) T035 y T037; (b) T040 a T044 con tasks.md);
+- el diff exacto de los archivos del integrante 1;
+- las pruebas nuevas, con su resultado antes y después del código;
+- el resultado de la suite, de los scripts, del replay y del grep;
+- cualquier diferencia con tasks.md, el data-model o el contrato.
+No hagas commit.
+
+**Uso de la respuesta (parte 1):** fase 8 de la 002 (T031 a T033), en un commit propio que revisa el integrante 1. `Logic/RepartidorAvisosPuertas.py` nuevo (reenvía `puerta_cambio` a `[motor.rutas, motor.mapa]`, en ese orden). En `Logic/motorJuego.py`, solo los cinco cambios acordados el 14/11: dos imports, `self.mapa`, el repartidor como `observador_puertas`, `self.mapa.iniciar(...)` en `iniciar()` y `self.mapa.entrar(...)` en `mover_jugador()`; sin otros cambios. 13 pruebas nuevas sin `skipTest` (repartidor, motor e historias 1 a 4 con el motor); todas fallaron primero. Ayudante nuevo `motor_con_inventario` en `tests/ayudas_mapa.py`. Suite: 766 pruebas OK (2 skip), 31 de 31 scripts; replay byte a byte igual; grep de restricciones limpio. Revisé el zip y el diff de `motorJuego.py` antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Mismo chat que la parte 1 del tercer lote de la 002:
+
+seguí
+
+**Uso de la respuesta (parte 2):** fase 9 de la 002 (T035 segundo momento, T037 y T040 a T044), en dos commits. (a) `a_guardado` y `restaurar` en `Logic/MapaConocido.py`: `restaurar` valida los largos (`ValueError`) y nunca registra en el historial; con `None` arma el mapa inicial desde la sala del jugador, con el historial en `None` mientras lo arma (try/finally). Se corrigió a mano la fila de `restaurar` del data-model §2, que decía que con `None` lo registrado quedaba en el intervalo abierto. (b) En `Logic/PartidaGuardada.py`, que revisa el integrante 1, solo `mapa=motor.mapa.a_guardado()` en `guardar` y `motor.mapa.restaurar(partida.mapa)` en `cargar`, sin `if`. Pruebas: las seis de T035 y las tres de T040 fallaron primero; T041 (replay y `--hasta` con líneas `# ir a`, y misma partida mismo mapa) es la excepción documentada y se comprobó que falla con `restaurar` anulado; T042 queda en skip hasta T118 del integrante 3 (y necesitará `a_dto`, T046). Suite: 778 pruebas OK (3 skip), 31 de 31 scripts; replay byte a byte igual; grep limpio. Revisé el zip y el diff de `PartidaGuardada.py` antes de los commits.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Un prompt en un chat nuevo y una respuesta a una pregunta de Claude Code durante T055.
+
+Prompt:
+
+/speckit-implement Feature 002-niebla-ir-a, parte del integrante 2. Cuarto y último lote: las fases 10, 11 y 12 de specs/002-niebla-ir-a/tasks.md. Las fases 1 a 9 ya están hechas y en origin/derek (T001 a T044, salvo T004 y T006, que son coordinación). Hacé solo estas tareas, en este orden y como dice cada una:
+
+1. Fase 10: T045 (las pruebas primero; comprobá que fallan, salvo las que tienen guarda), T046 (a_dto) y T047.
+   - T048 y T049 son avisos al integrante 3 y T050 espera al integrante 3: no los hagas ni los marques.
+2. Fase 11: T051 (comprobá que fallan), T052, T053, T054, T055 y T056.
+   - Para correr el bench usá el Python del proyecto (python main.py --bench, con PYTHONIOENCODING=utf-8 en Windows; uv solo si está instalado) y guardá la tabla en specs/002-niebla-ir-a/bench-<fecha de hoy>.txt con la máquina y la versión de Python, como specs/001-terreno-cazador/bench-2026-11-13.txt.
+   - En T056: si algún criterio NO se cumple (SC-203, SC-204, SC-206, SC-207, NFR-205, o B11 con 1 024 salas por encima de 5 ms), PARÁ ahí y decímelo con los números: no cambies umbrales, ni el diseño, ni la spec. Si se cumplen, corregí la frase de research R5 y del contrato (a) con el número medido de B11, como dice la tarea.
+3. Fase 12: T057, T058, T059 y T060.
+   - T057: en DECISIONES.md, reemplazá el «(pendiente)» de la sección «## Integrante 2 — 002 y 003» por los enlaces a la spec, el plan y la investigación de la 002 (como hacen las otras secciones) y un apartado «### §5.3 Mapa conocido». El plan de trabajo del curso numera así: §5.3 mapa conocido (compartido con el integrante 3, que escribe la parte de «ir a») y §5.4 resolubilidad. Agregá al principio del apartado una línea que diga que la parte de «ir a» de §5.3 la escribe el integrante 3 en su sección, y dejá «§5.4 Resolubilidad» como «(pendiente: 003)». Además de todo lo que pide T057, incluí en los límites conocidos el de las dos salidas de una sala hacia la misma vecina: Mazmorra._salida_inversa (del integrante 1, solo lectura) da solo la primera cara de vuelta, así que la segunda cara de la vecina no se observa (es la misma regla que abrir_puerta; fuera de las criptas publicadas). No toques las secciones de los integrantes 1 y 3, ni la introducción del archivo.
+   - T058: solo las filas de esta parte en la tabla «Trazabilidad del Apéndice B» de spec.md, con los nombres reales de las pruebas que existen hoy en tests/ (buscalos, no los supongas).
+   - T059: todos los grep de la tarea, más git diff de Logic/motorJuego.py y Logic/PartidaGuardada.py contra el commit 0f71f15 (antes de la feature), que debe mostrar solo las líneas de T033 y T040.
+   - T060: la suite y el replay. Del quickstart, hacé §1, §3, §4 y §5; §2 es con el integrante 3. NO marques T060: queda abierta hasta que pase la parte del EstadoJuegoDTO de test_sc202 (H-2 del integrante 3), como dice la tarea.
+   - T061: NO la hagas: los prompts los registro yo en PROMPTS_LLM.md. No toques ese archivo.
+
+Reglas:
+- Constitución v1.2.0 y las «Reglas para todas las tareas» de tasks.md: sin dict ni set como índice o caché (tampoco en el bench), sin collections, heapq ni bisect, sin sorted ni list.sort, sin copy fuera de tests/, y Logic no importa Data ni Service.
+- Logic/BenchLogica.py y Logic/BenchRutas.py no se modifican (solo se importan sus funciones, como dicen las tareas). B8 avisa por motor.mazmorra.observador_puertas, nunca con BenchRutas._cambiar_puerta.
+- Archivos permitidos: Logic/MapaConocido.py, Logic/BenchMapaConocido.py (nuevo), Service/ServicioBench.py (solo el import y la entrada de la lista), tests/test_mapa_conocido_vista.py (nuevo), tests/test_bench_mapa.py (nuevo), tests/ayudas_mapa.py (solo ayudantes nuevos), specs/002-niebla-ir-a/bench-<fecha>.txt (nuevo), specs/002-niebla-ir-a/research.md y contracts/contrato-mapa-conocido.md (solo la frase de B11 de T056), specs/002-niebla-ir-a/spec.md (solo las filas de T058), DECISIONES.md (solo la sección del integrante 2) y specs/002-niebla-ir-a/tasks.md (para marcar). Si otro archivo tuviera que cambiar, avisame en vez de cambiarlo.
+- Marcá con [x] en tasks.md solo lo que quedó completo.
+
+Al final decime:
+- los archivos de cada grupo, para cuatro commits: (1) fase 10: T045 a T047; (2) fase 11: T051 a T056 con el archivo del bench; (3) spec(002): T058; (4) docs: T057, la frase de B11 en research y el contrato, y tasks.md;
+- las pruebas nuevas, con su resultado antes y después del código, y cuáles quedaron con guarda y por qué;
+- la tabla del bench y, por cada criterio de T056, si se cumple, con el número;
+- el resultado de la suite, de los scripts, del replay y de cada grep de T059;
+- cualquier diferencia con tasks.md, el data-model o el contrato.
+No hagas commit.
+
+Pregunta de Claude Code: T055 rompe `tests/TestServicioBench.py:132`, que compara la lista por defecto de `ServicioBench` exactamente con [BenchDatos.medir, BenchLogica.medir, BenchInventario.medir]. ¿Qué hago?
+
+Respuesta:
+
+Cambiala: en tests/TestServicioBench.py, solo la aserción de la línea 132 (y su import), para que espere [BenchDatos.medir, BenchLogica.medir, BenchMapaConocido.medir, BenchInventario.medir]. En Service/ServicioBench.py, además del import y la lista, actualizá el docstring de __init__, que dice «las de los tres integrantes, en orden: Datos, Lógica, Inventario», para que nombre también el mapa conocido. El nombre de la prueba no lo cambies. Los dos archivos son míos. Seguí con T056 y la fase 12.
+
+**Uso de la respuesta:** último lote de la 002 (fases 10 a 12), en cuatro commits. (1) `MapaConocido.a_dto()` (solo exploradas, costo igualado, estado recordado y `destino = None` para las avistadas) con `tests/test_mapa_conocido_vista.py`: las 10 pruebas fallaron primero; H5-7 queda en skip hasta la 003 y la parte del `EstadoJuegoDTO` de SC-202 hasta el H-2 del integrante 3. (2) `Logic/BenchMapaConocido.py` (B1 a B11), `BenchMapaConocido.medir` en `ServicioBench` después de `BenchLogica.medir` (con la aserción de `TestServicioBench` actualizada) y la tabla `bench-2026-11-15.txt`: se cumplen SC-203 (×1,10 y ×1,09), SC-204 (×1,03), SC-207 (×0,99), NFR-205 / SC-206 (peor ciclo 5,7 ms < 20 ms) y B11 con 1 024 salas (armar el grafo + un paso: 4,52 ms < 5 ms, con poco margen; la búsqueda es 3,8 ms y armar el grafo 0,9 ms). (3) `spec(002)`: la trazabilidad del Apéndice B de la parte del integrante 2 con los nombres reales de las pruebas. (4) `DECISIONES.md` «§5.3 Mapa conocido» (R0 a R5 con su evidencia, decisiones por diseño, límites conocidos, antes y después del binario), la frase de B11 en research y el contrato con el número medido, y las tareas marcadas (T004, T030, T048, T049 y T061 a mano, después de los avisos). Suite: 822 pruebas OK (5 skip), 31 de 31 scripts; replay igual que antes de la feature; greps de T059 limpios. T050 y T060 quedan abiertas hasta el H-2 y T118 del integrante 3. Revisé el zip antes de los commits.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Dos trabajos chicos, en dos grupos separados para dos commits. No hagas commit. Constitución v1.2.0: sin dict ni set como índice o caché, sin collections, heapq ni bisect, sin sorted ni list.sort, sin copy fuera de tests/, y Logic no importa Data ni Service. Pruebas primero, con el FR en el nombre.
+
+PARTE A — Ajustes de la revisión del integrante 1 a la feature 002 (15/11). Solo esto:
+A1. La complejidad de MapaConocido.puerta_cambio: recorre las salidas de la sala del jugador (_observar_puertas), así que es O(g), con g ≤ 4. Corregí «O(1)» por «O(g), g ≤ 4» en su docstring (Logic/MapaConocido.py, línea ~65), en la fila de puerta_cambio de specs/002-niebla-ir-a/data-model.md §2 (línea ~41) y en DECISIONES.md, sección del integrante 2, §5.3 (línea ~286, «`puerta_cambio`: O(1)»). La fila del RepartidorAvisosPuertas (data-model ~185) queda como está.
+A2. Logic/PartidaGuardada.py (archivo del integrante 1, que pidió este cambio): en cargar, mové la línea motor.mapa.restaurar(partida.mapa) para que quede ARRIBA del comentario «# El historial no se guarda: se empieza vacío, …», y ese comentario quede justo encima de motor.historial.descartar_intervalo_abierto(). Nada más en ese archivo.
+A3. Data/GuardadoBinario.py, _leer_cabecera: el mensaje de otra versión tiene que decir claramente si el archivo es de un formato viejo o de uno más nuevo. Primero la prueba en tests/test_guardado_mapa.py (comprobá que falla): con un archivo de versión 1, el ErrorGuardado dice «formato viejo» y sigue nombrando «versión 1» y «versión 2» (las aserciones que ya existen no cambian); con una versión mayor que VERSION_FORMATO, dice «formato más nuevo». Después el mensaje, por ejemplo: «'<ruta>' es una partida guardada con un formato viejo (versión 1) que este programa ya no carga (lee la versión 2): empezá una partida nueva». Revisá cómo le llega ese mensaje al jugador (ServicioGuardado / ControladorBackend / la vista) y decime si se muestra tal cual, sin cambiar esos archivos.
+A4. Para la defensa, dejá anotado en qué commit quedó cada cambio a archivos de la primera parte:
+   - en specs/002-niebla-ir-a/tasks.md, al final de T033: «Cambio a Logic/motorJuego.py en el commit ed0da17 (revisado y aprobado por el integrante 1 el 15/11).» y al final de T040: «Cambio a Logic/PartidaGuardada.py en el commit 4aac926, junto con T041 a T044 (el integrante 1 aceptó no rehacerlo como commit propio; aprobado el 15/11). El comentario se reordenó después en el commit de los ajustes de su revisión.»;
+   - en DECISIONES.md, §5.3 del integrante 2, una línea en el punto que corresponda (R2 para el motor y R4 para PartidaGuardada) con los mismos dos commits.
+
+PARTE B — T057 de la feature 001 (integrante 2), escenario H2-22 de FR-122. Leé la tarea en specs/001-terreno-cazador/tasks.md, el contrato specs/001-terreno-cazador/contracts/contrato-datos.md (las líneas nuevas del integrante 1: AlmacenCatalogo solo guarda fichas válidas, botín incluido, y ficha() revalida al leer del disco) y la prueba ya escrita test_h2_22_fr122_botin_invalido_deja_la_sala_sin_contenido en tests/test_terreno_cazador.py (clase TestDatosInvalidos, con FuenteConBotinInvalido de tests/ayudas_terreno.py). La prueba es la especificación: tiene tres casos (sala no inicial, sala inicial y una segunda partida con la misma carpeta de caché).
+B1. Quitá SOLO el self.skipTest de esa prueba (es lo que pide T057; los dos archivos de prueba son del integrante 1 y no se cambia nada más en ellos) y comprobá que falla por lo esperado.
+B2. Implementá la regla en Data (archivos del integrante 2: Data/ResolvedorCatalogo.py, Data/AlmacenCatalogo.py, Data/GestorContenido.py, Data/ValidacionDatos.py, los que hagan falta): si alguna ficha de la `suelta` de un enemigo quedó rechazada, la ficha del enemigo cuenta como inválida, con un ErrorDatos que nombra la ficha del enemigo, el campo `suelta` y la ficha rechazada; el efecto es el mismo que T052 (solo la sala con ese enemigo queda RECHAZADA, entrar se rechaza con ese mensaje y en la sala inicial la partida no inicia). Cuidado con dos cosas:
+   - El orden de llegada: la ficha del enemigo llega antes que las de su suelta (que se encolan al descargarla). El enemigo no se puede dar por válido, ni guardar en el AlmacenCatalogo, hasta que se resolvieron las fichas de su suelta.
+   - La segunda partida: el AlmacenCatalogo no tiene que guardar un enemigo con botín rechazado, y ficha() al leer un enemigo del disco tiene que revisar también su suelta (una caché vieja podría tenerlo guardado).
+   No agregues solicitudes: ResolvedorCatalogo ya baja las fichas de suelta antes de integrar la sala. Si para cumplir la regla hiciera falta una solicitud extra o cambiar un archivo que no es del integrante 2, PARÁ y avisame.
+B3. Pruebas propias de Data, si hacen falta para lo que la prueba de H2-22 no cubre (por ejemplo, que el almacén no guarde el enemigo y que una caché vieja con el enemigo guardado se rechace al leerlo), en los archivos de prueba del integrante 2 (tests/TestValidacionDatos.py u otro tuyo nuevo).
+B4. Marcá T057 en specs/001-terreno-cazador/tasks.md.
+
+Antes de terminar corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8 en Windows) y el replay de ejemplo (python main.py --replay ejemplos/partida_ejemplo.log --offline), que debe dar lo mismo que antes.
+
+Al final decime:
+- los archivos de la parte A y de la parte B por separado;
+- el diff exacto de Logic/PartidaGuardada.py y de los dos archivos de prueba del integrante 1;
+- las pruebas nuevas con su resultado antes y después;
+- el mensaje nuevo de versión y cómo le llega al jugador;
+- cómo resolviste el orden de llegada del enemigo y su suelta, y la complejidad que agrega;
+- el resultado de la suite, de los scripts y del replay.
+No hagas commit.
+
+**Uso de la respuesta:** dos commits. (A) Ajustes de la revisión del integrante 1 a la 002: `puerta_cambio` es O(g), g ≤ 4 (docstring, data-model y DECISIONES); en `PartidaGuardada.cargar` el comentario «El historial no se guarda…» queda justo encima de `descartar_intervalo_abierto()`; el mensaje de otra versión del binario dice si es un «formato viejo» (versión 1: «empezá una partida nueva») o «más nuevo» («actualizá el programa»), con dos pruebas nuevas que fallaron primero, y se comprobó que llega tal cual al aviso de la vista y entra sin cortarse; y los commits de los cambios a archivos de la primera parte (`ed0da17` motor, `4aac926` `PartidaGuardada`) anotados en `tasks.md` y en DECISIONES §5.3. (B) T057 de la 001 (FR-122, H2-22): un enemigo con una ficha de su `suelta` rechazada se rechaza con un `ErrorDatos` que nombra al enemigo, `suelta` y la ficha rechazada. Como el enemigo llega antes que su suelta, `ResolvedorCatalogo` lo deja en espera hasta que la cola de esa resolución se vacía y recién ahí lo acepta o lo rechaza (mismos lotes que antes, sin solicitudes extra); `AlmacenCatalogo` nunca guarda un enemigo con botín rechazado, y `ficha()` revisa la suelta de un enemigo leído del disco (caché vieja; si a esa caché le falta la ficha de la suelta, la baja en un lote, la misma solicitud que el código viejo hacía al morir el enemigo). Se quitó solo el `skipTest` de la prueba de H2-22 del integrante 1 (falló primero en sus 12 subcasos contra el código anterior) y se agregaron seis pruebas de Data. Suite: 830 pruebas OK (4 skip), 31 de 31 scripts; replay byte a byte igual. Revisé el zip antes de los commits.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+Revisión cruzada, SOLO LECTURA (no modifiques nada). git fetch; usá git show sobre origin/kris. Commits: 9e9db5d (contador danio_recibido en Logic/ActorBase.py), 57d26ff (prueba de avanzar_hasta), 740f47b (cargar y retroceder con la línea). Revisá contra la constitución v1.2.0: (a) 9e9db5d: que el cambio a P1 sea solo __init__ + una línea después de la guarda Cant <= 0, con type hint y docstring; que exista la fila en la tabla 'Cambios a código de la primera entrega' de specs/002*/plan.md y el antes/después en DECISIONES.md; que no entre a historial, PartidaGuardada, GuardadoBinario ni a ningún DTO; que no afecte a Cazador ni a Logic/RutasHaciaJugador.py; que tests/test_danio_recibido.py cite el FR e incluya el caso de Regeneración. (b) 57d26ff y 740f47b: que las pruebas comparen lo que dicen (historial.cantidad, reloj, vida, Evento_pendiente) y citen FR. (c) que ninguno toque archivos de la 001 (RutasHaciaJugador, BusquedaCostoMinimo, GrafoEsqueleto, BenchRutas, Mazmorra). Salida corta: primero lo que está bien, luego hallazgos ALTA/MEDIA/BAJA con archivo y línea.
+
+**Uso de la respuesta:** consulta `1a1dd66dbd1`, respuesta en `.claude-bridge/outbox/1a1dd66dbd1.txt`. Revisión cruzada de tres commits de la integrante 3 en `origin/kris`. Bien: `9e9db5d` cambia `Logic/ActorBase.py` solo en `__init__` (`danio_recibido: int = 0`, línea 17) y una línea después de la guarda `Cant <= 0` (línea 26); tiene la fila en la tabla de cambios a P1 (`specs/002-niebla-ir-a/plan.md:389`) y el antes/después en `DECISIONES.md`; no entra a historial, `PartidaGuardada`, `GuardadoBinario` ni DTO, ni afecta a `Cazador` ni a `RutasHaciaJugador`. `57d26ff` compara `historial.cantidad()`, reloj, vida y `Evento_pendiente` y cita FR-402; `740f47b` cita FR-413 y FR-420. Ninguno toca archivos de la 001. MEDIA: `tests/test_danio_recibido.py:110` no tiene un caso con el efecto Regeneración (queda para T114). BAJA: el plan y las tareas dicen que un golpe absorbido no sube el contador, pero el ataque usa `max(1, …)`; `DECISIONES.md` dice «cuatro» sitios y son tres; el docstring nuevo en `Recibir_Dannio` (método de P1) va contra la constitución; no se prueba la carga; tres pruebas sin FR en el nombre; el helper de `test_linea_tiempo_motor.py:50-53` lee atributos privados del historial y compara cuántos cambios, no cuáles; `test_linea_tiempo_guardado.py:193-194` no compara contra el valor anterior. No corrió nada ni modificó nada.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+Revisión cruzada, SOLO LECTURA (no modifiques nada). git fetch. Buscá en git log origin/derek el commit de la T033 de la 002 que cambia Logic/motorJuego.py y revisalo con git show. Verificá: (1) que el diff de motorJuego.py sea solo +6 -1: imports de MapaConocido y RepartidorAvisosPuertas; self.mapa = MapaConocido(mazmorra, jugador, self.historial) después de self.rutas; observador_puertas = RepartidorAvisosPuertas([self.rutas, self.mapa]); self.mapa.iniciar(...) en iniciar() después de rastro.marcar; self.mapa.entrar(destino, self.efectos.tiene(self.jugador, 'antorcha')) en mover_jugador justo después de Sala_Actual = destino. Y que esté la fila en la tabla de cambios a P1 de specs/002*/plan.md. (2) Capas: que Logic/MapaConocido.py y el repartidor no importen Data ni Service; estructuras prohibidas (dict/set como índice, collections, copy, sorted). (3) Interacción con la 001: que RepartidorAvisosPuertas reenvíe exactamente la misma llamada que antes recibía RutasHaciaJugador (mismo método y argumentos), en orden rutas y luego mapa; que MapaConocido no use el RNG ni cambie el orden de eventos (determinismo); cómo registra cambios en self.historial y si eso interfiere con historial.registrar_cambio(self.descartar) de RutasHaciaJugador al deshacer con pergamino. (4) Logic/BenchRutas.py en origin/derek líneas ~452 y ~675: en qué funciones se reasigna observador_puertas a las rutas solas y si alguna de esas mide el ciclo completo del motor (NFR-101/SC-104) o medir_historial, es decir, si con el mapa conectado esas cifras dejan de representar el juego real. Salida corta: primero lo que está bien, luego ALTA/MEDIA/BAJA con archivo y línea.
+
+**Uso de la respuesta:** consulta `1a1ddacdb5c`, respuesta en `.claude-bridge/outbox/1a1ddacdb5c.txt`. Revisión de `ed0da17` (T031 a T033 de la 002, de Dereck). Bien: el diff de `Logic/motorJuego.py` es +6 -1, exactamente lo pedido, con las filas en `specs/002-niebla-ir-a/plan.md:191-194`; `MapaConocido` y el repartidor no importan Data ni Service ni usan estructuras prohibidas; el repartidor reenvía la misma llamada `puerta_cambio(a, b)` a `rutas` y después a `mapa`; el mapa no usa el azar ni programa eventos (determinismo intacto) y sus registros en el historial no interfieren con `registrar_cambio(self.descartar)` de las rutas al deshacer con el pergamino. En `Logic/BenchRutas.py` las cifras siguen representando el juego: la línea 452 solo cambia el motor comprobado (no cronometrado) y la 675 el caso «sin registrar». Sin ALTA ni MEDIA. BAJA: en esos dos motores del bench el mapa deja de recibir avisos (sugiere `RepartidorAvisosPuertas([comprobadas, comprobado.mapa])` y lo mismo en la 675); el docstring de `MapaConocido.puerta_cambio` dice O(1) y es O(g); el comentario de `observador_puertas` en `Logic/Mazmorra.py:60-64` quedó viejo; `_observar_puertas` usa `Mazmorra._salida_inversa`, privada. Una acción bloqueada (`git grep` de `def tiene`), sin efecto en las conclusiones. Los puntos del bench y de `Mazmorra` se hicieron en el pedido del 15 de noviembre (más abajo).
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+Revisión cruzada, SOLO LECTURA (no modifiques nada). git fetch. Buscá en git log origin/derek el commit de la T040 de la 002 (Logic/PartidaGuardada.py) y revisalo con git show. Verificá: (1) que el diff de PartidaGuardada.py sea solo 2 líneas: mapa=motor.mapa.a_guardado() en el PartidaGuardadaDTO(...) de guardar, y motor.mapa.restaurar(partida.mapa) en cargar antes de motor.historial.descartar_intervalo_abierto(); y que esté la fila en la tabla de cambios a P1 de specs/002*/plan.md. (2) PartidaGuardadaDTO: que el campo mapa sea el último y con default None (para no romper DTO armados a mano ni archivos viejos). (3) MapaConocido.restaurar: que nunca registre en el historial, que con None arme el mapa inicial desde la sala actual del jugador (y que la sala del jugador ya esté restaurada en ese punto de cargar), y que valide o maneje un mapa guardado inconsistente con el esqueleto. (4) GuardadoBinario v2: que lea archivos v1 (sin mapa) sin fallar, y que no guarde nada de la caché de rutas de la 001 (RutasHaciaJugador es estado derivado y no va al guardado). (5) Que guardar y cargar a mitad de partida deje al cazador decidiendo igual (la búsqueda arranca vacía en el motor cargado) y que exista una prueba de guardar/cargar con mapa (ida y vuelta) que cite FR. Salida corta: primero lo que está bien, luego ALTA/MEDIA/BAJA con archivo y línea.
+
+**Uso de la respuesta:** consulta `1a1ddc30d98`, respuesta en `.claude-bridge/outbox/1a1ddc30d98.txt`. Revisión de `4aac926` (T040 a T044 de la 002, de Dereck). Bien: el diff de `Logic/PartidaGuardada.py` son las 2 líneas pedidas (`mapa=motor.mapa.a_guardado()` en la línea 42 y `motor.mapa.restaurar(partida.mapa)` en la 88, antes de `descartar_intervalo_abierto()`), con las filas en `plan.md:195-196`; `PartidaGuardadaDTO.mapa` tiene default `None` (no es el último campo: lo es `linea`, como se acordó en la 004); `restaurar` no registra en el historial, con `None` arma el mapa inicial desde la sala del jugador ya restaurada y rechaza largos incorrectos con `ValueError`; la caché de rutas de la 001 no se guarda y el motor cargado arranca con la búsqueda vacía; hay pruebas de ida y vuelta con FR (`test_h4_3_a7_fr221_…`, `test_fr221_…`, `test_fr223_…`) y `test_linea_tiempo_cazador.py` cubre al cazador. Sin ALTA. MEDIA: un archivo v1 se rechaza en vez de leerse (`Data/GuardadoBinario.py:33` y `:271`), pero es lo que piden R-9 y FR-421; si se quiere otra cosa hay que cambiar la spec. BAJA: `restaurar` solo revisa largos, no la coherencia con el esqueleto; el comentario del historial en `PartidaGuardada.py:87-88` quedó encima de la línea del mapa; T040 salió junto con T041 a T044 en vez de en un commit propio. Una acción bloqueada (`git grep` de `def restaurar`), sin efecto en las conclusiones. No corrió nada ni modificó nada.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+git fetch y git merge origin/derek (trae ed0da17, mapa conocido en motorJuego.py, y 4aac926, T040 en
+PartidaGuardada.py). Si hay conflictos en archivos de la 001, pará y avisame.
+Luego, un commit por paso, suite en verde con uv run antes de cada commit, no push:
+1) Logic/BenchRutas.py ~452 (medir_ciclo_cazadores, motor comprobado) y ~675 (medir_historial, caso sin
+   registrar): en vez de asignar observador_puertas a las rutas solas, usá
+   RepartidorAvisosPuertas([<rutas>, <motor>.mapa]). No cambies nombres ni firmas (los usa el integrante 2).
+2) Logic/Mazmorra.py 60-64: actualizá el comentario de observador_puertas (ahora es el repartidor).
+3) Corré el --bench completo (3 corridas), compará con bench-2026-11-13.txt y confirmá NFR-101/SC-104 con
+   el mapa conectado. Guardá un bench nuevo con la fecha de hoy y actualizá research.md, DECISIONES.md §5.6
+   y data-model.md de la 001 (observador_puertas = RepartidorAvisosPuertas).
+4) Registrá en PROMPTS_LLM.md este pedido y las consultas del puente 1a1dd66dbd1 (revisión de 9e9db5d,
+   57d26ff, 740f47b de Kristel), 1a1ddacdb5c (revisión de ed0da17 de Dereck) y 1a1ddc30d98 (revisión de
+   4aac926 de Dereck).
+
+**Uso de la respuesta:** `git merge origin/derek` fue un avance rápido sin conflictos: además de `ed0da17` y `4aac926` trajo lo posterior de `origin/derek` hasta `38861c6` (T045 a T059 de la 002 y T057 de la 001). Un commit por paso, suite en verde con `uv run` antes de cada uno (830 pruebas de unittest OK, 4 omitidas; 31 de 31 scripts): (1) `c22202d`, `Logic/BenchRutas.py`: `medir_ciclo_cazadores` (motor comprobado) y `medir_historial` (caso sin registrar) asignan `RepartidorAvisosPuertas([<rutas>, <motor>.mapa])`, sin cambiar nombres ni firmas. (2) `2bcdc2b`, `Logic/Mazmorra.py`: el comentario de `observador_puertas` describe el repartidor. (3) `4c8d5e4`: 3 corridas del `--bench` completo (93 a 96 s) en `specs/001-terreno-cazador/bench-2026-11-15.txt`; los conteos son los mismos que el 13 de noviembre (solo crece 0,1 KB el guardado de 2000 salas, por la versión 2). Con 30 cazadores en 1 024 salas el peor ciclo es de 5,5 a 17,6 ms: **NFR-101 y SC-104 se cumplen**. Con 100 cazadores y el jugador moviéndose (fuera de NFR-101) dio 19,6 / 20,0 / 22,4 ms; medido aparte, alternando `4c4307b` (sin mapa) y `2bcdc2b`, da 7,2 a 9,4 ms en los dos con medianas iguales, así que el mapa no encarece el ciclo y el pico depende de lo que corre antes en el proceso. Se actualizaron `research.md` (R6), `DECISIONES.md` §5.6 y `data-model.md` de la 001. (4) Este registro. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+En specs/001-terreno-cazador: (1) en plan.md, junto a la línea de T033 donde observador_puertas = self.rutas,
+agregá una nota de una línea: «Desde ed0da17 (002, integrante 2) es RepartidorAvisosPuertas([self.rutas,
+self.mapa]); ver data-model.md y DECISIONES.md §5.6». No reescribas el plan original. (2) En tasks.md marcá
+T057 como hecha (38861c6, integrante 2) y anotá que H2-22 ya no tiene skip. Un commit, suite en verde con
+uv run, PROMPTS_LLM.md, no push.
+
+**Uso de la respuesta:** (1) En `specs/001-terreno-cazador/plan.md`, la línea de T033 es la fila de `Logic/motorJuego.py · __init__` de la tabla de cambios; la nota va al final de esa fila, en la última celda, para no cortar la tabla. El resto del plan no cambia. (2) T057 ya estaba marcada `[X]` en `tasks.md` (lo hizo `38861c6`); se agregó «Hecha en `38861c6` (integrante 2): la prueba de H2-22 ya no tiene `skipTest`» al final de la tarea y la misma aclaración en la nota de H2-22 de la sección de pruebas. Se comprobó que `test_h2_22_fr122_botin_invalido_deja_la_sala_sin_contenido` no tiene `skipTest` (el único que queda en `tests/test_terreno_cazador.py` es el de la 003). Suite con `uv run`: 830 pruebas OK (4 omitidas), 31 de 31 scripts. Un commit, sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement Feature 003-resolubilidad (toda del integrante 2). Primer lote: las fases 1 a 4 de specs/003-resolubilidad/tasks.md (T001 a T034), en este orden y como dice cada tarea. Antes de empezar, cambiá .specify/feature.json a {"feature_directory":"specs/003-resolubilidad"}.
+
+1. Fase 1: T001 (T002 y T003 ya están confirmadas).
+2. Fase 2 (base, contrato de llaves): T004 y T005 (las pruebas primero; comprobá que fallan), T006 y T007; T008; T009 (comprobá que fallan), T010 a T013; T014 (comprobá que fallan), T015; T016 (comprobá que fallan), T017 y T018; T019.
+   - T008 ya está confirmada: el integrante 2 revisó el Swagger el 15/11. GET /v1/criptas/{dungeon_id}/llaves responde 200 con {"llaves": [{"id": "string", "sala": 0, "enemigo": "string"}]} (y 400, 404, 429 con reintentar_en, y 500 «Invalid published content», todos con {"error": ...}), lleva el encabezado X-Cripta-Client-Id como las demás rutas, y coincide con contracts/contrato-llaves.md (raíz llaves; id, sala y enemigo). El contrato ya acepta enemigo ausente o null, así que no cambia nada: marcá T008 con esa nota y seguí.
+3. Fase 3 (historia 1, MVP): T020 y T021 (comprobá que fallan), T022, T023 y T024; T025 (parar y validar: los casos 2 y 3 del Apéndice B pasan).
+4. Fase 4 (historia 2): T026 a T029 (comprobá que fallan), T030 (solo el generador), T031, T032 y T033; T034 (parar y validar: el caso 1 del Apéndice B pasa).
+
+Después de T034, PARÁ. No hagas la fase 5 en adelante: necesita antes un merge de origin/kris que hago yo, y T037, T038, T040, T049 y T054 tocan archivos del integrante 3.
+
+Reglas (las «Reglas para todas las tareas» de tasks.md, en particular):
+- Constitución v1.2.0: sin copy ni deepcopy fuera de tests/, sin bisect, heapq, collections, dict o set como índice o caché, sin bibliotecas de grafos, sin sorted() ni list.sort() (para ordenar, Estructuras/Ordenador.py); las colas son Estructuras/Cola.py.
+- Sin recursión en Logic/CiclosLlaves.py ni en la fase hacia afuera de Logic/RecorridoLlaves.py, y sin sys.setrecursionlimit (T029 lo comprueba con más de 1000 dependientes).
+- Logic no importa Data ni Service. Sin ids, salas ni versiones de una cripta concreta en el código.
+- No se tocan los archivos de la lista «No se tocan» de tasks.md (Mazmorra.py solo se usa; GestorEsqueleto.py, ClienteHttp.py, AlmacenCatalogo.py, Estructuras/, etc.), ni ningún archivo de los integrantes 1 y 3. Si alguna tarea necesitara cambiar uno, PARÁ y avisame.
+- Código nuevo con type hints y docstring breve; pruebas primero, con el escenario y el FR en el nombre, como dice cada tarea.
+- Marcá con [x] en tasks.md solo lo que quedó completo.
+- Antes de terminar corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8 en Windows) y el replay de ejemplo (python main.py --replay ejemplos/partida_ejemplo.log --offline), que debe dar lo mismo que antes, y el grep de restricciones de T067 sobre los archivos nuevos de Logic, DTO y Data.
+
+Al final decime:
+- los archivos de cada grupo, para dos commits: (a) fases 1 y 2, contrato de llaves y DTO del reporte (T001 a T019); (b) fases 3 y 4, verificación, reporte, frontera y ciclos en Logic (T020 a T034), con tasks.md en el (b);
+- las pruebas nuevas de cada fase, con su resultado antes y después del código;
+- el resultado de la suite, de los scripts, del replay y del grep;
+- cualquier diferencia con tasks.md, el data-model, los contratos o la spec, y cualquier cosa que no se haya podido cumplir tal cual.
+No hagas commit.
+
+**Uso de la respuesta:** primer lote de la 003 (T001 a T034), en dos commits. (a) Contrato de llaves y DTO del reporte: `UbicacionLlaveDTO`, `ReporteResolubilidadDTO`, `obtener_llaves` en `FuenteDatos` (no abstracto: por defecto `ErrorRed`), `FuenteJson` (con validación de formato), `FuenteOffline` (`llaves.json`) y `DescargadorPaquete`, `AlmacenLlaves` por versión, `validar_ubicaciones` (FR-321) y `GestorLlaves`; se ajustaron `tests/Utilidades.py` (la `ApiFalsa` sirve llaves) y los conteos de `tests/TestDescargadorPaquete.py` por la solicitud nueva. T008 confirmada con el Swagger del 15/11 (`GET /v1/criptas/{dungeon_id}/llaves` → `{"llaves": [{"id", "sala", "enemigo"}]}`), sin cambios al contrato. (b) Verificación en Logic: `GrafoLlaves` (caras combinadas con una `Mazmorra` aparte, índice propio de llaves y ubicaciones ordenadas sin repetir con el `Ordenador`), `RecorridoLlaves` (oleadas incrementales con la `Cola`: cada sala y cada cara una vez; frontera y fase hacia afuera por niveles, sin recursión), `CiclosLlaves` iterativo, `VerificadorResolubilidad` y el generador de cuadrícula de `BenchResolubilidad`. 66 pruebas nuevas; cada grupo falló primero (dos pruebas que pasaban con reportes vacíos se reforzaron). La prueba de 1 500 dependientes no usa recursión. Suite: 896 pruebas OK (4 skip), 31 de 31 scripts; replay igual; grep de T067 limpio. Revisé el zip antes de los commits.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+perfecto haz el push
+
+**Uso de la respuesta:** `git push origin Marco`: `4c4307b..e9038d6`, 72 commits (el avance rápido de `origin/derek` y los cinco commits de Marco del 15 de noviembre). Esta entrada queda sin commit, para el próximo.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Nueva tarea de la 001 (FR-122): validar todo el contenido de una sala en Data antes de que Logic lo cargue.
+
+Problema: con una caché vieja (de antes de T055/T057) en disco, GestorContenido.asegurar_sala entrega la sala
+como CARGADA porque solo mira los rechazos en memoria; la ficha inválida aparece recién dentro de
+Mazmorra.cargar_contenido (vía ficha() → revalidación de disco). Resultado: sala a medio cargar (enemigos
+anteriores agregados, contadores_tipo avanzados, incluido el del rechazado), sala sigue CARGADA, y si la falla
+es ErrorRed, al reintentar se duplican los enemigos.
+
+Arreglo acordado con el integrante 2 (el archivo es suyo, lo hacemos en mi rama; NO tocar Logic/Mazmorra.py):
+en Data/GestorContenido.asegurar_sala, antes de devolver la sala, pedir resolvedor.ficha(tipo,
+contar_acierto=False) de cada enemigo, cada trampa y cada objeto del suelo. Con ErrorDatos: _rechazar(id_sala,
+error) y relanzar. Con ErrorRed: dejarlo propagar sin marcar nada. Verificá primero que ficha() acepte
+contar_acierto y que trampas y objetos se resuelvan con ficha(); si no, pará y explicame antes de cambiar nada.
+
+Orden de trabajo (spec-kit, un commit por paso, suite en verde con uv run antes de cada commit, no push):
+1) tasks.md de la 001: agregá T058 con la descripción, el FR-122 y los escenarios de prueba. Si GestorContenido
+   es código de P1, agregá la fila en la tabla «Cambios a código de la primera entrega» de plan.md. Commit.
+2) Pruebas (citan FR-122): caché vieja escrita a mano en un directorio temporal con
+   (a) un enemigo cuya suelta está rechazada, en la sala 3: al intentar entrar se rechaza con el mensaje, la
+       sala 3 queda sin enemigos, contadores_tipo no cambia, el movimiento no consume tiempo ni se registra, y
+       la sala queda marcada como contenido no disponible desde el primer intento;
+   (b) lo mismo con un objeto del suelo con duracion inválida;
+   (c) variante ErrorRed durante la validación y reintento con red buena: sin enemigos duplicados y
+       contadores correctos.
+   Confirmá que (a) y (c) fallan sin el arreglo. Commit.
+3) El arreglo en GestorContenido.asegurar_sala, con type hints; si es código de P1, sin docstrings nuevos
+   (comentario si hace falta) y con antes/después en mi sección de DECISIONES.md. Verificá que no cambien las
+   solicitudes de red en el caso normal (caché válida). Commit.
+4) PROMPTS_LLM.md con este pedido.
+
+Al final decime: el diff de GestorContenido (líneas), los resultados de la suite y si alguna prueba existente
+cambió de comportamiento.
+
+**Uso de la respuesta:** Verificación previa: `ResolvedorCatalogo.ficha(id_ficha, contar_acierto=True)` existe y revalida lo que lee del disco (suelta incluida); las trampas se resuelven con `fn_ficha` en `cargar_contenido`; los objetos del suelo no pasan por `ficha()` ahí, pero `ficha()` valida cualquier id, así que no hubo que parar. `ErrorDatos` es subclase de `ErrorRed`, por eso se atrapa solo `ErrorDatos`. `GestorContenido` es de P1 (`855a6da`). Cuatro commits: (1) `80b0c56`, T058 en `tasks.md` y fila en «Cambios a código de la primera entrega» de `plan.md`. (2) `43fe72e`, `tests/test_cache_vieja.py` con la caché escrita a mano (`cache/v/VERSION` y `<id>.json`): (a) enemigo con suelta rechazada, (b) objeto del suelo con `duracion` 0, (c) `ErrorRed` al validar y reintento, (d) caché válida sin pedidos al catálogo. Sin el arreglo, (a) y (c) fallan (un enemigo a medio cargar; en (c) el reintento deja `e-1` dos veces con número 2) y (b) da ERROR: el movimiento se hace y `SincronizadorUsos` lanza el `ErrorDatos` sin atrapar. Se commitearon con `skipTest` hasta el arreglo, como H2-22, para que la suite quedara en verde. (3) `a27b859`, +14 líneas en `asegurar_sala` (comentario, sin docstring), sin `skipTest`, T058 marcada y antes/después en `DECISIONES.md` §5.6. Las solicitudes de red no cambian: partida con el API falso (6 y 4 solicitudes, 2 y 0 de catálogo, antes y después) y replay de ejemplo (los mismos 2 lotes de contenido, 0 de catálogo). Solo cambia el reporte de la caché cuando la ficha sale del disco (3 aciertos en lugar de 1). Suite: 834 pruebas OK (4 omitidas, las de antes), 31 de 31 scripts; ninguna prueba existente cambió de resultado. (4) Este registro. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Sobre T058, solo responder (no cambies nada salvo que haga falta):
+1) ¿El bloque nuevo de asegurar_sala corre solo la primera vez que se entrega una sala o en cada llamada
+   (cada vez que el jugador entra)? Si es en cada llamada, ¿ficha() lee del disco cada vez o usa lo que ya
+   tiene en memoria? ¿Afecta al bench (medí el ciclo de 1 024 salas si _resolvedor no es None ahí)?
+2) El cambio en el reporte de caché (3 aciertos en vez de 1): ¿algún FR, prueba, bench o texto de
+   DECISIONES/research del integrante 2 usa esos aciertos? Si alguno cita cifras de aciertos, decime cuál.
+
+**Uso de la respuesta:** Solo respuesta, sin cambios. (1) El bloque corre solo la primera vez que se entra a cada sala (y al reintentar una entrada fallida): `ServicioAccionJugador._cargar_destino_si_falta` no llama a `asegurar_sala` si la sala ya está cargada en Lógica, y `ServicioPartida` la llama una vez para la sala inicial. `ficha()` busca primero en memoria (`CacheCatalogo`) y solo va al disco si no está. `BenchRutas` (ciclo de 1 024 salas), `BenchLogica` y `BenchMapaConocido` usan el `Motor` sin `GestorContenido`, y `BenchDatos` crea `GestorContenido` sin resolvedor: no pasan por el bloque. El único bench afectado es `medir_costo_por_accion` de la 004 (8 llamadas a `asegurar_sala` y 4 a `ficha()` más en todo el bench); 3 corridas alternadas sin y con el arreglo: 15,07/15,43/15,63 ms frente a 15,77/15,45/15,13 ms con línea activa, ruido. (2) Ningún FR, bench ni texto de DECISIONES o research cita cifras de aciertos que el cambio mueva; las pruebas que leen aciertos (`TestResolvedorCatalogo`, `TestCacheCatalogo`, `test_despacho_acciones`, `test_grabadores_linea`, `test_reconstructor_estado`, `test_servicios.py:343`) no pasan por `asegurar_sala` o comparan contra sí mismas, y `test_vista_fin.py:84` usa valores puestos a mano. Lo visible es «Aciertos de caché» en `View/PantallaFin.py`. `docs/Documento_Decisiones.pdf` no se revisó (PDF).
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+bien puedes hacer push ya
+
+**Uso de la respuesta:** `git push origin Marco` con los commits de T058 (`80b0c56`, `43fe72e`, `a27b859`, `401e20d`) y el de este registro.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement Feature 003-resolubilidad, segundo lote: las fases 5, 6 y 7 de specs/003-resolubilidad/tasks.md, en este orden y como dice cada tarea. Las fases 1 a 4 (T001 a T034) ya están hechas y en origin/derek. .specify/feature.json ya apunta a specs/003-resolubilidad.
+
+Paso previo de la fase 5: ya está hecho. La rama derek tiene todo lo de origin/kris (lo comprobé hoy), así que no hagas ningún merge; solo corré python tests/correr_pruebas.py antes de tocar nada y anotá el resultado como línea base.
+
+1. Fase 5: T035 y T036 (las pruebas primero; comprobá que fallan), T037 (primero sus pruebas), T038 (primero su prueba), T039, T040 (primero su prueba) y T042 (parar y validar: el caso 4 del Apéndice B pasa y el replay de ejemplo sigue igual). T041 es un aviso: no lo hagas ni lo marques.
+2. Fase 6: T043 a T046 (comprobá que fallan), T047, T048, T049 y T050; T052 (la suite y el quickstart §2, pasos 5, 6, 9 y 10; el paso 8 necesita red, saltalo y decímelo; con el paquete actual, el paso 1 tiene que terminar con código 1 y «falta el archivo … llaves.json»). T051 es un aviso: no lo hagas ni lo marques.
+3. Fase 7: T053 (comprobá que fallan) y T054. T055 es del integrante 3 y T056 se hace con ella: no las hagas ni las marques.
+
+Después de T054, PARÁ. No hagas la fase 8 (paquete) ni las siguientes.
+
+Archivos del integrante 3 que este lote toca, solo con lo que dice cada tarea, al final y con valores por defecto, sin cambiar nada de lo suyo (ella los revisa antes del merge): Service/ServicioPartida.py (T037), Service/ContextoPartida.py (T038), Service/ErroresServicio.py (T040), UIController/ControladorBackend.py (T049 y T054, métodos nuevos al final de la clase). También DTO/ConfiguracionDTO.py y UIController/LectorArgumentos.py (T047, detrás de hasta, sin tocar --checkpoint-cada ni --hasta) y main.py (T050, solo la rama --verificar). Ningún otro archivo de los integrantes 1 y 3.
+
+MUY IMPORTANTE (T054): al hacer que ControladorBackend.iniciar pase por ServicioResolubilidad.iniciar_partida_nueva, una partida nueva sin --forzar no inicia si la verificación no concluye, y una FuenteDatos que no redefine obtener_llaves da NO_CONCLUYO. Puede que pruebas existentes de los integrantes 1 o 3 (test_controlador_backend.py, test_main.py, test_servicios.py, las de la 004 o de la 001, o los scripts) inicien partidas con fuentes falsas que no sirven llaves, o con --offline sobre el paquete actual, que no tiene llaves.json. Si eso pasa: NO cambies esas pruebas ni sus fuentes falsas, NO agregues un atajo que se saltee la verificación, y NO cambies la regla de FR-311. PARÁ antes de T054 (o deshacé solo T054) y decime exactamente qué pruebas fallan, por qué y qué opciones ves, para decidirlo con el equipo. Lo mismo si jugar normal con --offline deja de iniciar con el paquete actual: decímelo.
+
+Reglas:
+- Las «Reglas para todas las tareas» de tasks.md y la constitución v1.2.0 (sin copy fuera de tests/, sin bisect, heapq, collections, dict o set como índice o caché, sin sorted ni list.sort; Logic no importa Data ni Service). Una sola condición para --offline: el if de ServicioPartida.fuente(); ni GestorLlaves ni ServicioResolubilidad leen config.offline.
+- Sin import circular: ServicioResolubilidad no importa ErroresServicio.
+- Pruebas primero, con el escenario y el FR en el nombre. Las pruebas que corren en otro proceso leen la salida como UTF-8.
+- Marcá con [x] en tasks.md solo lo que quedó completo.
+- Antes de terminar corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8 en Windows), el replay de ejemplo (python main.py --replay ejemplos/partida_ejemplo.log --offline), que debe dar lo mismo que antes, y el grep de restricciones de T067 sobre los archivos nuevos.
+
+Al final decime:
+- los archivos de cada grupo, para dos commits: (a) fase 5, el servicio (T035 a T040); (b) fases 6 y 7, --verificar, --forzar y el controlador (T043 a T054), con tasks.md en el (b);
+- el diff exacto de cada archivo del integrante 3 y de main.py;
+- las pruebas nuevas, con su resultado antes y después del código;
+- el resultado de la suite (comparado con la línea base), de los scripts, del replay, del grep y de los pasos del quickstart;
+- qué pasa hoy al jugar normal (sin --forzar) en línea y con --offline con el paquete actual;
+- cualquier diferencia con tasks.md, el data-model, los contratos o la spec.
+No hagas commit.
+
+**Uso de la respuesta:** segundo lote de la 003, fases 5 a 7 (T035 a T053), en dos commits. (a) El servicio: `ServicioResolubilidad` (`verificar`, que nunca lanza por datos ni por red y da NO_CONCLUYO con el mensaje, e `iniciar_partida_nueva`, que sin `--forzar` no inicia una cripta que no es resoluble o que no se pudo verificar y lanza `ErrorPartidaNoIniciada` con el reporte; con los mismos datos de `abrir_datos`, sin pedirlos dos veces), y en los archivos del integrante 3, solo al final y con valores por defecto: `ServicioPartida` (el mismo `if` de `fuente()` elige el almacén de llaves: ninguno con `--offline`), `ContextoPartida.resolubilidad` después de `linea`, `ErrorPartidaNoIniciada` en `ERRORES_ESPERADOS`, y `verificar`/`forzar` en `ConfiguracionDTO` detrás de `hasta`. (b) La línea de comandos: `--verificar CRIPTA` (en el grupo de `--replay` y `--bench`) y `--forzar` en `LectorArgumentos`, `TextoResolubilidad.lineas_reporte` con el formato del contrato, `ControladorBackend.verificar` (T049, al final de la clase) y la rama `--verificar` de `main.py` (salida en UTF-8; códigos 0 resoluble, 3 no resoluble, 1 no concluyó). T054 (`iniciar` pasando por la verificación) se deshizo, como pedía el prompt: con el paquete actual, cripta-01 no tiene `llaves.json`, así que 6 pruebas de `test_controles_historia.py` y 15 scripts del integrante 3 que la inician con `--offline` ya no arrancaban; se decide con el integrante 3. 52 pruebas nuevas; cada grupo falló primero. El paso 8 del quickstart (con red) lo corrí yo. Revisé el zip antes de los commits.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Gracias, paraste donde correspondía. T054 queda pendiente hasta que el integrante 3 decida qué hacen sus pruebas que inician cripta-01 con --offline (cripta-01 ya no está en la API, así que nunca va a tener llaves.json). Mientras tanto, la suite tiene que quedar en verde para poder commitear. Solo esto, sin commit:
+
+1. En tests/test_resolubilidad_cli.py, clase PruebasControlador (las 4 pruebas de T053): en setUp, si ControladorBackend no tiene el atributo resolubilidad, self.skipTest("pendiente de T054: el integrante 3 decide cómo inician sus pruebas con cripta-01 sin llaves.json"). No cambies las pruebas en sí. T053 queda marcada (las pruebas están escritas); T054 sigue sin marcar.
+2. En specs/003-resolubilidad/tasks.md, al final de T054, una nota: «Pendiente (15/11): con T054, 6 pruebas de test_controles_historia.py y 15 scripts del integrante 3 no inician cripta-01 con --offline (paquete sin llaves.json; cripta-01 ya no está publicada). El parche está listo; se aplica cuando el integrante 3 decida cómo inician esas pruebas. Las pruebas de T053 tienen una guarda hasta entonces.»
+3. Corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8): tiene que dar todo en verde, con 7 skips (los 3 de antes y los 4 de T053).
+4. Reagrupá los dos commits: DTO/ConfiguracionDTO.py va en el (a), porque test_fr312_forzar_al_cargar_sin_efecto (del grupo a) necesita config.forzar. Confirmá que con solo los archivos del grupo (a) ninguna prueba del grupo (a) queda en rojo.
+
+Al final: las líneas que cambiaste, el resultado de la suite, los dos grupos de archivos y la ruta completa del parche de T054.
+
+**Uso de la respuesta:** mientras se decide T054, las 4 pruebas de T053 llevan una guarda en `setUp` (`skipTest` si `ControladorBackend` todavía no tiene `resolubilidad`), sin cambiar las pruebas, y `tasks.md` tiene la nota de T054 pendiente. `DTO/ConfiguracionDTO.py` pasó al commit (a) porque una prueba del servicio necesita `config.forzar`; Claude Code lo comprobó en un worktree temporal con solo los archivos del (a): 918 pruebas OK (3 skip), 31 de 31 scripts. Suite completa: 948 pruebas OK (7 skip), 31 de 31 scripts.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+¿Dónde creaste el worktree temporal y lo borraste? Confirmame con git worktree list que solo queda la carpeta del proyecto, y con git branch que no se creó ninguna rama nueva. Si quedó algo, borralo con git worktree remove y git worktree prune.
+
+Además: el paso 8 del quickstart §2 lo corrí yo con red. python main.py --verificar cripta-que-no-existe imprimió «Cripta cripta-que-no-existe: la verificación NO CONCLUYÓ» y «Falló 'datos generales de cripta-que-no-existe': Not found: dungeon 'cripta-que-no-existe' (HTTP 404)», y salió con código 1. Marcá T052 en specs/003-resolubilidad/tasks.md con esa nota (paso 8 corrido por el integrante 2 el 15/11, con red). T052 va en el grupo (b).
+
+No hagas commit. Al final, los dos grupos de archivos definitivos.
+
+**Uso de la respuesta:** el worktree temporal se creó suelto (`--detach`, sin rama) en el scratchpad y se borró; `git worktree list` muestra solo la carpeta del proyecto y no hay ramas nuevas. T052 quedó marcada con la nota del paso 8, que corrí yo con red: `--verificar cripta-que-no-existe` da «NO CONCLUYÓ» (404) y código 1. Grupos definitivos para los dos commits.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+SOLO LECTURA (no modifiques nada, no ejecutes nada). Rama local Marco, commits 80b0c56..401e20d (T058). Leé Data/GestorContenido.py (asegurar_sala, el bloque nuevo de las líneas ~203-216), Data/ResolvedorCatalogo.py (ficha) y quién llama a asegurar_sala. (1) ¿El bloque nuevo corre solo la primera vez que se entrega una sala (al pasar a CARGADA) o en cada llamada a asegurar_sala (cada vez que el jugador entra a una sala ya cargada)? Si es en cada llamada, ¿ficha() lee del disco cada vez o usa lo que ya tiene en memoria? Estimá el costo por movimiento. (2) En Logic/BenchRutas.py y los demás Bench*.py: ¿los motores que se cronometran (NFR-101/SC-104, ciclo de 1 024 salas) tienen un GestorContenido con _resolvedor distinto de None? Es decir, ¿el bloque nuevo entra en lo que mide el bench? (3) El reporte de caché ahora da 3 aciertos en vez de 1 con caché: buscá en specs/ (todas las features), DECISIONES.md, research.md, bench-*.txt y tests/ si algún FR, prueba, bench o texto usa o cita cifras de aciertos/fallos de la caché del catálogo. Decime archivo y línea. Salida corta en lista.
+
+**Uso de la respuesta:** consulta `1a1e0c281d6`, respuesta en `.claude-bridge/outbox/1a1e0c281d6.txt`. Sobre T058 (`a27b859`). (1) El bloque nuevo de `asegurar_sala` (`Data/GestorContenido.py:203-216`) corre en cada llamada, no solo al pasar a CARGADA; `ficha()` usa lo que está en memoria y solo va al disco si la ficha salió de la caché (tope 25), así que cuesta unas e + t + o búsquedas por movimiento, microsegundos con todo en memoria. (2) Ningún motor que cronometra NFR-101/SC-104 (`BenchRutas`, `BenchLogica`, `BenchMapaConocido`) usa `GestorContenido`, y `BenchDatos` lo arma sin resolvedor; solo una medición de `Service/BenchLineaTiempo.py` (004) pasa por el bloque. (3) La única cifra de aciertos que cambia está en `DECISIONES.md:223` («3 aciertos en lugar de 1»); ningún FR, bench ni prueba con cifras fijas pasa por `asegurar_sala`, y `tests/test_servicios.py:343-346` sigue igual por `contar_acierto=False`. No se cambió nada.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+git fetch y git merge origin/derek (trae --verificar de la 003). Si hay conflictos en archivos de la 001,
+pará y avisame. Si el merge trae un commit que regenera paquete/ (cripta-02 a 06, catálogo nuevo), pará
+antes de mezclar y avisame: eso lo vamos a probar aparte.
+Luego, un commit por paso, suite en verde con uv run antes de cada commit, no push:
+1) Quitá el skipTest de H3-7 (solo esa línea) y corré la suite. Si H3-7 falla, no la cambies: decime qué
+   espera la prueba y qué devuelve --verificar (reporte y código de salida 0/3/1) para avisarle al
+   integrante 2.
+2) T048: completala con las pruebas que faltaban: --verificar (H3-7) y --replay … --hasta (de Kristel, 90b8bbf,
+   ya en la rama). Confirmá que las cuatro corridas sin vista de la constitución V (--replay,
+   --replay … --hasta, --verificar, --bench) tengan prueba en la 001 y marcá T048 en tasks.md.
+3) PROMPTS_LLM.md: este pedido y la consulta del puente 1a1e0c281d6 (T058: cuándo corre la validación y quién
+   usa los aciertos).
+Al final decime: resultado de H3-7, el estado de T048 y la suite.
+
+**Uso de la respuesta:** `git merge origin/derek` fue un fast-forward sin conflictos hasta `7ceaf3e` (003: `--verificar` y `--forzar`, T001 a T053 de la 003, más un arreglo de mensajes de la 002). Ningún commit regenera `paquete/`. (1) `b11fc99`: se quitó el `skipTest` de H3-7. La prueba solo tenía esa línea, así que sin ella pasaba sin comprobar nada; el cuerpo se escribió en el paso 2. (2) `a9ba07d`: H3-7 en `tests/test_terreno_cazador.py` corre `main.main(["--verificar", ...])` sobre dos criptas de la 003 (resoluble, código 0, y con ciclo, código 3): da la misma salida sin costos que con costos de 1 a 300 (3 semillas) y un cazador en cada sala, sin pedir contenido ni catálogo. Con costo 0 y con costos 5 y 7 en las dos caras de una salida da «NO CONCLUYÓ» y código 1; el segundo caso también se corre en otro proceso con `--offline` (paquete temporal), con código de salida 1 y sin pygame ni `View`. `tests/test_modos_sin_vista_terreno.py` (T048) suma `--replay … --hasta t` (`ServicioReplayHasta` de `90b8bbf`, comparado con el resumen de la partida viva en 6 instantes de cada una de las 6 partidas, más un t posterior al final) y `--verificar` (el mismo reporte, resoluble con `[itm_llave]`, en la cuadrícula de cada semilla con costos y cazador que sin ellos). Se quitó la línea `PENDIENTE`. T048 quedó marcada en `tasks.md` con la nota de qué prueba cubre cada una de las cuatro corridas sin vista del Principio V: `--replay`, `--hasta` y `--verificar` en ese script, `--verificar` con FR-122 en H3-7 y `--bench` en H3-8 y `tests/test_bench_rutas.py`. Se actualizó `quickstart.md` §6. Suite antes de cada commit: 952 pruebas OK (6 skip, ninguno de la 001: 2 de la 002 y 4 de la 003 por T054), 31 de 31 scripts. (3) Este registro, en su propio commit. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+En tasks.md, en T048, anotá que --verificar corresponde a la T051 de la 003 (integrante 2).
+
+**Uso de la respuesta:** en `specs/001-terreno-cazador/tasks.md`, la nota de T048 dice ahora que lo de `--verificar` (el script de los modos sin vista y H3-7) corresponde a la T051 de la 003 (integrante 2), el aviso de que `--verificar` ya existía para quitar el `skipTest` de H3-7 y cerrar T048.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Sí, commiteá tasks.md y PROMPTS_LLM.md en un solo commit (suite en verde con uv run, no push).
+Antes, confirmame: ¿ya está mezclado origin/derek con --verificar en la rama Marco? ¿H3-7 ya no tiene
+skipTest y pasa? ¿T048 quedó marcada [X]? Si falta alguna de las tres, hacé esto, un commit por paso:
+1) git fetch y git merge origin/derek. Si hay conflicto solo en PROMPTS_LLM.md (UTF-16, merge=union no
+   funciona): conservá todas las entradas de los dos lados por hora, sin duplicados ni separadores dobles, y
+   sin cambiar la codificación. Cualquier otro conflicto, o si el merge trae la regeneración de paquete/:
+   pará y avisame.
+2) Quitá el skipTest de H3-7 (solo esa línea). Si falla, no cambies la prueba: decime qué espera y qué
+   devuelve --verificar (reporte y código 0/3/1).
+3) Confirmá que las cuatro corridas sin vista (--replay, --replay … --hasta, --verificar, --bench) tengan
+   prueba en la 001 y marcá T048.
+4) PROMPTS_LLM.md con este pedido y la consulta del puente 1a1e0c281d6.
+
+**Uso de la respuesta:** las tres cosas ya estaban hechas, así que los pasos 1 a 4 no hicieron falta (solo se registró este pedido). Después de `git fetch`, `origin/derek` no trae nada nuevo y `dadf468` (`--verificar`) ya está en Marco desde el fast-forward a `7ceaf3e`. H3-7 no tiene `skipTest` desde `b11fc99` y pasa con su cuerpo de `a9ba07d`. T048 está marcada [X] desde `a9ba07d`, con las cuatro corridas sin vista cubiertas. La consulta `1a1e0c281d6` ya estaba registrada en `93c2d34`. `PROMPTS_LLM.md` está en UTF-8 con CRLF, no en UTF-16. Un solo commit con la nota de T051 de la 003 en T048 (`tasks.md`) y este registro. Suite en verde antes del commit. Sin push.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Feature 003-resolubilidad. Solo documentación de la spec, sin código ni pruebas, sin commit. Contexto: el 15/11 el API publica cripta-02 a cripta-06 (cripta-01 ya no está: responde 404) y el catálogo pasó a la versión 4b9e75a42be5. Con el integrante 1 acordamos cómo armar el paquete. Antes de hacerlo, la spec tiene que decirlo (Principio IX).
+
+1. specs/003-resolubilidad/tasks.md:
+   a. Marcar [x] T041 y agregar al final: «Hecho (15/11): aviso dado al integrante 3.»
+   b. Marcar [x] T051 y agregar al final: «Hecho (15/11): el integrante 1 quitó el skipTest de H3-7 y cerró la T048 de la 001.»
+   c. Reemplazar el texto de T057 (sigue sin marcar) por:
+   «T057 (FR-318) Paquete de la Parte II (acordado con el integrante 1 el 15/11). **Avisar antes a los integrantes 1 y 3** (cambia archivos que usan sus pruebas). (1) Descargar con python -m Data.DescargadorPaquete <id> <carpeta> cada cripta publicada (el 15/11: cripta-02 a cripta-06) en una carpeta **fuera** del proyecto y compararla con el paquete actual; el reporte queda en specs/003-resolubilidad/paquete-2026-11-15.md (fichas que cambian, fichas que usa cripta-01, criptas que cambian, veredictos de T058). (2) Armar paquete/: cripta-01/ queda **byte idéntica** (el API ya no la publica: es la única cripta sin llaves.json, excepción documentada); criptas.json es la lista del API con cripta-01 al principio; catalogo.json y catalogo_version.json son los del API (el catálogo es uno solo para todas las criptas, así que cripta-01 usa las fichas nuevas); cripta-02 a cripta-06 son las descargadas. (3) Comprobar que cada cripta publicada trae llaves.json, que hay salidas con costo y que los cazadores traen rango (001 FR-122). (4) Las pruebas de la primera parte del integrante 2 que suponían que catalogo.json son solo las fichas de cripta-01 pasan a usar solo esas: tests/Utilidades.catalogo_real() devuelve las fichas que usa cripta-01 (tipos de sus enemigos y trampas, sus objetos, la llave de salida y lo que sueltan sus enemigos) y test_formato_en_disco busca la rata por id y no por posición. (5) Regrabar ejemplos/partida_ejemplo.log jugando la cripta-02 nueva con --offline hasta ganar, y comprobar que el replay termina igual. (6) Correr python tests/correr_pruebas.py; si alguna prueba de otro integrante cambia de resultado por los datos nuevos, avisarle y esperar su arreglo antes del commit. Commit **propio** con paquete/, ejemplos/partida_ejemplo.log, el reporte y esos dos archivos de pruebas (por ejemplo datos: paquete de la Parte II con llaves.json, costos y rangos), y avisar a los tres cuando esté subido.»
+   d. En T058 (sigue sin marcar), reemplazar «Ninguna debe terminar con código 1 (la 1 es para datos que faltan); cada una con 0 o 3 y el mismo texto que en línea con la misma versión (quickstart §2, pasos 1 a 4 y 7).» por «Las criptas publicadas terminan con 0 o 3 y el mismo texto que en línea con la misma versión (quickstart §2, pasos 1 a 4 y 7); cripta-01 termina con código 1 y «falta el archivo … llaves.json» (FR-320), porque ya no está publicada (T057).»
+2. specs/003-resolubilidad/quickstart.md, §2: en los pasos 1, 2, 3, 4 y 7 cambiar cripta-01 por cripta-02 (en el paso 3, la ruta queda cache/llaves/cripta-02.json). En el «Esperado» del paso 1, «Con el paquete regenerado: el reporte y código 0 o 3» pasa a «Con el paquete regenerado: RESOLUBLE y código 0 (T058)». El resto del paso 1 no cambia. Debajo de la tabla, agregar: «cripta-01 ya no está publicada (el API responde 404): con --offline termina con código 1 porque el paquete no tiene su llaves.json (T057).»
+3. No toques nada más. Buscá además cripta-01 en el resto de quickstart.md, spec.md y plan.md de la 003 y decime dónde aparece, sin cambiarlo, para decidir si hace falta.
+
+Al final: el diff completo de los dos archivos y la lista del punto 3.
+
+**Uso de la respuesta:** antes de regenerar el paquete (Principio IX), la spec de la 003 dice cómo se arma, como lo acordé con el integrante 1: el API del 15/11 publica `cripta-02` a `cripta-06` (con `cripta-05` no resoluble) y ya no `cripta-01` (404), y el catálogo pasó a `4b9e75a42be5`. T057 queda con los pasos (descarga fuera del proyecto, reporte, `cripta-01` byte idéntica como excepción sin `llaves.json`, catálogo y criptas del API, ajuste de `catalogo_real()` en las pruebas de la primera parte, regrabar el log de ejemplo, avisar a los otros dos) y T058 acepta el código 1 de `cripta-01`. En el quickstart §2, los pasos 1 a 4 y 7 pasan a `cripta-02`. Marqué T041 y T051 (avisos dados; el integrante 1 quitó el skip de H3-7). Claude Code señaló además el comando de los requisitos previos, el paso 6 y el commit sugerido de la línea 389, que se arreglan en el prompt siguiente. Revisé el diff y el zip: solo cambian `tasks.md` y `quickstart.md`.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Agregá además en T057, después del punto (6) y antes de «Commit **propio**»: «(7) Documentar en DECISIONES.md (sección del integrante 2, apartado «§5.4 Resolubilidad», que T064 completa) la excepción de cripta-01: queda byte idéntica pero ya no está publicada; usa el catálogo nuevo, así que sus ratas traen "vida": 12 y la ficha nueva tiene vida_max 8 (empiezan con 12/8; aceptado por el integrante 1 el 15/11, porque evitarlo tocaría la primera parte sin FR o inventaría datos); y --verificar cripta-01 --offline termina con código 1 porque no tiene llaves.json.» En el «Commit **propio** con …», agregá DECISIONES.md a la lista.
+
+**Uso de la respuesta:** punto (7) de T057, pedido por el integrante 1: documentar en `DECISIONES.md` §5.4 la excepción de `cripta-01` (ratas que empiezan con 12/8 por el catálogo nuevo, aceptado por él, y código 1 de `--verificar`), en el mismo commit del paquete.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Bien. Arreglá también lo que encontraste, sin tocar nada más y sin commit:
+1. quickstart.md, requisitos previos (líneas 13 a 17): el texto queda «Para las pruebas con paquete: el paquete de la Parte II (T057). Para regenerarlo, bajar cada cripta publicada a una carpeta fuera del proyecto y armar `paquete/` como dice T057 (`cripta-01` ya no está publicada):», y el bloque de código pasa a `uv run python -m Data.DescargadorPaquete cripta-02 ../paquete-nuevo`.
+2. quickstart.md, paso 6: `cripta-01` por `cripta-02`.
+3. tasks.md, línea 389: «`datos: paquete de la Parte II` (T057, solo `paquete/`)» pasa a «`datos: paquete de la Parte II` (T057: `paquete/`, el log de ejemplo, el reporte, `DECISIONES.md` y los dos archivos de pruebas)».
+4. La cripta-02 nueva ya se verificó con el paquete armado fuera del proyecto: RESOLUBLE, código 0, así que el paso 1 queda como está. T052 queda como está (es el registro de una corrida pasada).
+Al final, el diff de estos cambios.
+
+**Uso de la respuesta:** el comando de los requisitos previos del quickstart usa la forma `<id> <carpeta>` y `cripta-02`, el paso 6 pasa a `cripta-02` y el commit sugerido de T057 lista todo lo que lleva. El paso 1 espera RESOLUBLE porque ya verifiqué la `cripta-02` nueva con el paquete armado fuera del proyecto. Solo documentación: no hace falta correr la suite.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement Feature 003-resolubilidad, fase 9: T059, T060, T061 y T062 de specs/003-resolubilidad/tasks.md, en ese orden y como dice cada tarea. T063 (correr --bench y guardar la tabla) NO: lo hago yo después. .specify/feature.json ya apunta a specs/003-resolubilidad.
+
+Estado de la carpeta: hay cambios SIN commit del paquete de la Parte II (T057: paquete/, tests/Utilidades.py, tests/TestAlmacenCatalogo.py, DECISIONES.md, ejemplos/partida_ejemplo.log y specs/003-resolubilidad/paquete-2026-11-15.md). No los toques ni los commitees: son de otro commit. Con ese paquete, la cripta con más salas que trae llaves.json es la de 300 salas. Antes de empezar, corré python tests/correr_pruebas.py y anotá la línea base: hoy falla solo el script test_vista_hud.py (es del integrante 3 y lo arregla ella; no lo toques).
+
+1. T059: las 7 pruebas primero, en tests/test_resolubilidad_bench.py (si ya existe, agregalas al final); comprobá que fallan.
+2. T060 y T061 en Logic/BenchResolubilidad.py (hoy solo tiene el generador de cuadrícula). Reutilizá de Logic/BenchLogica.py solo _cronometrar, _mejor_y_mediana y SEMILLA, sin modificar BenchLogica.py. Las variantes descartadas (B2 ingenua, B5 lineal y B6 con una sola lista) viven solo en el bench. Sin dict, set, sorted, list.sort, copy, bisect, heapq ni collections, también en el bench. Logic no importa Data ni Service.
+3. T062 en Service/ServicioBench.py: BenchResolubilidad.medir en la lista por defecto, JUSTO DESPUÉS de BenchLogica.medir (el integrante 3 va a poner su BenchViaje después de BenchMapaConocido; así no chocan en el mismo punto). Actualizá el docstring de __init__. La fila de la cripta con más salas del paquete la arma Service (FuenteOffline, GestorEsqueleto, GestorLlaves sin almacén y VerificadorResolubilidad), elegida por cantidad de salas y sin nombrar ids, sin red y sin crear partida.log.
+4. tests/TestServicioBench.py: test_por_defecto_usa_los_tres_archivos compara la lista completa; actualizá esa lista con BenchResolubilidad.medir en su lugar (y el import), sin cambiar nada más de la prueba. No está en tasks.md: anotalo como nota al final de T062 («también se actualizó la lista esperada de tests/TestServicioBench.py»).
+5. Marcá con [x] solo T059 a T062 si quedaron completas.
+
+Para comprobar los tamaños grandes NO corras el bench completo (lo corro yo en T063); alcanza con las pruebas de tamaños chicos. Antes de terminar: python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8), que tiene que dar lo mismo que la línea base más las pruebas nuevas en verde, y el grep de restricciones de T067 sobre Logic/BenchResolubilidad.py y Service/ServicioBench.py.
+
+Al final decime: los archivos que cambiaste o creaste (separados de los del paquete), las pruebas nuevas con su resultado antes y después, el resultado de la suite comparado con la línea base, el grep, y cualquier diferencia con tasks.md, research R7 o el quickstart §4. No hagas commit.
+
+**Uso de la respuesta:** fase 9 de la 003 (T059 a T062). `Logic/BenchResolubilidad.py`: el generador `cripta_en_peine` (research R7) y las mediciones B1 (verificación resoluble), B2 (alternativa descartada: repetir el recorrido completo en cada oleada), B3 (no resoluble), B4 (desglose a 1 000 salas, sobre la no resoluble porque es la única que pasa por las cuatro fases), B5 (índice ordenando y compactando frente a la búsqueda lineal) y B6 (frontera agrupada por llave frente a una sola lista); las alternativas viven solo en el bench y dan el mismo resultado que la decisión (lo comprueban las pruebas). `Service/ServicioBench.py`: `BenchResolubilidad.medir` justo después de `BenchLogica.medir` (el integrante 3 pone su `BenchViaje` después de `BenchMapaConocido`) y la fila de la cripta con más salas del paquete, elegida por cantidad de salas y leída sin red (con el paquete nuevo, la de 300 salas: mediana 1,18 ms); si no hay criptas con `llaves.json`, una fila sin tiempos cuya nota dice por qué. Se actualizó la lista esperada de `tests/TestServicioBench.py`. 7 pruebas nuevas (fallaron primero); suite 959 OK (7 skip), grep de T067 limpio. Revisé el diff antes del commit; los cambios del paquete quedaron fuera de este commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Contexto: acabo de traer origin/derek y origin/Marco. Hay cinco arreglos pequeños, cada uno en su propio commit. No toques nada fuera de lo que se pide. No agregues docstrings al código nuevo de P1; mantén KISS y YAGNI.
+
+1) tests/test_bench_inventario.py: la palabra "unittest" hace que el corredor lo trate como módulo unittest. Reescribe el mock para que no aparezca esa palabra (ni en comentarios) y verifica que el corredor vuelva a contarlo como script (32 de 32). Commit: "test: test_bench_inventario vuelve a correr como script"
+
+2) forzar=True en pruebas del controlador y la vista (no son pruebas de resolubilidad; cripta-01 no tiene llaves.json y T054 de la 003 bloquearía la partida sin --forzar):
+   - tests/ayudas_controladores.py:24 -> CONFIG_OFFLINE = ConfiguracionDTO(offline=True, forzar=True)
+   - tests/test_controlador_pygame.py:181 -> ConfiguracionDTO(offline=True, cache_size=40, forzar=True)
+   Busca con grep otras pruebas que construyan ConfiguracionDTO(offline=True ...) con cripta-01 y dime cuáles hay antes de tocarlas. Commit: "test: forzar=True en configuraciones offline de cripta-01 (T054 de la 003)"
+
+3) tests/test_vista_hud.py y la vista: el peor mensaje "[t=9999] El veneno hace 999 de daño a Espectro acechador #99" mide 342 px y el ancho útil es 334 antes de HUD_HOLGURA. Elige la solución más simple (recortar el texto al ancho útil con "..." o ajustar la holgura) y justifícala en una línea en DECISIONES.md. Además, la barra de vida debe tolerar vida > vida_max (las ratas de cripta-01 empiezan con vida 12 y vida_max 8): limita la proporción a 1.0. Agrega una prueba para ese caso. Commit: "fix(004): HUD tolera mensajes largos y vida mayor que vida_max"
+
+4) Docstrings: en ContextoPartida, "linea" ya no es el último campo (resolubilidad va después); en main.py menciona --verificar y el código de salida 3. Commit: "docs: docstrings de ContextoPartida y main.py al día"
+
+5) DECISIONES.md: renombra mi "§5.3 Banco de pruebas de la línea de tiempo" como subsección de mi §5.5 (el §5.3 es de Derek: Mapa conocido). Revisa que no queden referencias cruzadas al número viejo. Commit: "docs: banco de pruebas de la línea de tiempo pasa a la subsección de §5.5"
+
+Al final corre toda la suite y dime: cuántas pruebas pasan, y qué decisión tomaste en el punto 3.
+
+**Uso de la respuesta:** se usó la respuesta para arreglar test_bench_inventario, poner forzar=True en las pruebas offline, el ancho del HUD y la barra de vida, los docstrings y el renombrado de §5.3. Se verificó con la suite completa.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Dos grupos de cambios, en commits separados y en este orden.
+
+A) spec(002), SOLO texto de especificación, sin código:
+En specs/002-niebla-ir-a/spec.md, NFR-250 dice "con la cripta de referencia" y SC-252 depende de ella. La cripta de referencia es cripta-06 (300 salas, del paquete con --offline). Ajusta NFR-250 y SC-252 para que lo digan explícitamente, y aclara que se puede medir con una cripta sintética de 300 salas si cripta-06 no está disponible. Actualiza en tasks.md las tareas T120 y T122 (medir con 300 salas, no 50) y en T121 agrega que se debe actualizar tests/TestServicioBench.py:132 poniendo BenchViaje.medir después de BenchMapaConocido.medir (Derek dio su visto bueno). Commit: "spec(002): cripta de referencia de NFR-250 y SC-252 es cripta-06 (300 salas)"
+
+B) Correcciones del contador de daño (Marco las revisó):
+1. Logic/ActorBase.py: quita el docstring de Recibir_Dannio (la constitución prohíbe docstrings nuevos en P1) y deja un comentario de una línea en el contador que diga "daño recibido" (no "vida perdida"). Actualiza el "después" de la fila en DECISIONES.md.
+2. DECISIONES.md: "cuatro sitios" -> "tres sitios" que llaman a Recibir_Dannio. Agrega una nota: la mutación del Evento_pendiente solo se nota contando cambios del intervalo, y el helper de la prueba lee atributos privados del historial (se rompe si cambia el buffer).
+3. specs/002-niebla-ir-a/plan.md:600 y tasks.md:644: corrige el texto: el ataque usa max(1, ...), así que un daño final 0 no ocurre; el contador solo se incrementa si Cant > 0.
+4. tests/test_danio_recibido.py: agrega una prueba con el efecto Regeneración REAL de Efectos.py dentro de un paso del motor (no Curacion(100) directo) y comprueba que el contador no sube. En test_no_va_a_partida_guardada agrega: después de guardar y cargar, el contador no cambia por la carga.
+5. tests/test_linea_tiempo_guardado.py (commit 740f47b): después del primer retroceder compara jugador.acciones contra el valor de antes, no solo contra len(linea.acciones).
+Commit: "fix(004): contador danio_recibido como comentario, prueba con Regeneración real y textos corregidos"
+
+Corre la suite completa y dime cuántas pasan.
+
+**Uso de la respuesta:** se usó la respuesta para aplicar la revisión de Marco al contador (comentario, prueba con Regeneración, textos de plan y tareas, DECISIONES) y para fijar cripta-06 (300 salas) en NFR-250 y SC-252 antes del código.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Revisa solo lectura, sin cambiar nada: el diff de origin/derek en mis archivos (ControladorBackend, ConfiguracionDTO, ContextoPartida y los demás que toque; usa git diff HEAD~N..HEAD o git log para ver los merges). Derek dice que son T037, T038, T040 y T049, todas al final de cada archivo y con valores por defecto. Verifica: (1) que no cambien el comportamiento de lo que ya hacía la línea de tiempo, (2) que los valores por defecto mantengan compatibles mis pruebas, (3) que no duplique lógica mía, (4) que respete SRP y KISS. Dime en una lista corta qué está bien y qué cambiarías, con archivo y línea.
+
+**Uso de la respuesta:** se usó la respuesta para revisar los cambios de Derek en mis archivos antes de aceptar su merge.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Implementa solo T101–T106 de specs/002-niebla-ir-a/tasks.md, siguiendo mi sección de specs/002-niebla-ir-a/plan.md. Sin tocar Service/ ni el controlador todavía.
+
+- Logic/ViajeAutomatico.py: resolver_destino (nombres con strip().casefold()), decidir_paso(grafo, mapa, mazmorra, sala_actual, destino) que usa paso_desde_cero(GrafoMapaConocido, destino, sala, None) y exige que mapa.estado_cara(sala, d) == ABIERTA, y motivos_de_parada (LLEGO, ENEMIGOS con enemigos activos o dormidos en la sala, DANO, SIN_RUTA; internos INTERRUMPIDO, TERMINADA, PASO_RECHAZADO). Lógica pura, sin pygame, sin Data.
+- DTO/ViajeDTO.py: dataclass frozen.
+- Pruebas de Logic pura en tests/ usando tests/ayudas_mapa.py (mapa_de_prueba, cripta_mapa, entrar_a). Cubre cada motivo de parada, la cara cerrada, el destino ambiguo y el destino inexistente.
+- Solo estructuras de datos y librerías permitidas por la constitución v1.2.0. Sin docstrings en código de P1.
+Un commit por grupo lógico, con mensaje: "feat(002): ViajeAutomatico y ViajeDTO (T101-T106)". Al final corre la suite y dime los resultados.
+
+**Uso de la respuesta:** se usó la respuesta para implementar la lógica pura de «ir a» (ViajeAutomatico, ViajeDTO y sus pruebas).
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Implementa T107–T114 de specs/002-niebla-ir-a/tasks.md, siguiendo mi sección de specs/002-niebla-ir-a/plan.md y usando lo que ya existe (Logic/ViajeAutomatico.py y DTO/ViajeDTO.py). Un commit por grupo lógico (servicio, controlador, pruebas) con mensajes "feat(002): ...". No marques tareas como hechas hasta que su prueba pase.
+
+- Service/ServicioIrA.py, sin estado: iniciar(contexto, nombre) y dar_paso(contexto, destino). Cada paso es un `mover` ordinario que pasa por ServicioLineaTiempo.ejecutar. Arma GrafoMapaConocido UNA vez por viaje, con contexto.motor.mapa (después de cargar hay un Motor nuevo: vuelve a tomar el mapa y a armar el grafo).
+- Detecta el daño comparando ActorBase.danio_recibido antes y después de cada paso (nunca el valor absoluto).
+- hay_enemigos = Mazmorra.enemigos_vivos(sala) (incluye dormidos).
+- Justo después del primer paso aceptado, anexa el comentario con contexto.bitacora.anexar_comentario(f"ir a {sala}") (con comprobación de None).
+- Paradas: LLEGO, ENEMIGOS, DANO, SIN_RUTA; internas INTERRUMPIDO, TERMINADA, PASO_RECHAZADO.
+- ControladorBackend.ir_a al final de la clase, con un resultado ViajeDTO. El pergamino revierte solo el último paso y el viaje no continúa. Si el jugador cierra la línea o hay otra acción, el viaje se descarta.
+- Pruebas: cada motivo de parada, PASO_RECHAZADO, TERMINADA junto con DANO/LLEGO, daño con Regeneración real (el contador no sube), viaje tras cargar (grafo nuevo), pergamino a mitad de viaje, que el controlador descarte el viaje, y que el comentario "ir a X" quede en la bitácora una sola vez.
+- Sin docstrings en P1, solo estructuras y librerías permitidas.
+
+Al final corre la suite completa y dime los resultados, y cualquier decisión que hayas tenido que tomar.
+
+**Uso de la respuesta:** se usó la respuesta para implementar ServicioIrA, ControladorBackend.ir_a y sus pruebas (T107–T114).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Implementa T115–T118 de specs/002-niebla-ir-a/tasks.md y un arreglo de comentarios. Un commit por grupo.
+
+1) T115/T116 (H-2, opción A): en ArmadorEstado, enmascara sala_destino de las salidas hacia salas NO exploradas con SIN_EXPLORAR = -1 (definida en DTO/EstadoJuegoDTO.py) y deja sala_salida=None hasta que esté explorada, usando mapa.es_explorada(sala). La vista no cambia. Pruebas: salida a sala no explorada, salida a sala explorada, sala_salida None/explorada.
+2) T118: en ServicioLineaTiempo.py (líneas ~68 y ~74) cambia getattr(motor, "mapa_conocido", None) por motor.mapa.a_dto(). Revisa ArmadorResumen._copiar_mapa: si MapaConocidoDTO es inmutable, pásalo tal cual y simplifica; si no, copia. Agrega una prueba de que los resúmenes de historia ahora llevan el mapa.
+3) Comentarios "cuando exista (spec 002)" en Logic/LineaTiempo.py (líneas ~47 y ~158): cámbialos por algo cierto, sin docstring.
+4) Corre la suite completa. NO avises a Derek: eso lo hago yo (T117).
+
+Mensajes de commit: "feat(002): H-2 sala_destino enmascarada hasta explorar (T115-T116)", "fix(004): el resumen usa motor.mapa.a_dto() (T118)", "docs: comentarios de LineaTiempo al día".
+
+**Uso de la respuesta:** se usó la respuesta para implementar H-2 (enmascarar sala_destino hasta explorar), cambiar el resumen a motor.mapa.a_dto() y limpiar comentarios viejos (T115–T118).
+Feature 003, T054 de specs/003-resolubilidad/tasks.md. Sin commit. El integrante 3 ya puso forzar=True en tests/ayudas_controladores.py:24 y tests/test_controlador_pygame.py:181 (ya está en esta rama).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Estado de la carpeta: hay cambios SIN commit del paquete de la Parte II (paquete/, tests/Utilidades.py, tests/TestAlmacenCatalogo.py, DECISIONES.md, ejemplos/partida_ejemplo.log y specs/003-resolubilidad/paquete-2026-11-15.md). No los toques. Con ese paquete falla solo el script test_vista_hud.py (del integrante 3, lo arregla ella): no lo toques.
+
+1. El parche está en "D:\2 ciclo 2026\Estructura de datos\parches\controlador_T049_T054.diff". Incluye T049 (verificar), que YA está aplicado: NO lo apliques entero. De ahí tomá SOLO lo de T054 en UIController/ControladorBackend.py: los tres atributos al final de __init__, el cambio de iniciar (pasa a self._iniciar_verificando(id_cripta, nombre)) y los métodos resolubilidad() e _iniciar_verificando() al final de la clase. Nada más del archivo cambia.
+2. tests/test_resolubilidad_cli.py: quitá la guarda de PruebasControlador.setUp (el if not hasattr(ControladorBackend, "resolubilidad"): self.skipTest(...)). Las pruebas no cambian.
+3. specs/003-resolubilidad/tasks.md: marcá [x] T054 y reemplazá su nota «Pendiente (15/11): …» por «Hecho (16/11): el integrante 3 puso forzar=True en sus configuraciones offline de cripta-01 (tests/ayudas_controladores.py:24 y tests/test_controlador_pygame.py:181); las pruebas de T053 ya no tienen guarda.»
+4. Corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8). Se espera: 984 pruebas con 3 skips (las 4 de T053 ahora corren y pasan) y 31 de 32 scripts (solo test_vista_hud.py). Si falla cualquier otra cosa, PARÁ y decime qué prueba y por qué, sin cambiar pruebas de otros integrantes ni agregar atajos que se salten la verificación.
+5. Sin abrir ventana, decime qué hace hoy ControladorBackend.iniciar con el paquete local: cripta-02 sin --forzar (debe iniciar), cripta-05 sin --forzar (no inicia: ErrorOperacion con el reporte NO_RESOLUBLE), cripta-05 con --forzar (inicia con la advertencia en resolubilidad()) y cripta-01 sin --forzar (no inicia: no concluyó). Usá un script temporal fuera de tests/ y borralo después.
+
+Al final: el diff de los tres archivos, el resultado de la suite y el del punto 5. No hagas commit.
+
+**Uso de la respuesta:** T054 de la 003, cuando el integrante 3 puso `forzar=True` en sus configuraciones offline de `cripta-01`. Del parche que había guardado el 15/11 se aplicó solo la parte de T054 en `UIController/ControladorBackend.py` (archivo del integrante 3, cambio acordado con ella el 14/11 y revisado por ella): `iniciar` pasa por `ServicioResolubilidad.iniciar_partida_nueva` con `config.forzar`, y `resolubilidad()` devuelve el reporte de la partida nueva o el del último iniciar que no se hizo (FR-311 a FR-313). Se quitó la guarda de las 4 pruebas de T053, que ahora corren y pasan. Suite: 984 pruebas OK (3 skip), 31 de 32 scripts (solo `test_vista_hud.py`, por el paquete nuevo todavía sin commit). Con el paquete local: `cripta-02` inicia; `cripta-05` no inicia sin `--forzar` (no resoluble) y con `--forzar` inicia con la advertencia; `cripta-01` no inicia (no concluyó, falta `llaves.json`). Revisé el diff antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Tres cosas, en orden. Si algo falla o hay conflictos fuera de PROMPTS_LLM.md, DETENTE y muéstrame el error; no resuelvas conflictos de código por tu cuenta.
+
+A) Merges:
+1. git status. Verifica que paquete/catalogo.json aparece modificado: es el catálogo nuevo de Derek, solo para probar. NO lo agregues a ningún commit (nunca uses git add -A mientras esté modificado; agrega archivos por nombre).
+2. git fetch origin. Muéstrame git log --oneline HEAD..origin/derek y HEAD..origin/Marco.
+3. git merge origin/derek -m "merge: trae origin/derek (T054 resolubilidad en iniciar, bench de la 003, trazabilidad)". Si ya está integrada, sigue. Haz lo mismo con origin/Marco (-m "merge: trae origin/Marco").
+Si el merge se queja por el catalogo.json modificado, guárdalo aparte (cópialo fuera del repo), restaura con git checkout -- paquete/catalogo.json, haz el merge y vuelve a copiarlo.
+4. Corre la suite completa (PYTHONIOENCODING=utf-8 python tests/correr_pruebas.py) CON el catálogo nuevo y dime cuántas pasan y cuáles fallan. Debe fallar probar_todos_los_mensajes_reales_del_motor_caben_en_el_ancho_util_del_panel_de_mensajes. Si falla algo más (por ejemplo pruebas con offline=True sin forzar tras T054), dime cuáles y por qué, y arréglalas poniendo forzar=True SOLO si son pruebas de controlador o vista, no de resolubilidad.
+
+B) Arreglo del HUD:
+La prueba lee los nombres de enemigos del paquete/catalogo.json nuevo y elige el tamaño con MENSAJES_PARA_MEDIR (View/Componentes.py). Agrega a MENSAJES_PARA_MEDIR el mensaje peor del enemigo con el nombre más largo del catálogo nuevo ("Espectro acechador": ataque, daño del jugador, veneno) y cualquier otro nombre del catálogo nuevo que sea más ancho que los actuales; calcula cuál es con la fuente real, no a ojo. Actualiza el comentario de arriba de la tupla. La Vista no debe recortar mensajes reales: el recorte con "..." queda como protección. Verifica que probar_todos_los_mensajes_reales... pasa con el catálogo nuevo Y con el viejo (restaura el viejo con git checkout -- paquete/catalogo.json y vuelve a correr test_vista_hud.py). Agrega una línea en DECISIONES.md, en mi §5.5, diciendo que el tamaño de letra se mide con los nombres del catálogo de la Parte II.
+Commit: "fix(004): el tamaño de letra del HUD se mide con los nombres del catálogo nuevo (Espectro acechador)". Agrega los archivos por nombre.
+
+C) Al final:
+1. Deja paquete/catalogo.json como estaba en git (git checkout -- paquete/catalogo.json) y verifica con git status que no queda nada modificado salvo PROMPTS_LLM.md y verificar_prompts.py.
+2. Corre la suite completa con el catálogo viejo y dame el resultado.
+3. NO hagas push.
+
+**Uso de la respuesta:** se usó la respuesta para revisar los reportes de Derek y Marco (T054, paquete nuevo, falla del HUD con «Espectro acechador») y para fusionar sus ramas y arreglar el tamaño de letra del HUD con los nombres del catálogo nuevo.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Implementa el comando de ver el mapa y su dibujo, que tasks.md de specs/002-niebla-ir-a asigna a mi parte (T006, T045, T048; FR-219 y FR-220). Antes de escribir código, lee esas tareas, esos FR y el contrato de MapaConocido.a_dto() (MapaConocidoDTO, que es frozen), y dime en 5 líneas qué vas a hacer. No cambies nada de Derek (MapaConocido, GrafoMapaConocido).
+
+Requisitos:
+- El comando se escribe en la línea de comandos que ya existe (ControlesJuego.procesar_comando) con el nombre que fije la spec. Muestra el mapa conocido: salas exploradas, avistadas, conexiones recordadas y la sala actual. Lee solo motor.mapa.a_dto(); no accede a Data.
+- NO consume tiempo, NO cambia el estado del motor y NO se registra en partida.log ni en la línea de tiempo (FR-220). Esto debe verificarse con una prueba: el reloj, las acciones y el contenido de partida.log son idénticos antes y después.
+- Respeta la niebla: no muestra el id de salas no exploradas (usa lo que ya hace ArmadorEstado con SIN_EXPLORAR).
+- El dibujo va en la View siguiendo la arquitectura MVC de n capas: la vista solo recibe un DTO (agrega a PantallaDTO el campo mínimo, con valor por defecto y al final) y dibuja. Sin lógica de negocio en la vista. Se cierra con Esc o con el mismo comando, sin pausar el juego ni cambiar el estado.
+- KISS y YAGNI: sin zoom, sin desplazamiento, sin animaciones. Si el mapa conocido es grande (hasta 300 salas), que el dibujo siga cabiendo con un tamaño de celda mínimo o un recorte claro; dime qué elegiste.
+- Pruebas: comando válido y abrir/cerrar el panel; que no registre en el log ni gaste tiempo (con mutación: si se registra, la prueba debe fallar); que no revele ids no explorados; que el DTO del mapa conocido llegue a la vista. Prueba de la vista con superficie sin ventana, como las demás.
+- Sin docstrings en código de P1. Solo estructuras de datos y librerías permitidas. Un commit por grupo lógico, con "feat(002): ..." y marca en tasks.md solo las tareas cuyas pruebas pasen.
+
+Al final corre la suite completa (con el catálogo viejo) y dime resultados y decisiones.
+
+**Uso de la respuesta:** se usó la respuesta para implementar el comando de ver el mapa conocido y su dibujo (FR-219/220), sin tiempo y fuera de partida.log
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Dos tareas, cada una en sus commits.
+
+A) Comando mapa con la partida terminada (T048 punto 3 / FR-219):
+Lee T048 y FR-219 en specs/002-niebla-ir-a. Si piden que "mapa" funcione con la partida terminada (victoria o derrota), implementa el cambio MÁS PEQUEÑO posible: que procesar_evento deje pasar solo el comando "mapa" (y su cierre con Esc) cuando la partida terminó, sin habilitar ninguna otra acción y sin tocar el flujo de pantallas de victoria/derrota. Si para lograrlo hay que cambiar más de unas 15 líneas o se arriesga la navegación de pantallas, NO lo hagas: agrega en DECISIONES.md (mi sección de 002) un supuesto que diga que, con la partida terminada, el comando no está disponible (igual que "historia"), y dímelo. Pruebas en cualquiera de los dos casos. Commit: "feat(002): el comando mapa funciona con la partida terminada" o "docs: supuesto, el comando mapa no está disponible con la partida terminada".
+
+B) T055 de la 003: mostrar el reporte de resolubilidad.
+Lee T055 y FR-311, FR-312 y FR-313 en specs/003-*. backend.resolubilidad() (de Derek, ya integrado) devuelve el reporte de la partida nueva, la advertencia con --forzar, el reporte completo si la partida no inició, y None al cargar o en replay. Implementa lo MÍNIMO para que:
+- antes de la primera acción de una partida nueva, la vista muestre el reporte (FR-313), como advertencia si se usó --forzar (FR-312);
+- si la partida no inicia (FR-311), el menú muestre el reporte completo. Ojo: hoy el error llega como ErrorOperacion y el aviso del menú se corta a AVISO_MAX_LINEAS = 2 líneas con "..."; comprueba si el reporte completo (por ejemplo "ciclo hierro ↔ negra") cabe o queda cortado, y si se corta, muéstralo de modo que el motivo (el ciclo o la llave que falta) se lea completo.
+- al cargar una partida o en replay, no se muestra nada.
+La vista solo recibe un DTO y dibuja (MVC de n capas, sin lógica de negocio en la vista). No toques ServicioResolubilidad ni ReporteResolubilidadDTO (son de Derek). Pruebas: reporte visible al iniciar, advertencia con forzar, no visible al cargar ni en replay, y reporte completo cuando la partida no inicia. Sin docstrings nuevos en P1. Commits "feat(003): ...". Marca T055 en tasks.md de la 003 solo si sus pruebas pasan y avísame, porque ese archivo lo comparte Derek.
+
+Corre la suite completa (catálogo viejo) y dime resultados y decisiones.
+
+**Uso de la respuesta:** se usó la respuesta para decidir el alcance del comando mapa con la partida terminada y para implementar T055 de la 003 (mostrar el reporte de resolubilidad).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Implementa T119–T122 de specs/002-niebla-ir-a/tasks.md (banco de «ir a», NFR-250, SC-252) con la cripta de referencia ya aclarada en la spec: cripta-06, 300 salas.
+- Logic/BenchViaje.py con medir(), siguiendo el mismo formato que BenchMapaConocido.medir (mira ese archivo y copia su estilo, sin inventar otro). Mide el paso de «ir a» (armar el grafo una vez, y luego un paso) con 300 salas. Usa cripta-06 del paquete con --offline si existe en paquete/; si no existe todavía (el paquete nuevo lo sube Derek), usa una cripta sintética de 300 salas y dilo claramente en la tabla.
+- Agrega BenchViaje.medir a ServicioBench después de BenchMapaConocido.medir, y actualiza tests/TestServicioBench.py:132 con la misma lista (Derek dio su visto bueno).
+- T122: agrega a la tabla de bench (specs/002-niebla-ir-a/ o donde lo indique la tarea) el resultado con el límite de NFR-250 y si cumple. No inventes números: usa los medidos.
+- Pruebas del bench como las de los otros bancos. Sin docstrings en P1. Commits "bench(002): ...".
+Corre la suite completa y dime los números medidos y si cumplen NFR-250.
+
+**Uso de la respuesta:** se usó la respuesta para implementar el banco de pruebas de «ir a» con 300 salas (NFR-250, SC-252).
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Dos tareas, cada una en sus commits.
+
+A) Comando mapa con la partida terminada (T048 punto 3 / FR-219):
+Lee T048 y FR-219 en specs/002-niebla-ir-a. Si piden que "mapa" funcione con la partida terminada (victoria o derrota), implementa el cambio MÁS PEQUEÑO posible: que procesar_evento deje pasar solo el comando "mapa" (y su cierre con Esc) cuando la partida terminó, sin habilitar ninguna otra acción y sin tocar el flujo de pantallas de victoria/derrota. Si para lograrlo hay que cambiar más de unas 15 líneas o se arriesga la navegación de pantallas, NO lo hagas: agrega en DECISIONES.md (mi sección de 002) un supuesto que diga que, con la partida terminada, el comando no está disponible (igual que "historia"), y dímelo. Pruebas en cualquiera de los dos casos. Commit: "feat(002): el comando mapa funciona con la partida terminada" o "docs: supuesto, el comando mapa no está disponible con la partida terminada".
+
+B) T055 de la 003: mostrar el reporte de resolubilidad.
+Lee T055 y FR-311, FR-312 y FR-313 en specs/003-*. backend.resolubilidad() (de Derek, ya integrado) devuelve el reporte de la partida nueva, la advertencia con --forzar, el reporte completo si la partida no inició, y None al cargar o en replay. Implementa lo MÍNIMO para que:
+- antes de la primera acción de una partida nueva, la vista muestre el reporte (FR-313), como advertencia si se usó --forzar (FR-312);
+- si la partida no inicia (FR-311), el menú muestre el reporte completo. Ojo: hoy el error llega como ErrorOperacion y el aviso del menú se corta a AVISO_MAX_LINEAS = 2 líneas con "..."; comprueba si el reporte completo (por ejemplo "ciclo hierro ↔ negra") cabe o queda cortado, y si se corta, muéstralo de modo que el motivo (el ciclo o la llave que falta) se lea completo.
+- al cargar una partida o en replay, no se muestra nada.
+La vista solo recibe un DTO y dibuja (MVC de n capas, sin lógica de negocio en la vista). No toques ServicioResolubilidad ni ReporteResolubilidadDTO (son de Derek). Pruebas: reporte visible al iniciar, advertencia con forzar, no visible al cargar ni en replay, y reporte completo cuando la partida no inicia. Sin docstrings nuevos en P1. Commits "feat(003): ...". Marca T055 en tasks.md de la 003 solo si sus pruebas pasan y avísame, porque ese archivo lo comparte Derek.
+
+Corre la suite completa (catálogo viejo) y dime resultados y decisiones.
+
+**Uso de la respuesta:** se usó la respuesta para decidir el alcance del comando mapa con la partida terminada y para implementar T055 de la 003 (mostrar el reporte de resolubilidad).
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+git fetch y git merge origin/derek (trae la 003 completa, T054 y el merge de kris). Si hay conflicto solo en
+PROMPTS_LLM.md, conservá todas las entradas de los dos lados por hora, sin duplicados ni cambiar la
+codificación. Cualquier otro conflicto, o si el merge trae la regeneración de paquete/: pará y avisame.
+Luego, un commit por paso, suite en verde con uv run antes de cada commit, no push:
+1) FR-122 con --forzar: verificá que con la T054 (iniciar pasa por la verificación) una cripta con costo
+   inválido o distinto entre caras, o cierre_automatico inválido, sigue sin iniciar también con --forzar. Si
+   ya hay prueba que lo cubra, decime cuál; si no, agregala citando FR-122. Si falla, no cambies código de la
+   003: pará y avisame.
+2) README.md: agregá la sección de la 001 (integrante 1), corta: costo por salida y cómo se iguala entre
+   caras (costo por defecto 100), comportamiento cazador (rango, desempates), búsqueda compartida e
+   invalidación, cómo correr --bench y dónde están las cifras (bench-2026-11-15.txt, research.md,
+   DECISIONES.md §5.6), y errores de datos de FR-122. Solo tu sección; no toques las de los demás.
+3) PROMPTS_LLM.md con este pedido.
+Al final: resultado del punto 1, la suite y cuántos commits hay sin push.
+
+**Uso de la respuesta:** el merge de `origin/derek` (T054, T059 a T063 y T066 de la 003, y el merge de kris con T101 a T106 de la 002) no trajo la regeneración de `paquete/`; el único conflicto fue `PROMPTS_LLM.md`, resuelto con las 4 entradas nuevas de esta rama (15/11, hasta las 15:43) y después las 9 de derek (15/11 desde las 17:08 y 16/11), sin duplicados y en UTF-8. Punto 1: a nivel de servicio ya lo cubrían `test_h4_5_fr323_costos_distintos_no_inicia_ni_con_forzar` y `test_fr323_cierre_automatico_invalido_no_inicia_ni_con_forzar` (`tests/test_resolubilidad_servicio.py`), pero no el costo inválido ni `ControladorBackend.iniciar`; se agregó `tests/test_fr122_forzar.py` (FR-122): los tres casos, con y sin `--forzar`, dan `ErrorOperacion` causado por `ErrorDatos`, sin partida ni log, y pasa sin cambiar código. Punto 2: sección «Terreno y cazador (001, integrante 1)» en `README.md`.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+Revisión SOLO LECTURA (no modifiques nada, no ejecutes pruebas). Rama local Marco, commits de hoy 17/11: 07f28e5 (merge de origin/derek), e0129c4 (tests/test_fr122_forzar.py), bbaea49 (README, sección 001), 4746c3f (PROMPTS_LLM.md). Revisá con git show. (1) 07f28e5: que el merge no haya cambiado archivos de la 001 (Logic/RutasHaciaJugador.py, BusquedaCostoMinimo.py, GrafoEsqueleto.py, BenchRutas.py, MonticuloMinimo.py, Comportamientos.py, Mazmorra.py, GestorContenido.py) respecto de lo que había en Marco antes del merge; si alguno cambió, mostrá el diff. Que PROMPTS_LLM.md no haya perdido entradas de ninguno de los dos lados. (2) e0129c4: que la prueba cite FR-122, pase por ControladorBackend.iniciar (camino de la T054) con y sin --forzar, y compruebe mensaje, que no hay partida y que no se crean logs; que no use estructuras prohibidas fuera de lo permitido en tests. (3) bbaea49: leé la sección «Terreno y cazador (001, integrante 1)» del README y contrastala con specs/001-terreno-cazador/spec.md y DECISIONES.md: costo por defecto 100 e igualado entre caras; intervalo max(1, costo*100//velocidad); cazador: ataca si comparte sala, espera si no hay ruta o d > rango, se mueve si d == rango, desempate por vecina de menor id del primer paso y salida más barata, la decisión no usa RNG; búsqueda compartida, invalidación por puertas y pergamino; FR-122; cifras del bench (que coincidan con bench-2026-11-15.txt). Señalá cualquier dato incorrecto, comando que no exista o regla nueva que no esté en la spec. Salida corta: primero lo que está bien, luego ALTA/MEDIA/BAJA con archivo y línea.
+
+**Uso de la respuesta:** consulta `1a1e838abf4`, respuesta en `.claude-bridge/outbox/1a1e838abf4.txt`. Revisión de `07f28e5`, `e0129c4` y `bbaea49`, sin observaciones ALTAS ni MEDIAS: el merge no cambió ningún archivo de la 001 y `PROMPTS_LLM.md` no perdió entradas de ningún lado; la prueba de FR-122 con `--forzar` pasa por `ControladorBackend.iniciar` y comprueba lo pedido; el README coincide con la spec y con `DECISIONES.md`. Las cuatro observaciones BAJAS (nombrar los dos benches en el README, «incluido d = `rango`», `duracion` no entera o `bool`, y buscar «costo 0» en la prueba) se aplicaron en el pedido siguiente.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Implementa T119–T122 de specs/002-niebla-ir-a/tasks.md (banco de «ir a», NFR-250, SC-252) con la cripta de referencia ya aclarada en la spec: cripta-06, 300 salas.
+- Logic/BenchViaje.py con medir(), siguiendo el mismo formato que BenchMapaConocido.medir (mira ese archivo y copia su estilo, sin inventar otro). Mide el paso de «ir a» (armar el grafo una vez, y luego un paso) con 300 salas. Usa cripta-06 del paquete con --offline si existe en paquete/; si no existe todavía (el paquete nuevo lo sube Derek), usa una cripta sintética de 300 salas y dilo claramente en la tabla.
+- Agrega BenchViaje.medir a ServicioBench después de BenchMapaConocido.medir, y actualiza tests/TestServicioBench.py:132 con la misma lista (Derek dio su visto bueno).
+- T122: agrega a la tabla de bench (specs/002-niebla-ir-a/ o donde lo indique la tarea) el resultado con el límite de NFR-250 y si cumple. No inventes números: usa los medidos.
+- Pruebas del bench como las de los otros bancos. Sin docstrings en P1. Commits "bench(002): ...".
+Corre la suite completa y dime los números medidos y si cumplen NFR-250.
+
+**Uso de la respuesta:** se usó la respuesta para decidir el alcance del comando mapa con la partida terminada y para implementar T055 de la 003 (mostrar el reporte de resolubilidad).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Quiero comprobar que «ir a» se puede USAR en el juego, no solo que el servicio funcione. Primero solo lectura, luego arregla lo mínimo.
+
+1) Lee en specs/002-niebla-ir-a/ (spec.md, plan.md, tasks.md, quickstart si existe) cómo se escribe y cómo se ve «ir a <sala>»: nombre del comando, cómo avanza el viaje (un paso por fotograma o por tick), cómo se interrumpe (tecla, Esc, otra orden) y qué mensaje se muestra al parar (LLEGO, ENEMIGOS, DANO, SIN_RUTA, destino inválido, ambiguo, ya aquí).
+2) Comprueba que existe todo el camino: línea de comandos (ControlesJuego.procesar_comando) -> ControladorPygame -> ControladorBackend.ir_a / dar_paso_viaje -> PantallaDTO -> vista. Dime qué eslabones existen y cuáles faltan.
+3) Si falta alguno, impleméntalo con el cambio MÁS PEQUEÑO (KISS/YAGNI, MVC de n capas, vista solo recibe DTO y dibuja, sin docstrings en P1, solo estructuras y librerías permitidas). El viaje debe verse paso a paso (que el jugador vea cómo cambia de sala), cortarse con Esc o cualquier otra orden, y mostrar el motivo de parada en el panel de mensajes.
+4) Prueba de punta a punta con el ControladorPygame real y una partida real (cuadrícula sin enemigos): escribir «ir a Sala 25» llega a la sala; con una cara cerrada recordada rodea o devuelve SIN_RUTA; una orden o Esc a mitad de viaje lo descarta; el log contiene un comentario «# ir a ...» y se puede reproducir con --replay igual.
+5) Un commit por grupo lógico: "feat(002): ..." o "test(002): ...". Si no falta nada, no cambies nada y dímelo.
+Corre la suite completa (catálogo viejo) y dime resultados y lo que decidiste.
+
+**Uso de la respuesta:** se usó la respuesta para comprobar que «ir a» se puede escribir y ver en el juego de punta a punta (línea de comandos, controlador, DTO y vista).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Cierra la documentación de mi parte. Lee primero las tareas T123–T127 de specs/002-niebla-ir-a/tasks.md y T066 de specs/004-linea-tiempo/tasks.md. Cada grupo va en su propio commit. NO marques T110A (falta el visto bueno de Marco). No toques archivos de Derek salvo donde una tarea lo pida.
+
+1) T123: DECISIONES.md, mi sección de la 002. Escribe solo lo que existe en el código y las pruebas, sin inventar. Cubre: ViajeAutomatico/ServicioIrA/ViajeDTO; dar_paso(contexto, viaje) con acciones_esperadas (así se detecta el pergamino); grafo armado una vez por viaje y de nuevo tras cargar; contador danio_recibido (antes/después del cambio a ActorBase, la prueba con Regeneración real y la mutación); H-2 opción A (SIN_EXPLORAR = -1, sala_salida None hasta explorar); comando "mapa" (nombre elegido por mí, no gasta tiempo, fuera de partida.log, no disponible con la partida terminada); ritmo de 350 ms y corte con cualquier tecla o clic, y Esc sin pausa (SUPUESTOS míos, la spec no los fija); rechazos como aviso y motivos de parada en el panel de mensajes; destino inexistente y avistado dan el mismo mensaje; resultados del banco (300 salas sintéticas, 1.0 ms contra 5 ms, y que cripta-06 se mide sola cuando esté en el paquete; la tabla está en specs/002-niebla-ir-a/bench-viaje-2026-11-17.txt, máquina distinta a la de Derek). Commit: "docs: DECISIONES de la 002 (ir a, mapa, H-2, banco)".
+
+2) T125: comprueba con grep, en mis archivos de 002 y 004 (Logic/ViajeAutomatico, Service/ServicioIrA, DTO/ViajeDTO, View/MapaJuego, BenchViaje, y los de la línea de tiempo), que se cumple la constitución v1.2.0: sin dict, set, sorted, list.sort, heapq, colecciones ni librerías no permitidas, sin imports de Data en Logic ni de pygame fuera de View/UIController, sin docstrings nuevos en código de P1. Muéstrame el comando y el resultado. Si algo no cumple, dime el archivo y la línea y propón el arreglo mínimo; no lo cambies sin decírmelo.
+
+3) T126 y T127 (lee qué piden y hazlas si son de mi parte). T127 es registrar los prompts en PROMPTS_LLM.md: NO lo toques, lo hago yo a mano.
+
+4) T124 (mi mitad) y T066: la trazabilidad (requisito -> prueba que lo cubre) de la 002 y de la 004 en el formato que ya usa el Apéndice B de la 003 de Derek (mira su archivo y copia su formato). Usa los nombres reales de las pruebas, verificando con grep que existen. Para la 002 llena solo mis filas y deja las de Derek como están. Commits separados: "spec(002): trazabilidad de ir a, mapa y H-2" y "spec(004): trazabilidad de la línea de tiempo (T066)".
+
+5) README.md: agrega UNA sección mía (no toques la de Derek de --verificar y --forzar) con: historia (comando y --hasta), checkpoint-cada, ir a (cómo escribirlo, cuándo para, cómo se corta), mapa, y las teclas Enter y Esc de la línea de comandos. Corto y con ejemplos. Commit: "docs: README, sección de línea de tiempo, ir a y mapa".
+
+Al final corre la suite completa (catálogo viejo) y dime resultados, lo que no cumplió T125 si hubo algo, y qué tareas marcaste.
+
+**Uso de la respuesta:** se usó la respuesta para cerrar DECISIONES de la 002, verificar las restricciones de la constitución (T125), escribir la trazabilidad de la 002 y la 004 y agregar mi sección del README.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Cuatro cambios, cada uno en su commit. Los de spec/docs van separados de los de código (Principio IX).
+
+1) Código (T125, docstrings): pasa a comentarios # de una línea los docstrings nuevos que agregué en archivos de P1: UIController/ControladorBackend.py (ver_mapa, ir_a, dar_paso_viaje), UIController/ControladorPygame.py (la línea de paso_viaje_ms en el docstring de __init__: déjala como comentario junto al parámetro) y Service/ServicioBench.py (medir_viaje_en_la_cripta_de_referencia). NO cambies los docstrings de módulo de Logic/BenchViaje.py ni View/MapaJuego.py. No cambies ninguna lógica. Corre la suite. Commit: "refactor(002): docstrings nuevos de archivos P1 pasan a comentarios (T125)".
+
+2) Plan (Principio III): en specs/002-niebla-ir-a/plan.md agrega a la tabla de cambios al código de la primera entrega las filas de ControladorBackend.py que no están al final de la clase (imports, 2 líneas en __init__, 1 en _ejecutar y 1 en _empezar), con la justificación FR-262 ("cualquier otra orden descarta el viaje"). Ajusta el texto de T125 en tasks.md para que diga que esas líneas son la excepción justificada. Luego marca T125. Commit: "spec(002): filas de ControladorBackend en la tabla del plan y T125 cerrada".
+
+3) Prueba: renombra test_h1_1_apendiceB_caso3_fr409_instante_posterior a un nombre que diga caso1 (busca con grep todas las referencias, incluida la trazabilidad de specs/004-linea-tiempo/spec.md) y comprueba que la prueba sigue pasando. Commit: "test(004): el nombre de la prueba del caso 1 del Apéndice B dice caso1".
+
+4) Quickstart: en specs/002-niebla-ir-a/quickstart.md escribe la sección de «ir a» y «mapa» con pasos que yo pueda seguir a mano en la ventana (python main.py --offline --forzar, con la cripta que corresponda): escribir "ir a <sala>", ver que avanza un paso cada 350 ms y llega; "ir a" con sala inexistente y con la sala actual (aviso rojo, sin gastar tiempo); cortar el viaje con una tecla y con Esc; que pare al entrar a una sala con enemigos y al recibir daño; "mapa" (abrir, cerrar, no gasta tiempo); pergamino a mitad de un viaje; guardar, cargar y ver que el mapa sigue; --replay del log que quedó. Cada paso con lo que debo ver. Usa solo lo que existe en el código; verifica con grep los mensajes exactos. NO marques T126 (la marco yo tras seguirlo). Commit: "spec(002): quickstart con ir a y mapa (T126, pasos manuales)".
+
+Al final corre la suite completa (catálogo viejo) y dime resultados.
+
+**Uso de la respuesta:** se usó la respuesta para pasar a comentarios los docstrings nuevos de P1, justificar en el plan los cambios de ControladorBackend, corregir el nombre de una prueba y escribir los pasos manuales de «ir a» y «mapa» en el quickstart.
+Cuatro ajustes chicos, un solo commit, suite en verde con uv run, PROMPTS_LLM.md, no push:
+1) README.md ~196: nombrá los dos benches: bench-2026-11-13.txt (cifras citadas en R1–R6 y DECISIONES §5.1
+   y §5.2) y bench-2026-11-15.txt (mismas mediciones con el mapa conocido conectado, mismos conteos).
+2) README.md ~184: «se mueve si d ≤ rango (incluido d = rango)».
+3) README.md ~206: duracion inválida si no es entero ≥ 1 (incluye no entero y bool), igual que costo y
+   cierre_automatico.
+4) tests/test_fr122_forzar.py:45: en el caso de costo inválido buscá "costo 0" en el mensaje, no solo
+   "costo".
+Registrá también la consulta del puente 1a1e838abf4 (revisión de 07f28e5, e0129c4, bbaea49).
+
+**Uso de la respuesta:** se aplicaron las cuatro observaciones BAJAS de la consulta `1a1e838abf4`: el README de la 001 nombra `bench-2026-11-13.txt` (cifras de R1 a R6 y §5.1 y §5.2) y `bench-2026-11-15.txt` (mismas mediciones con el mapa conocido, mismos conteos), dice que el cazador se mueve si d ≤ `rango` (incluido d = `rango`) y que una `duracion` es inválida si no es entero ≥ 1 (incluidos un no entero y un `bool`); `tests/test_fr122_forzar.py` busca «costo 0» en el caso de costo inválido. Un solo commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Domingo 15 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Feature 003, T057 (fase 8), como dice ahora specs/003-resolubilidad/tasks.md. Sin commit. Los datos ya están descargados en "D:\2 ciclo 2026\Estructura de datos\paquete-nuevo" (cripta-02 a cripta-06, catalogo.json y catalogo_version.json del API del 15/11). No modifiques esa carpeta.
+
+1. paquete/: reemplazá cripta-02, cripta-03 y cripta-04 por las descargadas, agregá cripta-05 y cripta-06, y reemplazá catalogo.json y catalogo_version.json por los descargados. paquete/cripta-01/ NO se toca. criptas.json = la lista de criptas.json descargado con la entrada de cripta-01 del criptas.json actual al principio, escrito como DescargadorPaquete._escribir (json.dump con ensure_ascii=False e indent=2). Comprobá que git diff de paquete/cripta-01 está vacío y que el diff de criptas.json solo agrega cripta-05 y cripta-06.
+2. tests/Utilidades.py: catalogo_real() pasa a devolver solo las fichas de catalogo.json que usa ID_CRIPTA, en el orden del paquete, con este docstring y este código:
+    """Las fichas de catalogo.json que usa ID_CRIPTA, en el orden del paquete: los tipos de sus enemigos y
+    trampas, sus objetos, la llave de salida y lo que sueltan sus enemigos. catalogo.json es compartido por
+    todas las criptas del paquete, y estas pruebas cuentan solo las fichas de ID_CRIPTA."""
+    todas = leer_paquete("catalogo.json")["entidades"]
+    usados = [general_real()["llave_salida"]]
+    for sala in contenido_real():
+        usados += [e["tipo"] for e in sala["enemigos"]] + [t["tipo"] for t in sala["trampas"]] + sala["objetos"]
+    agregado = True
+    while agregado:                                   # lo que sueltan los enemigos usados, hasta que no cambie
+        agregado = False
+        for f in todas:
+            if f["id"] in usados:
+                for id_suelta in f.get("suelta") or []:
+                    if id_suelta not in usados:
+                        usados.append(id_suelta)
+                        agregado = True
+    return [f for f in todas if f["id"] in usados]
+   Comprobá que devuelve exactamente las mismas 11 fichas que el catalogo.json de antes (mismos ids).
+3. tests/TestAlmacenCatalogo.py, test_formato_en_disco: «a.guardar(fichas_reales()[1])                    # ent_rata_gigante» pasa a «a.guardar([f for f in fichas_reales() if f.id == "ent_rata_gigante"][0])».
+4. Copiá "D:\2 ciclo 2026\Estructura de datos\paquete-nuevo\reporte_paquete_parteII.md" a specs/003-resolubilidad/paquete-2026-11-15.md sin cambiarle nada.
+5. DECISIONES.md, sección del integrante 2, «### §5.4 Resolubilidad»: reemplazá «(pendiente: 003)» por estos dos párrafos (no toques nada más del archivo):
+(pendiente: el resto de la 003, T064.)
+
+**Paquete de la Parte II y excepción de cripta-01 (T057, 15/11).** El API del 15/11 publica cripta-02 a cripta-06 (catálogo 4b9e75a42be5) y ya no cripta-01 (responde 404). El paquete local conserva cripta-01/ byte idéntica, porque la usan las pruebas de los tres integrantes, y toma del API el catálogo y las demás criptas. Como el catálogo es uno solo para todas las criptas, cripta-01 usa las fichas nuevas: ent_rata_gigante (vida_max 12→8, ataque 5→3, defensa 1→0, velocidad 150→110) y ent_guardian_oseo (vida_max 20→16, ataque 7→5, defensa 3→2). Su contenido trae "vida": 12 en las ratas y Enemigo toma esa vida tal cual, así que empiezan con 12 de vida y vida_max 8. Evitarlo tocaría la primera parte sin un FR o inventaría datos; el integrante 1 lo aceptó el 15/11. Además, cripta-01 es la única cripta sin llaves.json: --verificar cripta-01 --offline termina con código 1 («falta el archivo … llaves.json», FR-320). Reporte completo, con los veredictos de T058: [paquete-2026-11-15.md](specs/003-resolubilidad/paquete-2026-11-15.md).
+   (Usá el mismo ancho de línea que el resto de la sección.)
+6. Corré python main.py --verificar <id> --offline para cripta-01 a cripta-06 y decime el resultado y el código de cada una (esperado: 01 código 1; 02, 03, 04 y 06 RESOLUBLE, código 0; 05 NO RESOLUBLE, código 3).
+7. Corré python tests/correr_pruebas.py (con PYTHONIOENCODING=utf-8). Se esperan solo dos fallas, que NO se arreglan acá: test_vista_hud.py (del integrante 3: el mensaje con «Espectro acechador» mide 335 px y el ancho útil es 334; lo arregla ella) y test_fr312_forzar_con_replay_sin_efecto (el log de ejemplo es de la cripta-02 vieja; lo regrabo yo jugando). Si falla cualquier otra cosa, PARÁ y decime.
+
+Después de eso PARÁ: la partida de ejemplo la juego yo. No marques T057 ni T058. Al final: la lista de archivos cambiados, los diffs de tests/Utilidades.py, tests/TestAlmacenCatalogo.py y DECISIONES.md, el resultado del punto 6 y el de la suite.
+
+**Uso de la respuesta:** T057, el paquete de la Parte II, armado como dice `tasks.md`: `paquete/cripta-01/` byte idéntica, `criptas.json` = la lista del API con `cripta-01` al principio, catálogo `4b9e75a42be5` y `cripta-02` a `cripta-06` del API (Claude Code comprobó con `diff -r` y `cmp` que son idénticos a lo descargado). En las pruebas de la primera parte, `catalogo_real()` devuelve solo las 11 fichas que usa `cripta-01` (las mismas de antes, ahora en el orden del catálogo nuevo) y `test_formato_en_disco` busca la rata por id. El reporte de diferencias quedó en `specs/003-resolubilidad/paquete-2026-11-15.md`; corregí a mano la medida del HUD (342 px en Windows, no 335, que era en Linux). La nota de `DECISIONES.md` §5.4 sobre la excepción de `cripta-01` (ratas 12/8 y código 1 de `--verificar`), aceptada por el integrante 1, quedó para el commit `docs(003)` siguiente, con el resto de §5.4. T058, `--verificar --offline`: 02, 03, 04 y 06 RESOLUBLE (código 0), 05 NO RESOLUBLE con un ciclo hierro↔negra (código 3) y 01 código 1. Después regrabé `ejemplos/partida_ejemplo.log` jugando la `cripta-02` nueva con `--offline` hasta ganar (47 acciones, victoria; el replay da lo mismo). La suite quedó con 952 pruebas OK (7 skip) y solo falló `test_vista_hud.py` del integrante 3 (el mensaje con «Espectro acechador» no cabe), que arregló ella antes de este commit. Revisé el zip antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Feature 003, T065, T066 y T067 de specs/003-resolubilidad/tasks.md. Sin commit.
+
+Estado de la carpeta: hay cambios SIN commit del paquete de la Parte II (paquete/, tests/Utilidades.py, tests/TestAlmacenCatalogo.py, DECISIONES.md, ejemplos/partida_ejemplo.log, specs/003-resolubilidad/paquete-2026-11-15.md). No los toques.
+
+1. T065: en README.md, documentar --verificar <cripta> y --forzar como dice la tarea (con y sin --offline; códigos 0 resoluble, 3 no resoluble, 1 no concluyó, 2 argumentos inválidos; el reporte va a la salida estándar; qué hace --forzar y cuándo no tiene efecto; --verificar no se combina con --replay ni --bench). Agregá una línea: con --offline, cripta-01 termina con código 1 porque el paquete no trae su llaves.json (ya no está publicada). Ponelo donde el README describe las opciones de la línea de comandos, siguiendo su formato, sin cambiar lo de los otros integrantes. El equipo acordó que yo agrego solo la parte de la 003.
+2. T066: en specs/003-resolubilidad/spec.md, tabla «Trazabilidad del Apéndice B», cambiar «Se define en tasks.md» por el nombre completo de cada prueba: caso 1 test_h2_1_apendiceB_caso1_fr304_fr307_fr308_fr309_fr310_llave_salida_detras_de_su_puerta (tests/test_resolubilidad_reporte.py), caso 2 test_h1_4_apendiceB_caso2_fr303_fr316_llave_de_enemigo_errante y caso 3 test_h1_5_apendiceB_caso3_fr305_fr306_mismo_orden_en_dos_ejecuciones (tests/test_resolubilidad_logica.py), caso 4 test_h4_1_apendiceB_caso4_fr311_no_resoluble_no_inicia (tests/test_resolubilidad_servicio.py). Comprobá que esos nombres existen. Nada más de spec.md cambia.
+3. T067: corré los tres grep de la tarea y el chequeo de «No se tocan» sobre los commits de la 003 (desde el primer commit de la feature hasta HEAD). Si no hay coincidencias nuevas, marcá T067 con una nota de lo que corriste. Si las hay, NO cambies código: decímelo.
+4. En tasks.md marcá [x] T065 y T066.
+
+Al final: el diff de README.md y de spec.md, el resultado de cada grep y los archivos para dos commits: (a) spec(003) solo con spec.md; (b) docs(003) con README.md y tasks.md.
+
+**Uso de la respuesta:** T065 (README: `--verificar` y `--forzar`, con los códigos 0, 3, 1 y 2, la salida estándar, qué no se combina y la excepción de `cripta-01` con `--offline`; el equipo acordó que cada uno documenta su feature), T066 (los nombres reales de las cuatro pruebas del Apéndice B en la trazabilidad de `spec.md`, en el commit `spec(003)` aparte) y T067 (los tres grep y el chequeo de «No se tocan» sobre los commits de la 003: sin coincidencias nuevas; las 5 que aparecen son comentarios de antes de la feature). Claude Code avisó que el ejemplo del README con `cripta-02 --offline` necesita el paquete nuevo y que la sección «Modo --offline» estaba desactualizada.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Ahora T063 de specs/003-resolubilidad/tasks.md. Sin commit. Corré .venv\Scripts\python.exe main.py --bench con PYTHONIOENCODING=utf-8 (tarda; dejalo terminar) y guardá la tabla completa en specs/003-resolubilidad/bench-2026-11-16.txt, con un encabezado como el de specs/002-niebla-ir-a/bench-2026-11-15.txt: qué es, el comando, la fecha, la rama y el commit sobre el que corre (con el paquete de la Parte II sin commitear en la carpeta), la duración, la máquina (leela con PowerShell, no la inventes), la versión de Python y la semilla. Después de la tabla, una sección «Comprobaciones (quickstart §4)» con cada criterio de T063 y si se cumple, con los números: la fila de la cripta con más salas del paquete con mediana < 200 ms; B1 de 1 000 a 10 000 salas crece ≤ ×20; B2 crece al menos el doble que B1; B3 crece como B1; B5 y B6 muestran el crecimiento de su fila de research R7; y el determinismo (dos llamadas a cripta_en_cuadricula y a cripta_en_peine con la misma semilla dan lo mismo: comparalas en Python, sin correr el bench dos veces). Si algún criterio no se cumple, NO cambies código ni umbrales: decímelo. Marcá T063 solo si todo se cumple. No toques ningún otro archivo.
+
+**Uso de la respuesta:** primera corrida de T063 (`--bench`, tabla en `bench-2026-11-16.txt`). Se cumplieron SC-306, SC-307, NFR-303 y el determinismo, pero B5 y B6 crecían menos que el «~×100» que research R7 daba para el tramo de 100 a 1 000 (por la parte fija en el tamaño chico), y un script corrió en paralelo con el bench. No se marcó T063; se decidió corregir R7 primero (Principio IX) y repetir la corrida.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Opción 2. Sin commit:
+1. specs/003-resolubilidad/research.md, R7, fila B6: después de «de 1 000 a 3 000, ~×3 frente a ~×9» agregá: «. Con 100 dientes pesa la parte que no depende de la frontera (unos 0,25 ms en las dos variantes), así que el factor medido de la lista única entre 100 y 1 000 queda por debajo de ×100 (×47 el 16/11, unos ×78 sin esa parte); lo que respalda la decisión es ese tramo frente al ~×11 de la agrupada, el de 1 000 a 3 000 y el tiempo a 2 000 salas». Fila B5: después de «lo que respalda la decisión es el crecimiento y el tamaño de 1 000 salas» agregá: « (por lo mismo, el factor de la lineal entre 100 y 1 000 queda por debajo de ×100: ×76 el 16/11)». Nada más de research.md.
+2. README.md, sección «Modo --offline»: solo la frase de «cuatro publicadas al 18 de octubre», que pase a decir lo que trae el paquete: cripta-02 a cripta-06 (publicadas el 15/11) y cripta-01, que ya no está publicada y no trae llaves.json.
+3. Volvé a correr --bench SOLO, sin nada en paralelo, y reemplazá la tabla y las comprobaciones de specs/003-resolubilidad/bench-2026-11-16.txt con esa corrida (sacá la nota del script en paralelo). Las comprobaciones de B5 y B6 se leen contra R7 ya corregido. Si se cumple todo, marcá T063.
+Al final: el diff de research.md y de README.md, la tabla de comprobaciones nueva y si marcaste T063.
+
+**Uso de la respuesta:** R7 explica el crecimiento de B5 y B6 en el tamaño chico (lo que respalda la decisión es el tramo grande y el tiempo a 1 000 o 2 000 salas); el README dice qué trae el paquete de la Parte II; el bench se volvió a correr solo (122 s) y cumple todos los criterios: la `cripta-06` en 1,371 ms, B1 ×14,1, B2 ×98,5, B5 lineal ×100,9 de 1 000 a 10 000, B6 lista única ×8,4 de 1 000 a 3 000. Se marcó T063.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Dos ajustes, sin commit y sin volver a correr el bench:
+1. research.md, R7: que cite la corrida que queda como evidencia (bench-2026-11-16.txt). Fila B5: «×76 el 16/11» pasa a «×50 en bench-2026-11-16.txt». Fila B6: «(×47 el 16/11, unos ×78 sin esa parte)» pasa a «(×55 en bench-2026-11-16.txt, unos ×98 sin esa parte)» y «frente al ~×11 de la agrupada» pasa a «frente al ~×13 de la agrupada». Nada más.
+2. README.md, «Modo --offline»: reacomodá solo ese párrafo para que ninguna línea pase el ancho de las demás, sin cambiar el texto.
+Al final, el diff de los dos.
+
+**Uso de la respuesta:** R7 cita los números de la corrida que queda como evidencia (×50 y ×55), y el párrafo del README queda con el ancho de las demás líneas. `research.md` fue en el commit `research(003)`.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Sí, sacá de bench-2026-11-16.txt la nota de las comprobaciones de B6 que dice que R7 cita «×47» y «×76»: ya no es cierto. Nada más del archivo. Sin commit.
+
+**Uso de la respuesta:** se quitó del archivo del bench una nota que ya no era cierta.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Ahora T064 de specs/003-resolubilidad/tasks.md. Sin commit.
+
+1. En DECISIONES.md, sección del integrante 2, apartado «### §5.4 Resolubilidad»: escribí el apartado completo como dice T064, a partir de research R0 a R9 y de los números de specs/003-resolubilidad/bench-2026-11-16.txt (enlace a ese archivo), con el mismo estilo y ancho de línea que «§5.3 Mapa conocido» de la misma sección. Por cada decisión: el problema, las alternativas con su complejidad, la decisión, la evidencia de B1 a B6 y si coincide con el plan. Incluí todo lo que pide la tarea: R0; el enlace (sin repetirla) a «Diferencia conocida entre la verificación y el motor de P1» del integrante 1; el límite conocido de la puerta con cierre automático y llaves distintas por cara; los hallazgos H-2 y H-3; los veredictos de T058 (02, 03, 04 y 06 RESOLUBLE con código 0; 05 NO RESOLUBLE con el ciclo hierro↔negra, código 3; 01 código 1 sin llaves.json); y la interpretación del Principio I sobre validar_ubicaciones con el precedente de 001 FR-122. El párrafo que ya está («Paquete de la Parte II y excepción de cripta-01») se queda, integrado donde corresponda; sacá la línea «(pendiente: el resto de la 003, T064.)». No toques las secciones de los integrantes 1 y 3 ni el §5.3. No inventes números: todos salen del archivo del bench, del reporte paquete-2026-11-15.md o de research.
+2. tasks.md, en T057: «Commit **propio** con paquete/, ejemplos/partida_ejemplo.log, el reporte, DECISIONES.md y esos dos archivos de pruebas» pasa a «Commit **propio** con paquete/, ejemplos/partida_ejemplo.log, el reporte y esos dos archivos de pruebas; la nota de (7) va en DECISIONES.md en el commit docs(003) siguiente, con el resto de §5.4 (T064)». En la lista de commits sugeridos (línea ~389), sacá DECISIONES.md de la lista de T057. Marcá [x] T064. No marques T057 ni T058 todavía.
+3. Revisá que todos los enlaces del apartado apunten a archivos y encabezados que existen.
+
+Al final: el apartado completo tal como quedó, el diff de tasks.md y la lista de enlaces comprobados.
+
+**Uso de la respuesta:** T064, el apartado «§5.4 Resolubilidad» de `DECISIONES.md`: la revisión de estructuras (R0) y siete decisiones (contrato y persistencia de las llaves; índice por ordenar y compactar; recorrido por oleadas con la frontera agrupada; orden determinista; puerta que bloquea y ciclos sin recursión; dónde vive cada parte, con la interpretación del Principio I sobre `validar_ubicaciones`; nada en el historial), cada una con problema, alternativas, complejidad, evidencia de B1 a B6 y si coincide con el plan; el paquete y los veredictos de T058; los límites conocidos (enlace a la diferencia con el motor del integrante 1, la puerta con cierre automático y llaves distintas por cara) y los hallazgos H-2 y H-3. T057 se ajustó: la nota del paquete va en `DECISIONES.md` en este commit. Revisé el apartado contra el archivo del bench (todos los números coinciden) y los enlaces.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Cierre de las features 002 y 003 (parte del integrante 2). Sin commit. La rama derek ya tiene todo origin/kris y origin/Marco y el paquete de la Parte II.
+
+Feature 002 (specs/002-niebla-ir-a/tasks.md):
+1. T050: quitá la guarda de T118 de test_h4_4_a9_fr223_… (T042) y la de H-2 de test_sc202_… (T045). Las pruebas no cambian. Si alguna falla, PARÁ y decime el caso; no edites archivos del integrante 3.
+2. T006, T007 y T008: comprobá en el código y en los contratos que lo acordado ya está (T006: ArmadorEstado pone sala_destino = SIN_EXPLORAR y sala_salida = None, con SIN_EXPLORAR en DTO/EstadoJuegoDTO.py; T007: §1 y §2 de specs/004-linea-tiempo/contracts/contrato-linea-tiempo.md con el texto acordado; T008: ArmadorResumen y ServicioLineaTiempo usan motor.mapa.a_dto()). Si está, marcá cada una con una nota «Hecho (17/11): …» que diga dónde (archivo y commit del integrante 3). Si falta algo, no la marques y decime qué.
+3. T060: suite, replay de ejemplo (el log ya es el regrabado con la cripta-02 nueva: compará con lo que da hoy y anotalo así) y los pasos del quickstart de la 002 que se pueden correr sin ventana. Decime qué pasos necesitan la ventana, para hacerlos yo a mano. Marcá T060 solo si todo lo automático pasa y anotá qué quedó manual.
+
+Feature 003 (specs/003-resolubilidad/tasks.md):
+4. T068: lo mismo para la 003 (suite, replay, quickstart sin ventana; §4 ya está en bench-2026-11-16.txt). Decime los pasos de la ventana (quickstart §3, que es T056 con el integrante 3). Marcá T068 solo si todo lo automático pasa.
+5. T069: comprobá que PROMPTS_LLM.md tiene los prompts de /speckit-specify, /speckit-plan, /speckit-tasks, /speckit-analyze y la corrección del análisis de la 003, y los de la implementación (lotes 1 y 2, guarda de T053, documentación de T057/T058, paquete, bench, T054, T063 a T067). No agregues entradas: decime cuáles faltan, si falta alguna.
+
+Al final: el diff de las pruebas y de los dos tasks.md, el resultado de la suite y del replay, la lista de pasos manuales de cada quickstart y el resultado de T069.
+
+**Uso de la respuesta:** cierre de la parte del integrante 2. 002: T050 (sin las guardas de H4-4 y SC-202, que ya pasan con T116 y T118 del integrante 3), T006 y T008 marcadas con su commit, T060 (suite 1079 OK sin skip y 32/32, replay de ejemplo con victoria; quedan manuales los pasos de la ventana del quickstart). T007 no se marcó: el §1 y el §2 del contrato de la 004 todavía no tienen el texto acordado (se le avisó al integrante 3). 003: T068 (§2 con y sin red como se esperaba; queda manual §3, que es T056 con el integrante 3). T069: están todas las entradas de la 003, pero había 7 repetidas (las seis de T063 a T067, pegadas dos veces, y una de la 002 del 14/11), que se quitaron.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Dos cosas más, sin commit:
+1. tests/test_mapa_conocido_vista.py: quitá también la guarda de test_h5_7 (el if importlib.util.find_spec("Service.ServicioResolubilidad") is None: self.skipTest(...)) y la condición hay_resumen de test_sc202 (Service/ArmadorResumen.py ya existe), sin cambiar lo que comprueban. Actualizá el docstring del módulo (línea 8) y los que las mencionen; si importlib queda sin usar, sacá el import. Corré ese archivo y la suite completa.
+2. specs/003-resolubilidad/tasks.md: marcá [x] T069 con la nota «Hecho (17/11): están todas las entradas de la 003; se quitaron 7 entradas repetidas (las seis de T063 a T067 y una de la 002 del 14/11).» No toques PROMPTS_LLM.md: lo arreglo yo.
+Al final, el diff y el resultado de la suite.
+
+**Uso de la respuesta:** se quitaron también la guarda de H5-7 (la 003 ya existe) y la condición de `ArmadorResumen` en SC-202, con sus docstrings, y se marcó T069.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Sábado 14 y domingo 15 de noviembre 2026
+
+**Herramienta:** Claude
+
+Durante esos días le pedí a Claude que revisara cada respuesta de Claude Code (txt, zip y salida de las pruebas) y las capturas de PyCharm antes de cada commit y push, que armara los prompts de Claude Code y las entradas de esta bitácora, y que redactara los mensajes para Marco y Kristel. Prompts principales, textuales:
+- «ok ahi adonde?» y «asi el push?», con capturas del Log y de la ventana de push.
+- «ok antes de eso mira lo que me acaba de mandar…», con los mensajes de Kristel sobre `motor.mapa` y `mapa_conocido`.
+- «dime si con esto terminamos 002 y ma;ana empezamos con 003» y «por donde vamos y que falta… totalmente sincero».
+- «ok dime como ver esas versiones que necesitas», con capturas del Swagger con las versiones de la Parte II.
+- «ok me parece el plan, revisa que sea correcto y lo mejor», sobre el plan del paquete de la Parte II acordado con Marco.
+- «ok mira, nosotros implementamos un grafo no? eso no deberia ir en la carpeta estrcuturas?»
+- «ok listo, no necesitas las pruebas?», con la salida del paquete armado y de la suite.
+
+**Uso de la respuesta:** revisar el cierre de la 002 y los lotes 1 y 2 de la 003 antes de commitear; resolver a mano los conflictos de `PROMPTS_LLM.md` en los merges sin perder entradas; entender por qué `GrafoLlaves` va en Logic y no en `Estructuras/` (depende de DTO y de `Mazmorra`, y `Estructuras/` no depende de ninguna capa); armar el reporte de diferencias del paquete de la Parte II (catálogo nuevo, `cripta-01` ya no publicada, `cripta-05` no resoluble) y los avisos al equipo.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Lunes 16 de noviembre 2026
+
+**Herramienta:** Claude
+
+Le pedí a Claude que revisara cada paso de los merges, de los commits y de las respuestas de Claude Code. Prompts principales, textuales:
+- «asi el push? y si kris me mando mensajes, analizalos y dime si seguimos con el promt que me habias mandado despues del push(T063) o no», con los mensajes de Kristel.
+- «ok estoy en el paso 1.3 en el merge, mira el conflicto».
+- «no encuentro el de task md», después de un Rollback que deshizo `tasks.md`.
+- «hagamos todo eso ahorita, creo que podemos seguir con todo esto, solo dime que podemos hacer y que depende de alguien».
+- «ok mientras claude code trabaja, el orden seria ese entonces? no ocupamos nada de marco vd? solo de kris y ya?»
+
+**Uso de la respuesta:** hacer el merge de `origin/kris` guardando el paquete sin commit con Shelve; armar `PROMPTS_LLM.md` con las entradas de los dos; revisar T054, el bench (B5 y B6 frente a research R7, que se corrigió primero) y el apartado §5.4 de `DECISIONES.md` contra el archivo del bench; recuperar el cambio de `tasks.md`; ordenar los commits que esperaban el arreglo del HUD del integrante 3.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude
+
+Prompts principales, textuales:
+- «hola volvi… aparte de ese mensaje kris y marco me pusieron otros, te los mando».
+- «ok hice mal el primer commit, como lo revierto?» y «en promt llm me sale esto».
+- «ok mientras claude cod trabaja te paso las ramas de kris y marco para ver si de verdad hicimos bien todo y los merge».
+- «ok te mando los pasos del 003, quickstart §3 (es tu T056 con Kris):. pero no entendi como hacer los del 002», con capturas del juego.
+- «entonces no podemos seguir con nada mas? estas seguro? revisa muy bien y dime que falta».
+
+**Uso de la respuesta:** hacer los merges de `origin/kris` y `origin/Marco` antes de los commits del paquete y de `docs(003)`; deshacer un commit sin push (Undo Commit); comprobar que las ramas de Kristel y Marco quedaron completas en `derek`; quitar 7 entradas repetidas de esta bitácora; hacer las pruebas manuales del quickstart (T056 de la 003 y los pasos del mapa de la 002), donde se vio que `historia #k` no dibuja el mapa del resumen (se le avisó al integrante 3); revisar qué quedaba pendiente.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+git fetch y git merge origin/derek (trae el paquete de la Parte II: cripta-02 a 06 con llaves.json, catálogo
+4b9e75a42be5, cripta-01 sin cambios). Conflicto solo en PROMPTS_LLM.md: conservá todas las entradas por hora,
+sin duplicados, UTF-8 con CRLF. Cualquier otro conflicto en archivos de la 001: pará y avisame.
+Corré la suite completa con uv run y decime si algo de la 001 falla con el paquete nuevo.
+
+Luego, un commit por paso, suite en verde antes de cada commit, no push:
+1) Buscá en paquete/ qué criptas tienen ent_sabueso_oseo o ent_espectro_acechador (sala y rango) y salidas
+   con costo. Decímelo antes de seguir si ninguna los tiene.
+2) Prueba de humo (cita FR-107 a FR-111 y FR-114), offline con el paquete real, en una cripta con cazador
+   (preferí cripta-06 si lo tiene): iniciar partida, jugar acciones deterministas (esperar y moverse) hasta que
+   el cazador decida varias veces, y comprobar:
+   - que se carga sin errores de FR-122 (costos y rango válidos);
+   - que cada decisión del cazador coincide con paso_desde_cero;
+   - que --replay del log generado da el mismo resultado.
+   Sin estructuras prohibidas fuera de tests. Agregala a tasks.md como T059 (prueba con datos reales).
+3) PROMPTS_LLM.md con este pedido.
+Al final: qué cripta y cazador usaste, cuántas decisiones comprobó, la suite y los commits sin push.
+
+**Uso de la respuesta:** merge de `origin/derek` sin conflictos (PROMPTS_LLM.md tiene `merge=union`; quedó con todas las entradas de las dos ramas y sin repetidas). Con el paquete nuevo no falla nada de la 001 (1079 pruebas unittest OK); el único script que falla es `test_sonidos_motor.py`, por tiempo (arranque de ~810 ms con meta de 800 ms), intermitente y ajeno a la 001. Las criptas 02 a 06 tienen cazadores y salidas con costo (la 06: 42 cazadores; sabueso óseo con rango 600 y espectro acechador con 2400). Se agregó `tests/test_paquete_real_cazador.py` (T059): cripta-06, espectro de la sala 123 y sabueso de la sala 41, 26 decisiones de cazador iguales a `paso_desde_cero` y el replay con los mismos estados y decisiones. Revisé el diff antes del commit.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Tres cosas, en orden. Si hay conflictos en archivos que no sean PROMPTS_LLM.md o tasks.md, DETENTE y muéstramelos. Si el conflicto es solo en tasks.md (marcas de tareas), conserva las marcas de ambos lados y avísame. Nunca uses git add -A; agrega por nombre.
+
+1) git fetch origin. Muéstrame git log --oneline HEAD..origin/derek y HEAD..origin/Marco. Luego git merge origin/derek -m "merge: trae origin/derek (paquete con cripta-02 a 06, T050 sin guardas, doc de la 003)". Haz lo mismo con origin/Marco si trae algo. Corre la suite completa con el paquete nuevo (que ahora viene de Derek) y dime resultados. Si falla algo, dime qué y por qué; no cambies pruebas de Derek ni de Marco.
+
+2) Corre `python main.py --bench` (tarda unos 90 s). Debe medir cripta-06 del paquete sola. Toma el resultado de «ir a» (V1, V2 y V3 con cripta-06, 300 salas) y agrégalo a specs/002-niebla-ir-a/bench-viaje-2026-11-17.txt reemplazando la fila "cripta-06 del paquete (no medida)", conservando la medición sintética. Verifica si cumple NFR-250 (< 5 ms) y SC-252. Si no cumple, NO lo maquilles: dime los números. Commit: "docs(002): medición de ir a con cripta-06 real del paquete".
+
+3) Prueba humo sin ventana (como hiciste con el quickstart): inicia cripta-06 y cripta-02 con el controlador y la vista reales con --offline --forzar, escribe "mapa" y un "ir a" a una sala conocida de cada una, y dime si algo falla (por ejemplo con la puerta de hierro cerrada de la cripta-03, el viaje debe parar con "sin ruta" o rodear). No cambies código: solo dime qué viste.
+
+Al final: git status (debe quedar limpio salvo verificar_prompts.py), y NO hagas push.
+
+**Uso de la respuesta:** se usó la respuesta para traer la rama de Derek con el paquete nuevo, medir «ir a» con cripta-06 real y hacer una prueba de humo con las criptas nuevas.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Tres arreglos que encontró Derek en la ventana, cada uno en su commit. Sin tocar archivos de Derek (MapaConocido, GrafoMapaConocido, ServicioResolubilidad, ReporteResolubilidadDTO). Sin docstrings nuevos en archivos de P1; solo estructuras y librerías permitidas.
+
+1) FR-223: el panel de `historia` debe MOSTRAR el mapa conocido de ese instante. Hoy ResumenHistoriaDTO ya trae mapa_conocido (lo comprueba H4-4), pero HudJuego._historia / lineas_del_resumen no lo usan. Lee FR-223 en specs/002-niebla-ir-a/spec.md y haz el cambio MÁS PEQUEÑO: reutiliza PanelMapa de View/MapaJuego.py dibujando resumen.mapa_conocido con sala_actual = resumen.sala_id dentro del panel de historia (o junto a él), sin duplicar la lógica de disposición; si hace falta, parametriza el marco donde dibuja PanelMapa con un argumento opcional con valor por defecto (el comando `mapa` debe seguir igual). El texto del resumen debe seguir cabiendo; si el panel no alcanza para texto y mapa, elige una distribución simple y dime cuál. Si mapa_conocido es None, no dibujes nada y no falles. Pruebas: (a) historia #k temprana muestra menos salas que el mapa vivo y NO muestra las salas conocidas solo en acciones posteriores; (b) con un pergamino usado, el mapa de historia no incluye el conocimiento de la acción revertida; (c) mapa_conocido None no falla; (d) el comando `mapa` no cambió. Prueba con la vista real sin ventana y una mutación (si se dibuja el mapa vivo en vez del del resumen, debe fallar). Commit: "feat(002): el panel de historia dibuja el mapa conocido del resumen (FR-223)". Después, en commit aparte, agrega a la trazabilidad de FR-223 en specs/002-niebla-ir-a/spec.md los nombres reales de estas pruebas: "spec(002): trazabilidad de FR-223 con la vista de historia".
+
+2) Título del panel del mapa (View/MapaJuego.py:188): «1 salas exploradas» debe decir «1 sala explorada» (singular) y «N salas exploradas» en plural. Prueba corta. Commit: "fix(002): singular en el título del panel del mapa".
+
+3) Panel de resolubilidad (View/ReporteResolubilidad.py): con cripta-05 sin --forzar la partida NO inicia y el recuadro dice «Advertencia: la cripta no es resoluble». Lee FR-311 y FR-312 en specs/003-resolubilidad/spec.md: «Advertencia» corresponde solo a la partida que SÍ inició con --forzar; cuando la partida no inicia, el título debe decir que no inició (por ejemplo «La partida no inició: la cripta no es resoluble», con el texto que mejor siga a FR-311) y el color no debe ser el de advertencia si no corresponde. Revisa cómo ControladorPygame llena reporte_advertencia en el camino de la partida que no inicia y arregla donde está la causa (no solo el título). Actualiza las pruebas de tests/test_reporte_resolubilidad_vista.py y agrega una que fije cada caso: inicia resoluble, inicia con --forzar (Advertencia), no inicia (título de no inició). Commit: "fix(003): el panel de resolubilidad dice que la partida no inició cuando no inicia (FR-311)".
+
+Corre la suite completa (con el paquete nuevo si ya hiciste el merge) y dime resultados y qué decidiste en el punto 1.
+
+**Uso de la respuesta:** se usó la respuesta para hacer que el panel de historia dibuje el mapa conocido del resumen (FR-223), corregir el singular del título del mapa y distinguir en el panel de resolubilidad la partida que no inicia de la advertencia con --forzar.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Sí, haz lo pendiente. Tres grupos, en este orden, cada uno con sus commits. No corras nada más mientras corre --bench (distorsiona los tiempos) y no uses un timeout menor a 300 s; lánzalo en segundo plano y espera su resultado.
+
+1) Banco de «ir a» con cripta-06 real (T122): corre `python main.py --bench`. Toma las filas V1, V2 y V3 de cripta-06 del paquete (300 salas) y reemplaza en specs/002-niebla-ir-a/bench-viaje-2026-11-17.txt la fila "cripta-06 del paquete (no medida)", conservando la medición sintética. Evalúa NFR-250 (< 5 ms) y SC-252 con los números medidos; si no cumple, NO lo maquilles y dímelo. Commit: "docs(002): medición de ir a con cripta-06 real del paquete".
+
+2) Prueba de humo SIN cambiar código: con el controlador y la vista reales sin ventana, inicia cripta-06, cripta-02 y cripta-03 (con --offline --forzar), escribe "mapa" y un "ir a" a una sala conocida de cada una. En cripta-03 prueba también un "ir a" que cruce la puerta de hierro cerrada (debe parar con «sin ruta conocida» o rodear). Dime qué viste; no cambies nada.
+
+3) Quickstart de la 004 (T068) y FR-223:
+   a. En main.py (reproducir_hasta), agrega al resumen impreso de --replay … --hasta UNA línea del mapa conocido (por ejemplo «Mapa conocido: N salas exploradas») usando resumen.mapa_conocido; si es None no imprime nada. Prueba en tests/test_main_hasta.py y comprueba que ninguna prueba que compara la salida exacta se rompe. Commit de código: "feat(004): --hasta imprime una línea del mapa conocido (FR-223)".
+   b. En commit APARTE (spec), actualiza specs/004-linea-tiempo/quickstart.md: donde dice que el panel de historia y la salida de --hasta no dibujan el mapa, corrígelo (el panel de historia dibuja el mapa de ese instante en el panel central; --hasta imprime una línea). Agrega a la sección 7 un paso manual: abrir "historia #k" temprano y ver que el mapa tiene MENOS salas que el mapa actual (comparar con el comando "mapa"). NO marques T068. Commit: "spec(004): quickstart al día con el mapa en historia y --hasta (T068)".
+
+Al final corre la suite completa, dime el recuento de unittest y scripts, y el git status. No hagas push.
+
+**Uso de la respuesta:**  se usó la respuesta para revisar los reportes de los Prompts 29 a 32, y para completar el banco de «ir a» con cripta-06, la prueba de humo, la línea del mapa en --hasta y el quickstart de la 004.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+Revisión cruzada, SOLO LECTURA (no modifiques nada, no ejecutes pruebas). git fetch. Decime primero el hash de origin/kris y si hay commits posteriores a 6258dd0 que toquen View/EscenaJuego.py, tests/test_vista_terreno.py, plan.md o DECISIONES.md. Revisá la T041 de la 001 en el estado ACTUAL de origin/kris (git show origin/kris:<archivo>): View/EscenaJuego.py (etiquetas_de_costo, posicion_de_costo, lleva_marcador, texto_de_ficha, _costos, _ficha_de_actor, dibujar), tests/test_vista_terreno.py, specs/001-terreno-cazador/spec.md (texto exacto de FR-116, FR-117, SC-106 y escenarios H4-1/H4-2), plan.md (tabla de cambios a P1) y DECISIONES.md (antes/después de EscenaJuego.py). Contra la constitución v1.2.0: capas (I), Principio III (P1: cambio mínimo; código nuevo con type hints y docstrings), VI (nada específico de una cripta: marcador solo por comportamiento), IX (sin reglas nuevas), X (cada escenario con prueba que cite FR). Verificá en particular, con archivo y línea y CITANDO EL CÓDIGO relevante (pocas líneas): 1) si las pruebas de choque colocan al protagonista en su posición real (posicion_del_protagonista / self._pies tras dibujar con id_sala_anterior en cada dirección) o siempre en PIES_CENTRO; 2) si alguna prueba mide que las etiquetas queden dentro de la pantalla (SC-106) y no pisen c.HUD_PANELES; 3) si el Rect que se prueba es el mismo que se dibuja en _costos (sombra incluida) y cuántas veces se renderiza el texto por cuadro; 4) si existe una prueba que reproduzca literal el escenario H4-1 de la spec (citá el escenario y qué prueba lo hace o no); 5) cuántas líneas cambió realmente _ficha_de_actor respecto de P1 frente a lo que dicen plan.md y DECISIONES.md, y una propuesta concreta (método nuevo); 6) qué funciones nuevas no tienen docstring; 7) fragilidad de la prueba que importa Logic/Service o usa privados; 8) si la prueba del marcador comprueba x e y. Para cada hallazgo: severidad ALTA/MEDIA/BAJA, archivo:línea, qué pasa, por qué importa (FR/SC/principio) y cómo arreglarlo concretamente (con un esbozo de código o de prueba si ayuda). Empezá con lo que está bien. Podés extenderte: esto va a un reporte detallado.
+
+**Uso de la respuesta:** consulta `1a1ec5a2649`, respuesta en `.claude-bridge/outbox/1a1ec5a2649.txt`. Revisión de la T041 en `origin/kris` (`1b80925`), sin observaciones ALTAS: capas, marcador por comportamiento y reparto sin cambios están bien. Observaciones MEDIAS: el choque se mide siempre con el protagonista en `PIES_CENTRO`; ninguna prueba mide pantalla ni `HUD_PANELES` (SC-106); el `Rect` probado no es el que dibuja `_costos`; no hay prueba de la Vista con los datos literales de H4-1; `_ficha_de_actor` cambió 14 líneas y `plan.md:161` y `DECISIONES.md:1182` dicen «2»; la prueba de la Vista depende de un privado de Service; el sufijo del comportamiento puede cortarse con el ancho real del cazador. BAJAS: docstrings y tipos, marcador comprobado solo en x en una prueba, costos junto a marcos que no se ven en `fondo_final`. Es del integrante 3; no se corrigió nada. Sirvió de base para la revisión del pedido siguiente.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+git fetch y git merge origin/derek en Marco (trae el merge final). Conflictos: solo PROMPTS_LLM.md se resuelve
+conservando todo; cualquier otro, pará y avisame.
+1) REVISIÓN (solo leer): git diff de specs/001-terreno-cazador/ (spec.md, plan.md, tasks.md, quickstart.md)
+   entre mi último commit propio y el merge. Decime qué cambió Kris al cerrar T041 y verificá:
+   - spec.md: que solo cambie la tabla de trazabilidad de H4-1/H4-2 y que los nombres de prueba existan;
+     ningún FR, escenario ni SC modificado (Principio IX).
+   - plan.md: que la fila de View/EscenaJuego.py describa el cambio real a P1 (antes decía «2 líneas» y
+     _ficha_de_actor cambió unas 14; si Kris lo sacó a un método nuevo, que coincida con el código).
+   - tasks.md: T041 marcada y nada más mío cambiado.
+   Si algo no calza, no lo corrijas: decímelo con archivo y línea.
+2) CORRECCIÓN: specs/001-terreno-cazador/quickstart.md §7 dice que ninguna cripta del paquete trae costos ni
+   cazadores. Actualizalo: cripta-02 a 06 traen salidas con costo y cazadores (sabueso óseo rango 600,
+   espectro acechador rango 2400); cripta-06 (300 salas, 42 cazadores) es la recomendada para ver la escena
+   con costo en cada salida y el marcador del cazador; mencioná la prueba con datos reales T059
+   (tests/test_paquete_real_cazador.py). Revisá si el README de la 001 o DECISIONES §5.x repiten esa frase
+   vieja y corregilas también. Un commit, suite en verde con uv run, PROMPTS_LLM.md (incluí la consulta del
+   puente 1a1ec5a2649), no push.
+Al final: resultado de la revisión, el diff del quickstart y la suite.
+
+**Uso de la respuesta:** el merge de `origin/derek` (`b0a7cee`) fue fast-forward y sin conflictos, pero no trae el cierre de T041: los commits de Kris (`2c114a7`, `6258dd0`) están solo en `origin/kris`. Entre `1bdc87b` y el merge, en la 001 solo cambió `tasks.md` (T059, mía). La revisión se hizo contra `origin/kris`: `spec.md` solo cambia las filas H4-1 y H4-2 de la trazabilidad y las 10 pruebas existen en `tests/test_vista_terreno.py`; `plan.md:161` sigue diciendo «2 líneas en `dibujar` y `_ficha_de_actor`», cuando `dibujar` suma 1 y `_ficha_de_actor` cambia 2 por 14, sin método nuevo; `plan.md:168` dice que de la Vista solo cambia `EscenaJuego.py`, pero también se agregan 4 constantes a `Componentes.py`; `tasks.md:175` marca T041 con `[x]` en minúscula y no toca nada más. No se corrigió nada de eso. En `quickstart.md` §7 se cambió la frase vieja: las criptas 02 a 06 traen costos y sabuesos, el espectro solo está en la 06, y la 06 tiene 36 cazadores (25 y 11) según `paquete/cripta-06/contenido.json`, no 42. También se nombró `tests/test_paquete_real_cazador.py` (T059). El README de la 001 y DECISIONES §5.1, §5.2 y §5.6 no repetían la frase. Suite con `uv run`: 1090 pruebas unittest OK y 32 de 32 scripts.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Sí, revisa y corrige el quickstart de la 002 (§6, T126) con el paquete nuevo. En specs/002-niebla-ir-a/quickstart.md:
+
+1) Verifica contra el paquete actual (cripta-02 y lo que use la §6): que la cripta, sus salas, la antorcha en la Sala 1, la rata dormida en la 7 y el pergamino en la 8 siguen donde dice el texto. Si el contenido cambió, ajusta los pasos.
+2) Rehaz el ensayo de los 18 pasos sin ventana con el controlador y la vista reales, como la vez anterior, y corrige TODOS los relojes (costos por salida, no 100 fijo), los mensajes exactos (con grep), los tiempos de la parada por enemigos y por daño, y lo que se ve en el mapa. Si un paso ya no se puede reproducir con este paquete, dime cuál y propón uno equivalente.
+3) Mantén el formato de la columna «qué se espera». NO marques T126.
+Commit (spec): "spec(002): quickstart de ir a al día con el paquete nuevo (T126)". Sin cambios de código.
+Al final corre la suite completa y dime el recuento y el git status. No hagas push.
+
+**Uso de la respuesta:**  se usó la respuesta para revisar los resultados del banco con cripta-06 y de la prueba de humo, y para actualizar el quickstart de «ir a» (§6) al paquete nuevo de Derek.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Tres cambios, cada uno en su commit. Verifica cada dato con grep o git log antes de escribirlo.
+
+1) Spec (specs/002-niebla-ir-a/tasks.md): marca T110A (el integrante 1 ya revisó el contador, ver DECISIONES) y corrige el texto de T111: dice «sin estado / grafo en cada paso», pero ServicioIrA guarda el grafo entre pasos (cache de un valor por viaje; se vuelve a armar si motor.mapa cambia, por ejemplo tras cargar). Redáctalo sin inventar nada. Commit: "spec(002): T110A cerrada y T111 describe el grafo por viaje".
+
+2) DECISIONES.md:
+   a. En la sección «Contador de daño recibido» (alrededor de la línea 988) reemplaza «pendiente de la revisión del integrante 1» por que fue revisado por el integrante 1 (Marco) y aprobado, con los ajustes que se aplicaron (comentario en vez de docstring, prueba con la Regeneración real, textos de plan y tasks, «tres sitios», prueba de guardar y cargar, comparación con el valor de antes). Verifica en git log qué ajustes se aplicaron de verdad.
+   b. En mi sección de la 002 agrega una decisión: los mensajes de parada de «ir a» («Llegaste a …», «Viaje detenido: hay enemigos.», «… recibiste daño.», «… sin ruta conocida …», «Viaje interrumpido.») los escribe el backend en el panel de mensajes y no pasan por partida.log, así que --replay no los repite; el estado (reloj, sala, jugador, mapa) es el mismo. Cita las líneas reales (ServicioIrA.py y ControladorBackend.py).
+   Commit: "docs: contador de daño revisado por el integrante 1 y mensajes de parada de ir a fuera del log".
+
+3) Test: tests/test_sonidos_motor.py, función probar_se_cargan_los_nueve_efectos_reales_y_el_arranque_cumple_la_meta (límite de 800 ms en la línea ~175). Puede salir rojo por azar si la máquina está ocupada. Cámbialo para que mida el arranque hasta 3 veces (abrir y cerrar el motor cada vez) y use el MEJOR tiempo, manteniendo la meta de 800 ms y las demás aserciones. Imprime los tres tiempos. No cambies el límite. Comprueba que pasa 5 veces seguidas y también mientras corre otro proceso pesado (por ejemplo una compilación de Python en paralelo). Commit: "test: el arranque del cargador de sonidos toma el mejor de tres intentos".
+
+Al final corre la suite completa (en segundo plano, con un timeout de al menos 300 s) y dime el recuento. No hagas push.
+
+**Uso de la respuesta:** se usó la respuesta para cerrar T110A y T111, actualizar DECISIONES (contador de daño revisado, mensajes de parada fuera del log) y hacer más robusta la prueba del arranque de sonidos.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Implementa T041 de specs/001-terreno-cazador (FR-116, FR-117, SC-106, escenarios H4-1 y H4-2). Lee primero FR-116, FR-117 y SC-106 en spec.md, T038 a T041 de tasks.md, la fila de H4 del plan, View/EscenaJuego.py, View/Componentes.py, DTO/ActorDTO.py (comportamiento) y DTO/SalaDTO.py (SalidaDTO: costo y cerrada). Dime en 6 líneas qué vas a hacer antes de escribir código.
+
+Requisitos:
+1) FR-116: la escena de la sala actual muestra el costo junto a cada salida, TAMBIÉN junto a las cerradas, cerca de su puerta o marco en esa dirección (N, S, E, O). Debe leerse bien, no tapar al protagonista ni a los enemigos y no cambiar el reparto actual (las pruebas del reparto de 1 a 12 enemigos deben seguir pasando). El costo viene del EstadoJuegoDTO (ya trae el costo igualado, T038).
+2) FR-117: junto al nombre de cada enemigo, su comportamiento en texto («errante», «guardián», «rastreador», «cazador») tomado de ActorDTO.comportamiento, y SOLO el cazador lleva además un marcador visual propio (con primitivas de pygame, sin nuevos assets ni librerías). El texto debe caber en el ancho de la ficha del enemigo (NOMBRE_ANCHO_MAX y la ficha estrecha) con 1 y con 12 enemigos.
+3) Funciones puras para la parte de datos (por ejemplo las etiquetas de costo por dirección y el texto con marcador por enemigo) para poder probarlas sin dibujar, y la escena solo las dibuja. Sin lógica de negocio en la vista. Sin docstrings nuevos en archivos de la primera entrega (usa comentarios). Solo estructuras y librerías permitidas.
+4) Pruebas en tests/test_vista_escena.py (o en un archivo nuevo de vista junto a él), con la Vista REAL como las demás y nombres que citan escenario, FR y SC: test_h4_1_fr116_sc106_... (cada salida, también las cerradas, muestra su costo; una sala sin salida en una dirección no dibuja costo allí) y test_h4_2_fr117_sc106_... (cada enemigo muestra su comportamiento; solo el cazador lleva marcador; un errante y un cazador se distinguen). Haz una mutación para cada una (quitar el costo de las cerradas; poner el marcador a todos) y confirma que fallan.
+5) Genera una captura PNG de la escena con una sala de 3 salidas (una cerrada), un cazador y un errante, usando lo que ya hace tests/capturar_maqueta_hud.py o equivalente, FUERA del repositorio (carpeta temporal), y dime la ruta completa para verla.
+
+Commits:
+ a) código y pruebas: "feat(001): la escena muestra el costo de cada salida y el comportamiento del enemigo (H4-1, H4-2; FR-116, FR-117)".
+ b) spec, en commit aparte: marca T041 en specs/001-terreno-cazador/tasks.md; escribe los nombres de las pruebas en la fila de H4 del plan.md y en las filas H4-1 y H4-2 de trazabilidad de spec.md (donde dice «lo que se dibuja, en T041»); y agrega a la tabla del plan de cambios al código de la primera entrega (Principio III) la fila de View/EscenaJuego.py con la justificación FR-116 y FR-117. Mensaje: "spec(001): T041 cerrada, pruebas de vista de H4-1 y H4-2 y fila de EscenaJuego en el plan".
+Si algo choca con las medidas de la escena (por ejemplo, no hay sitio para el texto), propón la solución más simple y dímela; no cambies medidas de la escena sin decirlo.
+
+Al final corre la suite completa (en segundo plano, timeout de al menos 300 s) y dime el recuento y el git status. No hagas push.
+
+**Uso de la respuesta:** se usó la respuesta para implementar T041 de la 001: el costo de cada salida y el comportamiento del enemigo con marcador del cazador en la escena, con pruebas de vista H4-1 y H4-2.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Necesito reconciliar PROMPTS_LLM.md con el de Derek antes de hacer push. NO hagas push. Sigue este orden y repórtame el resultado de cada paso:
+
+1) git status y git log --oneline -5. Dime si hay cambios sin commitear y en qué archivos. Si PROMPTS_LLM.md tiene cambios sin commitear, copia ese archivo a ../PROMPTS_LLM_local_sin_commit.md (fuera del repo) antes de tocar nada. Mi respaldo anterior está en ../PROMPTS_LLM_respaldo_kris.md.
+
+2) Commitea cualquier otro archivo pendiente que NO sea PROMPTS_LLM.md con su mensaje habitual. Luego descarta los cambios sin commitear de PROMPTS_LLM.md (git checkout -- PROMPTS_LLM.md).
+
+3) git fetch origin y git merge origin/derek. Si hay conflicto en PROMPTS_LLM.md, resuélvelo quedándote con la versión COMPLETA de origin/derek (git checkout --theirs PROMPTS_LLM.md) sin cambiar la codificación (UTF-8, un solo salto de línea). Si hay conflicto en cualquier otro archivo, NO lo resuelvas: detente y muéstrame el conflicto.
+
+4) Compara las entradas del archivo ya mezclado con las de ../PROMPTS_LLM_local_sin_commit.md (o con el respaldo si no existe) usando fecha + primera línea de cada entrada. Haz una lista de MIS entradas que no estén en el archivo mezclado. Muéstrame esa lista antes de agregar nada (solo los títulos de la primera línea, no el contenido completo).
+
+5) Agrega esas entradas faltantes SOLO AL FINAL de PROMPTS_LLM.md, en el orden original, copiando su texto exacto. No toques ninguna entrada que ya esté en el archivo. Además: (a) elimina la última entrada si está vacía (solo fecha y herramienta); (b) a la entrada que empieza con «Sí, haz lo pendiente» agrégale la etiqueta **Uso de la respuesta:** antes de su texto final, sin cambiar nada más.
+
+6) Ejecuta python verificar_prompts.py PROMPTS_LLM.md y muéstrame la salida completa. Debe dar: 0 repetidas, 0 marcas de conflicto, y todas las entradas nuevas con fecha y «Uso de la respuesta». (Las 3 sin fecha y 3 sin Uso que ya venían en el archivo de Derek son antiguas, no las toques.)
+
+7) Commitea el merge/arreglo con: "docs: reconcilia PROMPTS_LLM.md con origin/derek y agrega las entradas del integrante 3 al final". No hagas push.
+
+Si algo no cuadra en algún paso, detente y dímelo en vez de improvisar.
+
+**Uso de la respuesta:** se usó la respuesta para reconciliar PROMPTS_LLM.md con la versión corregida de Derek, sin perder las entradas del integrante 3 y sin duplicados.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+/speckit-implement Feature 001-terreno-cazador, tarea T041 (integrante 3, H4-1 y H4-2). Primero revisa si T041 ya está implementada (specs/001-terreno-cazador/tasks.md, View/EscenaJuego.py, tests/test_vista_escena.py, plan.md fila H4, spec.md FR-116, FR-117, SC-106) y dime en una línea si está hecha, a medias o sin hacer. Luego, en cualquiera de los tres casos, deja la implementación y las pruebas ajustadas a esto (pautas de Marco, dueño de la spec):
+
+a) Lee el texto exacto de FR-116, FR-117 y SC-106 y prueba su criterio medible tal cual. FR-116 menciona explícitamente las salidas cerradas: respétalo. Si algo se muestra pero la spec no lo pide, no lo trates como requisito en la prueba (Principio IX).
+b) Que la escena arme la lista de etiquetas (texto + pygame.Rect) en una función pura que la prueba pueda llamar con un DTO armado a mano. Prueba el texto y los Rect, no los píxeles ni la fuente.
+c) Solapamiento con Rect.colliderect: la etiqueta de costo de cada salida no choca con los Rect de los enemigos ni con los de otras salidas. Usa el peor caso: costo de 4 dígitos y una sala con varios enemigos.
+d) El costo mostrado es el igualado entre las dos caras (SalidaViva.costo), no el que declara cada cara; vale 100 si ninguna lo declara. Agrega un caso de costo por defecto.
+e) El marcador de cazador sale del comportamiento: comportamiento == Cazador. Nunca por id (ent_sabueso_oseo) ni por nombre de enemigo (Principio VI). Prueba una sala con dos cazadores y un enemigo que no lo es: solo los cazadores llevan marcador.
+f) Las pruebas deben pasar con SDL_VIDEODRIVER=dummy.
+g) Si cambias EscenaJuego.py (primera entrega, Principio III): justifícalo con el FR correspondiente + fila en la tabla del plan + antes/después en DECISIONES.md. Sin docstrings en el código P1, KISS/YAGNI.
+h) Dos commits separados (Principio IX): primero el código y las pruebas; después el commit de spec que marca T041 como [x] y escribe los nombres de las pruebas en la fila H4 de plan.md y en las filas de trazabilidad del spec ("lo que se dibuja, en T041").
+i) Corre la suite completa en segundo plano (python tests/correr_pruebas.py con PYTHONIOENCODING=utf-8, sin timeout menor a 300 s) y reporta el total. No corras nada más mientras corre. No hagas push.
+
+Además, respondo tu pregunta pendiente: sí, actualiza el punto 10 de mi sección de la 002 en DECISIONES.md (cripta-06 ya está medida; ya no es «no medida»), citando el commit b995a97 y aclarando que cripta-06 no es representativa porque de la entrada a la salida no hay camino con puertas cerradas. Hazlo en un commit aparte.
+
+**Uso de la respuesta:** se usó la respuesta para cerrar T041 de la 001 siguiendo las pautas de Marco, y para dejar al día el punto 10 de DECISIONES.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Dos cosas, cada una en su commit.
+
+1) DECISIONES.md, mi sección de la 002: agrega una nota corta de limitación conocida: tras cargar una partida, el log nuevo solo trae los comentarios "# ir a <sala>" de las órdenes dadas desde entonces, porque continuar_desde copia solo las acciones; los comentarios anteriores quedan en el log previo. No afecta al replay (los comentarios son informativos y el replay usa solo las acciones). Verifica con grep que es cierto antes de escribirlo. Commit: "docs: limitación conocida, comentarios de ir a tras cargar".
+
+2) T068 de specs/004-linea-tiempo/tasks.md (quickstart de punta a punta de la línea de tiempo). Lee specs/004-linea-tiempo/quickstart.md (si no existe, dímelo y propón su contenido). Verifica contra el código actual que cada paso sigue siendo cierto (comandos "historia", "historia #k", "historia <t>", --hasta, --checkpoint-cada, pergamino, guardar y cargar con línea de tiempo), con los mensajes exactos hallados con grep. Ensáyalo sin ventana con el controlador y la vista reales, como hiciste con el quickstart de la 002, y corrige el texto del quickstart si algún paso quedó desactualizado (por ejemplo por H-2, T118 o el comando mapa). Agrega los pasos manuales en la ventana con la columna "qué se espera". NO marques T068 (la marco yo tras seguirlo). Commit: "spec(004): quickstart de la línea de tiempo al día y con pasos manuales (T068)".
+
+Corre la suite completa y dime resultados.
+
+**Uso de la respuesta:** se usó la respuesta para documentar la limitación de los comentarios # ir a tras cargar y para dejar al día el quickstart de la línea de tiempo (T068).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Actualiza specs/004-linea-tiempo/contracts/contrato-linea-tiempo.md §1 y §2. Es solo texto de spec: NO cambies ningún archivo de código. Verifica cada dato contra Data/GuardadoBinario.py y DTO/PartidaGuardadaDTO.py antes de escribirlo.
+
+§1: PartidaGuardadaDTO gana, al final y con None por defecto, primero `mapa: MapaConocidoGuardadoDTO | None` y después `linea: LineaTiempoGuardadaDTO | None`, que sigue siendo el ÚLTIMO campo. Agrega la fila de `mapa` a la tabla (hoy solo tiene `linea`) y quita "falta confirmar el orden de campos". Cada punto de control es un PartidaGuardadaDTO y lleva su propio mapa (su `partida.linea` sigue siendo None).
+
+§2: la cabecera de la versión 2 mide 58 bytes: magia CRPT, versión, offset y largo del bloque global, offset y cantidad de entradas del índice, id de sala mínimo, offset y largo del bloque del mapa, y offset y largo del bloque de la línea (largo 0 = None). El orden de los bloques en el archivo es: global, mapa, línea, salas, índice. Cada punto de control de la línea escribe: acciones_completadas, su bloque global, la cantidad y sus salas, y el bloque de su mapa con el largo delante (largo 0 = None). Quita la nota "falta confirmar el orden de campos" y el punto que repite la cabecera de la línea por separado: deja un solo párrafo coherente. Mantén lo demás (archivo versión 1 rechazado, cargar_sala no lee la línea).
+
+Después revisa que no queden otras frases tipo "falta confirmar" en ese archivo. Commit: "spec(004): contrato con el orden acordado de mapa y linea (§1) y de la cabecera v2 (§2)". Dime qué cambió.
+
+**Uso de la respuesta:** se usó la respuesta para dejar el contrato de la 004 con el orden acordado de mapa y linea y la cabecera v2, y así cerrar T007 de Derek.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Ensaya por script (sin ventana, con el controlador y la vista reales, y con main.py en el shell) los pasos de la sección 7 del quickstart de la 004 que NO son visuales, y compáralos con la columna «qué se espera»:
+- Paso 7: reloj y número de líneas del log antes y después de varias consultas historia (no cambian).
+- Pasos del pergamino: con un pergamino en el inventario, Z y luego retroceder; historia #M+1 con M = acciones vigentes debe rechazarse («La acción N no existe: debe estar entre 1 y M»); y SIN pergamino, retroceder debe dejar el aviso de que no tienes ninguno y la Z sigue contando (historia #M+1 sí existe).
+- Pasos de línea de comandos: --replay LOG --hasta 310, --hasta 99999 (código 1), --hasta abc (código 2), --hasta sin --replay (código 2), log inexistente (código 1), --checkpoint-cada 0, -2 y abc (código 2), y --checkpoint-cada 1 y 50 repitiendo las consultas del paso 17 (mismos resultados que con el K por defecto).
+Usa un log recién grabado por el script con el paquete actual. Devuélveme una tabla «paso | esperado | obtenido | coincide». Si algún texto del quickstart no coincide con el programa, corrígelo en un commit de spec ("spec(004): quickstart al día tras el ensayo guionado"); si es un fallo del programa, NO lo arregles: descríbelo. No marques T068. Sin push. Corre la suite en segundo plano al final y dime el recuento.
+
+**Uso de la respuesta:** se usó la respuesta para diagnosticar el paso 12 del quickstart de la 004 (pergamino no leído) y para que Claude Code ensaye por script los pasos no visuales del quickstart (T068).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Sí, agrega esas 3 entradas al final de PROMPTS_LLM.md con su texto exacto, en el orden original, sin tocar ninguna otra. Luego:
+1) Corre python verificar_prompts.py PROMPTS_LLM.md y muéstrame la salida completa. Dime cuáles son las 3 entradas sin fecha y las 2 sin «Uso de la respuesta» (número de entrada y primera línea). Si alguna es mía y reciente (de 14/11 en adelante), dime cuál; las antiguas no las toques.
+2) Las entradas que se agregaron solas desde el merge (prompts 38 y 39) déjalas como están, pero revisa que no estén repetidas.
+3) Commitea PROMPTS_LLM.md con: "docs: reconcilia PROMPTS_LLM.md con origin/derek y agrega las entradas del integrante 3 al final". Agrégalo por nombre, nunca git add -A.
+4) Dame el recuento de unittest de la última suite (sin el filtro que cortó la línea) solo si ya tienes la salida; si no, no la vuelvas a correr.
+5) git status y git log --oneline -8. No hagas push.
+
+**Uso de la respuesta:** se usó la respuesta para confirmar el merge con origin/derek y agregar al final de PROMPTS_LLM.md las 3 entradas del integrante 3 que faltaban, sin duplicados.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Opción (B). Hazlo en este orden y sin push:
+1) En PROMPTS_LLM.md quita las entradas #208 y #209 (las repetidas con encabezado). Conserva #210. A #193 y #195 agrégales, al inicio de la entrada, el encabezado "**Fecha:** Martes 17 de noviembre 2026" y "**Herramienta:** Claude Code", con el mismo formato que las demás. No toques ninguna otra entrada (#142, #143 y #179 son de Derek o antiguas: déjalas). Conserva CRLF y UTF-8.
+2) Corre python verificar_prompts.py PROMPTS_LLM.md y muéstrame la salida. Debe dar 0 repetidas y 0 marcas de conflicto, y sin fecha: solo #179. Revisa también que no haya entradas con el mismo texto exacto.
+3) Commitea PROMPTS_LLM.md (por nombre, nunca git add -A) con: "docs: reconcilia PROMPTS_LLM.md con origin/derek y agrega las entradas del integrante 3 al final".
+4) Marca T068 en specs/004-linea-tiempo/tasks.md (`- [ ] T068` → `- [x] T068`; ya hice a mano los pasos visuales del quickstart §7). Commit aparte con: "spec(004): T068 cerrada (pasos visuales a mano y el resto con ensayo guionado)".
+5) Si al terminar PROMPTS_LLM.md quedó modificado por la entrada de este prompt, no lo commitees todavía. Dime git status y git log --oneline -6.
+
+**Uso de la respuesta:** se usó la respuesta para dejar PROMPTS_LLM.md sin entradas repetidas, con fecha en las entradas recientes, y para cerrar T068.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Corre python verificar_prompts.py PROMPTS_LLM.md y dime el número y la primera línea de cada entrada sin fecha. Esperado: la #179 (antigua, déjala) y 2 entradas nuevas del 17/11 mías, que quedaron sin encabezado. A esas 2 agrégales al inicio "**Fecha:** Martes 17 de noviembre 2026" y "**Herramienta:** Claude Code", con el mismo formato que las demás. No toques ninguna otra entrada ni los saltos de línea (CRLF, UTF-8). Vuelve a correr el verificador: debe dar sin fecha: 1, repetidas: 0 y 0 marcadores de conflicto. Commitea PROMPTS_LLM.md por nombre con: "docs: encabezados de fecha en las entradas 40 y 41 de la bitácora". No hagas push; muéstrame git status y git log --oneline -3.
+
+**Uso de la respuesta:** se usó la respuesta para dejar con fecha y herramienta las entradas de la bitácora de los prompts 40 y 41.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Opción (C2). Quita las entradas #193 («Dos cosas, cada una en su commit.») y #195 («Actualiza specs/004-linea-tiempo/…») que NO tienen encabezado, y deja #208 y #209, que sí lo tienen. No toques ninguna otra entrada ni el CRLF/UTF-8. Antes de quitar, comprueba que el texto de #193 y #208 (y de #195 y #209) es el mismo salvo el encabezado. Corre python verificar_prompts.py PROMPTS_LLM.md: debe dar sin fecha: 1 (la #179), repetidas: 0 y 0 marcadores de conflicto. Commitea PROMPTS_LLM.md por nombre con: "docs: quita entradas repetidas sin encabezado de la bitácora". No hagas push. Muéstrame el verificador, git status y git log --oneline -3.
+
+**Uso de la respuesta:** se usó la respuesta para quitar las entradas repetidas sin encabezado de la bitácora y dejar la versión completa de cada una.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Actualizá README.md con lo que exige el enunciado de la Parte II (§2.1 y §7.2). Sin commit. No cambies ninguna otra sección ni otro archivo, salvo PROMPTS_LLM.md (punto 4).
+
+1. Nueva sección «## Desarrollo con spec-kit», justo antes de «## Pruebas»:
+   - versión de spec-kit: leela de .specify/init-options.json (campo speckit_version) y escribila tal cual, con el comando de instalación con esa versión fija (uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@v<versión>);
+   - agente: Claude Code (integración "claude" de .specify/integration.json);
+   - constitución: .specify/memory/constitution.md;
+   - una tabla con las 4 capacidades: carpeta en specs/ (001-terreno-cazador, 002-niebla-ir-a, 003-resolubilidad, 004-linea-tiempo), prefijo de requisitos (FR-1xx a FR-4xx) e integrante responsable (1: 001; 2: 002 y 003, con la vista de «ir a», mapa e historia del integrante 3; 3: 004). Revisá el encabezado de cada spec.md para confirmar los nombres y no inventes nada que no esté ahí.
+2. Dentro de «## Pruebas», una subsección «### Pruebas de aceptación»:
+   - cada spec tiene su quickstart.md (enlazá los 4) con los pasos de aceptación;
+   - las pruebas citan en el nombre el requisito (FR-xxx) y el escenario que ejercitan, y la tabla de trazabilidad de cada spec.md dice qué prueba cubre cada escenario;
+   - cómo correrlas: el mismo tests/correr_pruebas.py de arriba, más los comandos sin ventana (--replay ejemplos/partida_ejemplo.log --offline, --replay … --hasta T, --verificar <id> --offline con sus códigos de salida 0/3/1, y --bench). Tomá los comandos y códigos de las secciones del README que ya existen; no inventes opciones.
+3. En «## Documentación» agregá: DECISIONES.md (Documento de Decisiones de la Parte II), specs/ y .specify/memory/constitution.md. Dejá lo que ya está.
+4. Registrá este prompt en PROMPTS_LLM.md, al final, con el formato de las entradas anteriores (Fecha, Herramienta: Claude Code, prompt textual, Uso de la respuesta).
+
+Al final mostrame el diff de README.md y decime de dónde sacaste la versión y cada nombre de la tabla.
+
+**Uso de la respuesta:** se usó la respuesta para agregar al README.md la sección «Desarrollo con spec-kit», la subsección «Pruebas de aceptación» y las entradas nuevas de «Documentación».
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026 (tarde y noche)
+
+**Herramienta:** Claude
+
+Le pedí a Claude que revisara los merges finales, las ventanas de push y las salidas de las pruebas, y que redactara los mensajes para Marco y Kristel. Prompts principales, textuales:
+- «tambien te paso el .zip de marco para que veas si es todo correcto o no» y «ok, te paso el .zip que me pediste despues del push».
+- «ok mientras corre la suite en el paso 5, kris me mando esto, aun no le mando el mensaja?»
+- «asi el push?», con la captura de la ventana de push.
+- «ok entonces de nuestra parte estamos listos?»
+- «Okis, te acuerdas del plan que me habías hecho el domingo diciéndome que estábamos ajustados? Adelantamos bastante no? Que nos falta de ese plan?»
+- «ok yo lo puedo hacer si, mira lo que me dijo kris», con el mensaje de Kristel sobre su rama.
+- «ok mira el paso 1.2» y «mira el 1.4», con la captura del Log y el zip después del merge.
+- «mira el paso 2 de los comandos», con la salida de la suite, del replay y de `--verificar`.
+- «mira, y ya le mande el mensaje a marcoo», con la captura de cripta-06 en el juego.
+- «ok claude code esta trabajando en el paso 3. mientras tanto si quieres si le podemos decir eso a kris + lo que me habias dicho, te paso la salida y el zip».
+
+**Uso de la respuesta:** comprobar que el merge de `origin/Marco` solo traía sus tres archivos; detectar que un commit de la rama del integrante 3 reemplazaba `PROMPTS_LLM.md` por una copia vieja (se perdían entradas sin conflicto, porque `merge=union` no protege los borrados) y armar el archivo corregido antes del merge; revisar el merge final de `origin/kris` (fast-forward), la suite (1100 pruebas y 32 scripts), el replay de ejemplo, `--verificar` de cripta-02 (código 0) y cripta-05 (código 3) y la escena de cripta-06 (costos de salida y cazador marcado, T041); ver que al README le faltaban la versión de spec-kit, el agente y las pruebas de aceptación (§2.1 y §7.2) y escribir el prompt de Claude Code para agregarlos.
+Contexto: revisión cruzada de Marco sobre la T041 de specs/001-terreno-cazador en origin/kris (1b80925; commits 748b16c y 6258dd0). Es solo lectura de su parte; ahora corrijo el CÓDIGO de View/EscenaJuego.py. Los números de línea de Marco pueden haberse movido: ubica todo por nombre. Su documento está en Revision_T041_Kris.md (puntos 3, 5 y 6). Marco hizo las cuentas a mano sin ejecutar: verifica cada hallazgo contra el código real y dime en una línea si se confirma antes de tocarlo.
+
+Reglas: strict MVC n-capas; KISS/YAGNI/SRP; solo librerías permitidas; nada específico de una cripta (Principio VI); sin reglas nuevas (Principio IX); código de P1 con cambio mínimo (Principio III). NO cambies lo que ya funciona: repartir_escena, SUELO, PASILLOS, HUD_PANELES, lleva_marcador, ni el comportamiento visible. Nunca git add -A (por nombre). No hagas push. Los métodos de P1 NO llevan docstring nuevo; el código NUEVO sí (docstring corto, type hints completos).
+
+Tarea A (punto 3): una sola fuente de verdad para la posición de la etiqueta de costo.
+- etiquetas_de_costo(estado, marcos, fuente) debe seguir devolviendo (dirección, texto, Rect), pero el Rect se calcula SIN renderizar: pygame.Rect((0, 0), fuente.size(texto)) y luego se coloca con el ancla de posicion_de_costo (setattr o equivalente). Es el Rect del texto sin sombra; documenta en el docstring que lo pintado ocupa rect.inflate(2, 2) por la sombra de texto_sombreado.
+- _costos debe dibujar EXACTAMENTE en el Rect que da etiquetas_de_costo (por ejemplo texto_sombreado(..., rect.topleft, "topleft")), sin volver a llamar posicion_de_costo. Comprueba la firma real de c.texto_sombreado.
+- Resultado: lo dibujado queda en la MISMA posición de pantalla que antes (compruébalo con un antes/después de las llamadas a texto_sombreado de una sala con 4 salidas) y bajan a 2 los renders por etiqueta.
+
+Tarea B (punto 5): sacar la lógica nueva de _ficha_de_actor (método de P1).
+- Compara el diff real contra P1 (git diff 4740816 origin/kris o HEAD -- View/EscenaJuego.py) y confirma el número de líneas que cambió _ficha_de_actor.
+- Crea la función pura rombo_del_marcador(izquierda, centro_y, lado) -> list[tuple[int, int]] con los cuatro vértices, y el método _nombre_de_ficha(superficie, actor, base, ancho, fuente) que dibuja «nombre (comportamiento)» y, si lleva_marcador, el rombo a la izquierda, ambos centrados juntos (FR-117). Usa el boceto de Marco como guía, NO lo copies a ciegas: la geometría y el dibujo deben quedar idénticos a los actuales (vértices, colores c.ROJO_VIVO y c.SOMBRA, centrado, recorte). Si el boceto difiere del código actual, manda el código actual.
+- En _ficha_de_actor deja un único cambio respecto a P1: reemplazar la llamada original a texto_sombreado del nombre por self._nombre_de_ficha(...).
+- Las pruebas existentes que reconstruyen el rombo por promedio de vértices deben pasar SIN cambios.
+
+Tarea C (punto 6): docstrings y tipos en lo NUEVO: posicion_de_costo, etiquetas_de_costo, lleva_marcador, texto_de_ficha, _costos, _nombre_de_ficha, rombo_del_marcador. Docstring corto en español en lugar de los comentarios #, type hints completos (incluida fuente: pygame.font.Font, superficie, estado, fondo), líneas de máximo 120 caracteres. Actualiza el docstring del módulo (líneas 4–13) agregando etiquetas_de_costo/posicion_de_costo (FR-116) y texto_de_ficha/lleva_marcador (FR-117). No agregues docstrings a métodos de P1.
+
+Validaciones: SDL_VIDEODRIVER=dummy; corre tests/test_vista_terreno.py y tests/test_vista_escena.py; luego la suite completa en segundo plano (PYTHONIOENCODING=utf-8 python tests/correr_pruebas.py, sin timeout menor a 300 s, sin correr nada más en paralelo). Todo debe seguir en verde sin cambiar pruebas, salvo lo que cambie por el nuevo Rect (si alguna prueba cambia, explícame por qué).
+
+Commit: UNO solo, con View/EscenaJuego.py (por nombre): "refactor(001): un solo Rect para el costo, _nombre_de_ficha y rombo_del_marcador fuera de _ficha_de_actor; docstrings y tipos (T041, revisión de Marco)". No toques plan.md ni DECISIONES.md en este prompt (Principio IX: la spec va en otro commit). Muéstrame: confirmación de cada hallazgo, diff de _ficha_de_actor antes/después en líneas, resultado de la suite, git status y git log --oneline -4.
+
+**Uso de la respuesta:** se usó la respuesta para corregir el código de View/EscenaJuego.py según la revisión de Marco (un solo Rect, lógica del rombo fuera de P1, docstrings y tipos).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Contexto: sigue la revisión de Marco (Revision_T041_Kris.md) sobre la T041. El código ya se corrigió en el prompt anterior. Ahora corrijo las PRUEBAS de tests/test_vista_terreno.py (puntos 1, 2, 4, 7, 8, 9 y la parte de pruebas del 10). Ubica todo por nombre, no por número de línea. Marco no ejecutó nada: verifica cada hallazgo contra el código real y dime si se confirma.
+
+Reglas: Principio IX (las pruebas miden el criterio de FR-116, FR-117, SC-106 y los escenarios H4-1/H4-2 tal cual, sin inventar reglas nuevas), Principio X (cada escenario tiene su prueba, con el FR en el nombre), Principio VI (nunca ids ni nombres de enemigos). Corre con SDL_VIDEODRIVER=dummy. No toques el código de producción en este prompt: si una prueba nueva FALLA porque revela un error real del código, DETENTE y repórtamelo con el caso mínimo, sin cambiar el diseño por tu cuenta. Nunca git add -A. No hagas push.
+
+Hazlo en este orden de prioridad:
+
+(4) Escenario literal de H4-1: lee spec.md (escenario H4-1, ~líneas 256-258) y tests/test_dto_terreno.py (~líneas 42-49). Saca ese montaje a un helper compartido sala_del_escenario_h4_1() -> SalaDTO (revisa primero si ya existe un archivo de ayudas de pruebas, p. ej. el de ayudas_pygame; si no, tests/ayudas_terreno.py) y úsalo desde test_dto_terreno.py y desde una prueba nueva de la Vista: dibuja esa sala y comprueba que se muestran 100, 250, 100 y 300 cada uno junto a su salida (N, S, E y la cerrada O), incluido el de la cerrada. La prueba debe usar el nombre test_h4_1_fr116_sc106_escenario_literal_... Si la prueba existente de costo igualado en la Vista queda repetida con test_dto_terreno, déjala solo con la parte de la Vista o quítala, y dime cuál.
+
+(2) Pantalla, HUD y suelo: una prueba de invariante pura que, para cada fondo de c.FONDOS_CONOCIDOS, con el costo más largo que permita FR-122 (revisa el máximo en la spec, no inventes uno), compruebe que cada etiqueta de etiquetas_de_costo, inflada 2 px por la sombra, queda dentro de PANTALLA, sin tocar c.HUD_PANELES y sin tocar c.SUELO. Marco sospecha que con 5 o más dígitos la etiqueta oeste del fondo inicial entra al suelo: si falla, repórtalo (no cambies posicion_de_costo sin avisarme).
+
+(1) Protagonista en cada entrada: en la prueba de choques, recorre las cuatro direcciones con salas de procedencia DISTINTAS (el helper salida() hoy manda todas las salidas abiertas a la sala 1, y el protagonista cae en el centro). Dibuja primero un cuadro de la sala anterior y luego la sala; comprueba con assertEqual que posicion_del_protagonista == c.PIES_PUERTA[dirección] (que de verdad entró por esa puerta) y mide el choque con un Rect de c.JUGADOR_OCUPA con midbottom en esos pies (sprite + ficha), con 6 enemigos, en los tres fondos. Que la etiqueta inflada 2 px no choque con él.
+
+(3, parte de pruebas) En la prueba de la lista de etiquetas, además de la cantidad, comprueba que los Rect de lo dibujado (espiando c.texto_sombreado) coinciden con los de etiquetas_de_costo.
+
+(9) Sufijo del cazador: prueba con el ancho REAL que recibe cada comportamiento. Para el cazador, c.FICHA_ANCHO_MIN - (c.MARCADOR_CAZADOR + c.MARCADOR_SEPARACION); para los demás, c.FICHA_ANCHO_MIN. Para todos los comportamientos que existan (léelos del código, no los inventes) y un nombre largo («Rata gigante #12»), el texto de texto_de_ficha debe terminar en «(comportamiento)» completo, incluido el más largo. Prueba además la ficha estrecha (FACTOR_FICHA_ESTRECHA) si con 12 enemigos se llega a ella. Si algo falla, repórtalo: Marco propone achicar el texto antes que ensanchar el reparto, pero no lo cambies sin avisarme.
+
+(7) Menos fragilidad: que las pruebas de la Vista no importen Logic.Mazmorra ni Service.ArmadorEstado ni llamen a _sala_con_estado_actual; arma la SalaDTO ya igualada (lo que la Vista recibe por contrato) o usa el helper del punto 4. Donde puedas, evita privados de la Vista (_escena, _fuentes, _repartir, _rect_del_jugador); usa JUGADOR_OCUPA. El espía de pygame.draw.polygon debe filtrar también por forma (len(puntos) == 4 y color == c.ROJO_VIVO y ancho == 0) y restaurarse siempre (try/finally o addCleanup). El caso de costo por defecto (100 si ninguna cara declara) se queda en test_dto_terreno, no en la Vista.
+
+(8) Marcador en x e y: en la prueba de los cazadores, empareja cada rombo y cada texto por la zona de su enemigo (reparto.enemigos[i], que no se solapan) y comprueba x e y; que rombo + hueco + texto quepan en zona.width. Evita buscar el texto por sufijo y cercanía.
+
+(10) Constante con nombre en lugar del 60 de cerca_del_marco, derivada de c.COSTO_DISTANCIA más el ancho máximo de la etiqueta; mueve el import de SimpleNamespace a su lugar; docstring corto a las ayudas salida() y enemigos().
+
+Validaciones: mutaciones. Para cada prueba nueva, rompe a propósito lo que cubre y comprueba que falla (omitir cerradas; costo en el centro del suelo; protagonista siempre en el centro; marcar por nombre; sufijo recortado), y restaura. Luego suite completa en segundo plano (PYTHONIOENCODING=utf-8 python tests/correr_pruebas.py, sin timeout menor a 300 s, sin correr nada más en paralelo). Debe quedar todo verde.
+
+Commit: uno con las pruebas (por nombre, incluido el helper): "test(001): pruebas de la Vista de H4-1 y H4-2 con el escenario literal, pantalla/HUD/suelo y protagonista en cada entrada (T041, revisión de Marco)". No hagas push. Muéstrame: qué hallazgos se confirmaron, las mutaciones probadas, el total de pruebas de la suite, git status y git log --oneline -4.
+
+**Uso de la respuesta:** se usó la respuesta para reforzar las pruebas de la Vista de H4-1 y H4-2 según la revisión de Marco (escenario literal, pantalla/HUD/suelo, protagonista en cada entrada, sufijo del cazador).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Contexto: último paso de la revisión de Marco sobre la T041. El código y las pruebas ya están corregidos en los dos commits anteriores. Ahora solo texto (Principio IX: spec en commit separado, sin tocar código ni pruebas).
+
+1) Corrige el registro exacto de lo que se cambió de P1 en View/EscenaJuego.py: plan.md (~línea 161, «Modificación (2 líneas en dibujar y _ficha_de_actor) + extensión») y DECISIONES.md (~línea 1182, «método _costos y dos líneas en dibujar y _ficha_de_actor»). Antes, verifica con git diff 4740816 HEAD -- View/EscenaJuego.py qué cambió realmente en dibujar y en _ficha_de_actor. Debe decir exactamente: +1 línea en dibujar (self._costos(...)); en _ficha_de_actor, la llamada original a texto_sombreado se cambia por self._nombre_de_ficha(...); y el código NUEVO: _costos, _nombre_de_ficha, rombo_del_marcador, etiquetas_de_costo, posicion_de_costo, texto_de_ficha, lleva_marcador. Actualiza también el antes/después de DECISIONES.md si menciona la lógica del rombo dentro de _ficha_de_actor.
+2) Actualiza en la fila H4 de plan.md y en las filas H4-1 y H4-2 de la trazabilidad de spec.md los NOMBRES REALES de las pruebas, incluida la nueva del escenario literal (lee los nombres de tests/test_vista_terreno.py; no inventes ninguno).
+3) En DECISIONES.md anota, como limitación conocida y SIN cambiar código, que en fondo_final solo está pintada la puerta norte (MARCOS_OSCURECIBLES[2] = False), así que el costo de una salida S, E u O abierta puede quedar sin puerta visible al lado. Verifica primero en View/Componentes.py que es cierto.
+
+Reglas: no toques código ni pruebas; no cambies requisitos; nunca git add -A; no hagas push.
+Commit: "spec(001): T041 registro exacto de los cambios a P1 y nombres de pruebas ajustados (revisión de Marco)". Luego corre python verificar_prompts.py PROMPTS_LLM.md y muéstrame git status y git log --oneline -5.
+
+**Uso de la respuesta:** se usó la respuesta para dejar plan.md y DECISIONES.md con el registro exacto de los cambios a P1 y la limitación de fondo_final, según la revisión de Marco.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Opción A, pero medida primero. NO cambies código de producción (posicion_de_costo ni nada de View/). Contexto: la prueba test_h4_1_fr116_sc106_el_costo_no_choca_con_enemigos_protagonista_ni_otras_salidas falla en fondo_inicial (entradas E y O) porque la etiqueta se solapa 11 px con c.JUGADOR_OCUPA, que es la reserva de repartir_escena y puede ser más ancha que lo pintado. Hay que saber si lo que se PINTA se toca.
+
+1) Diagnóstico sin tocar nada. Para fondo_inicial (y los otros dos fondos), entradas N, S, E y O, costos de 3, 4 y 5 dígitos, y 0, 6 y 12 enemigos, mide el Rect REAL pintado del protagonista: el sprite, la barra de vida y el texto del nombre de su ficha (obtenlos de lo que dibuja la escena: espía texto_sombreado y los rects de sprite/barra del código; no inventes constantes). Compara cada uno con la etiqueta inflada 2 px (la sombra). Dame una tabla: dirección, dígitos, solape con la reserva (JUGADOR_OCUPA) y solape con lo pintado (sprite, barra, nombre), en px.
+
+2) Si lo PINTADO no se solapa en ningún caso (hasta 5 dígitos): cambia la prueba para que mida contra sprite + barra + nombre pintados del protagonista, no contra JUGADOR_OCUPA. Pon un comentario corto que diga por qué (JUGADOR_OCUPA es una reserva de colocación de enemigos, más ancha que lo pintado) y deja en DECISIONES.md, en la sección de EscenaJuego.py, una nota con los números reales (cuánto se pisa la reserva y cuánto lo pintado). La prueba debe seguir exigiendo que la etiqueta no toque al protagonista pintado, en las 4 entradas y los 3 fondos. Comprueba con una mutación que falla si pones la etiqueta encima del sprite.
+
+3) Si lo PINTADO sí se solapa en algún caso: DETENTE. No cambies código ni la prueba. Dame el caso mínimo (fondo, entrada, dígitos, rects) y espera mi autorización para la opción B.
+
+4) En cualquiera de los dos casos, deja anotado en DECISIONES.md (sin cambiar código) que la spec no fija un máximo de costo (FR-122 solo pide un entero ≥ 1), que se prueba hasta 5 dígitos (DIGITOS_PROBADOS, decisión nuestra, no de la spec) y que con 6 o más dígitos las etiquetas E y O de fondo_inicial entran al suelo (en fondo_final desde 9). Verifica esos números antes de escribirlos.
+
+5) Si el caso 2 aplica, termina: corre las mutaciones que quedaron pendientes de las pruebas nuevas, la suite completa en segundo plano (PYTHONIOENCODING=utf-8 python tests/correr_pruebas.py, sin timeout menor a 300 s, sin correr nada más en paralelo) y haz DOS commits separados (Principio IX), por nombre y nunca git add -A: primero el código de pruebas (tests/test_vista_terreno.py, tests/test_dto_terreno.py, tests/ayudas_terreno.py) con "test(001): pruebas de la Vista de H4-1 y H4-2 con el escenario literal, protagonista en cada entrada y pantalla/HUD/suelo (T041, revisión de Marco)"; luego el texto (DECISIONES.md y, si algún nombre de prueba cambió, plan.md y spec.md; verifica que cada nombre de las filas H4 existe de verdad en las pruebas) con "spec(001): T041 nota de la reserva del protagonista y del máximo de dígitos probado (revisión de Marco)". No incluyas PROMPTS_LLM.md en esos commits. No hagas push.
+
+6) Muéstrame: la tabla del paso 1, qué caso aplicó, mutaciones probadas, total de unittest y scripts, python verificar_prompts.py PROMPTS_LLM.md, git status y git log --oneline -6.
+
+**Uso de la respuesta:** se usó la respuesta para decidir cómo resolver el choque de la etiqueta de costo con el protagonista: medir primero lo pintado, y cambiar la prueba solo si no hay solape real.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Opción 2. La prueba de choques mide contra lo pintado con hasta 4 dígitos (el peor caso de Marco, 9999). Deja DIGITOS_PROBADOS = 5 solo para la prueba de pantalla/HUD/suelo, que sí pasa con 5. Anota en DECISIONES.md, con los números verificados, que con 5 dígitos en fondo_inicial la etiqueta pisa al protagonista pintado (7×19 px en E y 8×19 px en O), que con 6 o más entra además al suelo, y que la spec no fija un máximo (FR-122), por lo que queda como limitación conocida y no como incumplimiento de FR-116. Sigue con el punto 5 y el 6 del prompt.
+
+**Uso de la respuesta:** se usó la respuesta para cerrar el choque de la etiqueta con el protagonista: la prueba mide contra lo pintado con costos de 4 dígitos, se probaron 10 mutaciones, la suite quedó en 32 de 32 y se hicieron los commits f1a9fdc (pruebas) y c71055e (nota en DECISIONES.md).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Último paso de la revisión de Marco sobre la T041. NO cambies código de producción ni pruebas.
+
+1) Genera el reporte en ../REPORTE_CORRECCIONES_T041.md (FUERA del repo; no lo commitees). En español, para Marco y Derek. Contenido: (a) tabla de los 10 hallazgos de Marco (# · severidad · qué se hizo · commit · prueba o archivo que lo cubre), usando los commits reales de git log (4e6258e, d76c68b, f1a9fdc, c71055e) y los nombres reales de las pruebas (verifícalos con grep en tests/test_vista_terreno.py y tests/test_dto_terreno.py); (b) lo que se cambió en View/EscenaJuego.py respecto a P1 (+1 línea en dibujar; en _ficha_de_actor −2 +1; código nuevo: _costos, _nombre_de_ficha, rombo_del_marcador, etiquetas_de_costo, posicion_de_costo, texto_de_ficha, lleva_marcador); (c) resultado de la suite (32 de 32 scripts y el total de unittest que ya tienes) y las 10 mutaciones; (d) una sección «Para Marco» con dos decisiones que él debe confirmar: 1) el choque con el protagonista se mide contra lo pintado (sprite, barra y nombre), no contra JUGADOR_OCUPA, porque esa es una reserva de colocación más ancha que lo pintado (dame los números reales de la tabla: 3 y 4 dígitos no se tocan; con 5 dígitos solo en fondo_inicial 7×19 px en E y 8×19 px en O), y 2) la spec no fija un máximo de costo (FR-122), se prueba hasta 5 dígitos para pantalla/HUD/suelo y 4 para el choque, y con 5 o más en fondo_inicial E/O puede pisar al protagonista; si Marco quiere que se corrija, sería un cambio en posicion_de_costo en otro commit; (e) la limitación de fondo_final. Máximo 2 páginas, sin inventar nada que no esté en git o en las pruebas.
+
+2) Revisa que PROMPTS_LLM.md tenga las entradas de este trabajo (prompts 42 en adelante) al final, sin duplicados, y corre python verificar_prompts.py PROMPTS_LLM.md. Debe dar 0 repetidas y 0 marcadores de conflicto. No copies el archivo de otro lado.
+
+3) Commitea PROMPTS_LLM.md por nombre con: "docs: bitácora de los prompts 42 a 47 (revisión de Marco de la T041)". No uses git add -A. No hagas push.
+
+4) Muéstrame el reporte completo, la salida del verificador, git status y git log --oneline -4.
+
+**Uso de la respuesta:** se usó la respuesta para generar el reporte de correcciones de la T041 para Marco y Derek (REPORTE_CORRECCIONES_T041.md, fuera del repo) y para completar la bitácora con las dos entradas que faltaban.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Último paso de la revisión de Marco sobre la T041. NO cambies código de producción ni pruebas.
+
+1) Genera el reporte en ../REPORTE_CORRECCIONES_T041.md (FUERA del repo; no lo commitees). En español, para Marco y Derek. Contenido: (a) tabla de los 10 hallazgos de Marco (# · severidad · qué se hizo · commit · prueba o archivo que lo cubre), usando los commits reales de git log (4e6258e, d76c68b, f1a9fdc, c71055e) y los nombres reales de las pruebas (verifícalos con grep en tests/test_vista_terreno.py y tests/test_dto_terreno.py); (b) lo que se cambió en View/EscenaJuego.py respecto a P1 (+1 línea en dibujar; en _ficha_de_actor −2 +1; código nuevo: _costos, _nombre_de_ficha, rombo_del_marcador, etiquetas_de_costo, posicion_de_costo, texto_de_ficha, lleva_marcador); (c) resultado de la suite (32 de 32 scripts y el total de unittest que ya tienes) y las 10 mutaciones; (d) una sección «Para Marco» con dos decisiones que él debe confirmar: 1) el choque con el protagonista se mide contra lo pintado (sprite, barra y nombre), no contra JUGADOR_OCUPA, porque esa es una reserva de colocación más ancha que lo pintado (dame los números reales de la tabla: 3 y 4 dígitos no se tocan; con 5 dígitos solo en fondo_inicial 7×19 px en E y 8×19 px en O), y 2) la spec no fija un máximo de costo (FR-122), se prueba hasta 5 dígitos para pantalla/HUD/suelo y 4 para el choque, y con 5 o más en fondo_inicial E/O puede pisar al protagonista; si Marco quiere que se corrija, sería un cambio en posicion_de_costo en otro commit; (e) la limitación de fondo_final. Máximo 2 páginas, sin inventar nada que no esté en git o en las pruebas.
+2) Revisa que PROMPTS_LLM.md tenga las entradas de este trabajo (prompts 42 en adelante) al final, sin duplicados, y corre python verificar_prompts.py PROMPTS_LLM.md. Debe dar 0 repetidas y 0 marcadores de conflicto. No copies el archivo de otro lado.
+3) Commitea PROMPTS_LLM.md por nombre con: "docs: bitácora de los prompts 42 a 47 (revisión de Marco de la T041)". No uses git add -A. No hagas push.
+4) Muéstrame el reporte completo, la salida del verificador, git status y git log --oneline -4.
+
+**Uso de la respuesta:** se usó la respuesta para decidir la opción de la prueba de choques (medir contra lo pintado, hasta 4 dígitos) y para generar el reporte de correcciones para Marco y Derek.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+En specs/002-niebla-ir-a/tasks.md marca [x] T117 y T127 (y solo esas dos). T117 (el aviso al integrante 2) está cumplido: Derek ya respondió y confirmó que T006 y T050 están hechas. T127 (la bitácora de prompts) está completa: verifica antes con python verificar_prompts.py PROMPTS_LLM.md (0 repetidas, 0 marcadores de conflicto). Antes de marcar, lee el texto de cada tarea y dime en una línea si lo que pide se cumple. No cambies nada más. Commit por nombre (nunca git add -A): "spec(002): T117 y T127 cerradas". Si PROMPTS_LLM.md quedó modificado por la entrada de este prompt, commitéalo aparte con "docs: bitácora del prompt 49". No hagas push. Muéstrame git status y git log --oneline -4.
+
+**Uso de la respuesta:** se usó la respuesta para cerrar T117 y T127 de la 002 tras el aviso de Derek y la bitácora completa.
+git fetch y git merge origin/kris en Marco (trae las correcciones de la T041: 4e6258e, f1a9fdc, d76c68b,
+c71055e). Conflictos: solo PROMPTS_LLM.md se resuelve conservando todo; cualquier otro, pará y avisame.
+Después del merge, revisá y corregí en specs/001-terreno-cazador/ (solo si sigue aplicando):
+1) plan.md (~168): si dice que de la Vista solo cambia View/EscenaJuego.py, agregá que también se suman 4
+   constantes en View/Componentes.py (las que nombra la fila de EscenaJuego).
+2) tasks.md:175: T041 con [X] en mayúscula, como el resto del archivo.
+3) Solo verificar, sin cambiar: que la fila de EscenaJuego en plan.md y DECISIONES.md (~1182) describan el
+   cambio real a P1 según git diff 4740816 HEAD -- View/EscenaJuego.py (dibujar +1; _ficha_de_actor −2 +1 con
+   la llamada a _nombre_de_ficha; código nuevo listado). Si no calza, decime archivo y línea.
+Un commit, suite en verde con uv run, PROMPTS_LLM.md, no push.
+
+**Uso de la respuesta:** merge de `origin/kris` (`4cf7824`) sin conflictos. Seguían aplicando los dos arreglos: `plan.md:168` ahora nombra las 4 constantes de `View/Componentes.py` (`COMPORTAMIENTO_CAZADOR`, `MARCADOR_CAZADOR`, `MARCADOR_SEPARACION` y `COSTO_DISTANCIA`) y `tasks.md:175` marca T041 con `[X]`. Verificación contra `git diff 4740816 HEAD -- View/EscenaJuego.py`: `plan.md:161` y `DECISIONES.md:1182` calzan (`dibujar` +1 con `self._costos(...)`; `_ficha_de_actor` −2 +1 con `self._nombre_de_ficha(...)`; código nuevo: `etiquetas_de_costo`, `posicion_de_costo`, `lleva_marcador`, `texto_de_ficha`, `rombo_del_marcador`, `_costos` y `_nombre_de_ficha`). Solo omiten dos cambios menores al encabezado del módulo: +2 líneas en el docstring y +1 `import` de `ActorDTO`. No se corrigió eso. Suite con `uv run`: 1102 pruebas unittest OK y 32 de 32 scripts.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+DECISIONES.md, sección §5.5 de la 004 (integrante 3, que me dio permiso para corregirla). Hay tres frases desactualizadas que dicen que el guardado con la línea no existe, pero T002, T003 y T044 a T048 de specs/004-linea-tiempo/tasks.md están todas marcadas y Data/GuardadoBinario.py ya escribe VERSION_FORMATO = 2. Sin commit. Solo modificá DECISIONES.md (y PROMPTS_LLM.md, punto 5); no crees ni cambies ningún otro archivo del repositorio.
+1. Punto «9. Contenido de la línea en el archivo y K al cargar (R7)» (cerca de la línea 889): reemplazá «**Todavía no implementado**: depende de T002 y T003 (integrante 2) y de T044 a T048; por eso M3 mide los bytes con el escritor de la versión 1 (ver «Memoria»).» por una frase que diga que está implementado (T002 y T003 del integrante 2, T044 a T048 del integrante 3) y nombre las pruebas que lo cubren. Sacá los nombres reales de esas tareas en tasks.md de la 004 y de la tabla de trazabilidad de su spec.md; no inventes ninguno. Mantené el resto del punto igual.
+2. Párrafo «Memoria (M3, NFR-402)» (cerca de la línea 930): el «*Límite*» dice que «el formato versión 2 con la línea no existe todavía (T003, integrante 2)». Cambialo para que diga qué mide realmente M3 (la memoria de la línea en ejecución, con los bytes que escribe GuardadoBinario por punto; revisá en el código del bench cómo lo calcula y describilo tal cual) y agregá el tamaño real del archivo versión 2 con la línea (punto 4).
+3. «**Pendiente de la sección.**» (cerca de la línea 983): reemplazalo por el resultado: el tamaño real del archivo versión 2 (punto 4) y si ese valor cambia o no la elección de K = 20. Decí solo lo que muestre la medición.
+4. Medición: con un guion ad hoc FUERA del repositorio (en la carpeta temporal del sistema, no versionado), guardá con el código real (ServicioGuardado o GuardadoBinario.guardar, el que use la partida) una partida con línea de tiempo y medí el tamaño del archivo con os.path.getsize. Si se puede armar con lo que ya usa M3 del bench, medí 100, 1 000 y 5 000 acciones con K = 20; si no, medí al menos el replay de ejemplos/partida_ejemplo.log --offline (47 acciones). En el texto decí cómo se midió («medición aparte con un guion no versionado», como en specs/002-niebla-ir-a/bench-viaje-2026-11-17.txt). Borrá el guion y los archivos temporales al terminar.
+5. Registrá este prompt en PROMPTS_LLM.md, al final, con el formato de las entradas anteriores.
+Al final: corré .venv\Scripts\python.exe tests\correr_pruebas.py, mostrame el diff de DECISIONES.md, el guion que usaste (en el mensaje, no en un archivo) y los números medidos, y confirmá que git status solo muestra DECISIONES.md y PROMPTS_LLM.md (además de ExplorarApi.py, bench.txt y exploracion/, que no se tocan).
+
+**Uso de la respuesta:** se corrigieron las tres frases de §5.5 de la 004 en DECISIONES.md (punto 9, «Memoria (M3)» y el antiguo «Pendiente de la sección»). Medición aparte con un guion no versionado (partida sintética de M3, K = 20, `ServicioGuardado.guardar` y `os.path.getsize`): archivo versión 2 de 24 145 bytes con 100 acciones, 180 250 con 1 000 y 874 050 con 5 000 (3 367 sin la línea), contra 901 877 de M3 con 5 000; no cambia K = 20.
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+SOLO LECTURA (no modifiques nada, no ejecutes pruebas). Rama local Marco (ya integra derek y kris). Hacé el análisis de /speckit.analyze para la feature 001 (carpeta specs/001-terreno-cazador/): si el comando /speckit.analyze está disponible y es de solo lectura, seguí sus instrucciones (.specify/ o .claude/commands/); si no, hacé lo mismo a mano. Compará spec.md, plan.md y tasks.md entre sí y contra .specify/memory/constitution.md (v1.2.0), y contra el código y tests/: (A) Cobertura: cada FR/NFR/SC tiene al menos una tarea y una prueba que lo cite (la tabla de trazabilidad coincide con nombres de prueba reales en tests/); (B) tareas sin marcar [ ] o marcadas sin código/prueba que las respalde; (C) inconsistencias de terminología o datos entre spec, plan, tasks, quickstart, README y DECISIONES.md (cifras, nombres de archivos/funciones que ya no existen, frases desactualizadas por el paquete de la Parte II o por cambios posteriores); (D) violaciones de la constitución: spec que nombra estructuras/clases/módulos (IX), cambios a P1 sin fila en la tabla del plan o sin antes/después en DECISIONES.md (III), afirmaciones de rendimiento sin evidencia de --bench (VIII), estructuras prohibidas en código de la feature (II), modos sin vista (V); (E) ambigüedades o requisitos sin criterio medible. Salida en el formato de /speckit.analyze: tabla de hallazgos (ID, categoría, severidad CRITICAL/HIGH/MEDIUM/LOW, ubicación archivo:línea, resumen, recomendación), tabla de cobertura de requisitos (requisito → tareas → pruebas), métricas (total de requisitos, % con tarea, % con prueba, tareas sin marcar, críticos) y al final las acciones sugeridas antes de entregar mañana. No registres nada en PROMPTS_LLM.md.
+
+**Uso de la respuesta:** consulta `1a1ecc56e43`, respuesta en `.claude-bridge/outbox/1a1ecc56e43.txt`. Análisis de la 001: 21 hallazgos (2 CRITICAL, 1 HIGH, 5 MEDIUM, 13 LOW); cada requisito tiene tarea y prueba. Se usó para el pedido siguiente (D1, D2, D3, C1 a C3, C5 a C7, C10 y E1).
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+SOLO LECTURA (no modifiques nada, no ejecutes pruebas). Rama local Marco (ya integra derek y kris). Hacé el análisis de /speckit.analyze para la feature 002 (carpeta specs/002-niebla-ir-a/): si el comando /speckit.analyze está disponible y es de solo lectura, seguí sus instrucciones (.specify/ o .claude/commands/); si no, hacé lo mismo a mano. Compará spec.md, plan.md y tasks.md entre sí y contra .specify/memory/constitution.md (v1.2.0), y contra el código y tests/: (A) Cobertura: cada FR/NFR/SC tiene al menos una tarea y una prueba que lo cite (la tabla de trazabilidad coincide con nombres de prueba reales en tests/); (B) tareas sin marcar [ ] o marcadas sin código/prueba que las respalde; (C) inconsistencias de terminología o datos entre spec, plan, tasks, quickstart, README y DECISIONES.md (cifras, nombres de archivos/funciones que ya no existen, frases desactualizadas por el paquete de la Parte II o por cambios posteriores); (D) violaciones de la constitución: spec que nombra estructuras/clases/módulos (IX), cambios a P1 sin fila en la tabla del plan o sin antes/después en DECISIONES.md (III), afirmaciones de rendimiento sin evidencia de --bench (VIII), estructuras prohibidas en código de la feature (II), modos sin vista (V); (E) ambigüedades o requisitos sin criterio medible. Salida en el formato de /speckit.analyze: tabla de hallazgos (ID, categoría, severidad CRITICAL/HIGH/MEDIUM/LOW, ubicación archivo:línea, resumen, recomendación), tabla de cobertura de requisitos (requisito → tareas → pruebas), métricas (total de requisitos, % con tarea, % con prueba, tareas sin marcar, críticos) y al final las acciones sugeridas antes de entregar mañana. No registres nada en PROMPTS_LLM.md.
+
+**Uso de la respuesta:** consulta `1a1ecc56e50`, respuesta en `.claude-bridge/outbox/1a1ecc56e50.txt`. Análisis de la 002: 2 CRITICAL, 1 HIGH, 9 MEDIUM y 11 LOW.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+SOLO LECTURA (no modifiques nada, no ejecutes pruebas). Rama local Marco (ya integra derek y kris). Hacé el análisis de /speckit.analyze para la feature 003 (carpeta specs/003-resolubilidad/): si el comando /speckit.analyze está disponible y es de solo lectura, seguí sus instrucciones (.specify/ o .claude/commands/); si no, hacé lo mismo a mano. Compará spec.md, plan.md y tasks.md entre sí y contra .specify/memory/constitution.md (v1.2.0), y contra el código y tests/: (A) Cobertura: cada FR/NFR/SC tiene al menos una tarea y una prueba que lo cite (la tabla de trazabilidad coincide con nombres de prueba reales en tests/); (B) tareas sin marcar [ ] o marcadas sin código/prueba que las respalde; (C) inconsistencias de terminología o datos entre spec, plan, tasks, quickstart, README y DECISIONES.md (cifras, nombres de archivos/funciones que ya no existen, frases desactualizadas por el paquete de la Parte II o por cambios posteriores); (D) violaciones de la constitución: spec que nombra estructuras/clases/módulos (IX), cambios a P1 sin fila en la tabla del plan o sin antes/después en DECISIONES.md (III), afirmaciones de rendimiento sin evidencia de --bench (VIII), estructuras prohibidas en código de la feature (II), modos sin vista (V); (E) ambigüedades o requisitos sin criterio medible. Salida en el formato de /speckit.analyze: tabla de hallazgos (ID, categoría, severidad CRITICAL/HIGH/MEDIUM/LOW, ubicación archivo:línea, resumen, recomendación), tabla de cobertura de requisitos (requisito → tareas → pruebas), métricas (total de requisitos, % con tarea, % con prueba, tareas sin marcar, críticos) y al final las acciones sugeridas antes de entregar mañana. No registres nada en PROMPTS_LLM.md.
+
+**Uso de la respuesta:** consulta `1a1ecc56e5b`, respuesta en `.claude-bridge/outbox/1a1ecc56e5b.txt`. Análisis de la 003: 0 CRITICAL, 1 HIGH, 4 MEDIUM, 10 LOW.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+SOLO LECTURA (no modifiques nada, no ejecutes pruebas). Rama local Marco (ya integra derek y kris). Hacé el análisis de /speckit.analyze para la feature 004 (carpeta specs/004-*/): si el comando /speckit.analyze está disponible y es de solo lectura, seguí sus instrucciones (.specify/ o .claude/commands/); si no, hacé lo mismo a mano. Compará spec.md, plan.md y tasks.md entre sí y contra .specify/memory/constitution.md (v1.2.0), y contra el código y tests/: (A) Cobertura: cada FR/NFR/SC tiene al menos una tarea y una prueba que lo cite (la tabla de trazabilidad coincide con nombres de prueba reales en tests/); (B) tareas sin marcar [ ] o marcadas sin código/prueba que las respalde; (C) inconsistencias de terminología o datos entre spec, plan, tasks, quickstart, README y DECISIONES.md (cifras, nombres de archivos/funciones que ya no existen, frases desactualizadas por el paquete de la Parte II o por cambios posteriores); (D) violaciones de la constitución: spec que nombra estructuras/clases/módulos (IX), cambios a P1 sin fila en la tabla del plan o sin antes/después en DECISIONES.md (III), afirmaciones de rendimiento sin evidencia de --bench (VIII), estructuras prohibidas en código de la feature (II), modos sin vista (V); (E) ambigüedades o requisitos sin criterio medible. Salida en el formato de /speckit.analyze: tabla de hallazgos (ID, categoría, severidad CRITICAL/HIGH/MEDIUM/LOW, ubicación archivo:línea, resumen, recomendación), tabla de cobertura de requisitos (requisito → tareas → pruebas), métricas (total de requisitos, % con tarea, % con prueba, tareas sin marcar, críticos) y al final las acciones sugeridas antes de entregar mañana. No registres nada en PROMPTS_LLM.md.
+
+**Uso de la respuesta:** consulta `1a1ecc56e66`, respuesta en `.claude-bridge/outbox/1a1ecc56e66.txt`. Análisis de la 004: 2 CRITICAL, 3 HIGH, 7 MEDIUM y 6 LOW.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Correcciones del análisis de spec-kit de Marco (17/11) para mis partes: la 003 completa y la niebla y el mapa conocido de la 002. Constitución v1.2.0. SIN commits ni comandos de git: yo commiteo desde PyCharm. Los números de línea que doy son aproximados (el archivo cambió): buscá siempre por el texto. Antes de cada cambio comprobá que lo que digo es cierto en el código o en el archivo; si algo no calza, no lo cambies y avisame. No toques nada de la 001 ni las partes de «ir a» de la 002, salvo L9.
+
+GRUPO A, solo specs/002-niebla-ir-a/spec.md:
+- C2: fila A45 de la trazabilidad («La interfaz no revela el id de una sala no explorada: `sala_destino` va como `SIN_EXPLORAR`…»). Reescribí la descripción como regla del juego, sin nombres de campos ni constantes: «la interfaz no recibe el identificador de una sala no explorada, ni el de la salida mientras no se haya explorado». Las columnas de escenario, FR y pruebas quedan igual.
+- H1: el caso borde «**Partida terminada**: el comando de ver el mapa sigue disponible y muestra el mapa del final» contradice A44 («con la partida terminada no está disponible») y la prueba test_con_la_partida_terminada_el_comando_no_esta_disponible_pero_ver_mapa_no_falla (tests/test_comando_mapa.py). Cambiá el caso borde para que diga lo mismo que A44 y el código.
+- L11: línea 7, «Borrador» → «Implementada»; el resto de esa línea igual.
+
+GRUPO B, solo specs/003-resolubilidad/spec.md:
+- I5: línea 7 «Estado: Implementada»; en la frase «Cada prueba cita…» del Apéndice B, verbos en presente.
+- I9: en la tabla de cobertura, agregá H3-9 a la fila de FR-312 (comprobá en tests/ que la prueba de H3-9 cubre FR-312; si no, avisame).
+- D2 (opción b): debajo de la tabla del Apéndice B, una línea: los archivos de prueba que se citan sirven para ubicar cada prueba; no son módulos del juego (el Principio IX se refiere al código del producto). No cambies la tabla.
+
+GRUPO C, el resto (DECISIONES.md, plan, research, tasks, contracts, quickstart y bench de la 002 y la 003):
+- 003 D1 (Principio III): en mi §5.4 de DECISIONES.md, un «antes/después»: en P1 toda partida iniciaba; ahora iniciar una partida nueva verifica la resolubilidad y, sin --forzar, puede no iniciar. Describí qué pasa con cripta-01 con --offline (no trae llaves.json) y cómo inician las pruebas del integrante 3; comprobalo en Service/ServicioResolubilidad.py, UIController/ControladorBackend.py y tests/ antes de escribirlo. En la tabla de cambios a P1 de specs/003-resolubilidad/plan.md, agregá la fila de ejemplos/partida_ejemplo.log (regrabado en T057 con la cripta-02 nueva) y una fila con las pruebas de la primera parte ajustadas por el paquete nuevo (tests/Utilidades.py catalogo_real, test_formato_en_disco de tests/TestAlmacenCatalogo.py y lo que haya cambiado en tests/TestServicioBench.py; comprobá cada uno con git log).
+- 002 M3: «hasta 50 salas» → «hasta 300 (cripta-06)» donde hable de las criptas publicadas, en specs/002-niebla-ir-a/plan.md y en mi §5.3 de DECISIONES.md. H-4 («las criptas publicadas no tienen salidas repetidas») sigue siendo cierta: ninguna sala de cripta-01 a cripta-06 tiene dos salidas a la misma vecina; no la cambies.
+- 002 L4, L7, L8 y L5, en el plan y tasks de la 002: tachá D-2, D-3 y D-5 ya cerradas (T005, T121) como D-1, D-4 y D-6; «spec.md (sin cambios)» → «actualizada en commits spec(002)»; A38 está en tests/test_grafo_mapa_conocido.py; limpiá en tasks.md las frases «pendiente» que contradicen tareas ya [x] de mi parte.
+- 002 L9: en DECISIONES.md, sección «Viaje automático «ir a»» (del integrante 3, que me dio permiso), hay dos apartados «**8.**» seguidos («Limitación conocida: los comentarios # ir a…» y «H-2, opción A…»). Renumerá de ahí en adelante sin cambiar texto.
+- 003 I1: «hasta 50 salas (paquete actual)» → «de 20 a 300 salas (paquete de la Parte II, 15/11)» en plan.md y research.md de la 003.
+- 003 I2: el hallazgo H-3 (plan.md, research.md, contracts/contrato-llaves.md, quickstart.md y mi §5.4): «resuelto el 15/11 (T057); queda la excepción de cripta-01». En el quickstart, sacá la rama «con el paquete actual».
+- 003 I3: en §5.4 y en la fila B2 del plan: «en la cuadrícula encadenada, una oleada = una llave».
+- 003 I4, I6, I7, I8: plan.md, quitar «(004, pendiente)» de BusquedaBinaria; versión vigente de la spec en tasks.md y plan.md; anotar en bench-2026-11-16.txt el commit del paquete (6887c37); comentario completo de test_resolubilidad_reporte.py en el plan.
+- 003 E1 y E3: H1-9 en la ventana se valida con quickstart §3; «en línea» en SC-303 es una fuente de red simulada.
+- PROMPTS_LLM.md: este prompt al final, con el formato de siempre.
+
+Al final: .venv\Scripts\python.exe tests\correr_pruebas.py, la lista de archivos de cada grupo (A, B y C), lo que NO cambiaste y por qué, y git status (fuera quedan ExplorarApi.py, bench.txt y exploracion/).
+
+**Uso de la respuesta:** se aplicaron las correcciones del análisis de Marco en la spec de la 002 (A45 como regla del juego, caso borde de la partida terminada igual a A44, estado «Implementada»), en la spec de la 003 (estado «Implementada», verbos en presente, nota del Principio IX bajo el Apéndice B) y en DECISIONES.md, plan, research, tasks, contrato de llaves, quickstart y bench de la 002 y la 003. El antes/después de §5.4 se comprobó corriendo `ServicioResolubilidad.iniciar_partida_nueva("cripta-01", …)` con el paquete del repositorio: sin `--forzar` no inicia («no concluyó» por falta de `llaves.json`); con `--forzar` inicia. No se agregó H3-9 a la fila de FR-312 (I9): su prueba, `test_h3_9_fr314_forzar_no_cambia_verificar`, y el escenario citan solo FR-314. `tests/TestServicioBench.py` no cambió por el paquete (su cambio de la 003 es `d47c0ef`, T062). §5.3 no decía «hasta 50 salas» (la única mención está en §5.5, del integrante 3), y la frase «Con 50 salas es poco» del plan de la 002 está en la parte de «ir a»: no se tocaron. Suite: 1102 pruebas unittest OK y 32 de 32 scripts.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Correcciones del análisis de spec-kit para la 001, en este orden (Principio IX: la spec va sola primero).
+Suite en verde con uv run antes de cada commit, PROMPTS_LLM.md (incluí las consultas del puente 1a1ecc56e43,
+1a1ecc56e50, 1a1ecc56e5b y 1a1ecc56e66), no push.
+
+Commit 1, spec(001): en specs/001-terreno-cazador/spec.md:401-408 (FR-122), quitá SalidaDTO, ObjetoDTO,
+EfectoFichaDTO y "bool" y escribilo con términos del juego («el cierre automático de una salida», «la
+duración de un objeto», «la duración de un efecto de una ficha», «un valor verdadero/falso no cuenta como
+entero»). Misma regla, sin cambios de contenido. Cambiá también spec.md:7 a «Estado: Implementada».
+
+Commit 2, plan + DECISIONES (Principio III):
+- plan.md, tabla de cambios a P1 (~142-164): agregá filas para Data/GestorEsqueleto.py (FR-122: costo
+  inválido, costos distintos entre caras, cierre_automatico; commits c01dc93, 9eea7fa) y
+  Data/ResolvedorCatalogo.py (FR-122: rango, duracion, suelta; c01dc93, 38861c6), sacando de git diff contra
+  P1 qué cambió en cada uno. Corregí la fila que nombra Data/FuenteDatos.py: si ese archivo no se tocó,
+  reemplazala por Data/ValidacionDatos.py (nuevo) y Data/GestorContenido.py (T058).
+- DECISIONES.md, mi sección (~204-221): antes/después de T052/T055/T057: antes, un error de formato se
+  trataba como ErrorRed y el lote quedaba cargado; después, ErrorDatos (subclase de ErrorRed) con el rechazo
+  recordado por sala, y solo esa sala queda «contenido no disponible».
+
+Commit 3, docs(001):
+- C1: ArmadorEstado figura «por acordar/pendiente» en plan.md:102,159,257, data-model.md:38 y
+  contracts/contrato-datos.md:4 → «hecho (T038)».
+- C2: plan.md:52, «de 6 a 50 salas» → criptas del paquete de hasta 300 salas (cripta-06).
+- C3: tabla de pruebas y árbol de tests/ del plan con lo que de verdad hay (H1-9, H2-14/15/17-22, H3-7/8,
+  test_vista_terreno.py, test_cache_vieja.py, test_paquete_real_cazador.py).
+- C5: checklists/requirements.md: marcar 20, 29 y 37 con nota; la IX (34) queda marcada porque D2 ya se corrigió.
+- C6 y C7: quickstart.md, quitar «mientras T052/T053 no estén hechas…» (47-48) y «si todavía no está…» (104-105).
+- C10: «1 000 salas» → «1 024 (32×32)» en T043 y quickstart §5.
+Si algo no calza con lo que encontrás, no lo inventes: decímelo.
+Al final: los tres commits y la suite.
+
+**Uso de la respuesta:** tres commits en `Marco`, sin push. (1) `c71d5b0` spec(001): FR-122 sin `SalidaDTO`, `ObjetoDTO`, `EfectoFichaDTO` ni `bool`, en términos del juego, y «Estado: Implementada». (2) `2d0930d`: en la tabla de cambios a P1 del plan, filas nuevas de `Data/GestorEsqueleto.py` (`_validar_costos`, `_direccion_de_vuelta`; `c01dc93`, `9eea7fa`) y `Data/ResolvedorCatalogo.py` (`_rechazadas`, `rechazo()`, validación en `ficha()` y `_descargar`, `_cerrar_espera`; `c01dc93`, `38861c6`), sacadas de `git diff 83d15c5 HEAD`. `Data/FuenteDatos.py` no lo tocó la 001 (solo `06f2fd1`, de la 003), así que esa fila pasa a `Data/ValidacionDatos.py` (nuevo) y `Data/GestorContenido.py` con lo de T052 y T055 (T058 ya tenía su propia fila). DECISIONES.md: antes/después de T052, T055 y T057. (3) este commit, docs(001): C1 (ArmadorEstado «hecho (T038)» en plan, data-model y contrato), C2 (escala con la cripta-06 de 300 salas), C3 (tabla de pruebas y árbol de `tests/` con H1-9, H2-14/15/17-22, H3-7/8, `test_vista_terreno.py`, `test_cache_vieja.py`, `test_paquete_real_cazador.py`, y también `test_fr122_forzar.py` y `TestValidacionDatos.py`), C5 (casillas 20, 29 y 37 marcadas con nota), C6 y C7 (quickstart), C10 (1 024 (32×32) en T043 y quickstart §5). Suite con `uv run` antes de cada commit: 1102 pruebas unittest OK y 32 de 32 scripts.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Seguimiento de la 001, un commit por paso, suite en verde con uv run, PROMPTS_LLM.md, no push:
+
+Commit A, spec(001), solo spec.md: en FR-122 cambiá «convertir una duración ≤ 0 en None» por términos del juego
+(por ejemplo «una duración ≤ 0 en el efecto de una ficha se trata como si no tuviera duración»). Misma regla.
+Revisá que en spec.md no quede ningún otro nombre de Python o del código (None, True/False, dict, nombres de
+clases o módulos). Si hay, decímelo antes de cambiarlo.
+
+Commit B, docs(001):
+- data-model.md:40-42: el texto de ArmadorEstado, a tiempo presente («copia el costo igualado de la salida»,
+  T038), sin «debe».
+- T045 (tasks.md:189): nota «1 000 salas se mide con una cuadrícula de 1 024 (32×32)».
+- C4: en tasks.md, nota «hecho» en T008, T018/T019 y T048 con las pruebas que no tenían tarea (H1-9, H2-14,
+  H2-15, H2-17 a H2-19, H3-7, H3-8).
+- C8: texto de T031 según el código (caras[0].destino, caras[-1].destino; equivalente por R3).
+- C9: en T041, el archivo real es tests/test_vista_terreno.py.
+- C11: el grafo de dependencias de tasks.md incluye T059; la lista de pruebas incluye T056 y H2-22.
+- C12: plan.md:61, «Data fuera de este plan, salvo T058 (acordado con el integrante 2)».
+- C13: checklists/requirements.md:50 cita bench-2026-11-15.txt.
+- E3: DECISIONES §5.6, el margen (peor 17,6 ms frente a 20 ms) y que la medición aparte usó la misma función
+  del bench.
+- C14 (solo leer): ¿hay en paquete/cripta-02..06 dos salidas de una sala hacia la misma sala? Si hay,
+  corregí plan.md:82-83; si no, dejalo.
+Respondé en español. Al final: los commits y la suite.
+
+**Uso de la respuesta:** dos commits en `Marco`, sin push. (A) `55b611c` spec(001): en FR-122, «convertir una duración ≤ 0 en `None`» pasa a «una duración ≤ 0 en el efecto de una ficha se trata como si no tuviera duración». En spec.md no quedan nombres de Python ni de clases o módulos; sí quedan, sin cambiar, los nombres de campos y valores del formato de datos del Apéndice A (`rango`, `suelta`, `duracion`, `cierre_automatico`, `costo`, `comportamiento`, `true`, `"10"`, `"250"`) y los nombres de las pruebas en la tabla de trazabilidad (Principio X). (B) este commit, docs(001): data-model (ArmadorEstado en presente, T038), T045 (1 024 (32×32)), C4 (notas en T008, T018, T019 y T048), C8 (T031 con `caras[0].destino, caras[-1].destino`), C9 (T041 con `tests/test_vista_terreno.py`), C11 (T059 en el grafo; T056 y H2-22 en la lista de pruebas de `test_terreno_cazador.py`), C12 (plan.md:61), C13 (checklist con `bench-2026-11-15.txt`), E3 (DECISIONES §5.6: margen de 2,4 ms y la medición aparte con `medir_ciclo_cazadores`). C14: en `paquete/cripta-01` a `cripta-06` ninguna sala tiene dos salidas hacia la misma sala (6, 20, 40, 50, 24 y 300 salas revisadas), así que plan.md:82-83 no cambia. Suite con `uv run` antes de cada commit: 1102 pruebas unittest OK y 32 de 32 scripts.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+haz push a todo
+
+**Uso de la respuesta:** push de `Marco` a `origin/Marco` con los 5 commits de las correcciones del análisis de la 001 (`c71d5b0`, `2d0930d`, `c021747`, `55b611c`, `44093e4`) y este registro.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026 (terminado el miércoles 18)
+
+**Herramienta:** Claude Code
+
+Correcciones del análisis de spec-kit de Marco (17/11) para la parte del integrante 3 (Kris, que me pidió que las haga yo): la 004 y la parte de «ir a» de la 002. Constitución v1.2.0. SIN comandos de git que cambien algo (solo git log/show/status/diff/grep para comprobar): yo commiteo desde PyCharm. Trabajá por FASES y al final de cada fase PARÁ, mostrame git diff --stat y git status, y esperá a que te escriba «seguí». Los números de línea son aproximados: buscá por el texto y, si algo no coincide con lo que digo, avisame antes de editar en vez de inventar. No toques la 001, ni mis partes de la 002 (niebla y mapa conocido) ni la 003. Ya están hechos y NO se repiten: T117 y T127 (cerrados en 5b6659e) y el renumerado de los «8.» de la sección «ir a» de DECISIONES.md (L9).
+
+Criterio para las specs (el mismo que usó el integrante 1 en la 001): los nombres de campos del JSON de la API (costo, rango, cierre_automatico, duracion…) y los nombres de las pruebas en las tablas de trazabilidad se quedan, porque son el contrato de datos y lo que pide el Principio X; lo que se quita son los nombres de nuestras clases, módulos y valores de Python (DTO, servicios, None, constantes).
+
+FASE 1, solo specs/004-linea-tiempo/spec.md:
+- D1: la suposición del retraso 0 nombra SalidaDTO.cierre_automatico, ObjetoDTO.duracion y «Data». Reescribila: «el cierre automático de una puerta y la duración de un objeto son enteros ≥ 1 (FR-122)».
+- D2: la suposición de --replay sin --hasta nombra ServicioReplay, ServicioAccionJugador y ServicioLineaTiempo.ejecutar. Dejá solo la regla («la reproducción completa no permite consultar historia»); la explicación con nombres va al plan en la fase 4 (anotá el texto que sacaste).
+- C1: FR-416 y la entidad Punto de control: «a lo sumo K acciones entre dos puntos consecutivos; un retroceso con el pergamino puede agregar un punto a menos de K».
+- C2: FR-412: «final» = la partida terminó. FR-410: el código 1 también si la partida no terminó y T es mayor que el último reloj. Comprobalo antes en el código de --replay … --hasta.
+- C4: pasá a presente «cuando la 002 esté disponible / mientras no exista».
+- C7 (historia #0, escenario H1-5): primero comprobá qué hace hoy el programa con historia #0. Si ya indica el rango válido, alineá la spec con eso; si no, opción (b): aclarar en la spec que basta con el aviso de uso. NO cambies código por esto. Decime cuál aplicaste y por qué.
+- C10: línea 7 «Estado: Implementada»; ordená la fila 13 de la trazabilidad.
+PARÁ.
+
+FASE 2, solo specs/002-niebla-ir-a/spec.md (solo las secciones de «ir a»):
+- M4: NFR-250, SC-252 y A32: el criterio pasa a ser la cripta sintética de 300 salas (peor caso), con cripta-06 como dato complementario (en cripta-06 V2 da «sin ruta»).
+- L10: «1.001 ms» → «1,001 ms».
+PARÁ.
+
+FASE 3, código (Principio III: el código nuevo lleva type hints y docstrings; los métodos de P1 no llevan docstrings nuevos), sin cambiar comportamiento:
+- C1: type hints y docstrings de una línea en Logic/ViajeAutomatico.py, Service/ServicioIrA.py, DTO/ViajeDTO.py y Logic/BenchViaje.py, solo donde falten.
+- A1 de la 004: que una prueba existente cite FR-403 en su nombre (por ejemplo test_h1_7_fr403_fr409_…). Si renombrás una prueba, actualizá cada lugar donde se cite (spec.md, plan.md, tasks.md, DECISIONES.md, quickstart.md) y comprobá con grep que el nombre nuevo existe y el viejo no queda en ningún lado.
+Corré la suite completa con .venv\Scripts\python.exe tests\correr_pruebas.py (PYTHONIOENCODING=utf-8, sin nada en paralelo, sin límite de tiempo menor a 300 s): todo en verde. PARÁ con el resultado.
+
+FASE 4, docs de la 002 («ir a») y de la 004, en DECISIONES.md, README.md, plan, tasks y quickstart:
+- M1: plan de la 002: el grafo se arma una vez por viaje y se guarda entre pasos (como T111 y DECISIONES).
+- M2: plan de la 002: danio_recibido «aprobado» (no «pendiente»), con comentario de una línea en vez de docstring (es un método de P1); borrá en DECISIONES.md la frase «T110A sigue sin marcarse…» (T110A está [x]).
+- M5: en DECISIONES.md (sección de «ir a»), el antes/después de los cambios de «ir a» a ControladorBackend (__init__, _ejecutar, _empezar) que el plan de la 002 lista como P1; comprobalo con git log/diff contra P1. NO repitas los cambios de T054 de la 003 (_iniciar_verificando, resolubilidad()): ya tienen su antes/después en §5.4.
+- M6 y M7: quickstart de la 002: ejemplos/partida_ejemplo.log en vez de logs/partida_001.log; requisitos previos al día (T033/T040 y H4-4 ya cerrados).
+- M9: tabla de cobertura de «ir a» en tasks.md de la 002: filas de A44, A46 y la parte de interfaz de A2b/A9/A11, y una tarea [x] que respalde test_ir_a_interfaz.py, test_comando_mapa.py y test_historia_mapa_vista.py.
+- L3 y L6: quitá «pendiente» de ServicioLineaTiempo en el plan de la 002; nombre real de la prueba en T119 (…_tres_tamanos_y_el_de_referencia; comprobalo con grep).
+- L10: «1.001 ms» → «1,001 ms» también en DECISIONES.md (sección «ir a»).
+- 004 C3: plan.md, T004 y T053: solo --replay … --hasta pasa por ServicioLineaTiempo.ejecutar; el replay completo usa ServicioAccionJugador. Agregá acá la explicación con nombres que salió de la spec en D2.
+- 004 C5: el árbol de pruebas del plan con los archivos reales (comprobá cada uno con ls/grep).
+- 004 C6: R-4 alineado con H-1; en T021, «la regla del prefijo» y el punto que falta. C8: plan.md, LineaTiempoGuardadaDTO.
+- 004 B1 y C2 en README: una frase sobre el archivo de partida versión 2 y el rechazo de los archivos de P1 (T065), y el caso del código 1 de C2 en la tabla de códigos de --replay … --hasta.
+- 004 B2: tachá T032 (~~T032~~) como T031.
+- 004 D3: NO corras --bench. Dejá escrito en DECISIONES §5.5 que las tablas de M1 y M5 (y la columna de bytes de la tabla de M1) son del 14/11, de antes del mapa en los puntos de control. El párrafo «Memoria (M3)» ya usa el --bench del 17/11 (21 474, 186 039 y 917 439 bytes) y no hay que contradecirlo. Si el README cita una cifra de esas tablas («menos de 1 ms»), agregá la misma aclaración.
+- Opcionales M8 (002) y C9 (004): NO los hagas; decime que quedaron fuera.
+Al final de la fase, corré otra vez la suite completa (igual que en la fase 3). PARÁ.
+
+FASE 5: registrá este prompt en PROMPTS_LLM.md, al final, con el formato de siempre (Fecha, Herramienta: Claude Code, prompt textual, Uso de la respuesta). PARÁ.
+
+Al final: los archivos de cada fase, qué omitiste y por qué, la decisión de C7, el resultado de las dos suites y git status (fuera quedan ExplorarApi.py, bench.txt y exploracion/).
+
+**Uso de la respuesta:** trabajo por fases, sin comandos de git que cambien nada; los commits los hice desde PyCharm. Lo que se comprobó en el código antes de escribir: `--replay … --hasta` con T mayor que el último reloj de una partida que no terminó sale con código 1 y el rango (C2); `historia #0` se rechaza en los controles con el aviso de uso y no muestra el rango 1..N, así que en C7 se aplicó la opción (b), sin tocar código. (1) `specs/004-linea-tiempo/spec.md` (commit `9b5f8d6`): D1, D2 (el texto sacado pasó al plan en la fase 4), C1, C2, C4 (más la línea 13 y la suposición de «ir a», que pedí aparte), C7 y C10. (2) `specs/002-niebla-ir-a/spec.md`: NFR-250, SC-252 y A32 con la cripta sintética de 300 salas como criterio (H6-10 no cambió porque se mantuvo el nombre «cripta de referencia») y «1,001 ms». (3) Código sin cambiar comportamiento: type hints y docstrings de una línea en `Logic/ViajeAutomatico.py`, `Service/ServicioIrA.py`, `DTO/ViajeDTO.py` y `Logic/BenchViaje.py` (los cuatro de la 002, no de P1), y el docstring del módulo `BenchViaje` alineado con NFR-250 (pedido aparte); `test_h1_7_fr409_instante_igual_al_reloj` pasó a `test_h1_7_fr403_fr409_instante_igual_al_reloj` (solo se citaba en `specs/004-linea-tiempo/tasks.md`; grep: el viejo no queda). Suite: 1102 pruebas OK y 32 de 32 scripts. (4) Documentación: plan, tasks y quickstart de la 002 («ir a»), plan y tasks de la 004, `DECISIONES.md` y `README.md`. Lo nuevo: el punto 13 de «ir a» en `DECISIONES.md` con el antes/después de `__init__`, `_ejecutar` y `_empezar` (comparado con `86b017e`, la versión de la primera entrega; los cambios entraron en `adf7add`); T128 [x] en la 002, que respalda las tres pruebas de interfaz, y cinco filas de cobertura; y el árbol de pruebas de la 004 con sus 24 archivos reales. Correcciones que pedí después, en la misma fase: el mapa entró en los puntos de control con `4aac926` (14/11, 23:41), no con T118, así que las tablas de M1 y M5 (`cafa382`, 14/11, 17:12) son de antes; la cifra de 0,5 ms de M5 se aclara como medida con las criptas de la primera parte, porque la tabla no tiene una fila de 300 salas; en I3-8, el dato de V1 con 300 salas (0,199 ms, `bench-viaje-2026-11-17.txt`) y «hasta 300 en el paquete de la Parte II» en Rendimiento (la frase «Con 50 salas es poco» ya la había sacado M1, y Claude avisó antes de editar); D-6, las líneas 7 y 8 del quickstart de la 002, H-4 de la 004 y los decimales del punto 11 de «ir a» con coma. `--bench` no se corrió. Suite al cerrar la fase: 1102 pruebas OK y 32 de 32 scripts. M8 (002) y C9 (004), opcionales, quedaron fuera.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 (noche) y miércoles 18 de noviembre 2026 (madrugada)
+
+**Herramienta:** Claude
+
+Le pedí a Claude que revisara los merges con las ramas de Kristel y Marco, las ventanas de push, la salida completa del bench y cada fase de las correcciones del análisis de spec-kit antes de commitear, y que adaptara los prompts de Claude Code. Prompts principales, textuales:
+- «ok, de nuestra parte falta algo, probaar algo, implementar algo?. y eso de kris y marco … ya les avisamos?»
+- «ok mira la salida de los comandos» y «ok te paso el txt que pide y tambien lo que me dijo kris y marco junto con algo quie me adjunto kris», con la salida completa de `--bench` y el reporte de correcciones de la T041.
+- «ok, kris creo que ya lo subio mira, te paso el zip de ambos de kris y marco».
+- «asi el push?», con las capturas de cada ventana de push.
+- «ok el pull request al main lo hacemos ahorita o ma;ana, por el momento, nos falta algo como integrante 2? le falta algo a marco o kristel o ya esta todo hecho? revisa bien el contexto»
+- «ok kris dijo que me daba permiso de hacer los cambios si queria, entonces que hacemos? y tambien queda el detalle del nombre cortado no?»
+- «asi el push? y mira lo que me dijo marco: Corrí /speckit.analyze sobre las cuatro features …», con el análisis y los prompts de correcciones.
+- «mientras corre la suite, dame el prompt completo de lo de kris, pero antes, analiste bien lo q te mande de kris?»
+- «ok entonces hemos hecho todo lo q marco dijo en este menasje junto con los adjuntos».
+- «te mando el .zip y el txt de claude code de la fase 4».
+
+**Uso de la respuesta:** revisar el bench completo del merge final (las dos filas que no cumplen ya estaban documentadas en `DECISIONES.md`); detectar que los 4 commits de la corrección de la T041 no estaban subidos y traerlos después; quitar una línea repetida que dejó el `merge=union` en `PROMPTS_LLM.md`; encontrar que §5.5 de `DECISIONES.md` todavía decía que el guardado versión 2 no existía y corregirlo con su tamaño real (reproducido en otra copia del proyecto), con los valores de M3 del bench del 17/11; decidir no cambiar el nombre recortado del cazador (es la regla de FR-117, con su prueba); comprobar contra el código cada punto del análisis de Marco antes de aplicarlo (H1 del mapa con la partida terminada, H-4 sin salidas repetidas en el paquete, I9 que no corresponde porque H3-9 cita FR-314); adaptar los prompts de correcciones (sin git del agente, por fases, buscando por texto) y revisar cada fase de la parte del integrante 3: el diff de código de «ir a» (capas e imports), el antes/después de `ControladorBackend` contra el commit de P1 y la fecha real en que el mapa entró en los puntos de control (4aac926, no T118).
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Miércoles 18 de noviembre 2026 (madrugada)
+
+**Herramienta:** Claude
+
+Le pedí a Claude una revisión final del repositorio contra el enunciado de la Parte II y el plan de trabajo antes de abrir el pull request a main, y que me guiara en el PR. Prompts principales, textuales:
+- «ok pero tranquilo yo puedo seguir un ratito, entonces estamos listo para hacer el pr al main? ya hicimos todo lo que marco nos dijo? falta algo de algun integrante o todo esta listo?»
+- «antes de hacer el pr, falta algo? lee de nuevo el contexto y mira todo a ver si falta algo o si ya el pr es seguro»
+- «asi el push? te mando el zip y revisa bien todo el contexto, enunciado y plan del segundo proyecto a ver si falta algo. si fuera el caso guiame despues con el pr paso a paso»
+- «antes de pr, vi que dijiste plan de marco pero tambien analisaste la parte mia y de kris? junto con la de marco obvio. despues dame los pasos de pr»
+- «ok en el paso 3 me sale esto», con la captura de la comparación de ramas en GitHub.
+
+**Uso de la respuesta:** encontrar y corregir las últimas frases desactualizadas (el docstring de `Service/BenchLineaTiempo.py`, que decía que el formato versión 2 no existía y que la cabecera medía 34 bytes en vez de 58; la escala de «50 salas» en el plan de la 004) y agregar fecha y herramienta a tres entradas de esta bitácora que no las tenían; revisar el repositorio contra el enunciado (§2.1 a §2.6, §6.3, §7.1 a §7.3) y contra el plan de trabajo de los tres integrantes; crear el pull request de `derek` a `main` (sin conflictos, con los commits contados contra el repositorio) y decidir hacer el merge con «Create a merge commit» para conservar el historial de spec antes que el código (§2.6).
+
+-----------------------------------------------------------------------------------------------------------------------

@@ -1,0 +1,172 @@
+# Contrato: lo que el mapa conocido ofrece
+
+**Dueño**: integrante 2 · **Usuarios**: «ir a» (FR-250 a FR-264), la vista, el comando de ver el mapa, el resumen de
+`historia` y `ArmadorEstado` para el H-2 (integrante 3) · **Confirmado** por el integrante 3 el 14/11 (T005) · **Capa**: Logic (grafo, búsqueda por nombre) y DTO (vista, guardado) ·
+Ver [research.md](../research.md), R5 · Modelo: [data-model.md](../data-model.md)
+
+Este contrato cumple FR-225 y FR-217: todo lo que «ir a» y la interfaz usen del mapa sale de aquí, y nada más.
+Aquí van nombres y reglas; el código llega en `tasks.md`.
+
+Acceso: el mapa vive en el motor de la partida, `contexto.motor.mapa` (`MapaConocido`). En la línea de tiempo, el motor
+aparte que arma la 004 tiene el suyo, ya restaurado desde el punto de control y re-simulado.
+
+## (a) Grafo para «ir a»
+
+```text
+GrafoMapaConocido(mapa)                      # Logic/GrafoMapaConocido.py
+  cantidad_salas() -> int                    # len(Mazmorra.salas): ids reales, 0 .. cantidad_salas() - 1
+  salidas(u: int)  -> list[(destino, costo)] # salidas UTILIZABLES de u
+  entradas(x: int) -> list[(origen, costo)]  # salidas UTILIZABLES que llegan a x
+```
+
+Es la interfaz **exacta** de [busqueda-rutas.md](../../001-terreno-cazador/contracts/busqueda-rutas.md) de la 001, así
+que se le pasa tal cual a `BusquedaCostoMinimo` o a `paso_desde_cero`:
+
+```text
+grafo = GrafoMapaConocido(contexto.motor.mapa)       # por partida, por viaje o por paso (ver «Costo de armarlo»)
+paso = paso_desde_cero(grafo, destino, sala_jugador, None)   # (vecina, costo) | None
+```
+
+**«Utilizable»** (FR-225, FR-252): una salida u→v en la dirección d es utilizable si y solo si
+
+1. u está **explorada**,
+2. v está **explorada**,
+3. la cara de u (`sala u, dirección d`) se recuerda **abierta**. Una cara «sin observar» o recordada cerrada no
+   cuenta, aunque la cara de v se recuerde abierta (escenario H2-6).
+
+Garantías:
+
+- `costo` es el **igualado** por Logic (`SalidaViva.costo`, 001 FR-101): el mismo en los dos sentidos aunque solo una
+  cara lo declare, y 100 si ninguna lo declara.
+- Los ids son los **reales** del esqueleto: el desempate por menor id de la búsqueda de la 001 da el mismo resultado
+  que FR-253 (escenario H2-5).
+- `salidas` y `entradas` leen el mapa **en vivo** en cada llamada: reflejan las observaciones hechas hasta ese momento
+  (regla 2 de la 001). Una salida hacia una sala avistada o desconocida nunca aparece.
+- No consultan el estado real de ninguna puerta, ni el contenido, ni el reporte de resolubilidad.
+- **Tamaño e ids** (pedido del integrante 3, 14/11: la búsqueda de la 001 crea arreglos de tamaño `cantidad_salas()` e
+  indexa por id): `cantidad_salas()` es el total de la cripta, `len(Mazmorra.salas)`, con ids de 0 a
+  `cantidad_salas() - 1`, igual que `GrafoEsqueleto`; no es la cantidad de salas exploradas.
+- **Coherencia**: `(v, c)` está en `salidas(u)` si y solo si `(u, c)` está en `entradas(v)`.
+- Una sala **no explorada** no tiene salidas ni entradas: `salidas(u)` y `entradas(u)` devuelven `[]`.
+- **Posición 0 y huecos**: la posición 0 puede no ser una sala (lo dice `GrafoEsqueleto.cantidad_salas`). `salidas(0)` y
+  `entradas(0)` devuelven `[]` sin error, porque el estado de la sala se mira **antes** de leer `mazmorra.salas[u]`. Lo
+  mismo para cualquier otra posición que no sea una sala.
+- Costo: `salidas(u)` O(4); `entradas(x)` O(grado de entrada de x); `cantidad_salas()` O(1); el constructor O(1).
+
+**Costo de armarlo**. El grafo se puede armar una vez por partida, una vez por viaje o en cada paso: como lee el mapa en
+vivo, responde lo mismo en los tres casos. El constructor es O(1) y no recorre nada; el índice inverso del esqueleto
+(`_inversa`, pares origen y dirección por sala) se arma en la **primera llamada a `entradas`**, en O(S + E), como en
+`GrafoEsqueleto`, y queda en ese objeto (depende solo del esqueleto, que no cambia en la partida). Armar el grafo en
+cada paso, como prevé el plan del integrante 3 (I3-8), suma ese O(S + E) a cada paso: es justo lo que mide B11 (armar el
+grafo y un `paso_desde_cero`). Medido el 15/11 con 1 024 salas y el mapa completo
+([bench-2026-11-15.txt](../bench-2026-11-15.txt)): 4.518 ms de mediana (0.941 ms el grafo y 3.788 ms el paso), por debajo
+de los 5 ms de NFR-250, con poco margen.
+
+**Búsqueda nueva por paso** (regla 3 de la 001: «o empieza una búsqueda nueva»). El grafo **no avisa** a una búsqueda
+guardada cuando cambia una salida utilizable. Como el viaje recalcula antes de cada paso (FR-255) y el conocimiento
+solo cambia entre un paso y el siguiente, «ir a» empieza una búsqueda nueva en cada paso (`paso_desde_cero`, o
+`BusquedaCostoMinimo.reiniciar`): da por construcción el mismo paso que «calcular desde cero» (FR-255, SC-251). Armar
+el grafo y dar un paso con 1 024 salas tarda 4.518 ms de mediana en B11 del bench (research, R7), por debajo de los 5 ms
+de NFR-250. Si la medición de NFR-251 llega a pedir reutilizar la búsqueda
+entre pasos, el aviso se agrega en ese momento, con su prueba y avisando antes (research, R5).
+
+(El aviso `puerta_cambio` que el mapa **recibe** de la `Mazmorra` por medio de `RepartidorAvisosPuertas`, para volver a
+observar las puertas de la sala del jugador, es otra cosa y se mantiene: lo exige FR-207.)
+
+## (b) DTO de solo lectura para la vista, el comando y el resumen
+
+```text
+contexto.motor.mapa.a_dto() -> MapaConocidoDTO       # Logic arma el DTO; Service solo lo copia
+```
+
+```text
+MapaConocidoDTO(salas: list[SalaConocidaDTO])                       # solo exploradas, por id creciente
+SalaConocidaDTO(id: int, nombre: str, salidas: list[SalidaConocidaDTO | None])   # 4 posiciones: N, S, E, O
+SalidaConocidaDTO(costo: int, estado_puerta: int, destino: int | None)
+```
+
+| Campo | Qué es | Requisitos |
+|---|---|---|
+| `SalaConocidaDTO.id` | Id real de una sala **explorada** (nunca de una avistada o desconocida) | FR-204, SC-202 |
+| `SalaConocidaDTO.nombre` | Nombre de la sala explorada | FR-205 |
+| `SalidaConocidaDTO.costo` | Costo igualado | FR-205, FR-219, 001 FR-101 |
+| `SalidaConocidaDTO.estado_puerta` | `ABIERTA`, `CERRADA` o `SIN_OBSERVAR` (constantes de `DTO/MapaConocidoDTO.py`): el **recordado** de la cara de esta sala, nunca el real | FR-208, FR-212, FR-219 |
+| `SalidaConocidaDTO.destino` | Id si el destino está explorado; `None` si está avistado: «sala sin explorar detrás de esta salida», una por salida, sin identificador | FR-204, FR-219 |
+
+Garantías:
+
+- Nunca aparece una sala desconocida: toda salida de una sala explorada lleva a una explorada o a una avistada.
+- Dos salidas hacia la misma sala avistada aparecen como dos `destino = None` independientes; cuando esa sala se
+  explora, las dos pasan a tener el mismo id (escenario H5-5).
+- No trae contenido (enemigos, objetos, trampas) de ninguna sala, ni siquiera de las exploradas por la antorcha
+  (FR-211, FR-219).
+- `a_dto()` no consume tiempo, no registra nada en el historial ni cambia ningún estado (FR-220). Costo O(S).
+- Es el mismo DTO para la vista de la partida, el comando de ver el mapa y `ResumenHistoriaDTO.mapa_conocido` (que hoy
+  es `object | None`; con la 002, `MapaConocidoDTO`). En el resumen se arma sobre el motor aparte de la 004
+  (`motor.mapa.a_dto()`), así que muestra el mapa de ese instante y nada de acciones revertidas (FR-223).
+- Si se agrega a `EstadoJuegoDTO`, va como campo nuevo al final con valor por defecto (`mapa_conocido:
+  MapaConocidoDTO | None = None`); si se agrega o no lo decide el integrante 3.
+- **H-2** (decidido por el integrante 3 el 14/11, opción A): `EstadoJuegoDTO` deja de traer la identidad de las salas
+  no exploradas porque `ArmadorEstado` pone `sala_destino = SIN_EXPLORAR` (−1) en las salidas de `EstadoJuegoDTO.sala`
+  hacia salas no exploradas y `sala_salida = None` mientras la sala de salida no esté explorada, consultando
+  `es_explorada` (abajo, en (c)). La constante `SIN_EXPLORAR` se define en `DTO/EstadoJuegoDTO.py` (integrante 3), **no**
+  en `DTO/MapaConocidoDTO.py`, que no cambia (D-6).
+- La partida terminada sigue teniendo su mapa: el comando funciona igual (caso borde).
+
+## (c) Búsqueda de una sala explorada por nombre
+
+```text
+contexto.motor.mapa.buscar_exploradas(nombre: str) -> list[int]
+```
+
+| Resultado | Qué hace «ir a» (integrante 3) | FR |
+|---|---|---|
+| `[]` | Rechaza la orden con **el mismo mensaje** para avistada, desconocida o inexistente; sin pasos, sin tiempo, sin acción, sin `partida.log` | FR-251 |
+| `[id]` y `id == jugador.Sala_Actual` | Informa que ya está allí; sin pasos ni tiempo | FR-251 |
+| `[id]` | Destino del viaje | FR-250 |
+| dos o más ids | Rechaza por ambiguo, sin tiempo | FR-251 |
+
+- Solo compara nombres de salas **exploradas**: una sala avistada o desconocida con el mismo nombre no cuenta ni se
+  revela.
+- Comparación: `nombre.strip().casefold()` contra el nombre de la sala tratado igual (hallazgo H-3; confirmado por el
+  integrante 3 el 14/11, T005).
+- Un nombre **vacío o de solo espacios** devuelve `[]`: después de `strip()` no coincide con ninguna sala (confirmado por
+  el integrante 3 el 14/11, D-3).
+- Un nombre que **no es `str`** (`None`, un número, `bytes`) lanza `ValueError`: es un error de programación del que
+  llama, no una orden del jugador (D-3).
+- Ids en orden creciente. Costo O(S) por orden (no por paso). No cambia ningún estado.
+
+### Consulta de una sala: `es_explorada`
+
+```text
+contexto.motor.mapa.es_explorada(sala: int) -> bool
+```
+
+- `True` solo si el estado de la sala es `EXPLORADA`; `False` si está avistada o desconocida, y para la posición 0 o
+  cualquier posición que no sea una sala (su estado es siempre `DESCONOCIDA`).
+- O(1). No cambia nada, no consume tiempo ni registra nada en el historial.
+- La usa `ArmadorEstado` del integrante 3 para el H-2, opción A (ver (b)); pedida en D-2 y confirmada el 14/11.
+
+## (d) Lo que el mapa conocido NO ofrece
+
+- El **reporte de resolubilidad** de la 003 (FR-313): se muestra al iniciar como excepción de FR-217, no forma parte del
+  mapa, no lo modifica y «ir a» no lo usa.
+- El **estado real** de ninguna puerta, salvo a través del recordado. (Las puertas de la sala actual que hoy muestra
+  `EstadoJuegoDTO.sala` son reales, pero mientras el jugador está en una sala el recordado es igual al real: research,
+  R2.)
+- El **contenido** de ninguna sala.
+- La **identidad** de las salas avistadas y cualquier dato de las desconocidas. Hallazgo H-2 del plan:
+  `EstadoJuegoDTO.sala.salidas[d].sala_destino` hoy trae el id real de destinos avistados; lo resuelve la opción A del
+  integrante 3 (14/11, ver (b)), con `SIN_EXPLORAR` en `DTO/EstadoJuegoDTO.py` y `es_explorada`.
+- El esqueleto (`Mazmorra`, `GrafoEsqueleto`, `GestorEsqueleto`): «ir a» no debe usarlo para rutas (FR-252). Traducir a
+  una dirección la vecina que ya eligió el grafo, leyendo `Mazmorra.salida` sobre las cuatro direcciones de la sala
+  actual (plan del integrante 3, `decidir_paso`), **no** es usar el esqueleto para la ruta: la ruta sale solo de este
+  grafo, la sala actual está explorada y la vecina ya la eligió el grafo (acordado con el integrante 3, D-1).
+- **Inversas** para la línea de tiempo: la 004 reconstruye hacia adelante (FR-223).
+- Escritura: ni «ir a» ni la interfaz escriben el mapa. Los pasos de «ir a» lo actualizan porque son movimientos
+  ordinarios (`Motor.mover_jugador`, FR-264).
+
+## Cómo se avisa a quien usa este contrato
+
+Si cambia una firma o una regla de este contrato, el integrante 2 avisa antes al integrante 3. Las pruebas de
+`tests/test_grafo_mapa_conocido.py` y `tests/test_mapa_conocido_vista.py` fijan el contrato.

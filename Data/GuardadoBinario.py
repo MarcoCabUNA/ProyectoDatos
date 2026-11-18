@@ -10,18 +10,39 @@ Lo que pide §4.10 y cómo se cumple:
                                          revisan antes de interpretar cualquier otro byte.
   - Comparar contra JSON              -> a_diccionario() de los DTOs (paso 12b-3 y --bench).
 
-Formato del archivo (versión 1):
+Formato del archivo (versión 2, Parte II; feature 002 data-model §6 y T003 de la 004):
 
-    CABECERA (34 bytes, fija)
+    CABECERA (58 bytes, fija)
         4s  "CRPT"
-        H   versión del formato
+        H   versión del formato (= 2)
         Q   offset del bloque global      I  largo del bloque global
         Q   offset del índice             I  cantidad de entradas del índice
         I   id de sala mínimo (la entrada 0 del índice es esa sala)
-    BLOQUE GLOBAL       PartidaGuardadaDTO
+        Q   offset del bloque del mapa    I  largo del bloque del mapa   (0 = PartidaGuardadaDTO.mapa es None)
+        Q   offset del bloque de la línea I  largo del bloque de la línea (0 = PartidaGuardadaDTO.linea es None)
+    BLOQUE GLOBAL       PartidaGuardadaDTO sin mapa ni línea (mismo formato que en la versión 1)
+    BLOQUE DEL MAPA     I cantidad de salas S · S bytes de estado · S bytes de caras (las 4 caras de una sala en
+                        un byte, 2 bits cada una: bits 0-1 = N, 2-3 = S, 4-5 = E, 6-7 = O)
+    BLOQUE DE LA LÍNEA  k · cantidad y acciones · cantidad y puntos de control (cada uno: acciones_completadas,
+                        su bloque global, cantidad y sus salas, y el bloque de su mapa con largo I delante) ·
+                        cantidad y cargas · cantidad y fichas
     BLOQUES DE SALAS    un SalaGuardadaDTO por sala, uno detrás de otro
     ÍNDICE              una entrada de 12 bytes (Q offset, I largo) por id, desde el id mínimo
                         hasta el máximo; un id que no existe tiene largo 0
+
+    Un archivo de la versión 1 (cabecera de 34 bytes, sin mapa ni línea) se rechaza al leer la versión, antes de
+    interpretar el resto; no se migra (004 FR-421).
+
+    El mapa y la línea van en bloques PROPIOS: el bloque global queda igual que en la versión 1 y es el mismo que se
+    repite en cada punto de control, y cargar_sala no los lee. El mapa de cada punto usa el mismo
+    _codificar_mapa / _leer_mapa que el bloque del mapa. Las fichas del catálogo de la línea se guardan como el
+    texto JSON de su a_diccionario (el mismo formato de la caché del catálogo), porque traen campos extra del API
+    que no tienen un formato fijo.
+
+    Validación solo de formato: estado de sala y cada par de bits de cara en {0, 1, 2}, largo exacto, offset y
+    largo dentro de la zona anterior al índice; la línea, con las restricciones del §1 del contrato de la 004
+    (LineaTiempoGuardadaDTO.validar). guardar() también las comprueba, para no reemplazar una partida buena por un
+    archivo que después no se puede leer.
 
     La entrada de la sala 'id' está en  offset_indice + (id - id_minimo) * 12.
     Es el mismo supuesto que GestorEsqueleto: los ids de sala son seguidos (1..N). Así no hay que
@@ -67,17 +88,26 @@ Uso desde Servicios (Kristel), con los DTOs que arman Marco y Kristel:
     problemas = comprobar_compatibilidad(partida, cripta.version, resolvedor.version_catalogo())
     salas = cargar_salas("saves/partida1.sav")         # se reconstruyen todas (acuerdo del 11/10)
 """
+import json
 import os
 import struct
+from dataclasses import replace
 
+from Data.FuenteJson import FuenteJson
+from DTO.LineaTiempoDTO import (AccionGuardadaDTO, LineaTiempoGuardadaDTO, PuntoControlGuardadoDTO,
+                                RegistroCargaGuardadoDTO)
+from DTO.MapaConocidoDTO import CERRADA, EXPLORADA, MapaConocidoGuardadoDTO
 from DTO.PartidaGuardadaDTO import (ContadorTipoDTO, EfectoGuardadoDTO, EnemigoGuardadoDTO,
                                     EventoGuardadoDTO, InventarioGuardadoDTO, JugadorGuardadoDTO,
                                     PartidaGuardadaDTO, SalaGuardadaDTO, TrampaGuardadaDTO)
+from DTO.SalaDTO import EnemigoEnSalaDTO, SalaDTO, SalidaDTO, TrampaEnSalaDTO
 from Security.ValidadorAcceso import validar_version
 
 MAGIA = b"CRPT"
-VERSION_FORMATO = 1
-_CABECERA = struct.Struct("<4sHQIQII")      # magia, versión, offset y largo global, offset índice, entradas, id mínimo
+VERSION_FORMATO = 2
+# magia, versión, offset y largo global, offset índice, entradas, id mínimo, offset y largo del mapa,
+# offset y largo de la línea (58 bytes)
+_CABECERA = struct.Struct("<4sHQIQIIQIQI")
 _ENTRADA = struct.Struct("<QI")             # offset y largo de un bloque de sala
 _RANGO_MAXIMO = 1_000_000                   # ids de sala más separados que esto no caben en un índice directo
 
@@ -106,22 +136,32 @@ def guardar(ruta: str, partida: PartidaGuardadaDTO, salas: list[SalaGuardadaDTO]
     for sala in salas:
         if not isinstance(sala, SalaGuardadaDTO):
             raise ErrorGuardado(f"se esperaba un SalaGuardadaDTO y llegó {type(sala).__name__}")
+    if partida.mapa is not None and not isinstance(partida.mapa, MapaConocidoGuardadoDTO):
+        raise ErrorGuardado(f"se esperaba un MapaConocidoGuardadoDTO y llegó {type(partida.mapa).__name__}")
+    if partida.linea is not None and not isinstance(partida.linea, LineaTiempoGuardadaDTO):
+        raise ErrorGuardado(f"se esperaba un LineaTiempoGuardadaDTO y llegó {type(partida.linea).__name__}")
     try:
         global_ = _codificar_partida(partida)
+        mapa = _codificar_mapa(partida.mapa)
+        linea = _codificar_linea(partida.linea)
         bloques = [_codificar_sala(sala) for sala in salas]
-    except (struct.error, TypeError, AttributeError, UnicodeEncodeError, OverflowError) as error:
+    except (struct.error, TypeError, AttributeError, UnicodeEncodeError, OverflowError, ValueError) as error:
         raise ErrorGuardado(f"la partida tiene un dato que no se puede guardar: {error}") from None
 
     id_minimo, entradas = _armar_indice(salas)
     offset_global = _CABECERA.size
-    posicion = offset_global + len(global_)
+    offset_mapa = offset_global + len(global_)
+    offset_linea = offset_mapa + len(mapa)
+    posicion = offset_linea + len(linea)
     for i in range(len(salas)):          # cada sala va en su posición del índice, sin ordenar ni buscar
         entradas[salas[i].id - id_minimo] = (posicion, len(bloques[i]))
         posicion += len(bloques[i])
     offset_indice = posicion
 
     partes = [_CABECERA.pack(MAGIA, VERSION_FORMATO, offset_global, len(global_),
-                             offset_indice, len(entradas), id_minimo), global_]
+                             offset_indice, len(entradas), id_minimo,
+                             offset_mapa, len(mapa), offset_linea, len(linea)),
+              global_, mapa, linea]
     partes.extend(bloques)
     for offset, largo in entradas:
         partes.append(_ENTRADA.pack(offset, largo))
@@ -131,11 +171,18 @@ def guardar(ruta: str, partida: PartidaGuardadaDTO, salas: list[SalaGuardadaDTO]
 
 
 def cargar(ruta: str) -> PartidaGuardadaDTO:
-    """El bloque global (todo lo que no es de una sala)."""
+    """Todo lo que no es de una sala: el bloque global, el del mapa y el de la línea."""
     with _abrir(ruta) as archivo:
         cabecera = _leer_cabecera(archivo, ruta)
         datos = _leer_en(archivo, ruta, cabecera.offset_global, cabecera.largo_global, "el bloque global")
-    return _decodificar(datos, _leer_partida, ruta, "el bloque global")
+        datos_mapa = _leer_bloque_opcional(archivo, ruta, cabecera, cabecera.offset_mapa, cabecera.largo_mapa,
+                                           "el mapa conocido")
+        datos_linea = _leer_bloque_opcional(archivo, ruta, cabecera, cabecera.offset_linea, cabecera.largo_linea,
+                                            "la línea de tiempo")
+    partida = _decodificar(datos, _leer_partida, ruta, "el bloque global")
+    mapa = None if datos_mapa is None else _decodificar(datos_mapa, _leer_mapa, ruta, "el mapa conocido")
+    linea = None if datos_linea is None else _decodificar(datos_linea, _leer_linea, ruta, "la línea de tiempo")
+    return replace(partida, mapa=mapa, linea=linea)
 
 
 def cargar_sala(ruta: str, id_sala: int) -> SalaGuardadaDTO | None:
@@ -195,12 +242,16 @@ def comprobar_compatibilidad(partida: PartidaGuardadaDTO, version_cripta_disponi
 # ====================================================================== archivo
 class _Cabecera:
     def __init__(self, offset_global: int, largo_global: int, offset_indice: int, entradas: int,
-                 id_minimo: int):
+                 id_minimo: int, offset_mapa: int, largo_mapa: int, offset_linea: int, largo_linea: int):
         self.offset_global = offset_global
         self.largo_global = largo_global
         self.offset_indice = offset_indice
         self.entradas = entradas
         self.id_minimo = id_minimo
+        self.offset_mapa = offset_mapa
+        self.largo_mapa = largo_mapa
+        self.offset_linea = offset_linea
+        self.largo_linea = largo_linea
 
 
 def _abrir(ruta: str):
@@ -217,17 +268,23 @@ def _leer_cabecera(archivo, ruta: str) -> _Cabecera:
     if len(datos) < 6 or datos[:4] != MAGIA:
         raise ErrorGuardado(f"{ruta!r} no es una partida guardada (no empieza con {MAGIA!r})")
     version = _U16.unpack_from(datos, 4)[0]
-    if version != VERSION_FORMATO:          # se revisa ANTES de interpretar el resto
-        raise ErrorGuardado(f"{ruta!r} usa la versión {version} del formato y este programa "
-                            f"lee la versión {VERSION_FORMATO}")
+    if version < VERSION_FORMATO:           # se revisa ANTES de interpretar el resto
+        raise ErrorGuardado(f"{ruta!r} es una partida guardada con un formato viejo (versión {version}) que este "
+                            f"programa ya no carga (lee la versión {VERSION_FORMATO}): empieza una partida nueva")
+    if version > VERSION_FORMATO:
+        raise ErrorGuardado(f"{ruta!r} es una partida guardada con un formato más nuevo (versión {version}) que "
+                            f"este programa no sabe leer (lee la versión {VERSION_FORMATO}): actualiza el programa")
     if len(datos) < _CABECERA.size:
         raise ErrorGuardado(f"{ruta!r} está cortado (la cabecera está incompleta)")
-    _, _, offset_global, largo_global, offset_indice, entradas, id_minimo = _CABECERA.unpack(datos)
+    (_, _, offset_global, largo_global, offset_indice, entradas, id_minimo,
+     offset_mapa, largo_mapa, offset_linea, largo_linea) = _CABECERA.unpack(datos)
     tamano = os.fstat(archivo.fileno()).st_size
     if (offset_global + largo_global > tamano
             or offset_indice + entradas * _ENTRADA.size != tamano):
         raise ErrorGuardado(f"{ruta!r} está dañado o cortado (los tamaños de la cabecera no cuadran)")
-    return _Cabecera(offset_global, largo_global, offset_indice, entradas, id_minimo)
+    # El offset y el largo del mapa y de la línea se comprueban al leerlos (cargar): cargar_sala no los usa.
+    return _Cabecera(offset_global, largo_global, offset_indice, entradas, id_minimo,
+                     offset_mapa, largo_mapa, offset_linea, largo_linea)
 
 
 def _leer_en(archivo, ruta: str, offset: int, largo: int, que: str) -> bytes:
@@ -236,6 +293,16 @@ def _leer_en(archivo, ruta: str, offset: int, largo: int, que: str) -> bytes:
     if len(datos) != largo:
         raise ErrorGuardado(f"{ruta!r} está cortado: falta parte de {que}")
     return datos
+
+
+def _leer_bloque_opcional(archivo, ruta: str, cabecera: _Cabecera, offset: int, largo: int,
+                          que: str) -> bytes | None:
+    """Los bytes de un bloque que puede faltar (largo 0 = None), dentro de la zona entre la cabecera y el índice."""
+    if largo == 0:
+        return None
+    if offset < _CABECERA.size or offset + largo > cabecera.offset_indice:
+        raise ErrorGuardado(f"{ruta!r} está dañado: {que} se sale de su zona")
+    return _leer_en(archivo, ruta, offset, largo, que)
 
 
 def _leer_indice(archivo, ruta: str, cabecera: _Cabecera) -> list[tuple[int, int]]:
@@ -405,6 +472,13 @@ class _Lector:
         self.pos += struct.calcsize(formato)
         return valores
 
+    def bytes_crudos(self, n: int) -> bytes:
+        if self.pos + n > len(self._datos):
+            raise ValueError(f"faltan {self.pos + n - len(self._datos)} bytes al final del bloque")
+        valor = self._datos[self.pos:self.pos + n]
+        self.pos += n
+        return valor
+
 
 # ====================================================================== bloque global
 def _codificar_partida(p: PartidaGuardadaDTO) -> bytes:
@@ -537,3 +611,174 @@ def _leer_sala(lector: _Lector) -> SalaGuardadaDTO:
     enemigos = [EnemigoGuardadoDTO(lector.texto(), lector.texto(), *lector.grupo(_ENEMIGO))
                 for _ in range(lector.cantidad())]
     return SalaGuardadaDTO(id_sala, contenido_cargado, puertas, objetos, trampas, enemigos)
+
+
+# ====================================================================== bloque del mapa (versión 2)
+def _valor_de_mapa(valor, maximo: int, que: str) -> int:
+    """El valor si es un entero entre 0 y maximo; si no, ValueError (no se escribe lo que no se puede leer)."""
+    if not isinstance(valor, int) or isinstance(valor, bool) or valor < 0 or valor > maximo:
+        raise ValueError(f"{que} del mapa conocido debe estar entre 0 y {maximo} (llegó {valor!r})")
+    return valor
+
+
+def _codificar_mapa(mapa: MapaConocidoGuardadoDTO | None) -> bytes:
+    """I cantidad de salas S · S bytes de estado · S bytes de caras (2 bits por cara: N, S, E, O). None -> b''."""
+    if mapa is None:
+        return b""
+    salas = len(mapa.estado_salas)
+    if len(mapa.caras) != 4 * salas:
+        raise ValueError(f"el mapa conocido tiene {salas} salas y {len(mapa.caras)} caras (deberían ser {4 * salas})")
+    estado = bytearray(salas)
+    caras = bytearray(salas)
+    for sala in range(salas):
+        estado[sala] = _valor_de_mapa(mapa.estado_salas[sala], EXPLORADA, "el estado de una sala")
+        byte = 0
+        for direccion in range(4):          # bits 0-1 = N, 2-3 = S, 4-5 = E, 6-7 = O
+            byte |= _valor_de_mapa(mapa.caras[sala * 4 + direccion], CERRADA, "una cara") << (2 * direccion)
+        caras[sala] = byte
+    return _U32.pack(salas) + bytes(estado) + bytes(caras)
+
+
+def _leer_mapa(lector: _Lector) -> MapaConocidoGuardadoDTO:
+    """Inverso de _codificar_mapa. Valida solo formato: estado y cada par de bits en {0, 1, 2}."""
+    salas = lector.cantidad()
+    estado = list(lector.bytes_crudos(salas))
+    bytes_caras = lector.bytes_crudos(salas)
+    for sala in range(salas):
+        if estado[sala] > EXPLORADA:
+            raise ValueError(f"la sala {sala} tiene el estado {estado[sala]}, que no existe")
+    caras = [0] * (4 * salas)
+    for sala in range(salas):
+        byte = bytes_caras[sala]
+        for direccion in range(4):
+            valor = (byte >> (2 * direccion)) & 0b11
+            if valor > CERRADA:
+                raise ValueError(f"la cara {direccion} de la sala {sala} tiene el estado {valor}, que no existe")
+            caras[sala * 4 + direccion] = valor
+    return MapaConocidoGuardadoDTO(estado, caras)
+
+
+def _escribir_mapa_con_largo(e: _Escritor, mapa: MapaConocidoGuardadoDTO | None) -> None:
+    """El bloque del mapa con su largo delante (para los puntos de control); largo 0 = None."""
+    bloque = _codificar_mapa(mapa)
+    e.cantidad(len(bloque))
+    e.bytes_crudos(bloque)
+
+
+def _leer_mapa_con_largo(lector: _Lector) -> MapaConocidoGuardadoDTO | None:
+    largo = lector.cantidad()
+    if largo == 0:
+        return None
+    inicio = lector.pos
+    mapa = _leer_mapa(lector)
+    if lector.pos - inicio != largo:
+        raise ValueError(f"el mapa de un punto de control dice medir {largo} bytes y mide {lector.pos - inicio}")
+    return mapa
+
+
+# ====================================================================== bloque de la línea (versión 2)
+def _codificar_linea(linea: LineaTiempoGuardadaDTO | None) -> bytes:
+    """
+    k · acciones · puntos de control (acciones_completadas, bloque global, salas y mapa) · cargas · fichas.
+    None -> b''. Antes de escribir comprueba las restricciones del §1 del contrato de la 004 (ValueError).
+    """
+    if linea is None:
+        return b""
+    linea.validar()
+    e = _Escritor()
+    e.entero(linea.k)
+    e.cantidad(len(linea.acciones))
+    for accion in linea.acciones:
+        e.entero(accion.tiempo)
+        e.texto(accion.tipo)
+        e.entero_opcional(accion.direccion)
+        e.texto_opcional(accion.objetivo)
+        e.texto_opcional(accion.objeto)
+    e.cantidad(len(linea.puntos))
+    for punto in linea.puntos:
+        e.entero(punto.acciones_completadas)
+        e.bytes_crudos(_codificar_partida(punto.partida))       # el mismo bloque global, sin mapa ni línea
+        e.cantidad(len(punto.salas))
+        for sala in punto.salas:
+            e.bytes_crudos(_codificar_sala(sala))
+        _escribir_mapa_con_largo(e, punto.partida.mapa)
+    e.cantidad(len(linea.cargas))
+    for carga in linea.cargas:
+        e.entero(carga.ordinal)
+        _escribir_sala_dto(e, carga.sala)
+    e.cantidad(len(linea.fichas))
+    for ficha in linea.fichas:
+        e.texto(json.dumps(ficha.a_diccionario(), ensure_ascii=False, separators=(",", ":")))
+    return e.resultado()
+
+
+def _leer_linea(lector: _Lector) -> LineaTiempoGuardadaDTO:
+    """Inverso de _codificar_linea. Una línea que no cumple el §1 del contrato de la 004 es ValueError."""
+    k = lector.entero()
+    acciones = [AccionGuardadaDTO(lector.entero(), lector.texto(), lector.entero_opcional(),
+                                  lector.texto_opcional(), lector.texto_opcional())
+                for _ in range(lector.cantidad())]
+    puntos = []
+    for _ in range(lector.cantidad()):
+        acciones_completadas = lector.entero()
+        partida = _leer_partida(lector)
+        salas = [_leer_sala(lector) for _ in range(lector.cantidad())]
+        mapa = _leer_mapa_con_largo(lector)
+        puntos.append(PuntoControlGuardadoDTO(acciones_completadas, replace(partida, mapa=mapa), salas))
+    cargas = [RegistroCargaGuardadoDTO(lector.entero(), _leer_sala_dto(lector)) for _ in range(lector.cantidad())]
+    fichas = [_ficha_desde_texto(lector.texto()) for _ in range(lector.cantidad())]
+    linea = LineaTiempoGuardadaDTO(k, acciones, puntos, cargas, fichas)
+    linea.validar()
+    return linea
+
+
+def _ficha_desde_texto(texto: str):
+    """Una ficha del catálogo desde el JSON de su a_diccionario (el mismo formato de la caché del catálogo)."""
+    try:
+        return FuenteJson.ficha_desde_diccionario(json.loads(texto))
+    except (KeyError, TypeError) as error:
+        raise ValueError(f"una ficha de la línea de tiempo está incompleta: {error}") from None
+
+
+def _escribir_sala_dto(e: _Escritor, sala: SalaDTO) -> None:
+    """El contenido inicial de una sala (SalaDTO), para las cargas de la línea."""
+    if len(sala.salidas) != 4:
+        raise TypeError(f"la sala {sala.id} debe tener exactamente 4 salidas (N, S, E, O)")
+    e.entero(sala.id)
+    e.texto(sala.nombre)
+    e.texto(sala.version)
+    e.booleano(sala.contenido_cargado)
+    for salida in sala.salidas:
+        e.booleano(salida is not None)
+        if salida is not None:
+            e.entero(salida.sala_destino)
+            e.booleano(salida.cerrada)
+            e.texto_opcional(salida.llave)
+            e.entero_opcional(salida.cierre_automatico)
+            e.entero_opcional(salida.costo)
+    e.cantidad(len(sala.enemigos))
+    for enemigo in sala.enemigos:
+        e.texto(enemigo.instancia)
+        e.texto(enemigo.tipo)
+        e.entero_opcional(enemigo.vida)
+    e.cantidad(len(sala.objetos))
+    for id_objeto in sala.objetos:
+        e.texto(id_objeto)
+    e.cantidad(len(sala.trampas))
+    for trampa in sala.trampas:
+        e.texto(trampa.instancia)
+        e.texto(trampa.tipo)
+
+
+def _leer_sala_dto(lector: _Lector) -> SalaDTO:
+    id_sala, nombre, version, contenido_cargado = lector.entero(), lector.texto(), lector.texto(), lector.booleano()
+    salidas: list[SalidaDTO | None] = [None, None, None, None]
+    for direccion in range(4):
+        if lector.booleano():
+            salidas[direccion] = SalidaDTO(lector.entero(), lector.booleano(), lector.texto_opcional(),
+                                           lector.entero_opcional(), lector.entero_opcional())
+    enemigos = [EnemigoEnSalaDTO(lector.texto(), lector.texto(), lector.entero_opcional())
+                for _ in range(lector.cantidad())]
+    objetos = [lector.texto() for _ in range(lector.cantidad())]
+    trampas = [TrampaEnSalaDTO(lector.texto(), lector.texto()) for _ in range(lector.cantidad())]
+    return SalaDTO(id_sala, nombre, salidas, version, contenido_cargado, enemigos, objetos, trampas)

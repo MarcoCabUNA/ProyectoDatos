@@ -10,6 +10,8 @@ Qué dibujar y dónde lo deciden funciones puras, que se prueban sin pintar píx
     posicion_del_protagonista(salidas, sala anterior)          dónde pisa el protagonista
     colocar(tamaños, ocupadas, ...)                            dónde se reparten enemigos y objetos
     orden_de_dibujo(pies)                                      quién va encima de quién
+    etiquetas_de_costo, posicion_de_costo                      dónde va el costo de cada salida (FR-116)
+    texto_de_ficha, lleva_marcador, rombo_del_marcador         el texto de la ficha de un actor y su rombo (FR-117)
 TODAS las medidas (tamaños, suelo, reparto, aura, marcos de puerta) están en View/Componentes.py; aquí no hay números.
 
 Tamaños (altura del contenido del sprite): el protagonista, fija (ALTURA_JUGADOR); el enemigo con sprites propios,
@@ -27,6 +29,7 @@ from dataclasses import dataclass, field
 
 import pygame
 
+from DTO.ActorDTO import ActorDTO
 from DTO.Direcciones import E, N, S
 from DTO.ElementoDTO import ELEMENTO_ENEMIGO, ELEMENTO_OBJETO_SUELO, ELEMENTO_PUERTA, ElementoDTO
 from DTO.EstadoJuegoDTO import EstadoJuegoDTO
@@ -100,6 +103,64 @@ def trapecio(marco: pygame.Rect, direccion: int) -> list[tuple[int, int]]:
     if direccion == E:
         return [(der, arriba), (der, abajo), (izq, abajo - u), (izq, arriba + u)]
     return [(izq, arriba), (izq, abajo), (der, abajo - u), (der, arriba + u)]
+
+
+def posicion_de_costo(marco: pygame.Rect, direccion: int) -> tuple[tuple[int, int], str]:
+    """(punto, ancla) de la etiqueta de costo de una salida: en la franja entre su puerta y el suelo (la del sur, justo
+    bajo el suelo), donde no pisa nadie."""
+    d = c.COSTO_DISTANCIA
+    if direccion == N:
+        return (marco.centerx, marco.bottom + d), "midtop"
+    if direccion == S:
+        return (marco.centerx, c.SUELO.bottom + d), "midtop"
+    if direccion == E:
+        return (marco.left - d, marco.centery), "midright"
+    return (marco.right + d, marco.centery), "midleft"
+
+
+def etiquetas_de_costo(estado: EstadoJuegoDTO, marcos: list[pygame.Rect],
+                       fuente: pygame.font.Font) -> list[tuple[int, str, pygame.Rect]]:
+    """(dirección, texto, rectángulo) del costo de cada salida, también las cerradas; sin salida o sin costo no hay
+    etiqueta. El rectángulo es el del texto sin sombra (se calcula sin renderizar); lo pintado por texto_sombreado
+    ocupa rect.inflate(2, 2) por la sombra."""
+    etiquetas = []
+    for direccion, salida in enumerate(estado.sala.salidas):
+        if salida is None or salida.costo is None:
+            continue
+        texto = str(salida.costo)
+        punto, ancla = posicion_de_costo(marcos[direccion], direccion)
+        rect = pygame.Rect((0, 0), (fuente.size(texto)[0], fuente.get_linesize()))   # el tamaño que tendría el render
+        setattr(rect, ancla, punto)
+        etiquetas.append((direccion, texto, rect))
+    return etiquetas
+
+
+def lleva_marcador(comportamiento: str | None) -> bool:
+    """True si la ficha del actor lleva el rombo del cazador (FR-117)."""
+    return comportamiento == c.COMPORTAMIENTO_CAZADOR
+
+
+def texto_de_ficha(fuente: pygame.font.Font, nombre: str, comportamiento: str | None, ancho: int) -> str:
+    """«Nombre (comportamiento)» dentro de 'ancho' píxeles; si no cabe se corta el nombre y el comportamiento se
+    conserva (FR-117)."""
+    if comportamiento is None:
+        return c.recortar_a_ancho(fuente, nombre, ancho)
+    sufijo = f"({comportamiento})"
+    completo = f"{nombre} {sufijo}"
+    if fuente.size(completo)[0] <= ancho:
+        return completo
+    resto = ancho - fuente.size(" " + sufijo)[0]
+    if resto >= fuente.size("A...")[0]:
+        return c.recortar_a_ancho(fuente, nombre, resto) + " " + sufijo
+    return c.recortar_a_ancho(fuente, sufijo, ancho)
+
+
+def rombo_del_marcador(izquierda: int, centro_y: int, lado: int) -> list[tuple[int, int]]:
+    """Los cuatro vértices (arriba, derecha, abajo, izquierda) del rombo de 'lado' píxeles que empieza en 'izquierda'
+    y está centrado en 'centro_y'."""
+    r = lado // 2
+    cx = izquierda + r
+    return [(cx, centro_y - r), (cx + r, centro_y), (cx, centro_y + r), (cx - r, centro_y)]
 
 
 def posicion_del_protagonista(salidas: list, id_sala_anterior: int | None) -> tuple[int, int]:
@@ -253,6 +314,7 @@ class EscenaJuego:
             self._efectos.parpadeo(superficie, self._ahora)    # la luz vacila: una capa oscura sobre el fondo
         self._marcos_sin_salida(superficie, estado, fondo)
         puertas = self._puertas(superficie, estado, fondo)
+        self._costos(superficie, estado, fondo)
         reparto = self._repartir(estado)
         if self._efectos is not None:
             if ahora is not None:                                  # en la pausa la escena está congelada: no se observa nada
@@ -307,6 +369,28 @@ class EscenaJuego:
             marcas.append(MarcaPuerta(direccion, rectangulo, sprite, nombre == PUERTA_FINAL))
         return marcas
 
+    def _costos(self, superficie: pygame.Surface, estado: EstadoJuegoDTO, fondo: str) -> None:
+        """Dibuja el costo de cada salida exactamente en el rectángulo que da etiquetas_de_costo."""
+        for _, texto, rect in etiquetas_de_costo(estado, marcos_de(fondo), self._fuentes.pie):
+            c.texto_sombreado(superficie, self._fuentes.pie, texto, c.ORO, rect.topleft, "topleft")
+
+    def _nombre_de_ficha(self, superficie: pygame.Surface, actor: ActorDTO, base: tuple[int, int], ancho: int,
+                         fuente: pygame.font.Font) -> None:
+        """Dibuja «nombre (comportamiento)» con 'base' como punto medio-inferior; si el actor lleva marcador, el rombo
+        a la izquierda del texto, ambos centrados juntos (FR-117)."""
+        x, y = base
+        if not lleva_marcador(actor.comportamiento):
+            texto = texto_de_ficha(fuente, actor.nombre, actor.comportamiento, ancho)
+            c.texto_sombreado(superficie, fuente, texto, c.TEXTO, base, "midbottom")
+            return
+        lado, hueco = c.MARCADOR_CAZADOR, c.MARCADOR_SEPARACION
+        texto = texto_de_ficha(fuente, actor.nombre, actor.comportamiento, ancho - lado - hueco)
+        izquierda = x - (lado + hueco + fuente.size(texto)[0]) // 2
+        rect = c.texto_sombreado(superficie, fuente, texto, c.TEXTO, (izquierda + lado + hueco, y), "bottomleft")
+        rombo = rombo_del_marcador(izquierda, rect.centery, lado)
+        pygame.draw.polygon(superficie, c.ROJO_VIVO, rombo)
+        pygame.draw.polygon(superficie, c.SOMBRA, rombo, 1)
+
     # ------------------------------------------------------------------ lo que las animaciones de combate recuerdan
     def _rect_del_jugador(self, estado) -> pygame.Rect:
         jugador = estado.jugador
@@ -359,8 +443,7 @@ class EscenaJuego:
         barra = pygame.Rect((0, 0), (min(c.BARRA_VIDA[0], ancho), c.BARRA_VIDA[1]))
         barra.midbottom = (sprite_rect.centerx, sprite_rect.top - c.FICHA_SEPARACION[0])
         c.barra_de_vida(superficie, self._fuentes, barra, actor.vida, actor.vida_max)
-        c.texto_sombreado(superficie, fuente, c.recortar_a_ancho(fuente, actor.nombre, ancho), c.TEXTO,
-                          (sprite_rect.centerx, barra.top - c.FICHA_SEPARACION[1]), "midbottom")
+        self._nombre_de_ficha(superficie, actor, (sprite_rect.centerx, barra.top - c.FICHA_SEPARACION[1]), ancho, fuente)
 
     def _jugador(self, superficie, estado) -> None:
         jugador = estado.jugador

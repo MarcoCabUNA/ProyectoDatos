@@ -12,6 +12,7 @@ class ActorDTO:
     defensa: int
     velocidad: int
     sala_actual: int
+    comportamiento: str | None = None # FR-117: None para el jugador
 
     @classmethod
     def desde_diccionario(cls, d):
@@ -25,10 +26,11 @@ class ActorDTO:
             d["defensa"],
             d["velocidad"],
             d["sala_actual"],
+            d.get("comportamiento"),
         )
 
     def a_diccionario(self):
-        return {
+        datos = {
             "id": self.id,
             "tipo": self.tipo,
             "nombre": self.nombre,
@@ -39,3 +41,6 @@ class ActorDTO:
             "velocidad": self.velocidad,
             "sala_actual": self.sala_actual,
         }
+        if self.comportamiento is not None:
+            datos["comportamiento"] = self.comportamiento
+        return datos

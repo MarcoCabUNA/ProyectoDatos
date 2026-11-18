@@ -400,7 +400,12 @@ def probar_medir_junta_los_cinco_grupos_en_orden():
     try:
         for i in range(5):
             setattr(B, nombres[i], lambda i=i: [filas[i]])
-        assert B.medir() == filas                                 # los cinco, y en este orden
+        medir_original = B.BenchLineaTiempo.medir
+        B.BenchLineaTiempo.medir = lambda: []                     # el sexto grupo (004) se prueba aparte
+        try:
+            assert B.medir() == filas                             # los cinco, y en este orden
+        finally:
+            B.BenchLineaTiempo.medir = medir_original
     finally:
         for i in range(5):
             setattr(B, nombres[i], originales[i])

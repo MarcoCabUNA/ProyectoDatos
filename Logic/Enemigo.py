@@ -1,3 +1,6 @@
+import dataclasses
+
+from DTO.ActorDTO import ActorDTO
 from DTO.EfectoFichaDTO import REGENERACION, TIPOS_CONOCIDOS
 from Logic.ActorBase import ActorBase
 from Logic.Comportamientos import crear_comportamiento
@@ -29,6 +32,10 @@ class Enemigo(ActorBase):
 
     def comportamiento(self):
         return self.ficha.comportamiento
+
+    def a_dto(self) -> ActorDTO:
+        """El ActorDTO de ActorBase, con el comportamiento de la ficha (FR-117)."""
+        return dataclasses.replace(super().a_dto(), comportamiento=self.ficha.comportamiento)
 
     # COORDINAR (Integrante 2): los ids de suelta deben incluirse en los lotes de /catalogo
     def objetos_que_suelta(self):

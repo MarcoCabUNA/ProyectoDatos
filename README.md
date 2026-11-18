@@ -64,10 +64,17 @@ se escribe como `uv run python main.py ...`.
 | Abre el juego con el paquete local de `paquete/`, sin usar la red. | `.venv\Scripts\python.exe main.py --offline` | `.venv/bin/python main.py --offline` |
 | Cambia el tope de fichas del catálogo en memoria (entero mayor o igual a 1; por defecto 25). Se puede combinar con los demás modos. | `.venv\Scripts\python.exe main.py --cache-size 10` | `.venv/bin/python main.py --cache-size 10` |
 | Reproduce una partida desde su bitácora, sin abrir la ventana, y muestra cada acción y el resultado final. | `.venv\Scripts\python.exe main.py --replay logs/partida_001.log --offline` | `.venv/bin/python main.py --replay logs/partida_001.log --offline` |
+| Reproduce la partida solo hasta el instante `T` (entero mayor o igual a 0) y muestra el resumen del estado en ese instante, sin abrir la ventana. Solo se acepta junto con `--replay`. | `.venv\Scripts\python.exe main.py --replay logs/partida_001.log --hasta 300 --offline` | `.venv/bin/python main.py --replay logs/partida_001.log --hasta 300 --offline` |
+| Cambia cada cuántas acciones del jugador la línea de tiempo toma un punto de control (entero mayor o igual a 1; por defecto 20). Se puede combinar con los demás modos. | `.venv\Scripts\python.exe main.py --checkpoint-cada 50` | `.venv/bin/python main.py --checkpoint-cada 50` |
 | Corre las mediciones de rendimiento con cargas sintéticas, sin abrir la ventana, y muestra una tabla por subsistema. | `.venv\Scripts\python.exe main.py --bench` | `.venv/bin/python main.py --bench` |
+| Dice si la cripta se puede terminar (si se pueden conseguir las llaves en algún orden hasta llegar a la salida), sin abrir la ventana ni iniciar una partida, y sale. Con `--offline` la lee de `paquete/`. | `.venv\Scripts\python.exe main.py --verificar cripta-02 --offline` | `.venv/bin/python main.py --verificar cripta-02 --offline` |
+| Inicia una partida nueva aunque la cripta no sea resoluble o su verificación no haya concluido, mostrando el reporte como advertencia. | `.venv\Scripts\python.exe main.py --forzar` | `.venv/bin/python main.py --forzar` |
 | Muestra las opciones. | `.venv\Scripts\python.exe main.py --ayuda` | `.venv/bin/python main.py --ayuda` |
 
 `--replay` y `--bench` no se pueden usar juntos. Con uv, cada comando se escribe `uv run python main.py ...`.
+
+`--verificar` tampoco se combina con `--replay` ni con `--bench`. `--forzar` se acepta con cualquier opción, pero solo
+lo usa una partida nueva (ver «Modo `--verificar` y `--forzar`»).
 
 **Sobre `--replay`:** `logs/` está vacía en una copia nueva del repositorio (se llena al jugar). Para probarlo sin jugar
 antes, el repositorio incluye una partida de muestra hecha con el paquete local:
@@ -100,16 +107,67 @@ Durante la partida (el inventario está siempre visible; la ventana muestra este
 | Soltar | `G` | `Mayús` + clic sobre la casilla |
 | Cambiar la vista del inventario | `V` (real, peso, valor, nombre; el orden real no cambia) | |
 | Pergamino de retroceso | `Retroceso` o `Ctrl + Z` | |
+| Abrir la línea de comandos (`historia`, `mapa`, `ir a`) | `Enter` (acepta con `Enter`, se cierra con `Esc`) | |
 | Guardar / Cargar | `Ctrl + S` o `F5` / `Ctrl + L` o `F9` | botones de la pausa |
 | Pausa | `Esc` (Continuar, Guardar, Cargar, Salir al menú) | |
 
 Para salir: `Salir` en el menú principal, `Salir al menú` en la pausa, o cerrar la ventana.
 
+### Línea de comandos: `historia`, `mapa` e `ir a`
+
+`Enter` abre la línea de comandos (un campo de texto abajo en la ventana), `Enter` ejecuta lo escrito y `Esc` la cierra
+sin pausar el juego. Mientras está abierta, las teclas del juego se escriben en la línea y no actúan.
+
+| Comando | Qué hace |
+|---|---|
+| `historia <t>` | Muestra el estado en el instante `t` (entero mayor o igual a 0, hasta el reloj actual). |
+| `historia #k` | Muestra el estado justo antes de la acción `k` del jugador (entero mayor o igual a 1, hasta las acciones hechas). |
+| `mapa` | Abre o cierra el mapa de lo que el jugador conoce. |
+| `ir a <sala>` | Lleva al jugador a una sala que ya exploró, paso a paso. |
+
+Un comando que no se entiende deja un aviso de uso y no hace nada. Ejemplos: `historia 300`, `historia #4`, `mapa`,
+`ir a Pasillo de las urnas`.
+
+**`historia`.** El resultado aparece en un panel de solo lectura con el reloj, la sala, la vida y las estadísticas del
+jugador, el inventario (con el arma y la armadura equipadas), los efectos activos y los enemigos de la sala. `Esc` cierra el
+panel y el juego sigue tal cual estaba. Una consulta no consume tiempo, no cuenta como acción y no se escribe en la
+bitácora. Si el número está fuera de rango, la línea muestra un aviso con el rango válido. Sin abrir la ventana, el mismo
+resumen sale de `--replay ARCHIVO --hasta T` (ver «Modo `--replay`»).
+
+La línea de tiempo toma un punto de control cada 20 acciones (se cambia con `--checkpoint-cada N`, entero mayor o igual a
+1; por ejemplo `main.py --checkpoint-cada 50`): una consulta nunca re-simula más de `N` acciones. El valor por defecto
+salió de `--bench` (con 5 000 acciones, `historia` tarda menos de 1 ms en la medición del 14/11, de antes de que los
+puntos de control llevaran el mapa conocido; ver `DECISIONES.md`, §5.5).
+
+**`mapa`.** Dibuja un panel con las salas exploradas (con su nombre y el costo de cada salida cuando hay espacio), cada salida hacia una
+sala avistada como un hueco «sin explorar» (sin nombre ni número), la sala donde estás en dorado y cada puerta con el
+estado en que la viste por última vez: verde abierta, roja cerrada, gris sin observar. Una puerta que se cerró sola
+mientras estabas lejos sigue figurando abierta hasta que vuelvas a verla. Si el mapa no cabe, se recorta alrededor de tu
+sala y el panel lo avisa. Se cierra con `mapa` otra vez, con `Esc` o al hacer cualquier acción. No consume tiempo, no
+cuenta como acción y no se escribe en la bitácora. Con la partida terminada no está disponible (igual que `historia`).
+
+**`ir a <sala>`.** El destino debe ser una sala ya explorada; mayúsculas y espacios sobrantes no importan, pero las tildes
+sí (`sotano` no encuentra `Sótano`). El viaje elige la ruta de menor costo usando solo lo que el mapa recuerda (salas
+exploradas y puertas recordadas abiertas), no abre puertas aunque tengas la llave, y da un paso cada 350 ms para que se
+vea cómo cambias de sala. Cada paso es un movimiento normal: gasta su tiempo, deja pasar los eventos y cuenta como acción.
+
+- *Cuándo para.* Cuando llegas, cuando entras a una sala con enemigos (activos o dormidos), cuando recibes daño de cualquier
+  origen, o cuando ya no hay una ruta conocida (por ejemplo, vuelves a ver una puerta de tu ruta cerrada y no hay otra).
+  El motivo, o todos si coinciden varios, aparece en el panel de mensajes («Llegaste a ...», «Viaje detenido: hay
+  enemigos.», «...recibiste daño.», «...sin ruta conocida a ...»).
+- *Cómo se corta.* Pulsando cualquier tecla o haciendo clic: el viaje se corta («Viaje interrumpido.») y la orden se
+  ejecuta (por ejemplo `Z` espera). `Esc` solo corta el viaje y no abre la pausa. Un pergamino de retroceso revierte únicamente
+  el último paso y el viaje no continúa.
+- *Si se rechaza.* Una sala no explorada, desconocida o que no existe da el mismo aviso (no revela si existe); un nombre que
+  designa varias salas exploradas, o la sala donde ya estás, tienen su propio aviso. No gastan tiempo ni quedan en la bitácora.
+- *En la bitácora.* Cada paso se escribe como un movimiento más, y la orden como un comentario (`# ir a Pasillo de las
+  urnas`) justo después del primer paso. `--replay` repite los pasos y llega a la misma partida; el comentario no cambia nada.
+
 ### Modo `--offline`
 
-Lee las criptas desde la carpeta `paquete/`, que viene en el repositorio con las cuatro publicadas al 18 de octubre
-(`cripta-01` a `cripta-04`, de 6 a 50 salas). Las lecturas locales no cuentan como solicitudes de red, así que el
-reporte final muestra 0 solicitudes.
+Lee las criptas desde la carpeta `paquete/`, que viene en el repositorio con `cripta-02` a `cripta-06` (publicadas el
+15 de noviembre, de 20 a 300 salas) y con `cripta-01` (6 salas), que ya no está publicada y no trae `llaves.json`. Las
+lecturas locales no cuentan como solicitudes de red, así que el reporte final muestra 0 solicitudes.
 
 Para agregar o actualizar una cripta en el paquete (esto sí usa la red; el catálogo se comparte entre criptas y se
 completa con las fichas nuevas):
@@ -127,8 +185,92 @@ con la misma semilla y llega al mismo resultado. Si la versión de la cripta o d
 disponible, se informa la incompatibilidad y no se reproduce. Si la última línea quedó a medio escribir (por
 ejemplo, porque el programa se cerró), se ignora y se avisa.
 
+Con `--hasta T` el replay no recorre la partida mostrando cada acción: la reproduce hasta el instante `T` y
+imprime el resumen de ese estado (el mismo que muestra `historia T` durante la partida). Si la partida del log terminó
+(el jugador murió o ganó) y `T` es posterior a ese final, muestra el estado final y avisa que la partida terminó antes. Si
+no terminó y `T` es mayor que su último reloj, no hay final que mostrar: avisa el rango válido. Sin `--hasta`, `--replay`
+reproduce la partida completa. Códigos de salida de `--replay ... --hasta`:
+
+| Código | Cuándo |
+|---|---|
+| 0 | Imprimió el resumen. |
+| 1 | No se pudo reproducir: el log no existe o no se puede leer, o la versión de la cripta o del catálogo no coincide; o la partida del log no terminó y `T` es mayor que su último reloj (el mensaje da el rango válido, de 0 a ese reloj). El mensaje dice por qué. |
+| 2 | Error en las opciones: `--hasta` sin valor, negativo o que no es un entero, o usado sin `--replay`. |
+
 Al cargar una partida guardada, la bitácora continúa en un archivo nuevo que incluye las acciones anteriores,
 así que ese log también se puede reproducir completo.
+
+### Modo `--verificar` y `--forzar`
+
+`--verificar <cripta>` revisa, sin abrir la ventana ni iniciar una partida, si se pueden conseguir todas las llaves en
+algún orden hasta llegar a la salida. Sin `--offline`, pide la cripta y sus llaves al servicio web (cuenta como
+solicitudes de red); con `--offline`, las lee de `paquete/`. El reporte va a la salida estándar: si es resoluble, el
+orden en que se obtienen las llaves; si no, el motivo, las llaves que no se pueden obtener, las puertas que quedan
+bloqueadas y los ciclos de llaves. Códigos de salida:
+
+| Código | Cuándo |
+|---|---|
+| 0 | La cripta es resoluble. |
+| 3 | La cripta no es resoluble. |
+| 1 | La verificación no concluyó: no se pudo obtener la cripta o sus llaves, o los datos tienen un error. El mensaje dice por qué. |
+| 2 | Error en las opciones: `--verificar` sin el id de la cripta, o junto con `--replay` o `--bench`. |
+
+Con `--offline`, `--verificar cripta-01` termina con código 1 porque el paquete no trae su `llaves.json` (la cripta ya
+no está publicada en el servicio web).
+
+Al iniciar una partida nueva, el juego hace la misma verificación: si la cripta no es resoluble o la verificación no
+concluyó, la partida no se inicia y se muestra el reporte. Con `--forzar` la partida se inicia igual y el reporte se
+muestra como advertencia. `--forzar` no permite jugar una cripta cuyo esqueleto tiene un error de datos, y no tiene
+efecto con `--verificar`, `--replay` ni `--bench`, ni al cargar una partida guardada.
+
+## Terreno y cazador (001, integrante 1)
+
+Spec y diseño: `specs/001-terreno-cazador/` (`spec.md`, `plan.md`, `research.md`).
+
+**Costo por salida.** Cada salida puede declarar un `costo` (entero ≥ 1) en el esqueleto, en una o en sus dos caras,
+y vale lo mismo en los dos sentidos: si solo una cara lo declara, ese valor se copia a la otra; si ninguna lo declara,
+vale **100**; si las dos declaran valores distintos, es un error de datos (ver abajo). Moverse por una salida cuesta su
+costo, para el jugador y para los enemigos (intervalo `max(1, costo × 100 // velocidad)`); esperar, atacar y las demás
+acciones siguen costando lo de la primera parte. La ventana muestra el costo junto a cada salida de la sala actual.
+
+**Cazador.** Cuarto comportamiento de enemigo; su ficha trae `rango` (entero ≥ 0, en unidades de costo). En su turno:
+
+- si está en la sala del jugador, ataca (no se mueve);
+- si no, calcula d, el costo mínimo hasta la sala del jugador por salidas abiertas (no abre puertas cerradas). Si no
+  hay ruta o d > `rango`, espera (100). Si d ≤ `rango` (incluido d = `rango`), se mueve un paso por
+  una ruta de costo d;
+- **desempate**: entre las vecinas que están sobre una ruta de costo d, va a la de **menor id**; si varias salidas
+  llevan a la misma vecina, usa la más barata. La decisión es determinista y no consume el generador aleatorio;
+- los demás actores no le bloquean el paso, y al llegar a la sala del jugador no ataca en ese mismo turno.
+
+En la ventana, cada enemigo muestra su comportamiento en texto y el cazador lleva un marcador propio.
+
+**Búsqueda compartida e invalidación.** Como el costo es igual en los dos sentidos, una sola búsqueda de costo mínimo
+desde el jugador (montículo binario propio, `Estructuras/MonticuloMinimo.py`) sirve a todos los cazadores, y cada uno
+la extiende solo hasta su sala o hasta pasar su `rango`. La búsqueda se descarta si el jugador cambia de sala o si se
+abre o cierra una puerta que toca la parte ya resuelta; el pergamino de retroceso también la descarta cuando deshace
+algo de eso. En todos los casos la decisión es la misma que la de un cálculo desde cero.
+
+**Mediciones.** `--bench` (ver «Cómo ejecutar») incluye las filas del costo por salida y del cazador
+(`Logic/BenchRutas.py`); `uv run python -m Service.ServicioBench` corre las mismas mediciones. Hay dos tablas completas:
+[`specs/001-terreno-cazador/bench-2026-11-13.txt`](specs/001-terreno-cazador/bench-2026-11-13.txt), con las cifras
+que citan R1 a R6 de research.md y §5.1 y §5.2 de `DECISIONES.md`, y
+[`specs/001-terreno-cazador/bench-2026-11-15.txt`](specs/001-terreno-cazador/bench-2026-11-15.txt), con las mismas
+mediciones con el mapa conocido de la 002 conectado (mismos conteos). El análisis está en
+[`specs/001-terreno-cazador/research.md`](specs/001-terreno-cazador/research.md) (R1 a R6) y `DECISIONES.md`
+(sección del integrante 1, §5.1, §5.2 y §5.6). Los tiempos dependen de la máquina; los conteos son reproducibles
+(semilla 2026).
+
+**Errores de datos (FR-122).** No hay valores por defecto para datos inválidos; el mensaje dice qué ficha o qué salida
+y qué campo, y el programa no se cae.
+
+| Dato inválido | Qué pasa |
+|---|---|
+| `costo` menor que 1 o no entero, costos distintos en las dos caras, o `cierre_automatico` menor que 1 o no entero | Error del esqueleto: la partida no inicia, **ni siquiera con `--forzar`**. `--verificar` informa que la verificación no concluyó y termina con código 1. |
+| Ficha de cazador sin `rango` o con `rango` que no es entero ≥ 0 (o un objeto con `duracion` que no es entero ≥ 1, incluidos un no entero y un `bool`, o un enemigo cuya `suelta` quedó rechazada) | La ficha se rechaza y no se vuelve a pedir. Si está en la sala inicial, la partida no inicia; en otra sala, esa sala queda como contenido no disponible y entrar se rechaza con el mensaje, sin gastar tiempo ni escribir en la bitácora. |
+
+Ejemplo: `Datos inválidos en 'esqueleto de cripta-02': la salida E de la sala 2 declara costo 0: debe ser un entero >= 1`.
+
 
 ## Archivos que genera el programa
 
@@ -137,14 +279,49 @@ Ninguna de estas carpetas se sube al repositorio (están en `.gitignore`). Se cr
 | Ubicación | Contenido |
 |---|---|
 | `cache/catalogo/` | Caché del catálogo en disco: una ficha por archivo, dentro de una carpeta por versión del catálogo. Cuando el catálogo cambia de versión, la anterior se borra. |
-| `saves/partida.sav` | La partida guardada (formato binario propio). |
+| `saves/partida.sav` | La partida guardada (formato binario propio, versión 2: incluye el mapa conocido y la línea de tiempo). Un archivo guardado con la primera parte (versión 1) no se carga: se informa que es incompatible y la partida en curso no cambia. |
 | `saves/puntajes.jsonl` | Los puntajes: una línea por partida terminada. |
 | `logs/partida_NNN.log` | Bitácora de cada partida para `--replay` (`partida_001.log`, `partida_002.log`, ...). |
 | `saves/bench_tmp/` | Archivos temporales de `--bench`; se borran al terminar. |
 
+## Desarrollo con spec-kit
+
+La segunda parte se desarrolló con spec-kit (especificación, plan y tareas por capacidad).
+
+- **Versión de spec-kit:** 1.1.0 (campo `speckit_version` de `.specify/init-options.json`). Para instalar esa misma
+  versión:
+
+  ```
+  uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@v1.1.0
+  ```
+
+- **Agente:** Claude Code (integración `claude` de `.specify/integration.json`).
+- **Constitución:** [`.specify/memory/constitution.md`](.specify/memory/constitution.md).
+
+| Capacidad | Carpeta en `specs/` | Requisitos | Integrante responsable |
+|---|---|---|---|
+| Terreno con costo por salida y enemigo cazador | [`001-terreno-cazador`](specs/001-terreno-cazador/) | FR-1xx | 1 |
+| Niebla de guerra, mapa conocido y viaje automático «ir a» | [`002-niebla-ir-a`](specs/002-niebla-ir-a/) | FR-2xx | 2 (mapa conocido y antorcha); 3 («ir a», FR-250 a FR-264, historias 6 y 7, y la vista del mapa) |
+| Verificación de resolubilidad | [`003-resolubilidad`](specs/003-resolubilidad/) | FR-3xx | 2 (la vista del reporte es del integrante 3) |
+| Línea de tiempo de la partida | [`004-linea-tiempo`](specs/004-linea-tiempo/) | FR-4xx | 3 |
+
 ## Pruebas
 
 Para correr todas de una vez (no abre ventanas; termina con código 0 si todo pasa):
+
+```
+uv run python tests/correr_pruebas.py
+```
+
+En Windows hay que pedirle a Python que escriba en UTF-8; si no, el script se cae al imprimir un carácter que la
+consola no puede mostrar (no es una prueba que falle):
+
+```
+PYTHONIOENCODING=utf-8 uv run python tests/correr_pruebas.py                (Git Bash)
+$env:PYTHONIOENCODING = "utf-8"; uv run python tests/correr_pruebas.py      (PowerShell)
+```
+
+Sin uv, con el entorno virtual ya creado:
 
 ```
 .venv\Scripts\python.exe tests/correr_pruebas.py        (Windows)
@@ -162,7 +339,29 @@ Hay dos tipos de pruebas, y el script corre los dos:
 Las pruebas de la Vista necesitan `pygame-ce`. Los scripts `tests/capturar_*.py` no son pruebas: guardan capturas de
 pantalla en `capturas/` para revisarlas a ojo.
 
+### Pruebas de aceptación
+
+Cada spec tiene su `quickstart.md` con los pasos de aceptación:
+[001](specs/001-terreno-cazador/quickstart.md), [002](specs/002-niebla-ir-a/quickstart.md),
+[003](specs/003-resolubilidad/quickstart.md) y [004](specs/004-linea-tiempo/quickstart.md).
+
+Cada prueba cita en su nombre el requisito (`FR-xxx`) y el escenario que ejercita, y la tabla de trazabilidad de cada
+`spec.md` dice qué prueba cubre cada escenario.
+
+Las pruebas automáticas se corren con el mismo `tests/correr_pruebas.py` de arriba. Los modos sin ventana se comprueban
+así (en Linux / macOS, `.venv/bin/python ...`):
+
+| Qué comprueba | Comando (Windows) |
+|---|---|
+| Replay completo de la partida de muestra. | `.venv\Scripts\python.exe main.py --replay ejemplos/partida_ejemplo.log --offline` |
+| Estado en el instante `T` (códigos 0, 1 y 2 en «Modo `--replay`»). | `.venv\Scripts\python.exe main.py --replay ejemplos/partida_ejemplo.log --hasta 300 --offline` |
+| Resolubilidad de una cripta: código 0 si es resoluble, 3 si no lo es, 1 si la verificación no concluyó (ver «Modo `--verificar` y `--forzar`»). | `.venv\Scripts\python.exe main.py --verificar cripta-02 --offline` |
+| Mediciones de rendimiento. | `.venv\Scripts\python.exe main.py --bench` |
+
 ## Documentación
 
 - `PROMPTS_LLM.md`: bitácora de uso de modelos de lenguaje.
 - `docs/Documento_Decisiones.pdf`: Documento de Decisiones de Diseño (§8).
+- `DECISIONES.md`: Documento de Decisiones de la Parte II.
+- `specs/`: especificación, plan, tareas y quickstart de cada capacidad (ver «Desarrollo con spec-kit»).
+- `.specify/memory/constitution.md`: constitución del proyecto.

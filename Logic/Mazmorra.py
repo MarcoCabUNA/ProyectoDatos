@@ -8,6 +8,8 @@ class SalidaViva:
         self.cerrada = salida_dto.cerrada
         self.llave = salida_dto.llave
         self.cierre_automatico = salida_dto.cierre_automatico
+        self.costo_declarado = salida_dto.costo
+        self.costo = salida_dto.costo if salida_dto.costo is not None else 100
 
 
 class TrampaViva:
@@ -29,6 +31,8 @@ class CierrePuerta:
         for salida in self.caras:
             motor.historial.registrar_atributo(salida, "cerrada", salida.cerrada)
             salida.cerrada = True
+        if motor.mazmorra.observador_puertas is not None:             # FR-114: la búsqueda del cazador
+            motor.mazmorra.observador_puertas.puerta_cambio(self.caras[0].destino, self.caras[-1].destino)
 
 
 # COORDINAR (Integrante 2): SalaDTO con id, nombre y salidas como array de 4 en orden N, S, E, O
@@ -55,6 +59,13 @@ class Mazmorra:
         self.salida_abierta = False
         self.contadores_tipo = []
         self.historial = None
+        # Un solo observador de puertas. El Motor asigna un RepartidorAvisosPuertas([rutas, mapa]) que reenvía el
+        # aviso, en ese orden, a la búsqueda de rutas del cazador (RutasHaciaJugador) y al mapa conocido (002
+        # FR-207). abrir_puerta y CierrePuerta avisan con puerta_cambio(a, b), donde a y b son los DESTINOS de las
+        # caras que cambiaron. Basta con los destinos: la búsqueda va al revés (R3), así que una salida u -> v solo
+        # se lee al resolver v. Con dos caras son los dos extremos; con una sola cara (salida sin vuelta) se pasa
+        # su destino dos veces.
+        self.observador_puertas = None
 
     # ---------- Metodos publicos
 
@@ -64,6 +75,7 @@ class Mazmorra:
                 self.salas.append(None)
             self.salas[sala_dto.id] = SalaViva(sala_dto)
         self._igualar_caras()
+        self._igualar_costos()
 
     # COORDINAR (Integrante 2): enemigos con .instancia, .tipo y .vida; trampas con .instancia y .tipo; objetos como ids
     # COORDINAR (Integrante 2): fn_ficha(tipo) la provee la caché del catálogo y nunca devuelve None
@@ -96,6 +108,27 @@ class Mazmorra:
             if salida is not None and not salida.cerrada and self._existe(salida.destino):
                 destinos.append(salida.destino)
         return destinos
+
+    def salidas_abiertas_con_costo(self, id_sala: int) -> list[tuple[int, int]]:
+        """
+        Pares (destino, costo) de las salidas abiertas de la sala, en el mismo orden y con los mismos filtros
+        que salidas_abiertas(): una salida es una opción aunque dos lleven a la misma vecina (FR-104).
+        """
+        opciones = []
+        for salida in self.salas[id_sala].salidas:
+            if salida is not None and not salida.cerrada and self._existe(salida.destino):
+                opciones.append((salida.destino, salida.costo))
+        return opciones
+
+    def costo_paso(self, origen: int, destino: int) -> int:
+        """El menor costo entre las salidas abiertas de 'origen' hacia 'destino' (FR-119). Debe haber al menos una."""
+        menor = None
+        for vecina, costo in self.salidas_abiertas_con_costo(origen):
+            if vecina == destino and (menor is None or costo < menor):
+                menor = costo
+        if menor is None:
+            raise ValueError(f"No hay una salida abierta de la sala {origen} hacia la sala {destino}")
+        return menor
 
     def enemigos_vivos(self, id_sala):
         vivos = []
@@ -132,6 +165,8 @@ class Mazmorra:
         for cara in caras:
             self._registrar_atributo(cara, "cerrada", cara.cerrada)
             cara.cerrada = False
+        if self.observador_puertas is not None:                        # FR-114: la búsqueda del cazador
+            self.observador_puertas.puerta_cambio(caras[0].destino, caras[-1].destino)
         if salida.llave == self.llave_salida:
             self._registrar_atributo(self, "salida_abierta", self.salida_abierta)
             self.salida_abierta = True
@@ -216,6 +251,28 @@ class Mazmorra:
                 inversa.cerrada = salida.cerrada
                 if inversa.cierre_automatico is None:
                     inversa.cierre_automatico = salida.cierre_automatico
+
+    def _igualar_costos(self) -> None:
+        """
+        FR-101: el costo de una salida es el mismo en los dos sentidos. Cada cara usa su costo declarado;
+        si no lo declara, el de la cara inversa; si ninguna lo declara, 100. Se recalcula desde lo declarado
+        en todas las salas cada vez, así que no importa en qué orden llegan las páginas del esqueleto.
+        Dos lados con costos distintos son un error de datos que rechaza Data (FR-122): aquí no se valida.
+        """
+        for sala in self.salas:
+            if sala is None:
+                continue
+            for salida in sala.salidas:
+                if salida is None:
+                    continue
+                if salida.costo_declarado is not None:
+                    salida.costo = salida.costo_declarado
+                    continue
+                inversa = self._salida_inversa(sala.id, salida.destino)
+                if inversa is not None and inversa.costo_declarado is not None:
+                    salida.costo = inversa.costo_declarado
+                else:
+                    salida.costo = 100
 
     def _existe(self, id_sala):
         return id_sala < len(self.salas) and self.salas[id_sala] is not None

@@ -30,23 +30,33 @@ programación NO se esconden: siguen rompiendo con su traza.
 
 Los métodos de acciones devuelven el EstadoJuegoDTO resultante; los del inventario, el InventarioDTO.
 """
+from dataclasses import replace
+
 from DTO.AccionDTO import AccionDTO
 from DTO.ConfiguracionDTO import ConfiguracionDTO
 from DTO.Direcciones import DIRECCIONES
 from DTO.EstadoJuegoDTO import EstadoJuegoDTO
 from DTO.InventarioDTO import InventarioDTO
+from DTO.MapaConocidoDTO import MapaConocidoDTO
 from DTO.PuntajeDTO import PuntajeDTO
 from DTO.ReporteDatosDTO import ReporteDatosDTO
+from DTO.ReporteResolubilidadDTO import ReporteResolubilidadDTO
 from DTO.ResultadoBenchDTO import ResultadoBenchDTO
 from DTO.ResultadoReplayDTO import ResultadoReplayDTO
+from DTO.ResumenHistoriaDTO import ResumenHistoriaDTO
+from DTO.ViajeDTO import (AMBIGUO, DANO, ENEMIGOS, INTERRUMPIDO, LLEGO, PASO_RECHAZADO, SIN_RUTA, YA_AQUI, PasoViajeDTO,
+                          ViajeDTO)
 from Service.ErroresServicio import ERRORES_ESPERADOS
-from Service.ServicioAccionJugador import ServicioAccionJugador
 from Service.ServicioBench import ServicioBench
 from Service.ServicioGuardado import ServicioGuardado
 from Service.ServicioInventario import ServicioInventario
+from Service.ServicioIrA import ServicioIrA
+from Service.ServicioLineaTiempo import ServicioLineaTiempo
 from Service.ServicioPartida import ServicioPartida
 from Service.ServicioPuntajes import ServicioPuntajes
 from Service.ServicioReplay import ServicioReplay
+from Service.ServicioReplayHasta import ServicioReplayHasta
+from Service.ServicioResolubilidad import ServicioResolubilidad
 
 # Criterios que existen. Son tuplas (no dict, §7) y públicas: la Interfaz las recorre para pasar de uno al siguiente.
 CRITERIOS_INVENTARIO = (None, "peso", "valor", "nombre")  # None = orden real del inventario
@@ -67,13 +77,19 @@ class ControladorBackend:
         self._partida = servicio_partida if servicio_partida is not None else ServicioPartida(config)
         self._puntajes = servicio_puntajes if servicio_puntajes is not None else ServicioPuntajes()
         self._bench = servicio_bench if servicio_bench is not None else ServicioBench()
-        self._acciones = ServicioAccionJugador()
+        self._acciones = ServicioLineaTiempo()      # toda acción pasa por la línea de tiempo (feature 004, FR-423)
         self._inventarios = ServicioInventario()
         self._guardado = ServicioGuardado(self._partida)
         self._replay = ServicioReplay(self._partida)
         self._contexto = None  # la partida en curso (opaca); None si no hay
         self._terminada = False
         self._puntaje_registrado = False
+        self._ir_a = ServicioIrA()
+        self._viaje = None  # el ViajeDTO vigente de la sesión (feature 002); None si no hay viaje
+        # feature 003: --forzar (solo lo usa iniciar) y el reporte de un inicio que no se hizo (FR-311)
+        self._forzar = config.forzar
+        self._reporte_no_iniciada = None
+        self._contexto_al_fallar = None
 
     # ================================================================== partida
     def criptas(self) -> list:
@@ -83,7 +99,7 @@ class ControladorBackend:
     def iniciar(self, id_cripta: str, nombre_jugador: str) -> EstadoJuegoDTO:
         id_cripta = self._texto(id_cripta, "Falta indicar la cripta.")
         nombre = self._nombre(nombre_jugador)
-        return self._empezar(self._llamar(self._partida.iniciar_partida, id_cripta, nombre))
+        return self._iniciar_verificando(id_cripta, nombre)      # feature 003: pasa por la verificación (FR-311)
 
     def cargar(self, ruta: str, nombre_jugador: str) -> EstadoJuegoDTO:
         """Continúa una partida guardada. Si falla, la partida que estaba en curso (si había) no se toca."""
@@ -183,6 +199,7 @@ class ControladorBackend:
 
     # ================================================================== interno
     def _ejecutar(self, accion: AccionDTO) -> EstadoJuegoDTO:
+        self._viaje = None                               # cualquier otra orden descarta el viaje (feature 002, FR-262)
         estado = self._llamar(self._acciones.ejecutar, self._activa(), accion)
         self._terminada = estado.terminado
         return estado
@@ -191,6 +208,7 @@ class ControladorBackend:
         """La partida nueva (o cargada) pasa a ser la vigente. Solo se llega aquí si el servicio no falló."""
         estado = self._llamar(self._partida.estado, contexto)
         self._contexto = contexto
+        self._viaje = None
         self._terminada = estado.terminado
         self._puntaje_registrado = False
         return estado
@@ -236,3 +254,128 @@ class ControladorBackend:
             if criterio == valido:
                 return criterio
         raise ErrorOperacion(f"{mensaje}: {criterio!r}.")
+
+    # ================================================================== feature 004 (línea de tiempo)
+    def reproducir_hasta(self, ruta: str, t: int) -> ResumenHistoriaDTO:
+        """--replay ... --hasta t (feature 004, FR-410): el resumen de la partida del log en el instante t, sin la
+        vista. Un t fuera del rango de la partida (la validación es de Logic) sale como ErrorOperacion con el rango."""
+        ruta = self._texto(ruta, "Falta indicar el archivo del log.")
+        try:
+            return self._llamar(ServicioReplayHasta(self._partida).reproducir_hasta, ruta, t)
+        except ValueError as error:
+            if isinstance(error, ErrorOperacion):
+                raise
+            raise ErrorOperacion(str(error)) from error
+
+    def historia_por_instante(self, t: int) -> ResumenHistoriaDTO:
+        """`historia <t>` (feature 004, FR-423): el resumen del estado en el instante t. No consume tiempo, no es una
+        acción y no se registra en partida.log. El rango de t lo valida Logic; su mensaje sale tal cual."""
+        return self._consultar_historia(lambda contexto: self._acciones.consultar_por_instante(contexto, t))
+
+    def historia_por_accion(self, k: int) -> ResumenHistoriaDTO:
+        """`historia #k` (feature 004, FR-423): el resumen justo antes de la acción k. Mismas reglas que por instante."""
+        return self._consultar_historia(lambda contexto: self._acciones.consultar_por_accion(contexto, k))
+
+    def _consultar_historia(self, consulta) -> ResumenHistoriaDTO:
+        contexto = self._activa()
+        if contexto.linea is None:
+            raise ErrorOperacion("Esta partida no tiene línea de tiempo que consultar.")
+        try:
+            return self._llamar(consulta, contexto)
+        except ErrorOperacion:
+            raise
+        except ValueError as error:                      # el rango lo valida Logic (LineaTiempo): el mensaje va tal cual
+            raise ErrorOperacion(str(error)) from error
+
+    # ================================================================== feature 003 (resolubilidad)
+    def verificar(self, id_cripta: str) -> ReporteResolubilidadDTO:
+        """--verificar CRIPTA (feature 003, FR-314, FR-315): el reporte de resolubilidad, sin vista ni partida. Nunca
+        lanza por datos ni por red: esos fallos llegan como un reporte NO_CONCLUYO con el mensaje."""
+        id_cripta = self._texto(id_cripta, "Falta indicar la cripta.")
+        return ServicioResolubilidad(self._partida).verificar(id_cripta)
+
+    def resolubilidad(self) -> ReporteResolubilidadDTO | None:
+        """El reporte para mostrar antes de la primera acción (feature 003, FR-311 a FR-313): el de la partida nueva en
+        curso (resoluble, o la advertencia con --forzar), o el completo del último iniciar que no se hizo. None si la
+        partida en curso se cargó de un archivo o no hay partida (cargar y --replay no verifican, FR-301)."""
+        if self._reporte_no_iniciada is not None and self._contexto is self._contexto_al_fallar:
+            return self._reporte_no_iniciada
+        return None if self._contexto is None else self._contexto.resolubilidad
+
+    def _iniciar_verificando(self, id_cripta: str, nombre: str) -> EstadoJuegoDTO:
+        """iniciar por ServicioResolubilidad (T054): sin --forzar, una cripta no resoluble o que no se pudo verificar no
+        inicia; ErrorPartidaNoIniciada llega como ErrorOperacion (está en ERRORES_ESPERADOS) y su reporte se guarda.
+        Si falla, la partida que estaba en curso (si había) no se toca."""
+        try:
+            contexto = self._llamar(ServicioResolubilidad(self._partida).iniciar_partida_nueva, id_cripta, nombre,
+                                    self._forzar)
+        except ErrorOperacion as error:
+            self._reporte_no_iniciada = getattr(error.__cause__, "reporte", None)
+            self._contexto_al_fallar = self._contexto
+            raise
+        self._reporte_no_iniciada = None
+        return self._empezar(contexto)
+
+    # ================================================================== feature 002 (mapa conocido)
+    def ver_mapa(self) -> MapaConocidoDTO:
+        # comando `mapa` (feature 002, FR-219, FR-220): solo lee motor.mapa.a_dto(); no consume tiempo, no es una acción, no se anota en el log ni toca el historial
+        return self._activa().motor.mapa.a_dto()
+
+    # ================================================================== feature 002 («ir a»)
+    def ir_a(self, nombre: str) -> ViajeDTO:
+        # `ir a <sala>` (feature 002, FR-250 a FR-252): empieza el viaje y no da ningún paso; solo valida la forma del texto y un destino no válido sale como ErrorOperacion
+        contexto = self._activa()
+        if not isinstance(nombre, str) or nombre.strip() == "" or "\n" in nombre or "\r" in nombre:
+            raise ErrorOperacion("Falta indicar a qué sala ir.")
+        self._viaje = None
+        inicio = self._llamar(self._ir_a.iniciar, contexto, nombre)
+        if inicio.viaje is None:
+            raise ErrorOperacion(self._mensaje_de_destino(inicio.motivos[0]))
+        self._viaje = inicio.viaje
+        return inicio.viaje
+
+    def dar_paso_viaje(self) -> PasoViajeDTO:
+        # un paso del viaje vigente (un `mover` ordinario) o el motivo de la parada; sin viaje vigente no continúa nada: INTERRUMPIDO
+        contexto = self._activa()
+        if self._viaje is None:
+            return PasoViajeDTO(None, [INTERRUMPIDO], self._llamar(self._partida.estado, contexto))
+        destino = self._viaje.nombre_destino
+        paso = self._llamar(self._ir_a.dar_paso, contexto, self._viaje)
+        self._viaje = paso.viaje
+        if paso.viaje is None:
+            for texto in self._textos_de_parada(paso.motivos, destino):
+                self._ir_a.anotar(contexto, texto)
+            paso = replace(paso, estado=self._llamar(self._partida.estado, contexto))
+        self._terminada = paso.estado.terminado
+        return paso
+
+    def cancelar_viaje(self) -> EstadoJuegoDTO:
+        contexto = self._activa()
+        if self._viaje is not None:
+            self._viaje = None
+            self._ir_a.anotar(contexto, "Viaje interrumpido.")
+        return self._llamar(self._partida.estado, contexto)
+
+    @staticmethod
+    def _textos_de_parada(motivos: list[str], destino: str) -> list[str]:
+        textos = []
+        for motivo in motivos:
+            if motivo == LLEGO:
+                textos.append(f"Llegaste a {destino}.")
+            elif motivo == ENEMIGOS:
+                textos.append("Viaje detenido: hay enemigos.")
+            elif motivo == DANO:
+                textos.append("Viaje detenido: recibiste daño.")
+            elif motivo == SIN_RUTA:
+                textos.append(f"Viaje detenido: sin ruta conocida a {destino}.")
+            elif motivo == PASO_RECHAZADO:
+                textos.append("Viaje detenido: no se pudo dar el paso.")
+        return textos
+
+    @staticmethod
+    def _mensaje_de_destino(motivo: str) -> str:
+        if motivo == AMBIGUO:
+            return "Hay más de una sala explorada con ese nombre."
+        if motivo == YA_AQUI:
+            return "Ya estás en esa sala."
+        return "No conoces ninguna sala explorada con ese nombre."

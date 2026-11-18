@@ -11,10 +11,18 @@ Banderas:
     --offline             usar el paquete guardado en disco en lugar del servicio web
     --cache-size N        tope de fichas del catálogo en memoria (entero >= 1; por defecto 25)
     --replay ARCHIVO      reproducir una partida desde su log, sin intervención del usuario
+    --hasta T             con --replay: reproducir solo hasta el instante T (entero >= 0, feature 004, FR-410)
+    --checkpoint-cada K   cada cuántas acciones la línea de tiempo toma un punto de control
+                          (entero >= 1; por defecto 20, feature 004, FR-415)
     --bench               correr las mediciones de rendimiento
     -h, --help, --ayuda   mostrar la ayuda
+    --verificar CRIPTA    escribir si la cripta es resoluble y salir, sin vista ni partida (feature 003, FR-314)
+    --forzar              iniciar una partida nueva aunque la cripta no sea resoluble (feature 003, FR-312)
 Los valores se pueden escribir separados ("--cache-size 40") o con igual ("--cache-size=40").
 --replay y --bench no se pueden usar juntos (son modos distintos, §9 del enunciado).
+--hasta solo se acepta junto con --replay; sin --hasta, --replay reproduce la partida completa.
+--verificar va en el mismo grupo que --replay y --bench (no se combina con ellos); --forzar se combina con todo y solo
+lo lee la partida nueva (con --replay, --bench, --verificar o al cargar no tiene efecto).
 
 Uso desde main.py:
     import sys
@@ -42,7 +50,7 @@ import argparse
 import sys
 from typing import NoReturn
 
-from DTO.ConfiguracionDTO import CACHE_SIZE_POR_DEFECTO, ConfiguracionDTO
+from DTO.ConfiguracionDTO import CACHE_SIZE_POR_DEFECTO, CHECKPOINT_POR_DEFECTO, ConfiguracionDTO
 
 
 class ErrorArgumentos(ValueError):
@@ -69,6 +77,23 @@ def _entero_positivo(texto: str) -> int:
     return numero
 
 
+def _entero_no_negativo(texto: str) -> int:
+    """Tipo de --hasta (feature 004, FR-410): solo dígitos, desde 0 (rechaza '-3', '2.5', 'abc', ' 3', '')."""
+    if texto == "":
+        raise argparse.ArgumentTypeError("necesita un número entero")
+    for caracter in texto:
+        if not ("0" <= caracter <= "9"):
+            raise argparse.ArgumentTypeError(f"debe ser un número entero mayor o igual a 0 (se recibió {texto!r})")
+    return int(texto)
+
+
+def _id_cripta(texto: str) -> str:
+    """Tipo de --verificar (feature 003, FR-314): el id de la cripta, sin el texto vacío ni solo espacios."""
+    if texto.strip() == "":
+        raise argparse.ArgumentTypeError("necesita el id de la cripta")
+    return texto
+
+
 def _crear_analizador() -> _Analizador:
     opciones: dict = {}
     if sys.version_info >= (3, 14):
@@ -85,10 +110,22 @@ def _crear_analizador() -> _Analizador:
                             help="usar el paquete guardado en disco en lugar del servicio web")
     analizador.add_argument("--cache-size", type=_entero_positivo, default=CACHE_SIZE_POR_DEFECTO, metavar="N",
                             help=f"tope de fichas del catálogo en memoria (entero >= 1; por defecto {CACHE_SIZE_POR_DEFECTO})")
+    analizador.add_argument("--checkpoint-cada", type=_entero_positivo, default=CHECKPOINT_POR_DEFECTO, metavar="K",
+                            help="cada cuántas acciones se toma un punto de control de la línea de tiempo "
+                                 f"(entero >= 1; por defecto {CHECKPOINT_POR_DEFECTO})")
+    analizador.add_argument("--hasta", type=_entero_no_negativo, default=None, metavar="T",
+                            help="con --replay: reproducir solo hasta el instante T (entero >= 0)")
     modo = analizador.add_mutually_exclusive_group()
     modo.add_argument("--replay", metavar="ARCHIVO", help="reproducir una partida desde su log")
     modo.add_argument("--bench", action="store_true", help="correr las mediciones de rendimiento")
     analizador.add_argument("-h", "--help", "--ayuda", dest="ayuda", action="store_true", help="mostrar esta ayuda")
+    # feature 003 (FR-312, FR-314): detrás de las banderas existentes
+    modo.add_argument("--verificar", type=_id_cripta, default=None, metavar="CRIPTA",
+                      help="escribir si la cripta es resoluble y salir, sin vista ni partida "
+                           "(códigos: 0 resoluble, 3 no resoluble, 1 no concluyó)")
+    analizador.add_argument("--forzar", action="store_true",
+                            help="iniciar una partida nueva aunque la cripta no sea resoluble o la verificación "
+                                 "no concluya (con --replay, --bench o --verificar no tiene efecto)")
     return analizador
 
 
@@ -106,5 +143,9 @@ def leer_argumentos(argumentos: list[str]) -> ConfiguracionDTO:
         raise ErrorArgumentos(f"Error en las opciones: {error}") from None
     if resultado.replay is not None and resultado.replay.strip() == "":
         raise ErrorArgumentos("Error en las opciones: --replay necesita la ruta del archivo de la partida")
+    if resultado.hasta is not None and resultado.replay is None:
+        raise ErrorArgumentos("Error en las opciones: --hasta solo se puede usar junto con --replay")
     return ConfiguracionDTO(offline=resultado.offline, cache_size=resultado.cache_size,
-                            replay=resultado.replay, bench=resultado.bench, ayuda=resultado.ayuda)
+                            replay=resultado.replay, bench=resultado.bench, ayuda=resultado.ayuda,
+                            checkpoint_cada=resultado.checkpoint_cada, hasta=resultado.hasta,
+                            verificar=resultado.verificar, forzar=resultado.forzar)

@@ -46,17 +46,24 @@ AYUDA_PARA_MEDIR = (
     "Clic en un enemigo (o Espacio): atacar",
     "Clic en un objeto del suelo: recoger",
     "E (o clic en la puerta): abrir una puerta",
-    "Z: esperar",
+    "Z: esperar   Enter: historia, mapa, ir a",
     "Rueda o Tab: recorrer el inventario",
     "U (o doble clic): usar   Q (o clic derecho): equipar",
     "G (o Mayús + clic): soltar   V: cambiar el orden",
     "Retroceso o Ctrl + Z: pergamino de retroceso",
     "Ctrl + S / F5: guardar   Ctrl + L / F9: cargar",
-    "Esc: menú",
+    "Esc: menú (o cierra la línea o el panel)",
 )
-# Los peores mensajes del motor (tiempo de 4 cifras, enemigo #99, daño de 999 y los nombres más largos del paquete offline);
+# Los peores mensajes del motor (tiempo de 4 cifras, enemigo #99, daño de 999 y los nombres más largos del catálogo de la
+# Parte II, que incluye los del paquete offline: Espectro acechador y Carcelero errante son los más anchos);
 # test_vista_hud comprueba que con ellos se elige el mismo tamaño que con TODAS las plantillas
 MENSAJES_PARA_MEDIR = (
+    "[t=9999] Espectro acechador #99 ataca a Jugador: 999 de daño",
+    "[t=9999] Jugador ataca a Espectro acechador #99: 999 de daño",
+    "[t=9999] El veneno hace 999 de daño a Espectro acechador #99",
+    "[t=9999] Carcelero errante #99 ataca a Jugador: 999 de daño",
+    "[t=9999] Jugador ataca a Carcelero errante #99: 999 de daño",
+    "[t=9999] El veneno hace 999 de daño a Carcelero errante #99",
     "[t=9999] Guardián óseo #99 ataca a Jugador: 999 de daño",
     "[t=9999] Jugador ataca a Guardián óseo #99: 999 de daño",
     "[t=9999] El veneno hace 999 de daño a Guardián óseo #99",
@@ -96,6 +103,10 @@ ALTURA_MINIMA = 8                            # ningún sprite de actor se dibuja
 HALO_MARGEN = (12, 8)                        # cuánto sobresale del sprite el marco del enemigo objetivo
 HALO_COLOR = (232, 184, 84, 55)
 BARRA_VIDA = (96, 14)
+COMPORTAMIENTO_CAZADOR = "cazador"            # el único enemigo con marcador propio junto a su nombre (FR-117)
+MARCADOR_CAZADOR = 10                        # lado del rombo rojo que lo marca (pygame.draw, sin assets)
+MARCADOR_SEPARACION = 3                      # hueco entre el rombo y el texto de la ficha
+COSTO_DISTANCIA = 6                          # hueco entre el marco de una puerta y su costo (FR-116)
 NOMBRE_ANCHO_MAX = 170                       # un nombre más largo se corta con "..."
 FACTOR_FICHA_ESTRECHA = 0.5                  # con un factor menor (sala muy llena), la ficha se estrecha hasta...
 FICHA_ANCHO_MIN = 70                         # ...este ancho: barra más corta y nombre cortado con "..." (si no, con
@@ -160,6 +171,14 @@ HUD_ESPERAR = pygame.Rect(1028, 470, 340, 40)
 HUD_AVISO = pygame.Rect(1028, 516, 340, 52)
 HUD_AYUDA = pygame.Rect(1028, 574, 340, 186)
 HUD_PANELES = [HUD_ESTADISTICAS, HUD_EFECTOS, HUD_MENSAJES, HUD_INVENTARIO, HUD_ESPERAR, HUD_AVISO, HUD_AYUDA]
+# Paneles pasajeros de `historia` (feature 004): no están en HUD_PANELES porque solo se dibujan cuando el jugador los pide.
+# Caben en los huecos del HUD: el de resumen entre efectos y mensajes, a la izquierda; la línea de comandos abajo, al centro.
+HUD_HISTORIA = pygame.Rect(8, 296, 350, 168)
+HUD_HISTORIA_ARRIBA = 24                     # donde empieza la primera línea del resumen (debajo del rótulo)
+HUD_LINEA = pygame.Rect(380, 712, 640, 40)
+HUD_REPORTE_JUEGO = pygame.Rect(374, 16, 644, 300)    # el reporte de resolubilidad antes de la primera acción (feature 003)
+HUD_REPORTE_MENU = pygame.Rect(118, 388, ANCHO - 236, 232)   # el reporte completo de una partida que no se inició
+HUD_MAPA = pygame.Rect(374, 16, 644, 688)       # el panel del comando `mapa` (feature 002): entre los paneles de los lados
 HUD_RELLENO = 8                              # margen interior de los paneles
 HUD_MENSAJES_LINEAS = 20                     # capacidad del panel de mensajes
 HUD_MENSAJES_INTERLINEA = 13

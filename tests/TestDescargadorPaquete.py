@@ -27,10 +27,10 @@ class PruebasDescargadorPaquete(unittest.TestCase):
         with open(os.path.join(self.carpeta, *partes), encoding="utf-8") as f:
             return json.load(f)
 
-    def test_cripta_real_queda_identica_al_API_con_7_solicitudes(self):
+    def test_cripta_real_queda_identica_al_API_con_8_solicitudes(self):
         d = descargador(self.carpeta, ApiFalsa())
         d.descargar(ID_CRIPTA)
-        self.assertEqual(d.solicitudes_realizadas(), 7)
+        self.assertEqual(d.solicitudes_realizadas(), 8)                    # 7 de la Parte 1 + llaves (003)
         self.assertEqual(self.leer("criptas.json"), leer_paquete("criptas.json"))
         self.assertEqual(self.leer(ID_CRIPTA, "general.json"), general_real())
         self.assertEqual(self.leer(ID_CRIPTA, "salas_p1.json"), pagina_real())
@@ -86,9 +86,9 @@ class PruebasDescargadorPaquete(unittest.TestCase):
         descargador(self.carpeta, ApiFalsa()).descargar(ID_CRIPTA)
         catalogo_antes = self.leer("catalogo.json")
         contenido_antes = self.leer(ID_CRIPTA, "contenido.json")
-        # Solicitudes: 0 criptas, 1 general, 2 salas, 3 contenido -> falla en el contenido
+        # Solicitudes: 0 criptas, 1 general, 2 salas, 3 llaves (003), 4 contenido -> falla en el contenido
         with self.assertRaises(ErrorRed):
-            descargador(self.carpeta, ApiFalsa(falla_en=3)).descargar(ID_CRIPTA)
+            descargador(self.carpeta, ApiFalsa(falla_en=4)).descargar(ID_CRIPTA)
         self.assertEqual(self.leer("catalogo.json"), catalogo_antes)
         self.assertEqual(self.leer(ID_CRIPTA, "contenido.json"), contenido_antes)
 
@@ -97,7 +97,7 @@ class PruebasDescargadorPaquete(unittest.TestCase):
         api = ApiFalsa()
         descargador(self.carpeta, api).descargar(ID_CRIPTA)
         self.assertNotIn("catalogo", api.rutas())          # las 11 fichas ya estaban y la versión coincide
-        self.assertEqual(api.solicitudes_realizadas, 5)
+        self.assertEqual(api.solicitudes_realizadas, 6)                   # 5 de la Parte 1 + llaves (003)
 
     def test_ids_invalidos(self):
         with self.assertRaises(ErrorRed):

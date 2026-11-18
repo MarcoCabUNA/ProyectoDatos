@@ -12,6 +12,8 @@ class ActorBase:
         self.Sala_Actual = SAct
         self.Evento_pendiente = ObjEvent
         self.historial = None
+        # daño recibido: suma de los daños finales > 0; no va al historial ni a PartidaGuardada
+        self.danio_recibido: int = 0
 
     def Calcu_de_Intervalo(self, Costo):
         return max(1, Costo * 100 // self.velocidad)
@@ -19,6 +21,7 @@ class ActorBase:
     def Recibir_Dannio(self, Cant):
         if Cant <= 0:
             return
+        self.danio_recibido += Cant
         self._registrar_vida()
         if Cant > self.vida:
             self.vida = 0

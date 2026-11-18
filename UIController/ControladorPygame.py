@@ -52,9 +52,11 @@ import pygame
 from DTO.ConfiguracionDTO import ConfiguracionDTO
 from DTO.ElementoDTO import ELEMENTO_BOTON
 from DTO.PantallaDTO import PantallaDTO
+from DTO.ReporteResolubilidadDTO import RESOLUBLE
 from UIController.ControladorBackend import (CRITERIOS_PUNTAJES, LARGO_MAXIMO_NOMBRE, ControladorBackend,
                                              ErrorOperacion)
 from UIController.ControlesJuego import PIDE_CARGAR, PIDE_GUARDAR, PIDE_PAUSA, ControlesJuego
+from UIController.TextoResolubilidad import lineas_reporte
 
 MENU = "menu"
 CRIPTAS = "criptas"
@@ -88,6 +90,7 @@ _AYUDA_MENU = ("Arriba / Abajo o ratón: elegir", "Enter o clic: aceptar")
 _AYUDA_CRIPTAS = ("Arriba / Abajo o ratón: elegir", "Enter o clic: aceptar", "Esc: volver")
 _AYUDA_NOMBRE = ("Escribe tu nombre", "Enter o clic en Aceptar: aceptar", "Esc: volver")
 _AYUDA_PAUSA = ("Arriba / Abajo o ratón: elegir", "Enter o clic: aceptar", "Esc: volver a la partida")
+PASO_VIAJE_MS = 350               # entre un paso y otro de un viaje de `ir a`: se ve cómo cambia de sala
 _AYUDA_FIN = ("Arriba / Abajo o ratón: elegir", "Enter o clic: aceptar", "Esc: menú principal")
 _AYUDA_PUNTAJES = ("Izquierda / Derecha: cambiar el orden", "Enter o clic: aceptar", "Esc: volver")
 
@@ -95,7 +98,8 @@ _AYUDA_PUNTAJES = ("Izquierda / Derecha: cambiar el orden", "Enter o clic: acept
 class ControladorPygame:
 
     def __init__(self, vista, config: ConfiguracionDTO, fabrica_backend=ControladorBackend, fabrica_controles=ControlesJuego,
-                 demora_fin_ms: int = 0, reloj_ms=None):
+                 demora_fin_ms: int = 0, reloj_ms=None,
+                 paso_viaje_ms: int = PASO_VIAJE_MS):   # paso_viaje_ms: espera entre pasos de un viaje de `ir a` (feature 002)
         """
         vista: cualquier objeto con abrir(), dibujar(pantalla), cerrar() y elemento_en(posicion).
         config: lo que dejó LectorArgumentos (offline, cache_size...).
@@ -116,6 +120,8 @@ class ControladorPygame:
         self._pantalla = MENU
         self._seleccion = 0
         self._aviso: str | None = None
+        self._reporte_resolubilidad: list[str] | None = None   # el reporte de resolubilidad que se muestra (feature 003)
+        self._reporte_advertencia = False
         self._criptas: list = []
         self._id_cripta: str | None = None
         self._texto = ""                              # el nombre que se está escribiendo
@@ -131,10 +137,26 @@ class ControladorPygame:
         self._reloj_ms = reloj_ms if reloj_ms is not None else pygame.time.get_ticks
         self._fin_en: int | None = None               # cuándo termina la demora del fin (None: no hay demora en curso)
         self._aviso_del_fin: str | None = None        # el aviso del fin que se muestra al terminar la demora
+        self._paso_viaje_ms = paso_viaje_ms
+        self._ultimo_paso_viaje_ms: int | None = None  # cuándo se dio el último paso del viaje en curso (None: ninguno aún)
         self._activaciones = 0                        # botones activados y esperas hechas; nunca baja (PantallaDTO.activaciones)
 
     def activo(self) -> bool:
         return self._activo
+
+    def avanzar_viaje(self) -> None:
+        if self._pantalla != JUEGO or self._fin_en is not None or not self._juego.viajando:
+            self._ultimo_paso_viaje_ms = None
+            return
+        ahora = self._reloj_ms()
+        if self._ultimo_paso_viaje_ms is not None and ahora - self._ultimo_paso_viaje_ms < self._paso_viaje_ms:
+            return
+        self._ultimo_paso_viaje_ms = ahora
+        self._juego.dar_paso_de_viaje()
+        if self._juego.estado.reloj > 0:
+            self._reporte_resolubilidad = None
+        if self._juego.estado.terminado:
+            self._terminar_partida()
 
     # ================================================================== bucle principal
     def ejecutar(self, fuente_eventos=None) -> None:
@@ -147,6 +169,7 @@ class ControladorPygame:
             while self._activo:
                 for evento in obtener():
                     self.procesar_evento(evento)
+                self.avanzar_viaje()
                 self._vista.dibujar(self.pantalla())
                 reloj.tick(FPS)
         finally:
@@ -234,12 +257,15 @@ class ControladorPygame:
         if self._pantalla == NOMBRE:
             titulo = "Nombre para cargar la partida" if self._cargando else "¿Cómo te llamas?"
             return PantallaDTO(NOMBRE, titulo, list(_OPCIONES_NOMBRE), self._seleccion, texto=self._texto,
-                               aviso=self._aviso, ayuda=list(_AYUDA_NOMBRE))
+                               aviso=self._aviso, ayuda=list(_AYUDA_NOMBRE), reporte_resolubilidad=self._reporte_resolubilidad,
+                               reporte_advertencia=self._reporte_advertencia)
         if self._pantalla == JUEGO:
             return PantallaDTO(JUEGO, opciones=self._juego.botones(), seleccion=self._seleccion,
                                aviso=self._aviso or self._juego.aviso, ayuda=self._juego.ayuda(),
                                estado=self._juego.estado, objetivo=self._juego.objetivo(),
-                               elemento_bajo_el_raton=self._bajo_el_raton)
+                               elemento_bajo_el_raton=self._bajo_el_raton, resumen=self._juego.resumen,
+                               linea_comandos=self._juego.linea, mapa=self._juego.mapa,
+                               reporte_resolubilidad=self._reporte_resolubilidad, reporte_advertencia=self._reporte_advertencia)
         if self._pantalla == PAUSA:
             return PantallaDTO(PAUSA, "Pausa", list(_OPCIONES_PAUSA), self._seleccion, aviso=self._aviso,
                                ayuda=list(_AYUDA_PAUSA), estado=self._juego.estado)
@@ -319,13 +345,23 @@ class ControladorPygame:
         if indice == _OPCION_VOLVER_DE_NOMBRE:
             self._ir_a(MENU)
             return
-        if self._cargando:
-            estado = self._backend.cargar(RUTA_GUARDADO, self._texto)
-        else:
-            estado = self._backend.iniciar(self._id_cripta, self._texto)
+        try:
+            if self._cargando:
+                estado = self._backend.cargar(RUTA_GUARDADO, self._texto)
+            else:
+                estado = self._backend.iniciar(self._id_cripta, self._texto)
+        except ErrorOperacion:
+            self._tomar_el_reporte(False)               # si la partida no inició, se ve el reporte completo (FR-311), sin ser una advertencia
+            raise
         self._nombre = self._texto.strip()
         self._juego = self._fabrica_controles(self._backend, estado)
         self._ir_a(JUEGO)
+        self._tomar_el_reporte(True)                    # el de la partida nueva, antes de su primera acción (FR-313); al cargar, ninguno
+
+    def _tomar_el_reporte(self, inicio: bool) -> None:
+        reporte = self._backend.resolubilidad()
+        self._reporte_resolubilidad = None if reporte is None else lineas_reporte(reporte)
+        self._reporte_advertencia = inicio and reporte is not None and reporte.veredicto != RESOLUBLE   # advertencia: la partida SÍ inició (FR-312)
 
     # ================================================================== partida, pausa y fin
     def _en_juego(self, evento) -> None:
@@ -333,10 +369,12 @@ class ControladorPygame:
             return
         es_clic = evento.type == pygame.MOUSEBUTTONDOWN and evento.button in (_CLIC_IZQUIERDO, _CLIC_DERECHO)
         elemento = self._vista.elemento_en(evento.pos) if es_clic else None   # la rueda no necesita saber qué hay debajo
-        espera = self._es_esperar(evento, elemento)
+        espera = self._juego.linea is None and self._es_esperar(evento, elemento)   # con la línea abierta, Z se escribe
         orden = self._juego.procesar_evento(evento, elemento)
         if espera and self._juego.aviso is None:        # esperar suena; si el backend la rechazó, no
             self._activaciones += 1
+        if self._juego.estado.reloj > 0:
+            self._reporte_resolubilidad = None          # ya hubo una acción: el reporte de inicio se oculta
         if self._juego.estado.terminado:
             self._terminar_partida()
         elif orden == PIDE_PAUSA:
@@ -445,6 +483,8 @@ class ControladorPygame:
     def _ir_a(self, pantalla: str) -> None:
         self._pantalla = pantalla
         self._fin_en = None
+        self._reporte_resolubilidad = None
+        self._reporte_advertencia = False
         self._seleccion = -1 if pantalla == JUEGO else 0
         self._aviso = None
         self._bajo_el_raton = None

@@ -151,11 +151,11 @@ def probar_cerrar_la_ventana_durante_la_demora_termina_sin_excepcion():
 
 
 def _siguiente(n):
-    """Los eventos que llevan del menú a la sala de las ratas y esperan; uno por cuadro."""
-    pasos = [[tecla(ENTER)], [tecla(ENTER)]] + [[tecla(pygame.K_BACKSPACE)]] * 16 + [[letra(ch)] for ch in "Ana"] + \
-            [[tecla(ENTER)], [tecla(ARRIBA)]]
-    if n - 2 < len(pasos):
-        return pasos[n - 2]
+    """Los eventos que, YA DENTRO de la partida (_al_juego_con_demora la dejó en JUEGO), entran a la sala de las ratas y
+    esperan; uno por cuadro. No repite la navegación del menú: con la línea de comandos (Enter, feature 004) esas teclas
+    ya no son inocuas en la partida."""
+    if n == 2:
+        return [tecla(ARRIBA)]
     return [tecla(pygame.K_z)]
 
 
