@@ -3788,18 +3788,6 @@ Al final: el diff de las pruebas y de los dos tasks.md, el resultado de la suite
 **Uso de la respuesta:** cierre de la parte del integrante 2. 002: T050 (sin las guardas de H4-4 y SC-202, que ya pasan con T116 y T118 del integrante 3), T006 y T008 marcadas con su commit, T060 (suite 1079 OK sin skip y 32/32, replay de ejemplo con victoria; quedan manuales los pasos de la ventana del quickstart). T007 no se marcó: el §1 y el §2 del contrato de la 004 todavía no tienen el texto acordado (se le avisó al integrante 3). 003: T068 (§2 con y sin red como se esperaba; queda manual §3, que es T056 con el integrante 3). T069: están todas las entradas de la 003, pero había 7 repetidas (las seis de T063 a T067, pegadas dos veces, y una de la 002 del 14/11), que se quitaron.
 
 -----------------------------------------------------------------------------------------------------------------------
-
-Dos cosas, cada una en su commit.
-
-1) DECISIONES.md, mi sección de la 002: agrega una nota corta de limitación conocida: tras cargar una partida, el log nuevo solo trae los comentarios "# ir a <sala>" de las órdenes dadas desde entonces, porque continuar_desde copia solo las acciones; los comentarios anteriores quedan en el log previo. No afecta al replay (los comentarios son informativos y el replay usa solo las acciones). Verifica con grep que es cierto antes de escribirlo. Commit: "docs: limitación conocida, comentarios de ir a tras cargar".
-
-2) T068 de specs/004-linea-tiempo/tasks.md (quickstart de punta a punta de la línea de tiempo). Lee specs/004-linea-tiempo/quickstart.md (si no existe, dímelo y propón su contenido). Verifica contra el código actual que cada paso sigue siendo cierto (comandos "historia", "historia #k", "historia <t>", --hasta, --checkpoint-cada, pergamino, guardar y cargar con línea de tiempo), con los mensajes exactos hallados con grep. Ensáyalo sin ventana con el controlador y la vista reales, como hiciste con el quickstart de la 002, y corrige el texto del quickstart si algún paso quedó desactualizado (por ejemplo por H-2, T118 o el comando mapa). Agrega los pasos manuales en la ventana con la columna "qué se espera". NO marques T068 (la marco yo tras seguirlo). Commit: "spec(004): quickstart de la línea de tiempo al día y con pasos manuales (T068)".
-
-Corre la suite completa y dime resultados.
-
-**Uso de la respuesta:** se usó la respuesta para documentar la limitación de los comentarios # ir a tras cargar y para dejar al día el quickstart de la línea de tiempo (T068).
-
------------------------------------------------------------------------------------------------------------------------
 **Fecha:** Martes 17 de noviembre 2026
 
 **Herramienta:** Claude Code
@@ -3810,17 +3798,6 @@ Dos cosas más, sin commit:
 Al final, el diff y el resultado de la suite.
 
 **Uso de la respuesta:** se quitaron también la guarda de H5-7 (la 003 ya existe) y la condición de `ArmadorResumen` en SC-202, con sus docstrings, y se marcó T069.
-
------------------------------------------------------------------------------------------------------------------------
-Actualiza specs/004-linea-tiempo/contracts/contrato-linea-tiempo.md §1 y §2. Es solo texto de spec: NO cambies ningún archivo de código. Verifica cada dato contra Data/GuardadoBinario.py y DTO/PartidaGuardadaDTO.py antes de escribirlo.
-
-§1: PartidaGuardadaDTO gana, al final y con None por defecto, primero `mapa: MapaConocidoGuardadoDTO | None` y después `linea: LineaTiempoGuardadaDTO | None`, que sigue siendo el ÚLTIMO campo. Agrega la fila de `mapa` a la tabla (hoy solo tiene `linea`) y quita "falta confirmar el orden de campos". Cada punto de control es un PartidaGuardadaDTO y lleva su propio mapa (su `partida.linea` sigue siendo None).
-
-§2: la cabecera de la versión 2 mide 58 bytes: magia CRPT, versión, offset y largo del bloque global, offset y cantidad de entradas del índice, id de sala mínimo, offset y largo del bloque del mapa, y offset y largo del bloque de la línea (largo 0 = None). El orden de los bloques en el archivo es: global, mapa, línea, salas, índice. Cada punto de control de la línea escribe: acciones_completadas, su bloque global, la cantidad y sus salas, y el bloque de su mapa con el largo delante (largo 0 = None). Quita la nota "falta confirmar el orden de campos" y el punto que repite la cabecera de la línea por separado: deja un solo párrafo coherente. Mantén lo demás (archivo versión 1 rechazado, cargar_sala no lee la línea).
-
-Después revisa que no queden otras frases tipo "falta confirmar" en ese archivo. Commit: "spec(004): contrato con el orden acordado de mapa y linea (§1) y de la cabecera v2 (§2)". Dime qué cambió.
-
-**Uso de la respuesta:** se usó la respuesta para dejar el contrato de la 004 con el orden acordado de mapa y linea y la cabecera v2, y así cerrar T007 de Derek.
 
 -----------------------------------------------------------------------------------------------------------------------
 
@@ -4124,3 +4101,12 @@ Opción (B). Hazlo en este orden y sin push:
 5) Si al terminar PROMPTS_LLM.md quedó modificado por la entrada de este prompt, no lo commitees todavía. Dime git status y git log --oneline -6.
 
 **Uso de la respuesta:** se usó la respuesta para dejar PROMPTS_LLM.md sin entradas repetidas, con fecha en las entradas recientes, y para cerrar T068.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Corre python verificar_prompts.py PROMPTS_LLM.md y dime el número y la primera línea de cada entrada sin fecha. Esperado: la #179 (antigua, déjala) y 2 entradas nuevas del 17/11 mías, que quedaron sin encabezado. A esas 2 agrégales al inicio "**Fecha:** Martes 17 de noviembre 2026" y "**Herramienta:** Claude Code", con el mismo formato que las demás. No toques ninguna otra entrada ni los saltos de línea (CRLF, UTF-8). Vuelve a correr el verificador: debe dar sin fecha: 1, repetidas: 0 y 0 marcadores de conflicto. Commitea PROMPTS_LLM.md por nombre con: "docs: encabezados de fecha en las entradas 40 y 41 de la bitácora". No hagas push; muéstrame git status y git log --oneline -3.
+
+**Uso de la respuesta:** se usó la respuesta para dejar con fecha y herramienta las entradas de la bitácora de los prompts 40 y 41.
