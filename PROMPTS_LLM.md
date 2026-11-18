@@ -4440,6 +4440,11 @@ Al final: .venv\Scripts\python.exe tests\correr_pruebas.py, la lista de archivos
 **Uso de la respuesta:** se aplicaron las correcciones del análisis de Marco en la spec de la 002 (A45 como regla del juego, caso borde de la partida terminada igual a A44, estado «Implementada»), en la spec de la 003 (estado «Implementada», verbos en presente, nota del Principio IX bajo el Apéndice B) y en DECISIONES.md, plan, research, tasks, contrato de llaves, quickstart y bench de la 002 y la 003. El antes/después de §5.4 se comprobó corriendo `ServicioResolubilidad.iniciar_partida_nueva("cripta-01", …)` con el paquete del repositorio: sin `--forzar` no inicia («no concluyó» por falta de `llaves.json`); con `--forzar` inicia. No se agregó H3-9 a la fila de FR-312 (I9): su prueba, `test_h3_9_fr314_forzar_no_cambia_verificar`, y el escenario citan solo FR-314. `tests/TestServicioBench.py` no cambió por el paquete (su cambio de la 003 es `d47c0ef`, T062). §5.3 no decía «hasta 50 salas» (la única mención está en §5.5, del integrante 3), y la frase «Con 50 salas es poco» del plan de la 002 está en la parte de «ir a»: no se tocaron. Suite: 1102 pruebas unittest OK y 32 de 32 scripts.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
 Correcciones del análisis de spec-kit para la 001, en este orden (Principio IX: la spec va sola primero).
 Suite en verde con uv run antes de cada commit, PROMPTS_LLM.md (incluí las consultas del puente 1a1ecc56e43,
 1a1ecc56e50, 1a1ecc56e5b y 1a1ecc56e66), no push.
