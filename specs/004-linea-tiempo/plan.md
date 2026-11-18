@@ -58,7 +58,7 @@ por defecto (§6.1, SC-405). Nunca más de K acciones por consulta (FR-416, SC-4
 **Restricciones**: determinismo (Principio IV); Abierto/Cerrado (Principio III): todo lo nuevo va en
 módulos nuevos y los cambios mínimos a la primera entrega están en la tabla de abajo.
 
-**Escala**: partidas de hasta 5 000 acciones en el bench, criptas de hasta 50 salas publicadas y
+**Escala**: partidas de hasta 5 000 acciones en el bench, criptas publicadas de 20 a 300 salas (paquete de la Parte II, cripta-06) y
 cuadrículas sintéticas de hasta 10 000 salas (para ver el costo de cada copia).
 
 ## Verificación de la constitución

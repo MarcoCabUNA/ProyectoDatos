@@ -3534,6 +3534,10 @@ Corre la suite completa (catálogo viejo) y dime resultados y decisiones.
 **Uso de la respuesta:** se usó la respuesta para decidir el alcance del comando mapa con la partida terminada y para implementar T055 de la 003 (mostrar el reporte de resolubilidad).
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
 git fetch y git merge origin/derek (trae la 003 completa, T054 y el merge de kris). Si hay conflicto solo en
 PROMPTS_LLM.md, conservá todas las entradas de los dos lados por hora, sin duplicados ni cambiar la
 codificación. Cualquier otro conflicto, o si el merge trae la regeneración de paquete/: pará y avisame.
@@ -3963,6 +3967,11 @@ Al final: resultado de la revisión, el diff del quickstart y la suite.
 **Uso de la respuesta:** el merge de `origin/derek` (`b0a7cee`) fue fast-forward y sin conflictos, pero no trae el cierre de T041: los commits de Kris (`2c114a7`, `6258dd0`) están solo en `origin/kris`. Entre `1bdc87b` y el merge, en la 001 solo cambió `tasks.md` (T059, mía). La revisión se hizo contra `origin/kris`: `spec.md` solo cambia las filas H4-1 y H4-2 de la trazabilidad y las 10 pruebas existen en `tests/test_vista_terreno.py`; `plan.md:161` sigue diciendo «2 líneas en `dibujar` y `_ficha_de_actor`», cuando `dibujar` suma 1 y `_ficha_de_actor` cambia 2 por 14, sin método nuevo; `plan.md:168` dice que de la Vista solo cambia `EscenaJuego.py`, pero también se agregan 4 constantes a `Componentes.py`; `tasks.md:175` marca T041 con `[x]` en minúscula y no toca nada más. No se corrigió nada de eso. En `quickstart.md` §7 se cambió la frase vieja: las criptas 02 a 06 traen costos y sabuesos, el espectro solo está en la 06, y la 06 tiene 36 cazadores (25 y 11) según `paquete/cripta-06/contenido.json`, no 42. También se nombró `tests/test_paquete_real_cazador.py` (T059). El README de la 001 y DECISIONES §5.1, §5.2 y §5.6 no repetían la frase. Suite con `uv run`: 1090 pruebas unittest OK y 32 de 32 scripts.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
 Sí, revisa y corrige el quickstart de la 002 (§6, T126) con el paquete nuevo. En specs/002-niebla-ir-a/quickstart.md:
 
 1) Verifica contra el paquete actual (cripta-02 y lo que use la §6): que la cripta, sus salas, la antorcha en la Sala 1, la rata dormida en la 7 y el pergamino en la 8 siguen donde dice el texto. Si el contenido cambió, ajusta los pasos.
