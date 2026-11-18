@@ -4507,3 +4507,76 @@ haz push a todo
 **Uso de la respuesta:** push de `Marco` a `origin/Marco` con los 5 commits de las correcciones del análisis de la 001 (`c71d5b0`, `2d0930d`, `c021747`, `55b611c`, `44093e4`) y este registro.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026 (terminado el miércoles 18)
+
+**Herramienta:** Claude Code
+
+Correcciones del análisis de spec-kit de Marco (17/11) para la parte del integrante 3 (Kris, que me pidió que las haga yo): la 004 y la parte de «ir a» de la 002. Constitución v1.2.0. SIN comandos de git que cambien algo (solo git log/show/status/diff/grep para comprobar): yo commiteo desde PyCharm. Trabajá por FASES y al final de cada fase PARÁ, mostrame git diff --stat y git status, y esperá a que te escriba «seguí». Los números de línea son aproximados: buscá por el texto y, si algo no coincide con lo que digo, avisame antes de editar en vez de inventar. No toques la 001, ni mis partes de la 002 (niebla y mapa conocido) ni la 003. Ya están hechos y NO se repiten: T117 y T127 (cerrados en 5b6659e) y el renumerado de los «8.» de la sección «ir a» de DECISIONES.md (L9).
+
+Criterio para las specs (el mismo que usó el integrante 1 en la 001): los nombres de campos del JSON de la API (costo, rango, cierre_automatico, duracion…) y los nombres de las pruebas en las tablas de trazabilidad se quedan, porque son el contrato de datos y lo que pide el Principio X; lo que se quita son los nombres de nuestras clases, módulos y valores de Python (DTO, servicios, None, constantes).
+
+FASE 1, solo specs/004-linea-tiempo/spec.md:
+- D1: la suposición del retraso 0 nombra SalidaDTO.cierre_automatico, ObjetoDTO.duracion y «Data». Reescribila: «el cierre automático de una puerta y la duración de un objeto son enteros ≥ 1 (FR-122)».
+- D2: la suposición de --replay sin --hasta nombra ServicioReplay, ServicioAccionJugador y ServicioLineaTiempo.ejecutar. Dejá solo la regla («la reproducción completa no permite consultar historia»); la explicación con nombres va al plan en la fase 4 (anotá el texto que sacaste).
+- C1: FR-416 y la entidad Punto de control: «a lo sumo K acciones entre dos puntos consecutivos; un retroceso con el pergamino puede agregar un punto a menos de K».
+- C2: FR-412: «final» = la partida terminó. FR-410: el código 1 también si la partida no terminó y T es mayor que el último reloj. Comprobalo antes en el código de --replay … --hasta.
+- C4: pasá a presente «cuando la 002 esté disponible / mientras no exista».
+- C7 (historia #0, escenario H1-5): primero comprobá qué hace hoy el programa con historia #0. Si ya indica el rango válido, alineá la spec con eso; si no, opción (b): aclarar en la spec que basta con el aviso de uso. NO cambies código por esto. Decime cuál aplicaste y por qué.
+- C10: línea 7 «Estado: Implementada»; ordená la fila 13 de la trazabilidad.
+PARÁ.
+
+FASE 2, solo specs/002-niebla-ir-a/spec.md (solo las secciones de «ir a»):
+- M4: NFR-250, SC-252 y A32: el criterio pasa a ser la cripta sintética de 300 salas (peor caso), con cripta-06 como dato complementario (en cripta-06 V2 da «sin ruta»).
+- L10: «1.001 ms» → «1,001 ms».
+PARÁ.
+
+FASE 3, código (Principio III: el código nuevo lleva type hints y docstrings; los métodos de P1 no llevan docstrings nuevos), sin cambiar comportamiento:
+- C1: type hints y docstrings de una línea en Logic/ViajeAutomatico.py, Service/ServicioIrA.py, DTO/ViajeDTO.py y Logic/BenchViaje.py, solo donde falten.
+- A1 de la 004: que una prueba existente cite FR-403 en su nombre (por ejemplo test_h1_7_fr403_fr409_…). Si renombrás una prueba, actualizá cada lugar donde se cite (spec.md, plan.md, tasks.md, DECISIONES.md, quickstart.md) y comprobá con grep que el nombre nuevo existe y el viejo no queda en ningún lado.
+Corré la suite completa con .venv\Scripts\python.exe tests\correr_pruebas.py (PYTHONIOENCODING=utf-8, sin nada en paralelo, sin límite de tiempo menor a 300 s): todo en verde. PARÁ con el resultado.
+
+FASE 4, docs de la 002 («ir a») y de la 004, en DECISIONES.md, README.md, plan, tasks y quickstart:
+- M1: plan de la 002: el grafo se arma una vez por viaje y se guarda entre pasos (como T111 y DECISIONES).
+- M2: plan de la 002: danio_recibido «aprobado» (no «pendiente»), con comentario de una línea en vez de docstring (es un método de P1); borrá en DECISIONES.md la frase «T110A sigue sin marcarse…» (T110A está [x]).
+- M5: en DECISIONES.md (sección de «ir a»), el antes/después de los cambios de «ir a» a ControladorBackend (__init__, _ejecutar, _empezar) que el plan de la 002 lista como P1; comprobalo con git log/diff contra P1. NO repitas los cambios de T054 de la 003 (_iniciar_verificando, resolubilidad()): ya tienen su antes/después en §5.4.
+- M6 y M7: quickstart de la 002: ejemplos/partida_ejemplo.log en vez de logs/partida_001.log; requisitos previos al día (T033/T040 y H4-4 ya cerrados).
+- M9: tabla de cobertura de «ir a» en tasks.md de la 002: filas de A44, A46 y la parte de interfaz de A2b/A9/A11, y una tarea [x] que respalde test_ir_a_interfaz.py, test_comando_mapa.py y test_historia_mapa_vista.py.
+- L3 y L6: quitá «pendiente» de ServicioLineaTiempo en el plan de la 002; nombre real de la prueba en T119 (…_tres_tamanos_y_el_de_referencia; comprobalo con grep).
+- L10: «1.001 ms» → «1,001 ms» también en DECISIONES.md (sección «ir a»).
+- 004 C3: plan.md, T004 y T053: solo --replay … --hasta pasa por ServicioLineaTiempo.ejecutar; el replay completo usa ServicioAccionJugador. Agregá acá la explicación con nombres que salió de la spec en D2.
+- 004 C5: el árbol de pruebas del plan con los archivos reales (comprobá cada uno con ls/grep).
+- 004 C6: R-4 alineado con H-1; en T021, «la regla del prefijo» y el punto que falta. C8: plan.md, LineaTiempoGuardadaDTO.
+- 004 B1 y C2 en README: una frase sobre el archivo de partida versión 2 y el rechazo de los archivos de P1 (T065), y el caso del código 1 de C2 en la tabla de códigos de --replay … --hasta.
+- 004 B2: tachá T032 (~~T032~~) como T031.
+- 004 D3: NO corras --bench. Dejá escrito en DECISIONES §5.5 que las tablas de M1 y M5 (y la columna de bytes de la tabla de M1) son del 14/11, de antes del mapa en los puntos de control. El párrafo «Memoria (M3)» ya usa el --bench del 17/11 (21 474, 186 039 y 917 439 bytes) y no hay que contradecirlo. Si el README cita una cifra de esas tablas («menos de 1 ms»), agregá la misma aclaración.
+- Opcionales M8 (002) y C9 (004): NO los hagas; decime que quedaron fuera.
+Al final de la fase, corré otra vez la suite completa (igual que en la fase 3). PARÁ.
+
+FASE 5: registrá este prompt en PROMPTS_LLM.md, al final, con el formato de siempre (Fecha, Herramienta: Claude Code, prompt textual, Uso de la respuesta). PARÁ.
+
+Al final: los archivos de cada fase, qué omitiste y por qué, la decisión de C7, el resultado de las dos suites y git status (fuera quedan ExplorarApi.py, bench.txt y exploracion/).
+
+**Uso de la respuesta:** trabajo por fases, sin comandos de git que cambien nada; los commits los hice desde PyCharm. Lo que se comprobó en el código antes de escribir: `--replay … --hasta` con T mayor que el último reloj de una partida que no terminó sale con código 1 y el rango (C2); `historia #0` se rechaza en los controles con el aviso de uso y no muestra el rango 1..N, así que en C7 se aplicó la opción (b), sin tocar código. (1) `specs/004-linea-tiempo/spec.md` (commit `9b5f8d6`): D1, D2 (el texto sacado pasó al plan en la fase 4), C1, C2, C4 (más la línea 13 y la suposición de «ir a», que pedí aparte), C7 y C10. (2) `specs/002-niebla-ir-a/spec.md`: NFR-250, SC-252 y A32 con la cripta sintética de 300 salas como criterio (H6-10 no cambió porque se mantuvo el nombre «cripta de referencia») y «1,001 ms». (3) Código sin cambiar comportamiento: type hints y docstrings de una línea en `Logic/ViajeAutomatico.py`, `Service/ServicioIrA.py`, `DTO/ViajeDTO.py` y `Logic/BenchViaje.py` (los cuatro de la 002, no de P1), y el docstring del módulo `BenchViaje` alineado con NFR-250 (pedido aparte); `test_h1_7_fr409_instante_igual_al_reloj` pasó a `test_h1_7_fr403_fr409_instante_igual_al_reloj` (solo se citaba en `specs/004-linea-tiempo/tasks.md`; grep: el viejo no queda). Suite: 1102 pruebas OK y 32 de 32 scripts. (4) Documentación: plan, tasks y quickstart de la 002 («ir a»), plan y tasks de la 004, `DECISIONES.md` y `README.md`. Lo nuevo: el punto 13 de «ir a» en `DECISIONES.md` con el antes/después de `__init__`, `_ejecutar` y `_empezar` (comparado con `86b017e`, la versión de la primera entrega; los cambios entraron en `adf7add`); T128 [x] en la 002, que respalda las tres pruebas de interfaz, y cinco filas de cobertura; y el árbol de pruebas de la 004 con sus 24 archivos reales. Correcciones que pedí después, en la misma fase: el mapa entró en los puntos de control con `4aac926` (14/11, 23:41), no con T118, así que las tablas de M1 y M5 (`cafa382`, 14/11, 17:12) son de antes; la cifra de 0,5 ms de M5 se aclara como medida con las criptas de la primera parte, porque la tabla no tiene una fila de 300 salas; en I3-8, el dato de V1 con 300 salas (0,199 ms, `bench-viaje-2026-11-17.txt`) y «hasta 300 en el paquete de la Parte II» en Rendimiento (la frase «Con 50 salas es poco» ya la había sacado M1, y Claude avisó antes de editar); D-6, las líneas 7 y 8 del quickstart de la 002, H-4 de la 004 y los decimales del punto 11 de «ir a» con coma. `--bench` no se corrió. Suite al cerrar la fase: 1102 pruebas OK y 32 de 32 scripts. M8 (002) y C9 (004), opcionales, quedaron fuera.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 (noche) y miércoles 18 de noviembre 2026 (madrugada)
+
+**Herramienta:** Claude
+
+Le pedí a Claude que revisara los merges con las ramas de Kristel y Marco, las ventanas de push, la salida completa del bench y cada fase de las correcciones del análisis de spec-kit antes de commitear, y que adaptara los prompts de Claude Code. Prompts principales, textuales:
+- «ok, de nuestra parte falta algo, probaar algo, implementar algo?. y eso de kris y marco … ya les avisamos?»
+- «ok mira la salida de los comandos» y «ok te paso el txt que pide y tambien lo que me dijo kris y marco junto con algo quie me adjunto kris», con la salida completa de `--bench` y el reporte de correcciones de la T041.
+- «ok, kris creo que ya lo subio mira, te paso el zip de ambos de kris y marco».
+- «asi el push?», con las capturas de cada ventana de push.
+- «ok el pull request al main lo hacemos ahorita o ma;ana, por el momento, nos falta algo como integrante 2? le falta algo a marco o kristel o ya esta todo hecho? revisa bien el contexto»
+- «ok kris dijo que me daba permiso de hacer los cambios si queria, entonces que hacemos? y tambien queda el detalle del nombre cortado no?»
+- «asi el push? y mira lo que me dijo marco: Corrí /speckit.analyze sobre las cuatro features …», con el análisis y los prompts de correcciones.
+- «mientras corre la suite, dame el prompt completo de lo de kris, pero antes, analiste bien lo q te mande de kris?»
+- «ok entonces hemos hecho todo lo q marco dijo en este menasje junto con los adjuntos».
+- «te mando el .zip y el txt de claude code de la fase 4».
+
+**Uso de la respuesta:** revisar el bench completo del merge final (las dos filas que no cumplen ya estaban documentadas en `DECISIONES.md`); detectar que los 4 commits de la corrección de la T041 no estaban subidos y traerlos después; quitar una línea repetida que dejó el `merge=union` en `PROMPTS_LLM.md`; encontrar que §5.5 de `DECISIONES.md` todavía decía que el guardado versión 2 no existía y corregirlo con su tamaño real (reproducido en otra copia del proyecto), con los valores de M3 del bench del 17/11; decidir no cambiar el nombre recortado del cazador (es la regla de FR-117, con su prueba); comprobar contra el código cada punto del análisis de Marco antes de aplicarlo (H1 del mapa con la partida terminada, H-4 sin salidas repetidas en el paquete, I9 que no corresponde porque H3-9 cita FR-314); adaptar los prompts de correcciones (sin git del agente, por fases, buscando por texto) y revisar cada fase de la parte del integrante 3: el diff de código de «ir a» (capas e imports), el antes/después de `ControladorBackend` contra el commit de P1 y la fecha real en que el mapa entró en los puntos de control (4aac926, no T118).
+
+-----------------------------------------------------------------------------------------------------------------------
