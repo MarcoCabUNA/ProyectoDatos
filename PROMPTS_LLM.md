@@ -4257,3 +4257,12 @@ Opción 2. La prueba de choques mide contra lo pintado con hasta 4 dígitos (el 
 4) Muéstrame el reporte completo, la salida del verificador, git status y git log --oneline -4.
 
 **Uso de la respuesta:** se usó la respuesta para decidir la opción de la prueba de choques (medir contra lo pintado, hasta 4 dígitos) y para generar el reporte de correcciones para Marco y Derek.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+En specs/002-niebla-ir-a/tasks.md marca [x] T117 y T127 (y solo esas dos). T117 (el aviso al integrante 2) está cumplido: Derek ya respondió y confirmó que T006 y T050 están hechas. T127 (la bitácora de prompts) está completa: verifica antes con python verificar_prompts.py PROMPTS_LLM.md (0 repetidas, 0 marcadores de conflicto). Antes de marcar, lee el texto de cada tarea y dime en una línea si lo que pide se cumple. No cambies nada más. Commit por nombre (nunca git add -A): "spec(002): T117 y T127 cerradas". Si PROMPTS_LLM.md quedó modificado por la entrada de este prompt, commitéalo aparte con "docs: bitácora del prompt 49". No hagas push. Muéstrame git status y git log --oneline -4.
+
+**Uso de la respuesta:** se usó la respuesta para cerrar T117 y T127 de la 002 tras el aviso de Derek y la bitácora completa.
