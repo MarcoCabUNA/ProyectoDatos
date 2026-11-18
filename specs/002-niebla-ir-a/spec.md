@@ -694,9 +694,10 @@ la 7. Cuando se dice «el mapa» se entiende el mapa conocido del jugador (FR-21
 - **NFR-205**: Las actualizaciones del mapa conocido NO DEBEN hacer que el ciclo de eventos entre dos
   decisiones del jugador supere el límite de 20 ms (P1 §5.2 y §6.1 de la Parte II).
 - **NFR-250**: El cálculo de un paso de «ir a» DEBE tardar menos de 5 ms con el mapa conocido completo de la
-  cripta de referencia, que es **cripta-06 (300 salas, del paquete con `--offline`)**, medido en el equipo local, sin red
-  ni renderizado. Si cripta-06 no está disponible, se mide con una cripta sintética de 300 salas. El «5 ms» sale de la
-  tabla de §6.1 del enunciado.
+  cripta de referencia, que es **una cripta sintética de 300 salas** (el tamaño de cripta-06) con una ruta que la
+  cruza de un extremo al otro, el peor caso; medido en el equipo local, sin red ni renderizado. cripta-06 (300 salas,
+  del paquete con `--offline`) se mide como dato complementario: en ella el paso medido da «sin ruta», así que no
+  representa el peor caso. El «5 ms» sale de la tabla de §6.1 del enunciado.
 - **NFR-251**: `--bench` DEBE medir el cálculo de un paso de «ir a» en criptas sintéticas deterministas por
   semilla de al menos tres tamaños, incluido el mapa conocido completo *(decisión del grupo)*, y las decisiones
   que se tomen con esas mediciones DEBEN documentarse en `DECISIONES.md` (§6.3, Principio VIII).
@@ -767,7 +768,7 @@ Escenarios adicionales (no provienen del Apéndice B):
 | A29 | Entre los pasos ocurren los eventos del reloj | H6-7 | FR-254 | `test_h6_7_a29_fr254_cierre_automatico_entre_pasos_en_su_instante` (`tests/test_servicio_ir_a.py`) |
 | A30 | Destino en la sala actual: sin pasos y sin tiempo | H6-8 | FR-251 | `test_h6_8_a30_fr251_destino_en_la_sala_actual_ya_aqui` (`tests/test_viaje_logica.py`), `test_h6_8_a30_fr251_ya_aqui_sin_pasos_ni_tiempo` (`tests/test_servicio_ir_a.py`) |
 | A31 | Cada paso aplica las reglas de una entrada ordinaria (antorcha, enemigos, trampas) | H6-9 | FR-264 | `test_h6_9_a31_fr264_paso_con_antorcha_enemigos_y_trampas` (`tests/test_servicio_ir_a.py`) |
-| A32 | El cálculo de un paso tarda menos de 5 ms | H6-10 | NFR-250, NFR-251 | `test_h6_10_a32_nfr250_sc252_paso_medido_igual_a_decidir_paso` (`tests/test_bench_viaje.py`); El tiempo medido está en `specs/002-niebla-ir-a/bench-viaje-2026-11-17.txt` (300 salas, 1.001 ms contra 5 ms) |
+| A32 | El cálculo de un paso tarda menos de 5 ms | H6-10 | NFR-250, NFR-251 | `test_h6_10_a32_nfr250_sc252_paso_medido_igual_a_decidir_paso` (`tests/test_bench_viaje.py`); El tiempo medido está en `specs/002-niebla-ir-a/bench-viaje-2026-11-17.txt` (criterio: cripta sintética de 300 salas, peor caso, 1,001 ms contra 5 ms; dato complementario: cripta-06, 0,164 ms, donde V2 da «sin ruta») |
 | A33 | El viaje se detiene si entra a una sala con enemigos activos | H7-4 | FR-258, FR-260 | `test_h7_4_a33_fr258_fr260_enemigos_en_el_destino_dan_dos_motivos` (`tests/test_viaje_logica.py`), `test_h7_4_a33_fr258_fr260_enemigo_activo_en_el_destino_dos_motivos` (`tests/test_servicio_ir_a.py`) |
 | A34 | El viaje se detiene al recibir daño | H7-5 | FR-258, FR-260 | `test_h7_5_a34_fr258_dano_detiene` (`tests/test_viaje_logica.py`), `test_h7_5_a34_fr258_fr260_veneno_detiene_antes_del_siguiente_paso` (`tests/test_servicio_ir_a.py`), `test_h7_5_a34_fr258_dano_compensado_por_regeneracion_detiene` (`tests/test_servicio_ir_a.py`), `test_fr258_regeneracion_activa_sin_dano_el_viaje_sigue` (`tests/test_servicio_ir_a.py`) |
 | A35 | El viaje se detiene al llegar y la interfaz lo indica | H7-6 | FR-258, FR-260 | `test_h7_6_a35_fr258_fr260_llego` (`tests/test_servicio_ir_a.py`, `tests/test_viaje_logica.py`), `test_ir_a_lleva_a_la_sala_un_paso_por_cuadro_y_el_motivo_queda_en_el_panel` (`tests/test_ir_a_interfaz.py`) |
@@ -818,8 +819,8 @@ Cada prueba citará el identificador del requisito que verifica (Principio X).
   no abre ninguna puerta, y cada paso coincide con el que resulta de calcular la ruta desde cero con el
   conocimiento de ese momento, con el desempate por menor identificador.
 - **SC-252**: Con `--bench`, el cálculo de un paso de «ir a» con el mapa conocido completo de la cripta de
-  referencia, **cripta-06 (300 salas)**, o de una sintética de 300 salas si cripta-06 no está disponible, tarda menos
-  de 5 ms (el «5 ms» sale de la tabla de §6.1 del enunciado).
+  referencia, **una cripta sintética de 300 salas** (peor caso, NFR-250), tarda menos de 5 ms (el «5 ms» sale de la
+  tabla de §6.1 del enunciado). La medición en cripta-06 es un dato complementario: ahí el paso da «sin ruta».
 - **SC-253**: En el 100 % de los viajes probados, reproducir `partida.log` con `--replay` deja la partida y el
   mapa conocido idénticos a los originales, y la línea de tiempo cuenta exactamente un paso por acción.
 
