@@ -4,7 +4,7 @@
 
 **Creada**: 2026-11-12
 
-**Estado**: Borrador (parte del integrante 2: mapa conocido y antorcha; parte del integrante 3: «ir a», FR-250 a FR-264, historias 6 y 7, ya escrita por el integrante 3)
+**Estado**: Implementada (parte del integrante 2: mapa conocido y antorcha; parte del integrante 3: «ir a», FR-250 a FR-264, historias 6 y 7, ya escrita por el integrante 3)
 
 **Fuente**: Cripta - Parte II §3.3, §3.4, §3.5, §3.6, §5.3, §6.1, §6.3, §7.3 y Apéndice B «Niebla de guerra e «ir a»»; Primer Proyecto (P1) §2.4 (enemigos dormidos), §2.7 (antorcha), §2.11 (pergamino de retroceso), §4.2 (precarga) y §5.2; feature `001-terreno-cazador` (FR-101, FR-108 y FR-122)
 
@@ -464,7 +464,7 @@ el motivo que muestra la interfaz y usar un pergamino en mitad de un viaje.
 - **Pergaminos seguidos**: cada uno devuelve el mapa al estado anterior a la acción que revierte (P1 §2.11).
 - **Archivo de partida de la primera parte**: no trae mapa conocido; se trata según FR-421 de la feature 004
   (incompatible o migrado con aviso; nunca se carga en silencio).
-- **Partida terminada**: el comando de ver el mapa sigue disponible y muestra el mapa del final.
+- **Partida terminada**: el comando de ver el mapa no está disponible (supuesto A44).
 - **Cazador en una sala desconocida**: el cazador conoce el esqueleto completo (feature 001), pero su recorrido
   no cambia el mapa conocido del jugador (FR-218).
 - **Costo declarado en una sola cara de una puerta**: el jugador conoce y ve el costo igualado (001 FR-101), el
@@ -780,7 +780,7 @@ Escenarios adicionales (no provienen del Apéndice B):
 | A42 | Las caras de una puerta con estados distintos se recuerdan por separado; a «ir a» solo se ofrece la salida cuya cara de origen se recuerda abierta | H2-6 | FR-207, FR-208, FR-225 | `test_h2_6_a42_fr207_fr208_caras_distintas_se_recuerdan_por_separado` (`tests/test_mapa_conocido_puertas.py`), `test_h2_6_a42_fr208_fr225_solo_la_cara_de_origen_abierta_se_ofrece` (`tests/test_grafo_mapa_conocido.py`) |
 | A43 | Si la antorcha se apaga en el mismo instante de la entrada, decide el orden en que se programaron los eventos | H3-8 | FR-210, FR-214 | `test_h3_8_a43_fr210_fr214_entrar_con_y_sin_antorcha_en_el_mismo_instante` (`tests/test_mapa_conocido_antorcha.py`), `test_h3_8_a43_fr210_fr214_fin_programado_antes_que_la_entrada` (`tests/test_mapa_conocido_antorcha.py`), `test_h3_8_a43_fr210_fr214_fin_programado_despues_de_la_entrada` (`tests/test_mapa_conocido_antorcha.py`) |
 | A44 | El comando `mapa` de la interfaz abre y cierra el panel y no consume tiempo, no cuenta como acción y no se anota en `partida.log` ni en la línea de tiempo; con la partida terminada no está disponible (supuesto) | H5-4 | FR-219, FR-220 | `test_fr219_comando_valido_abre_y_se_cierra_con_el_mismo_comando_o_con_esc` (`tests/test_comando_mapa.py`), `test_h5_4_a12_fr220_ver_el_mapa_no_gasta_tiempo_ni_se_registra` (`tests/test_comando_mapa.py`), `test_con_la_partida_terminada_el_comando_no_esta_disponible_pero_ver_mapa_no_falla` (`tests/test_comando_mapa.py`), `test_el_dto_del_mapa_llega_a_la_vista_y_se_dibuja_sin_cambiar_la_partida` (`tests/test_comando_mapa.py`) |
-| A45 | La interfaz no revela el id de una sala no explorada: `sala_destino` va como `SIN_EXPLORAR` y `sala_salida` es `None` hasta explorar la sala de salida (H-2, opción A) | H1-4, H5-5 | FR-204, FR-217 | `test_sc202_h2_doscientas_acciones_sin_ids_de_no_exploradas` (`tests/test_estado_sin_filtrar.py`), `test_salida_a_sala_no_explorada_sale_con_sin_explorar` (`tests/test_estado_sin_filtrar.py`), `test_fr204_fr217_h2_salidas_a_exploradas_y_sala_inicial_sin_cambios` (`tests/test_estado_sin_filtrar.py`), `test_sala_salida_es_none_hasta_que_se_explora_y_despues_vuelve_a_su_id` (`tests/test_estado_sin_filtrar.py`), `test_fr217_fr219_el_mapa_no_revela_ids_de_salas_no_exploradas` (`tests/test_comando_mapa.py`) |
+| A45 | La interfaz no recibe el identificador de una sala no explorada, ni el de la salida mientras no se haya explorado | H1-4, H5-5 | FR-204, FR-217 | `test_sc202_h2_doscientas_acciones_sin_ids_de_no_exploradas` (`tests/test_estado_sin_filtrar.py`), `test_salida_a_sala_no_explorada_sale_con_sin_explorar` (`tests/test_estado_sin_filtrar.py`), `test_fr204_fr217_h2_salidas_a_exploradas_y_sala_inicial_sin_cambios` (`tests/test_estado_sin_filtrar.py`), `test_sala_salida_es_none_hasta_que_se_explora_y_despues_vuelve_a_su_id` (`tests/test_estado_sin_filtrar.py`), `test_fr217_fr219_el_mapa_no_revela_ids_de_salas_no_exploradas` (`tests/test_comando_mapa.py`) |
 | A46 | «ir a» en la interfaz: el comando avanza un paso por intervalo, cualquier orden o Esc lo corta sin pausar el juego y los motivos de parada aparecen en el panel de mensajes | H6-2, H7-2, H7-6 | FR-250, FR-260, FR-262 | `test_el_bucle_principal_da_un_paso_por_intervalo_hasta_llegar` (`tests/test_ir_a_interfaz.py`), `test_esc_corta_el_viaje_sin_pausar_el_juego` (`tests/test_ir_a_interfaz.py`), `test_otra_orden_corta_el_viaje_y_se_ejecuta` (`tests/test_ir_a_interfaz.py`), `test_un_movimiento_a_mano_corta_el_viaje_y_se_mueve` (`tests/test_ir_a_interfaz.py`), `test_solo_ir_a_con_un_destino_es_el_comando` (`tests/test_ir_a_interfaz.py`) |
 
 Cada prueba citará el identificador del requisito que verifica (Principio X).
