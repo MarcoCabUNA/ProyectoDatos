@@ -4118,4 +4118,128 @@ Corre python verificar_prompts.py PROMPTS_LLM.md y dime el número y la primera 
 
 Opción (C2). Quita las entradas #193 («Dos cosas, cada una en su commit.») y #195 («Actualiza specs/004-linea-tiempo/…») que NO tienen encabezado, y deja #208 y #209, que sí lo tienen. No toques ninguna otra entrada ni el CRLF/UTF-8. Antes de quitar, comprueba que el texto de #193 y #208 (y de #195 y #209) es el mismo salvo el encabezado. Corre python verificar_prompts.py PROMPTS_LLM.md: debe dar sin fecha: 1 (la #179), repetidas: 0 y 0 marcadores de conflicto. Commitea PROMPTS_LLM.md por nombre con: "docs: quita entradas repetidas sin encabezado de la bitácora". No hagas push. Muéstrame el verificador, git status y git log --oneline -3.
 
-**Uso de la respuesta:** se usó la respuesta para quitar las entradas repetidas sin encabezado de la bitácora y dejar la versión completa de cada una. 
+**Uso de la respuesta:** se usó la respuesta para quitar las entradas repetidas sin encabezado de la bitácora y dejar la versión completa de cada una.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Contexto: revisión cruzada de Marco sobre la T041 de specs/001-terreno-cazador en origin/kris (1b80925; commits 748b16c y 6258dd0). Es solo lectura de su parte; ahora corrijo el CÓDIGO de View/EscenaJuego.py. Los números de línea de Marco pueden haberse movido: ubica todo por nombre. Su documento está en Revision_T041_Kris.md (puntos 3, 5 y 6). Marco hizo las cuentas a mano sin ejecutar: verifica cada hallazgo contra el código real y dime en una línea si se confirma antes de tocarlo.
+
+Reglas: strict MVC n-capas; KISS/YAGNI/SRP; solo librerías permitidas; nada específico de una cripta (Principio VI); sin reglas nuevas (Principio IX); código de P1 con cambio mínimo (Principio III). NO cambies lo que ya funciona: repartir_escena, SUELO, PASILLOS, HUD_PANELES, lleva_marcador, ni el comportamiento visible. Nunca git add -A (por nombre). No hagas push. Los métodos de P1 NO llevan docstring nuevo; el código NUEVO sí (docstring corto, type hints completos).
+
+Tarea A (punto 3): una sola fuente de verdad para la posición de la etiqueta de costo.
+- etiquetas_de_costo(estado, marcos, fuente) debe seguir devolviendo (dirección, texto, Rect), pero el Rect se calcula SIN renderizar: pygame.Rect((0, 0), fuente.size(texto)) y luego se coloca con el ancla de posicion_de_costo (setattr o equivalente). Es el Rect del texto sin sombra; documenta en el docstring que lo pintado ocupa rect.inflate(2, 2) por la sombra de texto_sombreado.
+- _costos debe dibujar EXACTAMENTE en el Rect que da etiquetas_de_costo (por ejemplo texto_sombreado(..., rect.topleft, "topleft")), sin volver a llamar posicion_de_costo. Comprueba la firma real de c.texto_sombreado.
+- Resultado: lo dibujado queda en la MISMA posición de pantalla que antes (compruébalo con un antes/después de las llamadas a texto_sombreado de una sala con 4 salidas) y bajan a 2 los renders por etiqueta.
+
+Tarea B (punto 5): sacar la lógica nueva de _ficha_de_actor (método de P1).
+- Compara el diff real contra P1 (git diff 4740816 origin/kris o HEAD -- View/EscenaJuego.py) y confirma el número de líneas que cambió _ficha_de_actor.
+- Crea la función pura rombo_del_marcador(izquierda, centro_y, lado) -> list[tuple[int, int]] con los cuatro vértices, y el método _nombre_de_ficha(superficie, actor, base, ancho, fuente) que dibuja «nombre (comportamiento)» y, si lleva_marcador, el rombo a la izquierda, ambos centrados juntos (FR-117). Usa el boceto de Marco como guía, NO lo copies a ciegas: la geometría y el dibujo deben quedar idénticos a los actuales (vértices, colores c.ROJO_VIVO y c.SOMBRA, centrado, recorte). Si el boceto difiere del código actual, manda el código actual.
+- En _ficha_de_actor deja un único cambio respecto a P1: reemplazar la llamada original a texto_sombreado del nombre por self._nombre_de_ficha(...).
+- Las pruebas existentes que reconstruyen el rombo por promedio de vértices deben pasar SIN cambios.
+
+Tarea C (punto 6): docstrings y tipos en lo NUEVO: posicion_de_costo, etiquetas_de_costo, lleva_marcador, texto_de_ficha, _costos, _nombre_de_ficha, rombo_del_marcador. Docstring corto en español en lugar de los comentarios #, type hints completos (incluida fuente: pygame.font.Font, superficie, estado, fondo), líneas de máximo 120 caracteres. Actualiza el docstring del módulo (líneas 4–13) agregando etiquetas_de_costo/posicion_de_costo (FR-116) y texto_de_ficha/lleva_marcador (FR-117). No agregues docstrings a métodos de P1.
+
+Validaciones: SDL_VIDEODRIVER=dummy; corre tests/test_vista_terreno.py y tests/test_vista_escena.py; luego la suite completa en segundo plano (PYTHONIOENCODING=utf-8 python tests/correr_pruebas.py, sin timeout menor a 300 s, sin correr nada más en paralelo). Todo debe seguir en verde sin cambiar pruebas, salvo lo que cambie por el nuevo Rect (si alguna prueba cambia, explícame por qué).
+
+Commit: UNO solo, con View/EscenaJuego.py (por nombre): "refactor(001): un solo Rect para el costo, _nombre_de_ficha y rombo_del_marcador fuera de _ficha_de_actor; docstrings y tipos (T041, revisión de Marco)". No toques plan.md ni DECISIONES.md en este prompt (Principio IX: la spec va en otro commit). Muéstrame: confirmación de cada hallazgo, diff de _ficha_de_actor antes/después en líneas, resultado de la suite, git status y git log --oneline -4.
+
+**Uso de la respuesta:** se usó la respuesta para corregir el código de View/EscenaJuego.py según la revisión de Marco (un solo Rect, lógica del rombo fuera de P1, docstrings y tipos).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Contexto: sigue la revisión de Marco (Revision_T041_Kris.md) sobre la T041. El código ya se corrigió en el prompt anterior. Ahora corrijo las PRUEBAS de tests/test_vista_terreno.py (puntos 1, 2, 4, 7, 8, 9 y la parte de pruebas del 10). Ubica todo por nombre, no por número de línea. Marco no ejecutó nada: verifica cada hallazgo contra el código real y dime si se confirma.
+
+Reglas: Principio IX (las pruebas miden el criterio de FR-116, FR-117, SC-106 y los escenarios H4-1/H4-2 tal cual, sin inventar reglas nuevas), Principio X (cada escenario tiene su prueba, con el FR en el nombre), Principio VI (nunca ids ni nombres de enemigos). Corre con SDL_VIDEODRIVER=dummy. No toques el código de producción en este prompt: si una prueba nueva FALLA porque revela un error real del código, DETENTE y repórtamelo con el caso mínimo, sin cambiar el diseño por tu cuenta. Nunca git add -A. No hagas push.
+
+Hazlo en este orden de prioridad:
+
+(4) Escenario literal de H4-1: lee spec.md (escenario H4-1, ~líneas 256-258) y tests/test_dto_terreno.py (~líneas 42-49). Saca ese montaje a un helper compartido sala_del_escenario_h4_1() -> SalaDTO (revisa primero si ya existe un archivo de ayudas de pruebas, p. ej. el de ayudas_pygame; si no, tests/ayudas_terreno.py) y úsalo desde test_dto_terreno.py y desde una prueba nueva de la Vista: dibuja esa sala y comprueba que se muestran 100, 250, 100 y 300 cada uno junto a su salida (N, S, E y la cerrada O), incluido el de la cerrada. La prueba debe usar el nombre test_h4_1_fr116_sc106_escenario_literal_... Si la prueba existente de costo igualado en la Vista queda repetida con test_dto_terreno, déjala solo con la parte de la Vista o quítala, y dime cuál.
+
+(2) Pantalla, HUD y suelo: una prueba de invariante pura que, para cada fondo de c.FONDOS_CONOCIDOS, con el costo más largo que permita FR-122 (revisa el máximo en la spec, no inventes uno), compruebe que cada etiqueta de etiquetas_de_costo, inflada 2 px por la sombra, queda dentro de PANTALLA, sin tocar c.HUD_PANELES y sin tocar c.SUELO. Marco sospecha que con 5 o más dígitos la etiqueta oeste del fondo inicial entra al suelo: si falla, repórtalo (no cambies posicion_de_costo sin avisarme).
+
+(1) Protagonista en cada entrada: en la prueba de choques, recorre las cuatro direcciones con salas de procedencia DISTINTAS (el helper salida() hoy manda todas las salidas abiertas a la sala 1, y el protagonista cae en el centro). Dibuja primero un cuadro de la sala anterior y luego la sala; comprueba con assertEqual que posicion_del_protagonista == c.PIES_PUERTA[dirección] (que de verdad entró por esa puerta) y mide el choque con un Rect de c.JUGADOR_OCUPA con midbottom en esos pies (sprite + ficha), con 6 enemigos, en los tres fondos. Que la etiqueta inflada 2 px no choque con él.
+
+(3, parte de pruebas) En la prueba de la lista de etiquetas, además de la cantidad, comprueba que los Rect de lo dibujado (espiando c.texto_sombreado) coinciden con los de etiquetas_de_costo.
+
+(9) Sufijo del cazador: prueba con el ancho REAL que recibe cada comportamiento. Para el cazador, c.FICHA_ANCHO_MIN - (c.MARCADOR_CAZADOR + c.MARCADOR_SEPARACION); para los demás, c.FICHA_ANCHO_MIN. Para todos los comportamientos que existan (léelos del código, no los inventes) y un nombre largo («Rata gigante #12»), el texto de texto_de_ficha debe terminar en «(comportamiento)» completo, incluido el más largo. Prueba además la ficha estrecha (FACTOR_FICHA_ESTRECHA) si con 12 enemigos se llega a ella. Si algo falla, repórtalo: Marco propone achicar el texto antes que ensanchar el reparto, pero no lo cambies sin avisarme.
+
+(7) Menos fragilidad: que las pruebas de la Vista no importen Logic.Mazmorra ni Service.ArmadorEstado ni llamen a _sala_con_estado_actual; arma la SalaDTO ya igualada (lo que la Vista recibe por contrato) o usa el helper del punto 4. Donde puedas, evita privados de la Vista (_escena, _fuentes, _repartir, _rect_del_jugador); usa JUGADOR_OCUPA. El espía de pygame.draw.polygon debe filtrar también por forma (len(puntos) == 4 y color == c.ROJO_VIVO y ancho == 0) y restaurarse siempre (try/finally o addCleanup). El caso de costo por defecto (100 si ninguna cara declara) se queda en test_dto_terreno, no en la Vista.
+
+(8) Marcador en x e y: en la prueba de los cazadores, empareja cada rombo y cada texto por la zona de su enemigo (reparto.enemigos[i], que no se solapan) y comprueba x e y; que rombo + hueco + texto quepan en zona.width. Evita buscar el texto por sufijo y cercanía.
+
+(10) Constante con nombre en lugar del 60 de cerca_del_marco, derivada de c.COSTO_DISTANCIA más el ancho máximo de la etiqueta; mueve el import de SimpleNamespace a su lugar; docstring corto a las ayudas salida() y enemigos().
+
+Validaciones: mutaciones. Para cada prueba nueva, rompe a propósito lo que cubre y comprueba que falla (omitir cerradas; costo en el centro del suelo; protagonista siempre en el centro; marcar por nombre; sufijo recortado), y restaura. Luego suite completa en segundo plano (PYTHONIOENCODING=utf-8 python tests/correr_pruebas.py, sin timeout menor a 300 s, sin correr nada más en paralelo). Debe quedar todo verde.
+
+Commit: uno con las pruebas (por nombre, incluido el helper): "test(001): pruebas de la Vista de H4-1 y H4-2 con el escenario literal, pantalla/HUD/suelo y protagonista en cada entrada (T041, revisión de Marco)". No hagas push. Muéstrame: qué hallazgos se confirmaron, las mutaciones probadas, el total de pruebas de la suite, git status y git log --oneline -4.
+
+**Uso de la respuesta:** se usó la respuesta para reforzar las pruebas de la Vista de H4-1 y H4-2 según la revisión de Marco (escenario literal, pantalla/HUD/suelo, protagonista en cada entrada, sufijo del cazador).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Contexto: último paso de la revisión de Marco sobre la T041. El código y las pruebas ya están corregidos en los dos commits anteriores. Ahora solo texto (Principio IX: spec en commit separado, sin tocar código ni pruebas).
+
+1) Corrige el registro exacto de lo que se cambió de P1 en View/EscenaJuego.py: plan.md (~línea 161, «Modificación (2 líneas en dibujar y _ficha_de_actor) + extensión») y DECISIONES.md (~línea 1182, «método _costos y dos líneas en dibujar y _ficha_de_actor»). Antes, verifica con git diff 4740816 HEAD -- View/EscenaJuego.py qué cambió realmente en dibujar y en _ficha_de_actor. Debe decir exactamente: +1 línea en dibujar (self._costos(...)); en _ficha_de_actor, la llamada original a texto_sombreado se cambia por self._nombre_de_ficha(...); y el código NUEVO: _costos, _nombre_de_ficha, rombo_del_marcador, etiquetas_de_costo, posicion_de_costo, texto_de_ficha, lleva_marcador. Actualiza también el antes/después de DECISIONES.md si menciona la lógica del rombo dentro de _ficha_de_actor.
+2) Actualiza en la fila H4 de plan.md y en las filas H4-1 y H4-2 de la trazabilidad de spec.md los NOMBRES REALES de las pruebas, incluida la nueva del escenario literal (lee los nombres de tests/test_vista_terreno.py; no inventes ninguno).
+3) En DECISIONES.md anota, como limitación conocida y SIN cambiar código, que en fondo_final solo está pintada la puerta norte (MARCOS_OSCURECIBLES[2] = False), así que el costo de una salida S, E u O abierta puede quedar sin puerta visible al lado. Verifica primero en View/Componentes.py que es cierto.
+
+Reglas: no toques código ni pruebas; no cambies requisitos; nunca git add -A; no hagas push.
+Commit: "spec(001): T041 registro exacto de los cambios a P1 y nombres de pruebas ajustados (revisión de Marco)". Luego corre python verificar_prompts.py PROMPTS_LLM.md y muéstrame git status y git log --oneline -5.
+
+**Uso de la respuesta:** se usó la respuesta para dejar plan.md y DECISIONES.md con el registro exacto de los cambios a P1 y la limitación de fondo_final, según la revisión de Marco.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Opción A, pero medida primero. NO cambies código de producción (posicion_de_costo ni nada de View/). Contexto: la prueba test_h4_1_fr116_sc106_el_costo_no_choca_con_enemigos_protagonista_ni_otras_salidas falla en fondo_inicial (entradas E y O) porque la etiqueta se solapa 11 px con c.JUGADOR_OCUPA, que es la reserva de repartir_escena y puede ser más ancha que lo pintado. Hay que saber si lo que se PINTA se toca.
+
+1) Diagnóstico sin tocar nada. Para fondo_inicial (y los otros dos fondos), entradas N, S, E y O, costos de 3, 4 y 5 dígitos, y 0, 6 y 12 enemigos, mide el Rect REAL pintado del protagonista: el sprite, la barra de vida y el texto del nombre de su ficha (obtenlos de lo que dibuja la escena: espía texto_sombreado y los rects de sprite/barra del código; no inventes constantes). Compara cada uno con la etiqueta inflada 2 px (la sombra). Dame una tabla: dirección, dígitos, solape con la reserva (JUGADOR_OCUPA) y solape con lo pintado (sprite, barra, nombre), en px.
+
+2) Si lo PINTADO no se solapa en ningún caso (hasta 5 dígitos): cambia la prueba para que mida contra sprite + barra + nombre pintados del protagonista, no contra JUGADOR_OCUPA. Pon un comentario corto que diga por qué (JUGADOR_OCUPA es una reserva de colocación de enemigos, más ancha que lo pintado) y deja en DECISIONES.md, en la sección de EscenaJuego.py, una nota con los números reales (cuánto se pisa la reserva y cuánto lo pintado). La prueba debe seguir exigiendo que la etiqueta no toque al protagonista pintado, en las 4 entradas y los 3 fondos. Comprueba con una mutación que falla si pones la etiqueta encima del sprite.
+
+3) Si lo PINTADO sí se solapa en algún caso: DETENTE. No cambies código ni la prueba. Dame el caso mínimo (fondo, entrada, dígitos, rects) y espera mi autorización para la opción B.
+
+4) En cualquiera de los dos casos, deja anotado en DECISIONES.md (sin cambiar código) que la spec no fija un máximo de costo (FR-122 solo pide un entero ≥ 1), que se prueba hasta 5 dígitos (DIGITOS_PROBADOS, decisión nuestra, no de la spec) y que con 6 o más dígitos las etiquetas E y O de fondo_inicial entran al suelo (en fondo_final desde 9). Verifica esos números antes de escribirlos.
+
+5) Si el caso 2 aplica, termina: corre las mutaciones que quedaron pendientes de las pruebas nuevas, la suite completa en segundo plano (PYTHONIOENCODING=utf-8 python tests/correr_pruebas.py, sin timeout menor a 300 s, sin correr nada más en paralelo) y haz DOS commits separados (Principio IX), por nombre y nunca git add -A: primero el código de pruebas (tests/test_vista_terreno.py, tests/test_dto_terreno.py, tests/ayudas_terreno.py) con "test(001): pruebas de la Vista de H4-1 y H4-2 con el escenario literal, protagonista en cada entrada y pantalla/HUD/suelo (T041, revisión de Marco)"; luego el texto (DECISIONES.md y, si algún nombre de prueba cambió, plan.md y spec.md; verifica que cada nombre de las filas H4 existe de verdad en las pruebas) con "spec(001): T041 nota de la reserva del protagonista y del máximo de dígitos probado (revisión de Marco)". No incluyas PROMPTS_LLM.md en esos commits. No hagas push.
+
+6) Muéstrame: la tabla del paso 1, qué caso aplicó, mutaciones probadas, total de unittest y scripts, python verificar_prompts.py PROMPTS_LLM.md, git status y git log --oneline -6.
+
+**Uso de la respuesta:** se usó la respuesta para decidir cómo resolver el choque de la etiqueta de costo con el protagonista: medir primero lo pintado, y cambiar la prueba solo si no hay solape real.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Opción 2. La prueba de choques mide contra lo pintado con hasta 4 dígitos (el peor caso de Marco, 9999). Deja DIGITOS_PROBADOS = 5 solo para la prueba de pantalla/HUD/suelo, que sí pasa con 5. Anota en DECISIONES.md, con los números verificados, que con 5 dígitos en fondo_inicial la etiqueta pisa al protagonista pintado (7×19 px en E y 8×19 px en O), que con 6 o más entra además al suelo, y que la spec no fija un máximo (FR-122), por lo que queda como limitación conocida y no como incumplimiento de FR-116. Sigue con el punto 5 y el 6 del prompt.
+
+**Uso de la respuesta:** se usó la respuesta para cerrar el choque de la etiqueta con el protagonista: la prueba mide contra lo pintado con costos de 4 dígitos, se probaron 10 mutaciones, la suite quedó en 32 de 32 y se hicieron los commits f1a9fdc (pruebas) y c71055e (nota en DECISIONES.md).
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Último paso de la revisión de Marco sobre la T041. NO cambies código de producción ni pruebas.
+
+1) Genera el reporte en ../REPORTE_CORRECCIONES_T041.md (FUERA del repo; no lo commitees). En español, para Marco y Derek. Contenido: (a) tabla de los 10 hallazgos de Marco (# · severidad · qué se hizo · commit · prueba o archivo que lo cubre), usando los commits reales de git log (4e6258e, d76c68b, f1a9fdc, c71055e) y los nombres reales de las pruebas (verifícalos con grep en tests/test_vista_terreno.py y tests/test_dto_terreno.py); (b) lo que se cambió en View/EscenaJuego.py respecto a P1 (+1 línea en dibujar; en _ficha_de_actor −2 +1; código nuevo: _costos, _nombre_de_ficha, rombo_del_marcador, etiquetas_de_costo, posicion_de_costo, texto_de_ficha, lleva_marcador); (c) resultado de la suite (32 de 32 scripts y el total de unittest que ya tienes) y las 10 mutaciones; (d) una sección «Para Marco» con dos decisiones que él debe confirmar: 1) el choque con el protagonista se mide contra lo pintado (sprite, barra y nombre), no contra JUGADOR_OCUPA, porque esa es una reserva de colocación más ancha que lo pintado (dame los números reales de la tabla: 3 y 4 dígitos no se tocan; con 5 dígitos solo en fondo_inicial 7×19 px en E y 8×19 px en O), y 2) la spec no fija un máximo de costo (FR-122), se prueba hasta 5 dígitos para pantalla/HUD/suelo y 4 para el choque, y con 5 o más en fondo_inicial E/O puede pisar al protagonista; si Marco quiere que se corrija, sería un cambio en posicion_de_costo en otro commit; (e) la limitación de fondo_final. Máximo 2 páginas, sin inventar nada que no esté en git o en las pruebas.
+
+2) Revisa que PROMPTS_LLM.md tenga las entradas de este trabajo (prompts 42 en adelante) al final, sin duplicados, y corre python verificar_prompts.py PROMPTS_LLM.md. Debe dar 0 repetidas y 0 marcadores de conflicto. No copies el archivo de otro lado.
+
+3) Commitea PROMPTS_LLM.md por nombre con: "docs: bitácora de los prompts 42 a 47 (revisión de Marco de la T041)". No uses git add -A. No hagas push.
+
+4) Muéstrame el reporte completo, la salida del verificador, git status y git log --oneline -4.
+
+**Uso de la respuesta:** se usó la respuesta para generar el reporte de correcciones de la T041 para Marco y Derek (REPORTE_CORRECCIONES_T041.md, fuera del repo) y para completar la bitácora con las dos entradas que faltaban.
