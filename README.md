@@ -302,7 +302,7 @@ La segunda parte se desarrolló con spec-kit (especificación, plan y tareas por
 |---|---|---|---|
 | Terreno con costo por salida y enemigo cazador | [`001-terreno-cazador`](specs/001-terreno-cazador/) | FR-1xx | 1 |
 | Niebla de guerra, mapa conocido y viaje automático «ir a» | [`002-niebla-ir-a`](specs/002-niebla-ir-a/) | FR-2xx | 2 (mapa conocido y antorcha); 3 («ir a», FR-250 a FR-264, historias 6 y 7, y la vista del mapa) |
-| Verificación de resolubilidad | [`003-resolubilidad`](specs/003-resolubilidad/) | FR-3xx | 2 (la vista del reporte, del integrante 3) |
+| Verificación de resolubilidad | [`003-resolubilidad`](specs/003-resolubilidad/) | FR-3xx | 2 (la vista del reporte es del integrante 3) |
 | Línea de tiempo de la partida | [`004-linea-tiempo`](specs/004-linea-tiempo/) | FR-4xx | 3 |
 
 ## Pruebas

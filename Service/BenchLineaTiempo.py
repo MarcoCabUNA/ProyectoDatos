@@ -18,10 +18,10 @@ Service/BenchInventario.py. Cada grupo compara lo elegido contra la ALTERNATIVA 
   M6 medir_recorte           costo de leer un pergamino (recorte + copia del punto nuevo) según la historia (NFR-403).
   §5.6 medir_costo_por_accion   costo por acción de ServicioLineaTiempo.ejecutar con y sin línea activa.
 
-Memoria (M3): el formato de archivo versión 2 con la línea (T003, de Data) todavía no existe, así que los bytes
-son los que escribe GuardadoBinario (versión 1) para CADA punto de control, uno por archivo (cada uno con su
-cabecera, que pesa unos 34 bytes), más las acciones (su línea de texto del log y 4 bytes del tiempo). Las cargas
-y las fichas se cuentan pero no se pesan: son pocas y no dependen de K.
+Memoria (M3): los bytes son los que escribe GuardadoBinario (formato versión 2, el mismo del guardado real) para
+CADA punto de control, uno por archivo (cada uno con su cabecera de 58 bytes), más las acciones (su línea de texto
+del log y 4 bytes del tiempo). Las cargas y las fichas se cuentan pero no se pesan: son pocas y no dependen de K.
+El tamaño real del archivo de una partida guardada está en DECISIONES.md, §5.5.
 
 Las partidas de 5 000 acciones se juegan UNA vez por cada K y se reutilizan entre M1, M2 y M3 (`_Partidas`); como
 la partida es determinista, la historia de las primeras n acciones de una partida de 5 000 es la de una partida de n.
