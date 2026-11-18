@@ -4290,3 +4290,22 @@ Opción 2. La prueba de choques mide contra lo pintado con hasta 4 dígitos (el 
 4) Muéstrame el reporte completo, la salida del verificador, git status y git log --oneline -4.
 
 **Uso de la respuesta:** se usó la respuesta para decidir la opción de la prueba de choques (medir contra lo pintado, hasta 4 dígitos) y para generar el reporte de correcciones para Marco y Derek.
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+git fetch y git merge origin/kris en Marco (trae las correcciones de la T041: 4e6258e, f1a9fdc, d76c68b,
+c71055e). Conflictos: solo PROMPTS_LLM.md se resuelve conservando todo; cualquier otro, pará y avisame.
+Después del merge, revisá y corregí en specs/001-terreno-cazador/ (solo si sigue aplicando):
+1) plan.md (~168): si dice que de la Vista solo cambia View/EscenaJuego.py, agregá que también se suman 4
+   constantes en View/Componentes.py (las que nombra la fila de EscenaJuego).
+2) tasks.md:175: T041 con [X] en mayúscula, como el resto del archivo.
+3) Solo verificar, sin cambiar: que la fila de EscenaJuego en plan.md y DECISIONES.md (~1182) describan el
+   cambio real a P1 según git diff 4740816 HEAD -- View/EscenaJuego.py (dibujar +1; _ficha_de_actor −2 +1 con
+   la llamada a _nombre_de_ficha; código nuevo listado). Si no calza, decime archivo y línea.
+Un commit, suite en verde con uv run, PROMPTS_LLM.md, no push.
+
+**Uso de la respuesta:** merge de `origin/kris` (`4cf7824`) sin conflictos. Seguían aplicando los dos arreglos: `plan.md:168` ahora nombra las 4 constantes de `View/Componentes.py` (`COMPORTAMIENTO_CAZADOR`, `MARCADOR_CAZADOR`, `MARCADOR_SEPARACION` y `COSTO_DISTANCIA`) y `tasks.md:175` marca T041 con `[X]`. Verificación contra `git diff 4740816 HEAD -- View/EscenaJuego.py`: `plan.md:161` y `DECISIONES.md:1182` calzan (`dibujar` +1 con `self._costos(...)`; `_ficha_de_actor` −2 +1 con `self._nombre_de_ficha(...)`; código nuevo: `etiquetas_de_costo`, `posicion_de_costo`, `lleva_marcador`, `texto_de_ficha`, `rombo_del_marcador`, `_costos` y `_nombre_de_ficha`). Solo omiten dos cambios menores al encabezado del módulo: +2 líneas en el docstring y +1 `import` de `ActorDTO`. No se corrigió eso. Suite con `uv run`: 1102 pruebas unittest OK y 32 de 32 scripts.
+
+-----------------------------------------------------------------------------------------------------------------------
