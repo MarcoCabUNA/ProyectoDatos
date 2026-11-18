@@ -4116,7 +4116,6 @@ Corre python verificar_prompts.py PROMPTS_LLM.md y dime el número y la primera 
 
 Opción (C2). Quita las entradas #193 («Dos cosas, cada una en su commit.») y #195 («Actualiza specs/004-linea-tiempo/…») que NO tienen encabezado, y deja #208 y #209, que sí lo tienen. No toques ninguna otra entrada ni el CRLF/UTF-8. Antes de quitar, comprueba que el texto de #193 y #208 (y de #195 y #209) es el mismo salvo el encabezado. Corre python verificar_prompts.py PROMPTS_LLM.md: debe dar sin fecha: 1 (la #179), repetidas: 0 y 0 marcadores de conflicto. Commitea PROMPTS_LLM.md por nombre con: "docs: quita entradas repetidas sin encabezado de la bitácora". No hagas push. Muéstrame el verificador, git status y git log --oneline -3.
 
-**Uso de la respuesta:** se usó la respuesta para quitar las entradas repetidas sin encabezado de la bitácora y dejar la versión completa de cada una. 
 **Uso de la respuesta:** se usó la respuesta para quitar las entradas repetidas sin encabezado de la bitácora y dejar la versión completa de cada una.
 
 -----------------------------------------------------------------------------------------------------------------------
