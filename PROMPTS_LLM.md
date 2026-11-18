@@ -4243,3 +4243,17 @@ Opción 2. La prueba de choques mide contra lo pintado con hasta 4 dígitos (el 
 4) Muéstrame el reporte completo, la salida del verificador, git status y git log --oneline -4.
 
 **Uso de la respuesta:** se usó la respuesta para generar el reporte de correcciones de la T041 para Marco y Derek (REPORTE_CORRECCIONES_T041.md, fuera del repo) y para completar la bitácora con las dos entradas que faltaban.
+
+-----------------------------------------------------------------------------------------------------------------------
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Último paso de la revisión de Marco sobre la T041. NO cambies código de producción ni pruebas.
+
+1) Genera el reporte en ../REPORTE_CORRECCIONES_T041.md (FUERA del repo; no lo commitees). En español, para Marco y Derek. Contenido: (a) tabla de los 10 hallazgos de Marco (# · severidad · qué se hizo · commit · prueba o archivo que lo cubre), usando los commits reales de git log (4e6258e, d76c68b, f1a9fdc, c71055e) y los nombres reales de las pruebas (verifícalos con grep en tests/test_vista_terreno.py y tests/test_dto_terreno.py); (b) lo que se cambió en View/EscenaJuego.py respecto a P1 (+1 línea en dibujar; en _ficha_de_actor −2 +1; código nuevo: _costos, _nombre_de_ficha, rombo_del_marcador, etiquetas_de_costo, posicion_de_costo, texto_de_ficha, lleva_marcador); (c) resultado de la suite (32 de 32 scripts y el total de unittest que ya tienes) y las 10 mutaciones; (d) una sección «Para Marco» con dos decisiones que él debe confirmar: 1) el choque con el protagonista se mide contra lo pintado (sprite, barra y nombre), no contra JUGADOR_OCUPA, porque esa es una reserva de colocación más ancha que lo pintado (dame los números reales de la tabla: 3 y 4 dígitos no se tocan; con 5 dígitos solo en fondo_inicial 7×19 px en E y 8×19 px en O), y 2) la spec no fija un máximo de costo (FR-122), se prueba hasta 5 dígitos para pantalla/HUD/suelo y 4 para el choque, y con 5 o más en fondo_inicial E/O puede pisar al protagonista; si Marco quiere que se corrija, sería un cambio en posicion_de_costo en otro commit; (e) la limitación de fondo_final. Máximo 2 páginas, sin inventar nada que no esté en git o en las pruebas.
+2) Revisa que PROMPTS_LLM.md tenga las entradas de este trabajo (prompts 42 en adelante) al final, sin duplicados, y corre python verificar_prompts.py PROMPTS_LLM.md. Debe dar 0 repetidas y 0 marcadores de conflicto. No copies el archivo de otro lado.
+3) Commitea PROMPTS_LLM.md por nombre con: "docs: bitácora de los prompts 42 a 47 (revisión de Marco de la T041)". No uses git add -A. No hagas push.
+4) Muéstrame el reporte completo, la salida del verificador, git status y git log --oneline -4.
+
+**Uso de la respuesta:** se usó la respuesta para decidir la opción de la prueba de choques (medir contra lo pintado, hasta 4 dígitos) y para generar el reporte de correcciones para Marco y Derek.
