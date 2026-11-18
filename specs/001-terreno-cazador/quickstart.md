@@ -89,15 +89,24 @@ Los datos inválidos de FR-122 con `--verificar` (código 1) los prueba H3-7 en 
 
 ## 7. Prueba manual en el juego
 
-Hace falta una cripta con costos y un cazador:
+Hace falta una cripta con costos y un cazador. Las criptas `cripta-02` a `cripta-06` de `paquete/`
+traen salidas con costo y cazadores del catálogo: el sabueso óseo (`rango` 600) está en todas ellas y
+el espectro acechador (`rango` 2400) solo en la `cripta-06`. `cripta-01` no trae costos ni cazadores.
+Para verlo, la recomendada es la `cripta-06` (300 salas, 36 cazadores: 25 sabuesos y 11 espectros;
+costos de 20 a 300): en la escena cada salida muestra su costo (si una cara no lo declara, toma el
+igualado, y si ninguna lo declara, 100) y el cazador lleva su marcador.
 
 ```bash
 python main.py --offline
 ```
 
-Entrar a una sala con salidas de costos distintos y ver el costo de cada salida y al cazador
-marcado. La interfaz es del integrante 3 (tareas T038, T039 y T041). Si todavía no está, esta parte
-queda pendiente. Hoy ninguna cripta de `paquete/` trae costos ni cazadores.
+Elegir la `cripta-06` en el menú, entrar a una sala con salidas de costos distintos y ver el costo
+de cada salida y al cazador marcado. La interfaz es del integrante 3 (tareas T038, T039 y T041). Si
+todavía no está, esta parte queda pendiente.
+
+La misma cripta, sin vista, la recorre la prueba con datos reales (T059):
+`tests/test_paquete_real_cazador.py` despierta al espectro de la sala 123 y al sabueso de la sala 41,
+y comprueba que cada decisión de cazador es la de `paso_desde_cero` y que el replay da lo mismo.
 
 ## 8. Revisión de restricciones (Principios I y II)
 

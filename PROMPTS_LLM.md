@@ -3949,3 +3949,40 @@ Al final corre la suite completa, dime el recuento de unittest y scripts, y el g
 se usó la respuesta para revisar los reportes de los Prompts 29 a 32, y para completar el banco de «ir a» con cripta-06, la prueba de humo, la línea del mapa en --hasta y el quickstart de la 004.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code (consulta por el puente, solo lectura)
+
+Revisión cruzada, SOLO LECTURA (no modifiques nada, no ejecutes pruebas). git fetch. Decime primero el hash de origin/kris y si hay commits posteriores a 6258dd0 que toquen View/EscenaJuego.py, tests/test_vista_terreno.py, plan.md o DECISIONES.md. Revisá la T041 de la 001 en el estado ACTUAL de origin/kris (git show origin/kris:<archivo>): View/EscenaJuego.py (etiquetas_de_costo, posicion_de_costo, lleva_marcador, texto_de_ficha, _costos, _ficha_de_actor, dibujar), tests/test_vista_terreno.py, specs/001-terreno-cazador/spec.md (texto exacto de FR-116, FR-117, SC-106 y escenarios H4-1/H4-2), plan.md (tabla de cambios a P1) y DECISIONES.md (antes/después de EscenaJuego.py). Contra la constitución v1.2.0: capas (I), Principio III (P1: cambio mínimo; código nuevo con type hints y docstrings), VI (nada específico de una cripta: marcador solo por comportamiento), IX (sin reglas nuevas), X (cada escenario con prueba que cite FR). Verificá en particular, con archivo y línea y CITANDO EL CÓDIGO relevante (pocas líneas): 1) si las pruebas de choque colocan al protagonista en su posición real (posicion_del_protagonista / self._pies tras dibujar con id_sala_anterior en cada dirección) o siempre en PIES_CENTRO; 2) si alguna prueba mide que las etiquetas queden dentro de la pantalla (SC-106) y no pisen c.HUD_PANELES; 3) si el Rect que se prueba es el mismo que se dibuja en _costos (sombra incluida) y cuántas veces se renderiza el texto por cuadro; 4) si existe una prueba que reproduzca literal el escenario H4-1 de la spec (citá el escenario y qué prueba lo hace o no); 5) cuántas líneas cambió realmente _ficha_de_actor respecto de P1 frente a lo que dicen plan.md y DECISIONES.md, y una propuesta concreta (método nuevo); 6) qué funciones nuevas no tienen docstring; 7) fragilidad de la prueba que importa Logic/Service o usa privados; 8) si la prueba del marcador comprueba x e y. Para cada hallazgo: severidad ALTA/MEDIA/BAJA, archivo:línea, qué pasa, por qué importa (FR/SC/principio) y cómo arreglarlo concretamente (con un esbozo de código o de prueba si ayuda). Empezá con lo que está bien. Podés extenderte: esto va a un reporte detallado.
+
+**Uso de la respuesta:** consulta `1a1ec5a2649`, respuesta en `.claude-bridge/outbox/1a1ec5a2649.txt`. Revisión de la T041 en `origin/kris` (`1b80925`), sin observaciones ALTAS: capas, marcador por comportamiento y reparto sin cambios están bien. Observaciones MEDIAS: el choque se mide siempre con el protagonista en `PIES_CENTRO`; ninguna prueba mide pantalla ni `HUD_PANELES` (SC-106); el `Rect` probado no es el que dibuja `_costos`; no hay prueba de la Vista con los datos literales de H4-1; `_ficha_de_actor` cambió 14 líneas y `plan.md:161` y `DECISIONES.md:1182` dicen «2»; la prueba de la Vista depende de un privado de Service; el sufijo del comportamiento puede cortarse con el ancho real del cazador. BAJAS: docstrings y tipos, marcador comprobado solo en x en una prueba, costos junto a marcos que no se ven en `fondo_final`. Es del integrante 3; no se corrigió nada. Sirvió de base para la revisión del pedido siguiente.
+
+-----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+git fetch y git merge origin/derek en Marco (trae el merge final). Conflictos: solo PROMPTS_LLM.md se resuelve
+conservando todo; cualquier otro, pará y avisame.
+1) REVISIÓN (solo leer): git diff de specs/001-terreno-cazador/ (spec.md, plan.md, tasks.md, quickstart.md)
+   entre mi último commit propio y el merge. Decime qué cambió Kris al cerrar T041 y verificá:
+   - spec.md: que solo cambie la tabla de trazabilidad de H4-1/H4-2 y que los nombres de prueba existan;
+     ningún FR, escenario ni SC modificado (Principio IX).
+   - plan.md: que la fila de View/EscenaJuego.py describa el cambio real a P1 (antes decía «2 líneas» y
+     _ficha_de_actor cambió unas 14; si Kris lo sacó a un método nuevo, que coincida con el código).
+   - tasks.md: T041 marcada y nada más mío cambiado.
+   Si algo no calza, no lo corrijas: decímelo con archivo y línea.
+2) CORRECCIÓN: specs/001-terreno-cazador/quickstart.md §7 dice que ninguna cripta del paquete trae costos ni
+   cazadores. Actualizalo: cripta-02 a 06 traen salidas con costo y cazadores (sabueso óseo rango 600,
+   espectro acechador rango 2400); cripta-06 (300 salas, 42 cazadores) es la recomendada para ver la escena
+   con costo en cada salida y el marcador del cazador; mencioná la prueba con datos reales T059
+   (tests/test_paquete_real_cazador.py). Revisá si el README de la 001 o DECISIONES §5.x repiten esa frase
+   vieja y corregilas también. Un commit, suite en verde con uv run, PROMPTS_LLM.md (incluí la consulta del
+   puente 1a1ec5a2649), no push.
+Al final: resultado de la revisión, el diff del quickstart y la suite.
+
+**Uso de la respuesta:** el merge de `origin/derek` (`b0a7cee`) fue fast-forward y sin conflictos, pero no trae el cierre de T041: los commits de Kris (`2c114a7`, `6258dd0`) están solo en `origin/kris`. Entre `1bdc87b` y el merge, en la 001 solo cambió `tasks.md` (T059, mía). La revisión se hizo contra `origin/kris`: `spec.md` solo cambia las filas H4-1 y H4-2 de la trazabilidad y las 10 pruebas existen en `tests/test_vista_terreno.py`; `plan.md:161` sigue diciendo «2 líneas en `dibujar` y `_ficha_de_actor`», cuando `dibujar` suma 1 y `_ficha_de_actor` cambia 2 por 14, sin método nuevo; `plan.md:168` dice que de la Vista solo cambia `EscenaJuego.py`, pero también se agregan 4 constantes a `Componentes.py`; `tasks.md:175` marca T041 con `[x]` en minúscula y no toca nada más. No se corrigió nada de eso. En `quickstart.md` §7 se cambió la frase vieja: las criptas 02 a 06 traen costos y sabuesos, el espectro solo está en la 06, y la 06 tiene 36 cazadores (25 y 11) según `paquete/cripta-06/contenido.json`, no 42. También se nombró `tests/test_paquete_real_cazador.py` (T059). El README de la 001 y DECISIONES §5.1, §5.2 y §5.6 no repetían la frase. Suite con `uv run`: 1090 pruebas unittest OK y 32 de 32 scripts.
+
+-----------------------------------------------------------------------------------------------------------------------
