@@ -4594,3 +4594,18 @@ Le pedí a Claude que revisara los merges con las ramas de Kristel y Marco, las 
 **Uso de la respuesta:** revisar el bench completo del merge final (las dos filas que no cumplen ya estaban documentadas en `DECISIONES.md`); detectar que los 4 commits de la corrección de la T041 no estaban subidos y traerlos después; quitar una línea repetida que dejó el `merge=union` en `PROMPTS_LLM.md`; encontrar que §5.5 de `DECISIONES.md` todavía decía que el guardado versión 2 no existía y corregirlo con su tamaño real (reproducido en otra copia del proyecto), con los valores de M3 del bench del 17/11; decidir no cambiar el nombre recortado del cazador (es la regla de FR-117, con su prueba); comprobar contra el código cada punto del análisis de Marco antes de aplicarlo (H1 del mapa con la partida terminada, H-4 sin salidas repetidas en el paquete, I9 que no corresponde porque H3-9 cita FR-314); adaptar los prompts de correcciones (sin git del agente, por fases, buscando por texto) y revisar cada fase de la parte del integrante 3: el diff de código de «ir a» (capas e imports), el antes/después de `ControladorBackend` contra el commit de P1 y la fecha real en que el mapa entró en los puntos de control (4aac926, no T118).
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Miércoles 18 de noviembre 2026 (madrugada)
+
+**Herramienta:** Claude
+
+Le pedí a Claude una revisión final del repositorio contra el enunciado de la Parte II y el plan de trabajo antes de abrir el pull request a main, y que me guiara en el PR. Prompts principales, textuales:
+- «ok pero tranquilo yo puedo seguir un ratito, entonces estamos listo para hacer el pr al main? ya hicimos todo lo que marco nos dijo? falta algo de algun integrante o todo esta listo?»
+- «antes de hacer el pr, falta algo? lee de nuevo el contexto y mira todo a ver si falta algo o si ya el pr es seguro»
+- «asi el push? te mando el zip y revisa bien todo el contexto, enunciado y plan del segundo proyecto a ver si falta algo. si fuera el caso guiame despues con el pr paso a paso»
+- «antes de pr, vi que dijiste plan de marco pero tambien analisaste la parte mia y de kris? junto con la de marco obvio. despues dame los pasos de pr»
+- «ok en el paso 3 me sale esto», con la captura de la comparación de ramas en GitHub.
+
+**Uso de la respuesta:** encontrar y corregir las últimas frases desactualizadas (el docstring de `Service/BenchLineaTiempo.py`, que decía que el formato versión 2 no existía y que la cabecera medía 34 bytes en vez de 58; la escala de «50 salas» en el plan de la 004) y agregar fecha y herramienta a tres entradas de esta bitácora que no las tenían; revisar el repositorio contra el enunciado (§2.1 a §2.6, §6.3, §7.1 a §7.3) y contra el plan de trabajo de los tres integrantes; crear el pull request de `derek` a `main` (sin conflictos, con los commits contados contra el repositorio) y decidir hacer el merge con «Create a merge commit» para conservar el historial de spec antes que el código (§2.6).
+
+-----------------------------------------------------------------------------------------------------------------------
