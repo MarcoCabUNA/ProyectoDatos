@@ -4419,3 +4419,13 @@ Respondé en español. Al final: los commits y la suite.
 **Uso de la respuesta:** dos commits en `Marco`, sin push. (A) `55b611c` spec(001): en FR-122, «convertir una duración ≤ 0 en `None`» pasa a «una duración ≤ 0 en el efecto de una ficha se trata como si no tuviera duración». En spec.md no quedan nombres de Python ni de clases o módulos; sí quedan, sin cambiar, los nombres de campos y valores del formato de datos del Apéndice A (`rango`, `suelta`, `duracion`, `cierre_automatico`, `costo`, `comportamiento`, `true`, `"10"`, `"250"`) y los nombres de las pruebas en la tabla de trazabilidad (Principio X). (B) este commit, docs(001): data-model (ArmadorEstado en presente, T038), T045 (1 024 (32×32)), C4 (notas en T008, T018, T019 y T048), C8 (T031 con `caras[0].destino, caras[-1].destino`), C9 (T041 con `tests/test_vista_terreno.py`), C11 (T059 en el grafo; T056 y H2-22 en la lista de pruebas de `test_terreno_cazador.py`), C12 (plan.md:61), C13 (checklist con `bench-2026-11-15.txt`), E3 (DECISIONES §5.6: margen de 2,4 ms y la medición aparte con `medir_ciclo_cazadores`). C14: en `paquete/cripta-01` a `cripta-06` ninguna sala tiene dos salidas hacia la misma sala (6, 20, 40, 50, 24 y 300 salas revisadas), así que plan.md:82-83 no cambia. Suite con `uv run` antes de cada commit: 1102 pruebas unittest OK y 32 de 32 scripts.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+haz push a todo
+
+**Uso de la respuesta:** push de `Marco` a `origin/Marco` con los 5 commits de las correcciones del análisis de la 001 (`c71d5b0`, `2d0930d`, `c021747`, `55b611c`, `44093e4`) y este registro.
+
+-----------------------------------------------------------------------------------------------------------------------
