@@ -985,7 +985,12 @@ versión 2 y se revisará si ese valor cambia la elección de K.
 
 ### Contador de daño recibido (`ActorBase.danio_recibido`, para «ir a» de la 002)
 
-Cambio a la primera entrega (Principio III), propuesto por el integrante 3 y **pendiente de la revisión del integrante 1**.
+Cambio a la primera entrega (Principio III), propuesto por el integrante 3 y **revisado por el integrante 1 (Marco) y aprobado**, con los
+ajustes que se aplicaron en el commit `06b1eff`: el campo y su explicación van como comentario de una línea y no como docstring
+(`Logic/ActorBase.py`); una prueba con la Regeneración real dentro de un paso del motor (`test_la_regeneracion_real_dentro_de_un_paso_del_motor_no_lo_sube`);
+los textos del plan y de `tasks.md` (T110A) corregidos; «tres sitios» que llaman a `Recibir_Dannio` (eran «cuatro» en el texto); una prueba de
+guardar y cargar (`test_guardar_y_cargar_no_cambian_el_contador`); y, en `tests/test_linea_tiempo_guardado.py`, la comparación con el valor de antes
+(`acciones_antes`).
 
 **Problema.** «Ir a» debe detenerse cuando el jugador recibe daño (spec 002 FR-258 c, §3.4). Comparar `jugador.vida` antes y
 después de un paso no basta: una Regeneración (`Logic/Efectos.py`, +vida por pulso) puede devolver la vida dentro del mismo
@@ -1119,14 +1124,25 @@ de parada (FR-260); el resto lo decidí yo, y se puede cambiar:
 
 **10. Banco del paso (NFR-250, NFR-251, SC-252).** `Logic/BenchViaje.py` mide, con el mapa conocido completo y desde la esquina hacia la sala
 opuesta, V1 armar el grafo, V2 un paso con el grafo armado y V3 un paso completo (grafo nuevo + `decidir_paso`), con cuadrículas de 100,
-1 024 y 10 000 salas y una de 15 × 20 = 300 salas, el tamaño de cripta-06. **cripta-06 no está en el paquete local** (trae cripta-01 a
-cripta-04): se midió la sintética de 300 salas, y cuando el paquete traiga cripta-06, `--bench` la mide sola (`ServicioBench`), desde su
-sala inicial hacia su salida, sin cambiar código (hasta entonces la tabla trae una fila «cripta-06 del paquete (no medida)»). Resultados
+1 024 y 10 000 salas y una de 15 × 20 = 300 salas, el tamaño de cripta-06. **cripta-06 ya está en el paquete local** (la trajo el merge con el paquete de Derek, `ecb78e7`): `--bench` la mide sola
+(`ServicioBench`), desde su sala inicial hacia su salida, y se midió además la sintética de 300 salas (commit `b995a97`: V1 0.160 ms, V2 0.002 ms y
+V3 **0.164 ms** contra 5 ms con la cripta-06 real; cumple NFR-250 y SC-252). **cripta-06 no es representativa del peor caso:** de su entrada a su salida no hay
+camino con puertas cerradas (el banco anota «decisión None» en V2, así que V3 mide casi solo armar el grafo); la sintética de 300 salas, con
+camino largo y todas las salas conocidas, es la medida que sí exige el paso. Resultados de la sintética
 (mediana): **300 salas, V3 = 1.001 ms contra 5 ms: cumple NFR-250 y SC-252** (V1 0.199 ms, V2 0.756 ms); 1 024 salas, V3 = 3.763 ms
 (por debajo de 5 ms, con poco margen; evidencia, no criterio); 10 000 salas, 50.363 ms. La tabla completa está en
 `specs/002-niebla-ir-a/bench-viaje-2026-11-17.txt`; se midió en otra máquina (Ryzen 4600G, 15 GB, Python 3.15.0) que la tabla del
 integrante 2 del 15/11 (Ryzen 5 5500), así que los tiempos de las dos no son comparables fila por fila. Complejidad: V1 O(S + E) (la primera
 `entradas` arma el índice inverso); un paso es una búsqueda de costo mínimo sobre las salas exploradas. *Pruebas:* `tests/test_bench_viaje.py`.
+
+**11. Los mensajes de parada no van a `partida.log`.** «Llegaste a …», «Viaje detenido: hay enemigos.», «Viaje detenido: recibiste daño.»,
+«Viaje detenido: sin ruta conocida a …» y «Viaje interrumpido.» los arma el backend (`ControladorBackend._textos_de_parada`, líneas 360 a 374,
+y `cancelar_viaje`, línea 356) y los escribe en el panel de mensajes con `ServicioIrA.anotar` (`Service/ServicioIrA.py:28-29`:
+`contexto.mensajes.agregar(...)`, con el reloj del momento). Lo único que `ServicioIrA` escribe en la bitácora es el comentario `# ir a <sala>`
+(`Service/ServicioIrA.py:49`) y las acciones `mover` de cada paso. Por eso `--replay` no repite esos mensajes: el estado que reproduce
+(reloj, sala, jugador, mapa) es el mismo, porque depende solo de las acciones (`test_el_log_trae_el_comentario_y_se_reproduce_igual`,
+`test_h7_8_a36_fr261_sc253_replay_da_la_misma_partida_y_el_mismo_mapa`), pero el panel de mensajes de un replay no dice por qué se detuvo
+un viaje.
 
 ### Comando `mapa` de la 002 (interfaz)
 
@@ -1150,3 +1166,26 @@ integrante 2 del 15/11 (Ryzen 5 5500), así que los tiempos de las dos no son co
 ### Reporte de resolubilidad en la interfaz (003, T055)
 
 El reporte llega a la vista como líneas de texto (`PantallaDTO.reporte_resolubilidad`, con el formato de `TextoResolubilidad.lineas_reporte`, FR-315) y un indicador de advertencia. `ControladorPygame` lo toma de `backend.resolubilidad()` justo después de iniciar: en una partida nueva se muestra en un panel hasta la primera acción que gasta tiempo (una acción rechazada no lo oculta), como advertencia si no es «resoluble» (`--forzar`, FR-312); si la partida no inicia (FR-311) el reporte completo se ve en la pantalla del nombre; al cargar o en `--replay` no hay reporte (FR-301). El aviso del menú no se toca: el mensaje de `ErrorPartidaNoIniciada` es corto y cabe en sus 2 líneas, pero no trae el ciclo, por eso el reporte va en un panel aparte. La fuente del juego no tiene la flecha «→» y la vista la dibuja como «->». Si un reporte no cabe en el panel (12 líneas en el menú, un ciclo con sus dependientes ocupa 12), se corta con «... y N líneas más» y se remite a `--verificar`, que escribe todo.
+
+### La escena muestra el costo de cada salida y el comportamiento del enemigo (001, T041, integrante 3)
+
+Cambia código de la primera entrega, así que va con su justificación (Principio III): `View/EscenaJuego.py` (y cuatro constantes de
+`View/Componentes.py`: `COMPORTAMIENTO_CAZADOR`, `MARCADOR_CAZADOR`, `MARCADOR_SEPARACION`, `COSTO_DISTANCIA`). Fila en la tabla de cambios a P1
+de `specs/001-terreno-cazador/plan.md`. Lo exigen FR-116 (el costo junto a cada salida, también las cerradas) y FR-117 (el comportamiento en
+texto junto al nombre del enemigo y un marcador solo para el cazador); sin tocar la escena no hay dónde dibujarlos.
+
+| | Antes | Después |
+|---|---|---|
+| Salidas | la escena dibujaba puertas y nada más | además, junto a cada puerta con salida, su costo (`SalidaDTO.costo`, ya igualado por Lógica; 100 si ninguna cara lo declara), también en las cerradas |
+| Ficha del enemigo | `_ficha_de_actor` dibujaba solo el nombre | «Nombre (comportamiento)»; el cazador, un rombo rojo dibujado con `pygame.draw.polygon` a la izquierda del texto, ambos centrados juntos. Esa lógica vive en el método nuevo `_nombre_de_ficha` y en la función pura `rombo_del_marcador`, no en `_ficha_de_actor` |
+| Reparto y medidas | `repartir_escena` y `c.SUELO`, `PASILLOS`, `HUD_PANELES` | iguales: no se movió ninguno |
+| Código de P1 que cambia | — | `dibujar`: +1 línea (`self._costos(...)`). `_ficha_de_actor`: la llamada original a `texto_sombreado` del nombre se cambia por `self._nombre_de_ficha(...)` (−2 +1 líneas) |
+| Código nuevo | — | `etiquetas_de_costo(estado, marcos, fuente)` (dirección, texto y `Rect`; el `Rect` es el del texto sin sombra, lo pintado ocupa `rect.inflate(2, 2)`), `posicion_de_costo`, `lleva_marcador`, `texto_de_ficha`, `rombo_del_marcador`, y los métodos `_costos` (dibuja en el `Rect` de `etiquetas_de_costo`) y `_nombre_de_ficha` |
+
+- *El marcador sale del comportamiento* (`comportamiento == "cazador"`), nunca del id (`ent_sabueso_oseo`) ni del nombre (Principio VI).
+- *Limitación del ancho de la ficha.* El texto se recorta dentro del ancho que ya reservaba el reparto; si no cabe, se recorta el nombre y se
+  conserva el comportamiento (con 12 enemigos solo queda «(comportamiento)»). Ensanchar `ancho_ficha` movería el reparto, y no se hizo.
+- *Limitación conocida (sin cambio de código).* `fondo_final` solo trae pintada la puerta norte (`MARCOS_OSCURECIBLES[2] = False` en `View/Componentes.py`), así que el costo de una salida S, E u O abierta en la sala de salida puede quedar sin puerta visible a su lado. El costo se dibuja igual junto al marco de esa dirección (FR-116).
+- *Máximo de costo.* La spec no fija un máximo (FR-122 solo pide un entero ≥ 1). Las pruebas cubren hasta 5 dígitos (`DIGITOS_PROBADOS`, decisión nuestra, no de la spec) para pantalla, HUD y suelo, y 4 dígitos para el choque con el protagonista. Medido (sin cambiar código): con 6 o más dígitos las etiquetas E y O de `fondo_inicial` entran al suelo (`c.SUELO`); en `fondo_final`, desde 9 dígitos; `fondo_regular` aguanta 9.
+- *Reserva del protagonista y lo que se pinta.* `JUGADOR_OCUPA` (120 × 130) es la reserva con la que `repartir_escena` coloca enemigos y objetos, más ancha que lo pintado (sprite 91 × 90, barra 96 × 14, nombre 60 × 19 en la medida). En `fondo_inicial`, cuando el protagonista entra por E u O, la etiqueta de esa misma puerta (inflada 2 px por la sombra) pisa la reserva 3 × 19 px (E) y 5 × 19 px (O) con 3 dígitos, 12 y 14 con 4, y 21 y 23 con 5. Lo pintado no se toca con 3 y 4 dígitos; con 5 la etiqueta pisa el sprite 7 × 19 px (E) y 8 × 19 px (O) (barra y nombre, nunca). N, S, `fondo_regular` y `fondo_final` no se tocan en ningún caso, con 0, 6 o 12 enemigos. Por eso la prueba de choques mide contra lo pintado (sprite, barra y nombre) con costos de 4 dígitos. **Limitación conocida, sin cambio de código:** con costos de 5 dígitos, en `fondo_inicial`, la etiqueta de la puerta por la que se entra tapa unos píxeles del borde del sprite (7 × 19 px en E, 8 × 19 px en O), y con 6 o más dígitos además entra al suelo en esas dos puertas. Como la spec no fija un máximo, es una limitación conocida y no un incumplimiento de FR-116 (el costo se muestra junto a cada salida en todos los casos).
+- *Pruebas:* `tests/test_vista_terreno.py` (Vista real, `SDL_VIDEODRIVER=dummy`), con la lista de etiquetas probada por texto y `Rect`, no por píxeles.
