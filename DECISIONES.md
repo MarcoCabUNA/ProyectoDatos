@@ -886,8 +886,17 @@ acción nueva también cierra el panel, porque describe un estado pasado. La mis
 
 **9. Contenido de la línea en el archivo y K al cargar (R7).** Decisión de diseño: campos nuevos al final de
 `PartidaGuardadaDTO`, un bloque propio en el binario con `VERSION_FORMATO = 2`, y los archivos de la primera parte se
-rechazan como incompatibles (no se migran). **Todavía no implementado**: depende de T002 y T003 (integrante 2) y de
-T044 a T048; por eso M3 mide los bytes con el escritor de la versión 1 (ver «Memoria»).
+rechazan como incompatibles (no se migran). **Implementado**: T002 y T003 (integrante 2: campo `linea` al final de
+`PartidaGuardadaDTO` y `VERSION_FORMATO = 2` en `Data/GuardadoBinario.py`) y T044 a T048 (integrante 3: `a_guardada()` y
+`desde_guardada(dto)` en `LineaTiempo`, `ServicioGuardado` guarda la línea y al cargar conserva el K guardado). Lo cubren
+`test_linea_a_guardada_y_desde_guardada_son_iguales_fr420` y `test_linea_desde_guardada_conserva_el_orden_fr420`
+(`tests/test_linea_tiempo_logica.py`); `test_t002_de_la_004_linea_ida_y_vuelta_por_diccionario`,
+`test_t003_de_la_004_binario_v2_ida_y_vuelta_con_linea`, `test_t003_de_la_004_binario_v2_linea_none_largo_cero`,
+`test_t047_de_la_004_cargar_sala_no_lee_mapa_ni_linea`, `test_t047_de_la_004_archivo_v1_rechazado` y
+`test_t047_de_la_004_archivo_v1_deja_intacta_la_partida_actual` (`tests/test_guardado_mapa.py`); y
+`test_h4_1_fr420_mismos_resumenes_tras_guardar_y_cargar`, `test_h4_2_fr420_se_puede_seguir_jugando_tras_cargar`,
+`test_h4_3_apendiceB_caso6_fr421_archivo_de_la_primera_parte`, `test_h4_k_guardado_se_conserva_al_cargar` y
+`test_h4_fr421_el_programa_no_se_cae` (`tests/test_linea_tiempo_guardado.py`).
 
 **10. K por defecto: 20, confirmado (R8, T062).**
 
@@ -927,10 +936,15 @@ adelanta (YAGNI).
 
 **Memoria (M3, NFR-402).** La memoria crece con el número de puntos, no con acciones × estado: con 5 000 acciones, K = 20
 guarda 0,90 MB y K = 1 guarda 16,6 MB (unas 18 veces más). Las acciones pesan unos 14,5 bytes cada una (72 500 bytes en
-5 000). *Límite*: el formato versión 2 con la línea no existe todavía (T003, integrante 2), así que los bytes son los que
-escribe `GuardadoBinario` (versión 1) por cada punto (un archivo por punto, con su cabecera de unos 34 bytes) más las
-acciones; las cargas y las fichas se cuentan, pero no se pesan.
-
+5 000). *Qué mide M3*: la memoria de la línea en ejecución, no el archivo guardado. Por cada punto de control
+`medir_memoria` llama a `GuardadoBinario.guardar` con la partida y las salas de ese punto, en un archivo propio (cada
+uno con su cabecera), y suma los bytes que devuelve; a eso le suma, por cada acción, su línea de texto del log, un
+salto de línea y 4 bytes del tiempo. Las cargas y las fichas se cuentan, pero no se pesan. *Archivo versión 2 real*:
+medición aparte con un guion no versionado (misma partida sintética de M3, K = 20, guardada con
+`ServicioGuardado.guardar` y medida con `os.path.getsize`): 24 145 bytes con 100 acciones, 180 250 con 1 000 y
+874 050 con 5 000 (la misma partida sin la línea ocupa 3 367 bytes). Es del mismo orden que M3 en el `--bench` del
+17/11 (21 474, 186 039 y 917 439 bytes; la tabla de M1 trae 901 877 de una corrida anterior): con 5 000 acciones el
+archivo pesa 43 389 bytes menos (5 %), y con 100 acciones, 2 671 más.
 **Supuesto: `--replay` sin `--hasta`.** Es headless (sin ventana ni línea de comandos) y no alimenta la línea de tiempo,
 porque `ServicioReplay` ejecuta las acciones con `ServicioAccionJugador` directo. Por eso `historia` no es alcanzable en ese
 modo y no se agregó código para él (YAGNI). Si se llamara a pesar de todo, el contexto del replay tiene una línea con solo
@@ -980,8 +994,11 @@ iguales dentro del ruido de la medición; la decisión de la primera parte sigue
 `ListaDoble` no sirven como línea (tope fijo, funciones en lugar de datos, sin acceso por posición), y
 `PartidaGuardada` se reutiliza tal cual.
 
-**Pendiente de la sección.** Cuando exista el guardado con línea (T044 a T048), se agregará el tamaño real del archivo
-versión 2 y se revisará si ese valor cambia la elección de K.
+**Tamaño real del archivo versión 2 (K = 20).** Con el guardado con línea ya implementado (T044 a T048), el archivo de
+una partida de 5 000 acciones pesa 874 050 bytes (0,87 MB; medición aparte con un guion no versionado, ver «Memoria»),
+contra los 917 439 bytes que estima M3 en el `--bench` del 17/11. La diferencia es de un 5 % (el archivo es más chico)
+y no cambia la elección de
+K = 20, que se hizo por el tiempo de `historia` (M1). Solo se midió el archivo con K = 20.
 
 ### Contador de daño recibido (`ActorBase.danio_recibido`, para «ir a» de la 002)
 
