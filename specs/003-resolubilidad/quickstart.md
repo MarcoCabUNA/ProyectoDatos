@@ -42,7 +42,7 @@ Esperado: todo pasa; cada prueba cita su FR (Principio X). Los cuatro casos del 
 
 | Paso | Comando | Esperado |
 |---|---|---|
-| 1 | `uv run python main.py --verificar cripta-02 --offline` | Con el paquete regenerado: RESOLUBLE y código 0 (T058). Con el paquete actual: «la verificación NO CONCLUYÓ … falta el archivo … llaves.json» y código **1** (FR-320) |
+| 1 | `uv run python main.py --verificar cripta-02 --offline` | RESOLUBLE y código 0 (T058) |
 | 2 | `uv run python main.py --verificar cripta-02` | Mismo resultado que el paso 1 si la versión coincide (FR-306); hace la solicitud de llaves (FR-317) |
 | 3 | Repetir el paso 2 | No repite la solicitud de llaves: queda en `cache/llaves/cripta-02.json` (FR-317, H3-5) |
 | 4 | `uv run python main.py --verificar cripta-02 --forzar` | Mismo resultado y código que el paso 2 (H3-9) |
@@ -54,7 +54,7 @@ Esperado: todo pasa; cada prueba cita su FR (Principio X). Los cuatro casos del 
 | 10 | `uv run python main.py --bench --forzar` | Las mismas filas que sin `--forzar` y el mismo código; no es error de uso (FR-312) |
 
 `cripta-01` ya no está publicada (el API responde 404): con `--offline` termina con código 1 porque el paquete no tiene
-su `llaves.json` (T057).
+su `llaves.json` (hallazgo H-3: resuelto el 15/11, T057; queda la excepción de `cripta-01`).
 
 En ningún caso se abre una ventana ni se crea `partida.log` (FR-314, SC-308). Es el único modo sin vista que muestra el
 resultado de la verificación: `--replay` no verifica y `--bench` solo mide cuánto tarda la verificación, sin mostrar
@@ -77,7 +77,9 @@ FR-322 y código 3, aunque el motor de la primera parte permitiría ganar. Es lo
 | 6 | Iniciar con una cripta no resoluble cuyas llaves tienen ubicaciones idénticas repetidas | En el reporte, cada ubicación idéntica aparece una sola vez (FR-309) |
 
 Las criptas no resolubles de prueba se arman en `tests/ayudas_resolubilidad.py`; en la ventana se validan con una
-cripta publicada no resoluble o con un paquete temporal.
+cripta publicada no resoluble o con un paquete temporal. El paso 1 es la validación de H1-9 en la ventana; las pruebas
+automáticas llegan hasta la vista con una fuente falsa
+(`test_h1_9_fr313_reporte_resoluble_visible_antes_de_la_primera_accion`), pero no miran la pantalla.
 
 ## 4. `--bench` (NFR-301, NFR-304)
 
@@ -108,4 +110,5 @@ Los números se copian a `DECISIONES.md` (Principio VIII).
 ## 5. Determinismo (SC-303)
 
 `tests/test_resolubilidad_cli.py` ejecuta la verificación de cada cripta de prueba 10 veces, en procesos separados,
-en línea (fuente falsa) y con `--offline` (paquete temporal), y compara el texto completo de las 10 salidas.
+en línea (una fuente de red simulada, no el API real) y con `--offline` (paquete temporal), y compara el texto
+completo de las 10 salidas.

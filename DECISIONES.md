@@ -602,7 +602,8 @@ O(S + E + U + M log M), «aproximadamente lineal» (NFR-302). Espacio O(S + E + 
 | B6 frontera en una sola lista (descartada) | 0,507 / 28,033 / 236,7 ms (en 3 000, 1 repetición): ×55,3 y ×8,4 |
 | B4 desglose con 1 000 salas (cripta de B3) | preparación 9,543 ms (86 %), recorrido 0,777 (7 %), frontera, fase hacia afuera y ciclos 0,650 (6 %), armado 0,098 (1 %) |
 
-En B6, con 100 dientes pesa la parte que no depende de la frontera (unos 0,25 ms en las dos variantes); sin ella, la
+En B2, «por oleada» y «por llave» son lo mismo: en la cuadrícula encadenada, una oleada = una llave, así que la
+alternativa hace K + 1 recorridos completos. En B6, con 100 dientes pesa la parte que no depende de la frontera (unos 0,25 ms en las dos variantes); sin ella, la
 lista única crece unas ×98 entre 100 y 1 000. Con 2 001 salas la lista única tarda 8,8 veces la agrupada. El
 recorrido es el 7 % de B4: el tiempo se va en la preparación (decisión 2 y la carga en la `Mazmorra` aparte).
 
@@ -682,6 +683,25 @@ Service orquesta (`ServicioResolubilidad`); `main.py` y `LectorArgumentos` agreg
 «no concluyó»), verifica y, si no es resoluble y no hay `--forzar`, lanza `ErrorPartidaNoIniciada` sin crear el motor
 ni `partida.log`; si no, inicia con los mismos datos.
 
+**Antes y después del inicio de una partida** (cambia una decisión de la primera parte, Principio III):
+
+- *Antes* (P1): toda partida nueva iniciaba en cuanto se cargaban los datos de la cripta.
+- *Después*: iniciar una partida nueva verifica la resolubilidad (`ControladorBackend.iniciar` →
+  `_iniciar_verificando` → `ServicioResolubilidad.iniciar_partida_nueva`) y, sin `--forzar`, puede no iniciar: si la
+  cripta no es resoluble o la verificación no concluye, `ErrorPartidaNoIniciada` llega como `ErrorOperacion`, el
+  reporte queda en `resolubilidad()` y no se crean el motor ni `partida.log` (FR-311). Cargar una partida y `--replay`
+  siguen igual que en P1 (FR-301).
+- *`cripta-01` con `--offline`*: el paquete no trae su `llaves.json`, así que el paso de llaves da `ErrorRed` («falta
+  el archivo … llaves.json») y el reporte es «no concluyó» (FR-320). Sin `--forzar` la partida **no inicia** («No se
+  pudo verificar si la cripta cripta-01 es resoluble: la partida no se inició (use --forzar …)»); con `--forzar`
+  inicia y el reporte «no concluyó» queda en `contexto.resolubilidad` para mostrarlo (FR-312, FR-313). Comprobado el
+  17/11 con `ServicioResolubilidad` sobre el paquete del repositorio.
+- *Pruebas del integrante 3*: las que inician por `ControladorBackend` con la `cripta-01` offline usan
+  `ConfiguracionDTO(offline=True, forzar=True)`: `CONFIG_OFFLINE` de `tests/ayudas_controladores.py` y
+  `tests/test_controlador_pygame.py` (commit `3940eac`, 16/11) y `tests/test_ir_a_interfaz.py`. Las que llaman
+  directamente a `ServicioPartida.iniciar_partida` (por ejemplo `tests/ayudas_linea_tiempo.py`) no pasan por la
+  verificación, igual que el replay.
+
 **Interpretación del Principio I** («Data solo conexión y formato»). Comprobar que la sala de cada ubicación existe en
 el esqueleto (FR-321) es **integridad de los datos**, no una regla del juego: no depende del estado de la partida ni
 decide nada del juego, y una respuesta que nombra una sala inexistente está mal para esa versión, igual que un formato
@@ -757,8 +777,8 @@ llaves.json», FR-320). Reporte completo, con los veredictos de T058:
   gasta, porque el replay no verifica. Solo importaría si la partida agota el presupuesto; con las llaves persistidas
   (FR-317) no se gasta nada. Lo pide FR-317; queda escrito.
 - **H-3 (paquete)**: el paquete de la primera parte (`cripta-01` a `cripta-04`, 6, 20, 40 y 50 salas) no traía
-  `llaves.json`, `costo` ni `rango`, y `--verificar … --offline` terminaba con código 1 (FR-320). Se resolvió con el
-  paquete de la Parte II (T057, arriba); queda la excepción de `cripta-01`.
+  `llaves.json`, `costo` ni `rango`, y `--verificar … --offline` terminaba con código 1 (FR-320). Resuelto el 15/11
+  (T057, arriba); queda la excepción de `cripta-01`.
 - **La fila del paquete no sirve para ver el crecimiento**: mide una sola cripta (300 salas); la base de B1 a B6 sigue
   siendo la generación sintética por semilla (R7).
 - **Ruido en el tamaño menor**: con 100 salas algunas medianas salieron bastante por encima del mejor tiempo (B3:
@@ -1113,7 +1133,7 @@ Si el grupo quiere tildes o espacios, el cambio es de una línea en `buscar_expl
 
 **8. Limitación conocida: los comentarios `# ir a` tras cargar una partida.** Al cargar, `BitacoraReplayIO.continuar_desde` copia al log nuevo solo las acciones, no los comentarios (`ServicioGuardado` lo llama con la cantidad de acciones). Por eso el log nuevo trae únicamente los `# ir a <sala>` de las órdenes dadas desde la carga; los anteriores quedan en el log previo. No afecta al replay: los comentarios son informativos y `--replay` usa solo las acciones.
 
-**8. H-2, opción A: la interfaz no ve ids de salas no exploradas.** *Problema:* `EstadoJuegoDTO.sala.salidas[d].sala_destino` traía
+**9. H-2, opción A: la interfaz no ve ids de salas no exploradas.** *Problema:* `EstadoJuegoDTO.sala.salidas[d].sala_destino` traía
 el id real de las salas avistadas y `sala_salida` el de la salida de la cripta (FR-204, FR-217). *Decisión:* `ArmadorEstado` pone
 `SIN_EXPLORAR = -1` (constante en `DTO/EstadoJuegoDTO.py`) en cada salida hacia una sala no explorada y deja `sala_salida = None`
 mientras esa sala no esté explorada, con `mapa.es_explorada` (O(1) por salida; no usa `a_dto()`). La vista no cambia: `-1` no coincide con
@@ -1122,7 +1142,7 @@ ningún id ni con `sala_salida`. *Costo conocido:* la puerta final no se disting
 la vista compara. *Pruebas:* `tests/test_estado_sin_filtrar.py` (200 acciones con y sin antorcha), y se ajustaron tres pruebas viejas
 que leían ids reales del estado (`test_servicios.py`, `test_grabadores_linea.py`, `test_dto_terreno.py`).
 
-**9. Interfaz de «ir a»: supuestos míos (la spec no los fija).** La spec dice que el viaje es paso a paso y que se muestra el motivo
+**10. Interfaz de «ir a»: supuestos míos (la spec no los fija).** La spec dice que el viaje es paso a paso y que se muestra el motivo
 de parada (FR-260); el resto lo decidí yo, y se puede cambiar:
 - *Ritmo:* un paso cada `PASO_VIAJE_MS` = 350 ms (`UIController/ControladorPygame.py`), medidos con el reloj del controlador,
   en `avanzar_viaje()`, que el bucle principal llama una vez por cuadro. El primer paso sale en el primer cuadro.
@@ -1139,7 +1159,7 @@ de parada (FR-260); el resto lo decidí yo, y se puede cambiar:
 - *Pruebas de punta a punta:* `tests/test_ir_a_interfaz.py` (`ControladorPygame` y `VistaPygame` reales, partida real de 5 × 5 salas).
   Esas pruebas arrancan con `forzar=True` porque desde T054 `iniciar` verifica la resolubilidad y la fuente de la cuadrícula no trae llaves.
 
-**10. Banco del paso (NFR-250, NFR-251, SC-252).** `Logic/BenchViaje.py` mide, con el mapa conocido completo y desde la esquina hacia la sala
+**11. Banco del paso (NFR-250, NFR-251, SC-252).** `Logic/BenchViaje.py` mide, con el mapa conocido completo y desde la esquina hacia la sala
 opuesta, V1 armar el grafo, V2 un paso con el grafo armado y V3 un paso completo (grafo nuevo + `decidir_paso`), con cuadrículas de 100,
 1 024 y 10 000 salas y una de 15 × 20 = 300 salas, el tamaño de cripta-06. **cripta-06 ya está en el paquete local** (la trajo el merge con el paquete de Derek, `ecb78e7`): `--bench` la mide sola
 (`ServicioBench`), desde su sala inicial hacia su salida, y se midió además la sintética de 300 salas (commit `b995a97`: V1 0.160 ms, V2 0.002 ms y
@@ -1152,7 +1172,7 @@ camino largo y todas las salas conocidas, es la medida que sí exige el paso. Re
 integrante 2 del 15/11 (Ryzen 5 5500), así que los tiempos de las dos no son comparables fila por fila. Complejidad: V1 O(S + E) (la primera
 `entradas` arma el índice inverso); un paso es una búsqueda de costo mínimo sobre las salas exploradas. *Pruebas:* `tests/test_bench_viaje.py`.
 
-**11. Los mensajes de parada no van a `partida.log`.** «Llegaste a …», «Viaje detenido: hay enemigos.», «Viaje detenido: recibiste daño.»,
+**12. Los mensajes de parada no van a `partida.log`.** «Llegaste a …», «Viaje detenido: hay enemigos.», «Viaje detenido: recibiste daño.»,
 «Viaje detenido: sin ruta conocida a …» y «Viaje interrumpido.» los arma el backend (`ControladorBackend._textos_de_parada`, líneas 360 a 374,
 y `cancelar_viaje`, línea 356) y los escribe en el panel de mensajes con `ServicioIrA.anotar` (`Service/ServicioIrA.py:28-29`:
 `contexto.mensajes.agregar(...)`, con el reloj del momento). Lo único que `ServicioIrA` escribe en la bitácora es el comentario `# ir a <sala>`

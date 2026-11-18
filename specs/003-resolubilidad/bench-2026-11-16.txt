@@ -3,6 +3,8 @@ Comando: .venv\Scripts\python.exe main.py --bench (PYTHONIOENCODING=utf-8), sin 
 Fecha: 2026-11-16 · Rama derek, sobre el commit c34915b, con el paquete de la Parte II sin commitear en paquete/ (T057:
 cripta-02 a cripta-06 con llaves.json) y cambios de documentación sin commitear (README.md, research.md, spec.md,
 tasks.md; no cambian código) · duración: 122 s · código de salida 0
+Nota del 17/11: ese paquete se commiteó después, en 6887c37 («datos: paquete de la Parte II con llaves.json, costos y
+rangos (T057, T058)»), con las mismas versiones (cripta-06 f9ed9afa683d, catálogo 4b9e75a42be5)
 Máquina: AMD Ryzen 5 5500 (6 núcleos, 12 hilos), 31.8 GB de RAM, Windows 11 Pro 10.0.26200, Python 3.14.7 (.venv del
 proyecto)
 Semilla: SEMILLA = 2026 (Logic/BenchLogica.py). BenchResolubilidad genera las cuadrículas con

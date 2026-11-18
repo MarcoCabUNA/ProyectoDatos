@@ -26,7 +26,7 @@ dependencias del mismo recorrido, ciclos deterministas, sin `dict`, `set`, `coll
 | `Data/GestorEsqueleto.py` | Array indexado por id de sala, `existe_sala` O(1) | Ninguna para validar ubicaciones | **Se usa** en Data para FR-321 (R2) |
 | `Logic/Mazmorra.py` (`cargar_esqueleto`, `salida`) | Combinación de caras de la primera parte (`_igualar_caras`) | Es estado vivo del juego; se usa una instancia **aparte**, que se descarta | **Se usa** solo para leer las caras combinadas (R4) |
 | `Logic/GrafoEsqueleto.py` (001) | Salidas abiertas **ahora**, con costo | Lee el estado vivo y no conoce llaves | No se usa |
-| `Estructuras/BusquedaBinaria.py` (004, aún no existe) | Último ≤ clave entera | No hace falta: el índice de llaves se arma ordenando y compactando, sin búsquedas (R3) | No se usa; la 003 no depende de la 004 |
+| `Estructuras/BusquedaBinaria.py` (004) | Último ≤ clave entera | No hace falta: el índice de llaves se arma ordenando y compactando, sin búsquedas (R3) | No se usa; la 003 no depende de la 004 |
 
 Lo único nuevo es código de Logic (R3 a R6). **No se agrega nada a `Estructuras/`.**
 
@@ -56,7 +56,7 @@ Lo único nuevo es código de Logic (R3 a R6). **No se agrega nada a `Estructura
   **Costos y cazadores**: no hace falta código nuevo. El paquete guarda las respuestas tal cual: `costo` viaja en
   `salas_p<N>.json` y `rango` en `catalogo.json`; los tipos de los cazadores entran al catálogo por el contenido de
   las salas, como cualquier enemigo. Lo que sí hace falta es **regenerar el paquete** cuando el API publique las
-  versiones de la Parte II (hallazgo H-3).
+  versiones de la Parte II (hallazgo H-3: resuelto el 15/11, T057; queda la excepción de `cripta-01`).
 - **Persistencia** (FR-317, FR-319): `Data/AlmacenLlaves.py`, un archivo por cripta en `cache/llaves/<id>.json`
   con `{"id", "version", "llaves": [...]}` (la respuesta del API más su versión). Al leer se compara con
   `validar_version` (Security, la validación de versión que ya existe) contra `CriptaDTO.version`, que ya se pidió
@@ -455,7 +455,8 @@ mide la verificación de la **cripta con más salas del paquete local**, elegida
 (Principio VI), y leída sin red: Service orquesta `FuenteOffline`, `GestorEsqueleto`, `GestorLlaves` **sin almacén** y
 `VerificadorResolubilidad`, con el mismo cronómetro. `Logic/BenchResolubilidad.py` no lee Data. Si el paquete no trae
 criptas con `llaves.json`, la fila no se agrega y la nota lo dice; mientras tanto vale B1 a 1 000 salas. Esta fila
-**no sirve para ver el crecimiento** (la mayor cripta publicada hoy tiene 50 salas): la base de B1 a B6 sigue siendo la
+**no sirve para ver el crecimiento** (las criptas publicadas tienen de 20 a 300 salas, paquete de la Parte II, 15/11,
+y la fila mide solo la mayor): la base de B1 a B6 sigue siendo la
 generación sintética por semilla.
 
 ---
@@ -575,6 +576,7 @@ entiende la notación de la spec («puerta 4–5 (B)»).
   **primera parte**: versiones `fd58f7743b9e`, `8091a5cd8b7c`, `24d301ed6e9f`, `d6727c7f4950`, sin `costo`, sin
   `rango`/cazadores y **sin `llaves.json`**. Hasta regenerarlo con `DescargadorPaquete`, `--verificar … --offline`
   termina con código 1 (FR-320), que es el comportamiento correcto. Las pruebas usan paquetes temporales.
-  Regenerarlo cambia archivos que usan pruebas de otros integrantes (coordinación).
+  Regenerarlo cambia archivos que usan pruebas de otros integrantes (coordinación). **Resuelto el 15/11 (T057); queda
+  la excepción de `cripta-01`**, que ya no está publicada y sigue sin `llaves.json`.
 - **H-4 (contrato HTTP)**: el formato de `GET /criptas/{id}/llaves` sale de §4.2; Swagger es la referencia exacta. Se
   confirma con Swagger al implementar la tarea de `FuenteJson`; si difiere, se corrige el contrato primero.

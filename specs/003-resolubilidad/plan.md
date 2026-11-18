@@ -62,7 +62,7 @@ crecimiento ≤ ×20 por cada ×10 de tamaño (SC-307).
 **Restricciones**: determinismo (Principio IV): el resultado no depende del orden del JSON; Abierto/Cerrado
 (Principio III): lo nuevo en módulos nuevos, los cambios a lo existente en la tabla de abajo.
 
-**Escala**: criptas publicadas de hasta 50 salas (paquete actual); sintéticas de hasta 10 000 salas y 1 000 llaves.
+**Escala**: criptas publicadas de 20 a 300 salas (paquete de la Parte II, 15/11); sintéticas de hasta 10 000 salas y 1 000 llaves.
 La prueba de que los dependientes se hallan sin recursión usa una cripta de 6 000 salas (2 × 3 000) con unas
 1 500 dependientes, por encima de la escala de las mediciones (research R6 y R7).
 
@@ -80,7 +80,7 @@ La prueba de que los dependientes se hallan sin recursión usa una cripta de 6 0
 | VI. Sin datos de una cripta concreta | Nada de ids, salas ni versiones en el código; el bench genera criptas por semilla | ✅ | ✅ |
 | VII. Red y presupuesto | Una solicitud de llaves, que cuenta en el presupuesto (`ClienteHttp`); persistida por versión, no se repite; 429 y red → mensaje con contexto, sin caerse (FR-320) | ✅ | ✅ |
 | VIII. Rendimiento con evidencia | B1 a B6 en `--bench`, con las alternativas descartadas de R3, R4 y §5.4 que se pueden medir con sentido (R7); resultados a `DECISIONES.md` | ✅ | ✅ |
-| IX. Spec antes del código | La spec está confirmada (commits `a4782fe`, `f9ecaec` y `45e959e`, la segunda revisión del integrante 1). El plan se realineó con `45e959e` (FR-301, FR-302, FR-304, FR-313, FR-314, FR-322 y la Sesión 2026-11-13) y después con la revisión del plan del integrante 1 («Sesión 2026-11-13 (revisión del plan por el integrante 1)»: FR-309, FR-310, FR-312, FR-314, H1-12, H2-13 y Suposiciones), que se confirma en la spec en un commit anterior al de este plan. Este plan no agrega reglas: los hallazgos H-1 a H-4 no cambian la spec | ✅ | ✅ |
+| IX. Spec antes del código | La spec está confirmada (commits `a4782fe`, `f9ecaec` y `45e959e`, la segunda revisión del integrante 1). El plan se realineó con `45e959e` (FR-301, FR-302, FR-304, FR-313, FR-314, FR-322 y la Sesión 2026-11-13) y después con la revisión del plan del integrante 1 («Sesión 2026-11-13 (revisión del plan por el integrante 1)»: FR-309, FR-310, FR-312, FR-314, H1-12, H2-13 y Suposiciones), que se confirma en la spec en un commit anterior al de este plan. Este plan no agrega reglas: los hallazgos H-1 a H-4 no cambian la spec. **Versión vigente de la spec**: commit `824ca10` (T066, 16/11), después de `1f73664` (análisis del 14/11); las correcciones del 17/11 (estado «Implementada» y la nota bajo la tabla del Apéndice B) no cambian requisitos | ✅ | ✅ |
 | X. Trazabilidad | Una prueba por escenario y por caso del Apéndice B, citando su FR (R10) | ✅ | ✅ |
 | XI. Bitácora de LLM | El prompt de este `/speckit-plan` se registra en `PROMPTS_LLM.md` (en el commit del plan) | ✅ | ✅ |
 
@@ -102,8 +102,8 @@ Ninguno bloquea; detalle en [research.md, Hallazgos](research.md#hallazgos).
   encerrado. Es una decisión del grupo; la prueba del caso borde comprueba que la verificación no lo trata como
   bloqueo.
 - **H-2** (informativo): la solicitud de llaves gasta 1 del presupuesto en vivo y no en el replay (FR-317).
-- **H-3** (datos): el paquete actual es de la primera parte, sin `llaves.json`, `costo` ni `rango`; hay que
-  regenerarlo. Hasta entonces `--verificar --offline` da código 1, que es lo correcto.
+- **H-3** (datos): el paquete de la primera parte no traía `llaves.json`, `costo` ni `rango`, y `--verificar
+  --offline` daba código 1. Resuelto el 15/11 (T057); queda la excepción de `cripta-01`.
 - **H-4** (contrato HTTP): confirmar `GET /criptas/{id}/llaves` con Swagger al implementar.
 
 ## Revisión de estructuras existentes (Principio II)
@@ -120,7 +120,7 @@ Detalle en [research.md, R0](research.md#r0-revisión-de-las-estructuras-ya-impl
 | `GestorEsqueleto` (Data) | Ninguna: `existe_sala` O(1) | Se usa para FR-321 |
 | `Mazmorra` (Logic) | Es estado vivo: se usa una instancia aparte | Se usa solo para combinar caras |
 | `GrafoEsqueleto` (001) | Estado vivo y solo salidas abiertas | No se usa |
-| `BusquedaBinaria` (004, pendiente) | Claves enteras; no hace falta (R3) | No se usa |
+| `BusquedaBinaria` (004) | Claves enteras; no hace falta (R3) | No se usa |
 
 No se agrega nada a `Estructuras/`.
 
@@ -182,7 +182,7 @@ main.py                            # MODIFICADO: rama --verificar con códigos 0
 tests/
 ├── ayudas_resolubilidad.py           # criptas a mano con la notación de la spec
 ├── test_resolubilidad_logica.py      # H1, SC-304, FR-306
-├── test_resolubilidad_reporte.py     # H2, SC-305 (Apéndice B caso 1)
+├── test_resolubilidad_reporte.py     # DTO del reporte, H2-1..H2-13, H1-12, SC-305, cadena de más de 1 000 dependientes sin recursión (Apéndice B caso 1)
 ├── test_resolubilidad_datos.py       # contrato de llaves, H2-7, H2-8, H3-4..H3-7
 ├── test_resolubilidad_servicio.py    # H4, H1-8, H1-9, R9 (Apéndice B caso 4)
 ├── test_resolubilidad_cli.py         # H3-1..H3-3, H3-8, H3-9, cripta inexistente, --forzar sin efecto, SC-303, SC-308
@@ -214,7 +214,9 @@ después en `DECISIONES.md`.
 | `UIController/ControladorBackend.py` | `iniciar` llama a `ServicioResolubilidad.iniciar_partida_nueva(..., config.forzar)` y guarda el reporte (también el de `ErrorPartidaNoIniciada`); métodos nuevos `verificar(id)` y `resolubilidad()`, al final de la clase | La interfaz solo habla con Service por el controlador | FR-311 a FR-315 | Integrante 3; lo escribe el integrante 2 y ella lo revisa antes del merge (acuerdo del 14/11) |
 | `View/…`, `UIController/ControladorPygame.py` | Mostrar el reporte antes de la primera acción, como advertencia con `--forzar`, y completo si no inicia | §7.3 | FR-311 a FR-313 | Integrante 3 |
 | `README.md` | Comandos `--verificar` y `--forzar` (§7.2) | Pedido por el enunciado | FR-314 | Quien actualice el README (acordar) |
-| `paquete/` | Regenerar con `DescargadorPaquete` cuando el API publique la Parte II | Hoy no trae `llaves.json`, `costo` ni `rango` (H-3) | FR-318 | Integrante 2, avisando antes |
+| `paquete/` | Regenerar con `DescargadorPaquete` cuando el API publique la Parte II | El de la primera parte no traía `llaves.json`, `costo` ni `rango` (H-3: resuelto el 15/11, T057; queda la excepción de `cripta-01`) | FR-318 | Integrante 2, avisando antes |
+| `ejemplos/partida_ejemplo.log` | Regrabado en T057 jugando la `cripta-02` nueva con `--offline` hasta ganar (commit `6887c37`) | El log anterior era de las versiones de la primera parte de `cripta-02` y del catálogo, que el paquete nuevo ya no trae | FR-318 | Integrante 2 |
+| Pruebas de la primera parte | `tests/Utilidades.py`: `catalogo_real()` devuelve solo las fichas que usa `cripta-01`; `tests/TestAlmacenCatalogo.py`: `test_formato_en_disco` busca la rata por id y no por posición (las dos en `6887c37`, T057). `tests/TestServicioBench.py` no cambió por el paquete: su único cambio de la 003 es la lista esperada de `test_por_defecto_usa_los_tres_archivos` con `BenchResolubilidad.medir` (`d47c0ef`, T062; fila de `Service/ServicioBench.py`) | `catalogo.json` es uno solo para todas las criptas del paquete nuevo y ya no son solo las fichas de `cripta-01` | FR-318 | Integrante 2 (sus pruebas de la primera parte) |
 
 **No se tocan**: `Logic/Mazmorra.py` (solo se usa), `Logic/HistorialRetroceso.py`, `Logic/motorJuego.py`,
 `Service/ServicioReplay.py`, `Service/ServicioGuardado.py`, `Service/ServicioAccionJugador.py`, `Data/GestorEsqueleto.py`,
@@ -254,7 +256,7 @@ después en `DECISIONES.md`.
    y `SEMILLA`, que son privadas de `Logic/BenchLogica.py` (integrante 1, feature 001). El integrante 1 confirmó el
    14/11 que no les cambia el nombre ni la firma sin avisar: si cambian, el integrante 1 avisa antes.
 
-**Con los tres**: regenerar `paquete/` (H-3) cambia archivos que usan pruebas de todos; se avisa y se hace en un
+**Con los tres**: regenerar `paquete/` (H-3, resuelto el 15/11 en T057) cambia archivos que usan pruebas de todos; se avisa y se hace en un
 commit propio.
 
 ## Mediciones previstas (`--bench`, §6.3)
@@ -265,7 +267,7 @@ Criptas sintéticas deterministas por semilla (Principio VIII); detalle en
 | # | Qué mide | Tamaños | Para qué |
 |---|---|---|---|
 | B1 | Verificación completa, cripta resoluble | 100 / 1 000 / 10 000 salas (10, 100, 1 000 llaves) | SC-306 (< 200 ms en 1 000), SC-307 (≤ ×20) |
-| B2 | Alternativa: repetir el recorrido completo por cada llave | los mismos (10 000: una sola repetición, con nota) | SC-307 (crece al menos el doble que B1) |
+| B2 | Alternativa: repetir el recorrido completo por cada llave (en la cuadrícula encadenada, una oleada = una llave) | los mismos (10 000: una sola repetición, con nota) | SC-307 (crece al menos el doble que B1) |
 | B3 | Verificación completa, no resoluble (un ciclo de una llave + cadena de unas K/2 dependientes) | los mismos | NFR-303 |
 | B4 | Desglose: preparación, recorrido, ciclos y armado | 1 000 salas | Dónde se va el tiempo |
 | B5 | Índice de llaves (R3): ordenar y compactar frente a la búsqueda lineal de ids (descartada) | las cuadrículas de B1 (10 000: la lineal con una sola repetición, con nota) | Respaldar R3: O(M log M) frente a O(M·K) |
@@ -286,7 +288,7 @@ sección «Resolubilidad» con problema, alternativas, decisión, complejidad y 
 | R-2 | **Romper el replay o la carga** si se verifica en `iniciar_partida` | Se verifica solo en `ServicioResolubilidad.iniciar_partida_nueva`; pruebas H4-4 (FR-301) |
 | R-3 | **Pedir dos veces los datos** (presupuesto) | `iniciar_partida(..., datos=…)`; prueba que cuenta las solicitudes |
 | R-4 | **La combinación de caras diverge del juego** | Se reutiliza `Mazmorra`; pruebas H1-10, H2-9, H2-10 |
-| R-5 | **Paquete viejo** (H-3) | Pruebas con paquetes temporales; código 1 con mensaje mientras tanto |
+| R-5 | **Paquete viejo** (H-3: resuelto el 15/11, T057; queda la excepción de `cripta-01`) | Pruebas con paquetes temporales; código 1 con mensaje mientras tanto |
 | R-6 | **Ordenar las menciones domina el tiempo** | B4 lo muestra; si pasa, se ordenan solo las caras con llave (son pocas) |
 | R-7 | **Entrega atrasada del contrato de llaves** | Este plan lo fija; es la primera tarea de `tasks.md` |
 | R-8 | **Decidir por `alcanzable[sala_salida]`** en lugar de por la cara que pide `llave_salida` | El veredicto usa `caras_de_salida` (research R4); pruebas de los casos borde de la salida y de la diferencia con el motor (FR-304, FR-322) |

@@ -7,8 +7,11 @@ description: "Lista de tareas de la feature 003: verificación de resolubilidad"
 **Entrada**: documentos de diseño de `specs/003-resolubilidad/`
 
 **Prerrequisitos**: [plan.md](plan.md), [spec.md](spec.md), [research.md](research.md),
-[data-model.md](data-model.md), [contracts/](contracts/), [quickstart.md](quickstart.md). Versión de la spec del
-commit `c2fb219` y del plan del commit `plan(003)` siguiente (`7e685f4`), con la revisión del integrante 1.
+[data-model.md](data-model.md), [contracts/](contracts/), [quickstart.md](quickstart.md). Las tareas se
+generaron con la spec del commit `c2fb219` y el plan del commit `plan(003)` siguiente (`7e685f4`), con la revisión
+del integrante 1. **Versión vigente de la spec**: commit `824ca10` (T066, 16/11), después de `1f73664` (análisis del
+14/11); las correcciones del 17/11 (estado «Implementada» y la nota bajo la tabla del Apéndice B) no cambian
+requisitos.
 
 **Pruebas**: sí. La constitución (Principio X) pide una prueba por escenario y por caso del Apéndice B, y el plan
 pide `unittest` en `tests/` (research R10). Cada prueba cita su escenario y su FR en el nombre del método
@@ -408,7 +411,7 @@ commitea el integrante 3.
 | H1-6 | `test_h1_6_fr302_enemigo_trampa_cierre_y_costo_no_bloquean` | T020 | FR-302 |
 | H1-7 | `test_h1_7_fr302_las_llaves_no_se_consumen` | T020 | FR-302 |
 | H1-8 | `test_h1_8_fr301_no_descarga_contenido_ni_consume_azar` | T035 | FR-301 |
-| H1-9 | `test_h1_9_fr313_reporte_en_el_contexto_antes_de_la_primera_accion`, `test_fr313_controlador_resoluble_muestra_el_orden` y la vista (T055 (vista), integrante 3) | T035, T053, T055 (vista) | FR-313 |
+| H1-9 | `test_h1_9_fr313_reporte_en_el_contexto_antes_de_la_primera_accion`, `test_fr313_controlador_resoluble_muestra_el_orden` y la vista (T055 (vista), integrante 3); en la ventana, H1-9 se valida a mano con [quickstart.md](quickstart.md) §3 (paso 1) | T035, T053, T055 (vista) | FR-313 |
 | H1-10 | `test_h1_10_fr302_fr305_llave_declarada_en_una_sola_cara` | T020 | FR-302, FR-305 |
 | H1-11 | `test_h1_11_fr316_fr305_copia_alcanzable_de_la_llave` | T020 | FR-316, FR-305 |
 | H1-12 | `test_h1_12_fr316_fr309_fr306_ubicaciones_identicas_una_sola_vez` | T026 | FR-316, FR-309, FR-306 |
@@ -457,7 +460,7 @@ commitea el integrante 3.
 |---|---|
 | SC-301 | Los cuatro casos del Apéndice B: T020, T026, T036 |
 | SC-302 | Esta tabla de cobertura (T068) |
-| SC-303 | `test_sc303_diez_ejecuciones_en_procesos_separados` (T046) |
+| SC-303 | `test_sc303_diez_ejecuciones_en_procesos_separados` (T046). «En línea» es una fuente de red simulada (`lanzar_con_fuente_falsa`), no el API real; «con `--offline`» es un paquete temporal |
 | SC-304 | `test_sc304_orden_valido_en_todas_las_criptas_resolubles` (T021) |
 | SC-305 | `test_sc305_reporte_completo_en_todas_las_no_resolubles` (T027) |
 | SC-306 | La fila de la cripta con más salas del paquete (T062, T063), cuando el paquete de la Parte II está regenerado (T057); mientras tanto, B1 a 1 000 salas en la tabla de T063. `test_nfr301_sc306_bench_mide_la_cripta_con_mas_salas_del_paquete` (T059) |

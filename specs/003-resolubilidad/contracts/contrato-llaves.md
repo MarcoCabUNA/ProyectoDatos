@@ -125,8 +125,9 @@ paquete/
 ```
 
 Costos (`costo` en `salas_p<N>.json`) y cazadores (`rango` en `catalogo.json`) **no necesitan código nuevo**: el
-descargador ya guarda las respuestas tal cual. El paquete actual es de la primera parte y hay que **regenerarlo**
-cuando el API publique las versiones nuevas (research, hallazgo H-3).
+descargador ya guarda las respuestas tal cual. El paquete de la primera parte había que **regenerarlo** cuando el API
+publicara las versiones nuevas (research, hallazgo H-3): resuelto el 15/11 (T057); queda la excepción de `cripta-01`,
+que ya no está publicada y no tiene `llaves.json`.
 
 ## Compatibilidad
 

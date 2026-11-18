@@ -4362,3 +4362,37 @@ Al final: corré .venv\Scripts\python.exe tests\correr_pruebas.py, mostrame el d
 **Uso de la respuesta:** se corrigieron las tres frases de §5.5 de la 004 en DECISIONES.md (punto 9, «Memoria (M3)» y el antiguo «Pendiente de la sección»). Medición aparte con un guion no versionado (partida sintética de M3, K = 20, `ServicioGuardado.guardar` y `os.path.getsize`): archivo versión 2 de 24 145 bytes con 100 acciones, 180 250 con 1 000 y 874 050 con 5 000 (3 367 sin la línea), contra 901 877 de M3 con 5 000; no cambia K = 20.
 
 -----------------------------------------------------------------------------------------------------------------------
+
+**Fecha:** Martes 17 de noviembre 2026
+
+**Herramienta:** Claude Code
+
+Correcciones del análisis de spec-kit de Marco (17/11) para mis partes: la 003 completa y la niebla y el mapa conocido de la 002. Constitución v1.2.0. SIN commits ni comandos de git: yo commiteo desde PyCharm. Los números de línea que doy son aproximados (el archivo cambió): buscá siempre por el texto. Antes de cada cambio comprobá que lo que digo es cierto en el código o en el archivo; si algo no calza, no lo cambies y avisame. No toques nada de la 001 ni las partes de «ir a» de la 002, salvo L9.
+
+GRUPO A, solo specs/002-niebla-ir-a/spec.md:
+- C2: fila A45 de la trazabilidad («La interfaz no revela el id de una sala no explorada: `sala_destino` va como `SIN_EXPLORAR`…»). Reescribí la descripción como regla del juego, sin nombres de campos ni constantes: «la interfaz no recibe el identificador de una sala no explorada, ni el de la salida mientras no se haya explorado». Las columnas de escenario, FR y pruebas quedan igual.
+- H1: el caso borde «**Partida terminada**: el comando de ver el mapa sigue disponible y muestra el mapa del final» contradice A44 («con la partida terminada no está disponible») y la prueba test_con_la_partida_terminada_el_comando_no_esta_disponible_pero_ver_mapa_no_falla (tests/test_comando_mapa.py). Cambiá el caso borde para que diga lo mismo que A44 y el código.
+- L11: línea 7, «Borrador» → «Implementada»; el resto de esa línea igual.
+
+GRUPO B, solo specs/003-resolubilidad/spec.md:
+- I5: línea 7 «Estado: Implementada»; en la frase «Cada prueba cita…» del Apéndice B, verbos en presente.
+- I9: en la tabla de cobertura, agregá H3-9 a la fila de FR-312 (comprobá en tests/ que la prueba de H3-9 cubre FR-312; si no, avisame).
+- D2 (opción b): debajo de la tabla del Apéndice B, una línea: los archivos de prueba que se citan sirven para ubicar cada prueba; no son módulos del juego (el Principio IX se refiere al código del producto). No cambies la tabla.
+
+GRUPO C, el resto (DECISIONES.md, plan, research, tasks, contracts, quickstart y bench de la 002 y la 003):
+- 003 D1 (Principio III): en mi §5.4 de DECISIONES.md, un «antes/después»: en P1 toda partida iniciaba; ahora iniciar una partida nueva verifica la resolubilidad y, sin --forzar, puede no iniciar. Describí qué pasa con cripta-01 con --offline (no trae llaves.json) y cómo inician las pruebas del integrante 3; comprobalo en Service/ServicioResolubilidad.py, UIController/ControladorBackend.py y tests/ antes de escribirlo. En la tabla de cambios a P1 de specs/003-resolubilidad/plan.md, agregá la fila de ejemplos/partida_ejemplo.log (regrabado en T057 con la cripta-02 nueva) y una fila con las pruebas de la primera parte ajustadas por el paquete nuevo (tests/Utilidades.py catalogo_real, test_formato_en_disco de tests/TestAlmacenCatalogo.py y lo que haya cambiado en tests/TestServicioBench.py; comprobá cada uno con git log).
+- 002 M3: «hasta 50 salas» → «hasta 300 (cripta-06)» donde hable de las criptas publicadas, en specs/002-niebla-ir-a/plan.md y en mi §5.3 de DECISIONES.md. H-4 («las criptas publicadas no tienen salidas repetidas») sigue siendo cierta: ninguna sala de cripta-01 a cripta-06 tiene dos salidas a la misma vecina; no la cambies.
+- 002 L4, L7, L8 y L5, en el plan y tasks de la 002: tachá D-2, D-3 y D-5 ya cerradas (T005, T121) como D-1, D-4 y D-6; «spec.md (sin cambios)» → «actualizada en commits spec(002)»; A38 está en tests/test_grafo_mapa_conocido.py; limpiá en tasks.md las frases «pendiente» que contradicen tareas ya [x] de mi parte.
+- 002 L9: en DECISIONES.md, sección «Viaje automático «ir a»» (del integrante 3, que me dio permiso), hay dos apartados «**8.**» seguidos («Limitación conocida: los comentarios # ir a…» y «H-2, opción A…»). Renumerá de ahí en adelante sin cambiar texto.
+- 003 I1: «hasta 50 salas (paquete actual)» → «de 20 a 300 salas (paquete de la Parte II, 15/11)» en plan.md y research.md de la 003.
+- 003 I2: el hallazgo H-3 (plan.md, research.md, contracts/contrato-llaves.md, quickstart.md y mi §5.4): «resuelto el 15/11 (T057); queda la excepción de cripta-01». En el quickstart, sacá la rama «con el paquete actual».
+- 003 I3: en §5.4 y en la fila B2 del plan: «en la cuadrícula encadenada, una oleada = una llave».
+- 003 I4, I6, I7, I8: plan.md, quitar «(004, pendiente)» de BusquedaBinaria; versión vigente de la spec en tasks.md y plan.md; anotar en bench-2026-11-16.txt el commit del paquete (6887c37); comentario completo de test_resolubilidad_reporte.py en el plan.
+- 003 E1 y E3: H1-9 en la ventana se valida con quickstart §3; «en línea» en SC-303 es una fuente de red simulada.
+- PROMPTS_LLM.md: este prompt al final, con el formato de siempre.
+
+Al final: .venv\Scripts\python.exe tests\correr_pruebas.py, la lista de archivos de cada grupo (A, B y C), lo que NO cambiaste y por qué, y git status (fuera quedan ExplorarApi.py, bench.txt y exploracion/).
+
+**Uso de la respuesta:** se aplicaron las correcciones del análisis de Marco en la spec de la 002 (A45 como regla del juego, caso borde de la partida terminada igual a A44, estado «Implementada»), en la spec de la 003 (estado «Implementada», verbos en presente, nota del Principio IX bajo el Apéndice B) y en DECISIONES.md, plan, research, tasks, contrato de llaves, quickstart y bench de la 002 y la 003. El antes/después de §5.4 se comprobó corriendo `ServicioResolubilidad.iniciar_partida_nueva("cripta-01", …)` con el paquete del repositorio: sin `--forzar` no inicia («no concluyó» por falta de `llaves.json`); con `--forzar` inicia. No se agregó H3-9 a la fila de FR-312 (I9): su prueba, `test_h3_9_fr314_forzar_no_cambia_verificar`, y el escenario citan solo FR-314. `tests/TestServicioBench.py` no cambió por el paquete (su cambio de la 003 es `d47c0ef`, T062). §5.3 no decía «hasta 50 salas» (la única mención está en §5.5, del integrante 3), y la frase «Con 50 salas es poco» del plan de la 002 está en la parte de «ir a»: no se tocaron. Suite: 1102 pruebas unittest OK y 32 de 32 scripts.
+
+-----------------------------------------------------------------------------------------------------------------------

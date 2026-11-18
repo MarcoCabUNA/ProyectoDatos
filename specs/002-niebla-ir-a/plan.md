@@ -60,7 +60,7 @@ SC-207); ciclo de eventos < 20 ms con 30 cazadores y la antorcha encendida en la
 **Restricciones**: determinismo (Principio IV): el mapa sale solo de las acciones; Abierto/Cerrado (Principio III): lo
 nuevo en módulos nuevos, los cambios a lo existente en la tabla de abajo.
 
-**Escala**: criptas publicadas de hasta 50 salas; cuadrículas sintéticas de hasta 10 000 salas en el bench.
+**Escala**: criptas publicadas de hasta 300 salas (cripta-06); cuadrículas sintéticas de hasta 10 000 salas en el bench.
 
 No quedan puntos «NEEDS CLARIFICATION» ni ambigüedades abiertas de la spec: H-3 lo confirmó el integrante 3 el 14/11,
 y H-5 y H-8 quedaron resueltos en la spec (Sesión 2026-11-14).
@@ -133,7 +133,7 @@ No se agrega nada a `Estructuras/`.
 
 ```text
 specs/002-niebla-ir-a/
-├── spec.md                              # (sin cambios)
+├── spec.md                              # actualizada en commits spec(002)
 ├── plan.md                              # este archivo (+ sección reservada del integrante 3)
 ├── research.md                          # fase 0: R0 a R8 y hallazgos
 ├── data-model.md                        # fase 1: mapa, grafo, DTO, bloque binario, cambios del motor
@@ -168,11 +168,11 @@ Service/
 tests/
 ├── ayudas_mapa.py                    # criptas a mano con la notación de la spec
 ├── test_mapa_conocido_estados.py     # historia 1 (A1, A2, A3, A13, A14, A41)
-├── test_mapa_conocido_puertas.py     # historia 2 (caso 2a, A4, A15, A16, A38, A42)
+├── test_mapa_conocido_puertas.py     # historia 2 (caso 2a, A4, A15, A16, A42)
 ├── test_mapa_conocido_antorcha.py    # historia 3 (caso 4, A5, A6, A17..A20, A43)
 ├── test_mapa_conocido_partida.py     # historia 4 (caso 5, A7..A10)
 ├── test_mapa_conocido_vista.py       # historia 5 (A11, A12, A21..A23, A39, A40) y SC-202
-├── test_grafo_mapa_conocido.py       # contrato (a), (c), (d)
+├── test_grafo_mapa_conocido.py       # contrato (a), (c), (d) y A38 (H2-5)
 ├── test_guardado_mapa.py             # DTO y binario versión 2
 └── test_bench_mapa.py                # B1 a B11 con tamaños chicos
 ```
@@ -654,14 +654,13 @@ Ninguno bloquea; la spec no se modifica.
 **Para Derek (integrante 2)**
 
 - ~~**D-1**~~ (cerrada: no se pide `direccion_hacia`; se usa `Mazmorra.salida` sobre las salas exploradas).
-- **D-2**: `ArmadorEstado` usará `mapa.es_explorada(sala)`; ¿existe como método público y O(1)? Si hoy solo está
-  `mapa.estado[sala]`, ¿lo agregas?
-- **D-3**: `buscar_exploradas(nombre)`: confirma que normaliza **ambos** lados con `strip().casefold()`, que una cadena
-  vacía devuelve `[]` y que un valor que no es `str` lanza `ValueError`.
+- ~~**D-2**~~ (cerrada en T005: `mapa.es_explorada(sala)` es público y O(1), en el contrato del mapa).
+- ~~**D-3**~~ (cerrada en T005: `buscar_exploradas(nombre)` compara `strip().casefold()` en los dos lados, una cadena
+  vacía o de solo espacios devuelve `[]` y un valor que no es `str` lanza `ValueError`).
 - ~~**D-4**~~ (cerrada: «ir a» y el reconstructor vuelven a tomar `contexto.motor` en cada paso o consulta y no guardan
   referencias; no importa si `restaurar` actualiza el mismo objeto o lo reemplaza; ver I3-8).
-- **D-5**: orden de los cambios en `Service/ServicioBench.py` (tu `BenchMapaConocido` y mi `BenchViaje`): quien suba
-  segundo hace el `merge`, como en la 003.
+- ~~**D-5**~~ (cerrada en T121: `BenchViaje.medir` va después de `BenchMapaConocido.medir` en
+  `Service/ServicioBench.py`; quien subió segundo hizo el `merge`, como en la 003).
 - ~~**D-6**~~ (cerrada: `SIN_EXPLORAR = -1` vive en `DTO/EstadoJuegoDTO.py`, mío; no hace falta tu visto bueno. Lo único
   que sigue pendiente de ti es `mapa.es_explorada(sala)` de D-2).
 
